@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEON-NOC // Boot Header</title>
+  <style>
+    :root{
+      --line: rgba(0, 240, 255, 0.35);
+    }
+    *{ box-sizing:border-box; }
+    html, body{
+      margin:0;
+      width:100%;
+      height:100%;
+      background:#04080f;
+      overflow:hidden;
+    }
+    .boot-header{
+      position:relative;
+      width:100%;
+      height:100%;
+    }
+    .boot-header video{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      filter: saturate(120%) contrast(110%);
+    }
+    .boot-header::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(180deg, rgba(4,8,15,0.2) 0%, rgba(4,8,15,0.65) 70%, rgba(4,8,15,0.9) 100%),
+        repeating-linear-gradient(90deg, transparent 0 24px, var(--line) 24px 25px);
+      mix-blend-mode: screen;
+      pointer-events:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="boot-header">
+    <video src="ninja_boot.mp4" autoplay muted loop playsinline></video>
+  </div>
+</body>
+</html>

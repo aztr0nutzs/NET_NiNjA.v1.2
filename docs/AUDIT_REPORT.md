@@ -1,0 +1,15 @@
+- **Root settings** (`settings.gradle.kts`): OK
+- **Root build script** (`build.gradle.kts`): OK
+- **Gradle wrapper script** (`gradlew`): OK
+- **Gradle wrapper jar** (`gradle/wrapper/gradle-wrapper.jar`): OK
+- **Android module build script** (`android-app/build.gradle.kts`): OK
+- **Android manifest** (`android-app/src/main/AndroidManifest.xml`): OK
+- **MainActivity** (`android-app/src/main/java/com/netninja/MainActivity.kt`): OK
+- **Desktop UI HTML** (`web-ui/ninja_dash.html`): OK
+- **Mobile UI HTML** (`web-ui/ninja_mobile.html`): OK
+- **Neon CSS** (`web-ui/neon_dash.css`): OK
+- **Neon JS** (`web-ui/neon_dash.js`): OK
+- **Neon buttons CSS** (`web-ui/neon_btns.css`): OK
+- **Neon buttons adapter CSS** (`web-ui/neon_btns.adapter.css`): OK
+- **Cool buttons CSS** (`web-ui/cool_btns.css`): OK
+- **Cool buttons JS** (`web-ui/cool_btns.js`): OK
