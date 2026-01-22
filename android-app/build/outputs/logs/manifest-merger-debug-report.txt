@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-27:12
-INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-27:12
-INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-27:12
-INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-27:12
+ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-29:12
+INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-29:12
+INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-29:12
+INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:2:1-29:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/0a009e3b03f93643167250482c5a32c9/transformed/appcompat-resources-1.6.1/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.appcompat:appcompat:1.6.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/c0ae5e38f187292ae4dc56e55d10850b/transformed/appcompat-1.6.1/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.webkit:webkit:1.10.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/5bb8e32334605d4d5b5dedf59f7d4e35/transformed/webkit-1.10.0/AndroidManifest.xml:2:1-7:12
@@ -59,8 +59,8 @@ ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManife
 	android:name
 		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:8:22-74
 application
-ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:10:5-26:19
-INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:10:5-26:19
+ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:10:5-28:19
+INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:10:5-28:19
 MERGED from [androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
@@ -77,34 +77,38 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/aztr0nutzs/.gradle/ca
 		ADDED from [androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
 	android:label
 		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:11:9-41
+	android:roundIcon
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:13:9-54
+	android:icon
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:12:9-43
 	android:theme
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:14:9-46
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:16:9-46
 	android:networkSecurityConfig
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:13:9-69
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:15:9-69
 	android:usesCleartextTraffic
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:12:9-44
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:14:9-44
 activity#com.netninja.MainActivity
-ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:15:9-22:20
+ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:17:9-24:20
 	android:exported
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:17:13-36
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:19:13-36
 	android:name
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:16:13-41
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:18:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:18:13-21:29
+ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:20:13-23:29
 action#android.intent.action.MAIN
-ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:19:17-69
+ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:21:17-69
 	android:name
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:19:25-66
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:21:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:20:17-77
+ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:22:17-77
 	android:name
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:20:27-74
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:22:27-74
 service#com.netninja.EngineService
-ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:23:9-25:40
+ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:25:9-27:40
 	android:exported
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:25:13-37
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:27:13-37
 	android:name
-		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:24:13-42
+		ADDED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:26:13-42
 uses-sdk
 INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml

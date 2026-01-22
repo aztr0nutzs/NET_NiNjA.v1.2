@@ -6,3 +6,5 @@
 - Prefer real engine scan results with a SIM fallback to keep UI responsive offline.
 - Remove `neon_btns.css` from the mobile page to avoid global anchor styling conflicts.
 - Use live-only scan results and display data status explicitly in the UI.
+- Always resync APK `web-ui` assets at startup and delete stale files to prevent old dashboards.
+- Disable WebView cache for the local UI to keep content consistent with bundled assets.

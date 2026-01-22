@@ -11,3 +11,5 @@
 - Fixed escaped HTML attributes that prevented `.dashboard-ui` layout rules from applying.
 - Removed global neon button CSS from the mobile page to avoid anchor padding/margins.
 - Switched SCAN to live-only mode and surfaced data state via a badge.
+- Synced APK web assets on every launch and removed stale files to avoid old dashboards.
+- Added WebView cache hardening and server readiness probing to reduce blank startup windows.

@@ -644,7 +644,7 @@
           <div class="status">
             <div id="healthLight" class="statusLight warn"></div>
             <div class="statusText">
-              <div id="healthText">ENGINE: STARTUP (SIMULATED)</div>
+              <div id="healthText">ENGINE: STARTUP</div>
               <div class="monoDim" id="scanHint">Press SCAN to stream results (like a civilized UI). </div>
             </div>
           </div>
@@ -732,7 +732,7 @@
         <div class="card">
           <div class="cardTitle">Quick status</div>
           <div class="kv">
-            <div class="k">Network</div><div class="v" id="netName">Wi-Fi / LAN (SIM)</div>
+            <div class="k">Network</div><div class="v" id="netName">Network</div>
             <div class="k">CIDR</div><div class="v" id="netCidr">192.168.1.0/24</div>
             <div class="k">Gateway</div><div class="v" id="netGw">192.168.1.1</div>
             <div class="k">Jobs</div><div class="v"><span class="pill"><span class="dot warn"></span><span id="jobsCount">0 active</span></span></div>
@@ -790,7 +790,7 @@
             <div class="card" style="flex:1;">
               <div class="cardTitle">Discovery pipeline</div>
               <div class="kv">
-                <div class="k">Subnet estimate</div><div class="v"><span class="pill"><span class="dot ok"></span>Interface/DHCP (SIM)</span></div>
+                <div class="k">Subnet estimate</div><div class="v"><span class="pill"><span class="dot ok"></span>Interface/DHCP</span></div>
                 <div class="k">Reachability</div><div class="v"><span class="pill"><span class="dot warn"></span>ICMP/TCP sweep</span></div>
                 <div class="k">ARP map</div><div class="v"><span class="pill"><span class="dot warn"></span>OS-specific parse</span></div>
                 <div class="k">mDNS</div><div class="v"><span class="pill"><span class="dot warn"></span>Names/services</span></div>
@@ -1230,7 +1230,7 @@
 
   <script>
     // ==============================
-    // Data model (SIMULATED UI ONLY)
+    // Data model
     // ==============================
     const state = {
       view: 'overview',
@@ -1239,6 +1239,10 @@
       filters: new Set(),
       search: '',
       streaming: true,
+      streamTimer: null,
+      bulkSshIds: [],
+      metrics: {},
+      deviceMetrics: new Map(),
       job: {
         active: false,
         name: 'none',
@@ -1257,8 +1261,25 @@
     const $ = (id) => document.getElementById(id);
     const now = () => new Date().toLocaleString();
 
-    function rndInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
-    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+    const API_BASE = (() => {
+      try {
+        if (location && location.origin && location.origin !== "null") return location.origin;
+      } catch (_) {}
+      return "http://127.0.0.1:8787";
+    })();
+
+    async function api(path, opts = {}) {
+      const res = await fetch(API_BASE + path, Object.assign({
+        headers: { "Content-Type": "application/json" }
+      }, opts));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const ct = res.headers.get("content-type") || "";
+      return ct.includes("application/json") ? res.json() : res.text();
+    }
+
+    function postJson(path, body) {
+      return api(path, { method: "POST", body: JSON.stringify(body ?? {}) });
+    }
 
     function formatTags(tags){
       if (!tags || !tags.length) return '<span class="monoDim">none</span>';
@@ -1289,56 +1310,95 @@
       bumpCounts();
     }
 
-    // Seed with nothing (so SCAN feels real)
-    function seedEmpty(){
-      renderAll();
-      logTerm(`[${now()}] NEON-NOC initialized. Type "help" in the terminal.`, 'ok');
-      setTimeout(() => {
-        $('healthLight').className = 'statusLight ok';
-        $('healthText').textContent = 'ENGINE: CONNECTED (SIM)';
-        $('buildBadge').textContent = 'LOCAL ENGINE: CONNECTED';
-      }, 700);
+    function formatLastSeen(ts){
+      if (!ts) return '—';
+      return new Date(ts).toLocaleString();
     }
 
-    // Create a plausible device record
-    function makeDevice(i){
-      const vendors = ['Apple', 'TP-Link', 'Dell', 'Samsung', 'Ubiquiti', 'Raspberry Pi', 'Google', 'Lenovo', 'Intel', 'Cisco'];
-      const osGuess = ['Windows', 'Linux', 'Android', 'iOS', 'RouterOS', 'Unknown'];
-      const hostBase = ['atlas','nexus','echo','titan','relay','node','vault','proxy','sensor','lumen','helios','orion'];
-      const tagsPool = ['iot','server','printer','camera','laptop','phone','router','switch','nas','lab'];
-
-      const vendor = pick(vendors);
-      const os = pick(osGuess);
-      const ip = `192.168.1.${rndInt(2,254)}`;
-      const mac = Array.from({length:6}, () => rndInt(0,255).toString(16).padStart(2,'0')).join(':').toUpperCase();
-      const hostname = `${pick(hostBase)}-${rndInt(10,99)}`;
-      const online = Math.random() > 0.22;
-
-      const ports = pick(['22,80,443','80,443','53,67,68','445,3389','1900,5000','631','—']);
-      const services = ports === '—' ? '—' : pick(['ssh,http,https','http,https','dns,dhcp','smb,rdp','ssdp,dlna','ipp']);
-      const names = pick(['mDNS: _http._tcp', 'mDNS: _ssh._tcp', 'SSDP: MediaRenderer', 'mDNS: — / SSDP: —', 'mDNS: _workstation._tcp']);
-      const ipHistory = [ip, `192.168.1.${rndInt(2,254)}`, `192.168.1.${rndInt(2,254)}`].slice(0, rndInt(1,3));
-
-      const tags = [];
-      if (Math.random() > 0.55) tags.push(pick(tagsPool));
-      if (Math.random() > 0.78) tags.push(pick(tagsPool.filter(x => !tags.includes(x))));
-
+    function normalizeDevice(d){
+      const openPorts = Array.isArray(d.openPorts) ? d.openPorts : [];
+      const bannerList = d.banners ? Object.entries(d.banners).map(([p, b]) => `${p}:${b}`) : [];
       return {
-        id: `d_${Date.now()}_${i}_${Math.random().toString(16).slice(2)}`,
-        online,
-        hostname,
-        ip,
-        ipHistory,
-        mac,
-        vendor,
-        os,
-        ports,
-        services,
-        names,
-        tags,
-        lastSeen: now(),
-        changeScore: rndInt(0, 100)
+        id: d.id,
+        online: !!d.online,
+        hostname: d.hostname || d.ip || 'unknown',
+        ip: d.ip || '0.0.0.0',
+        ipHistory: [d.ip || '0.0.0.0'],
+        mac: d.mac || '—',
+        vendor: d.vendor || 'Unknown',
+        os: d.os || 'Unknown',
+        ports: openPorts.length ? openPorts.join(',') : '—',
+        services: bannerList.length ? bannerList.join(' | ') : '—',
+        names: d.hostname ? `mDNS: ${d.hostname}` : '—',
+        tags: d.tags || [],
+        lastSeen: formatLastSeen(d.lastSeen),
+        lastSeenTs: d.lastSeen || 0,
+        changeScore: 0
       };
+    }
+
+    async function refreshDevices(){
+      try {
+        const list = await api('/api/v1/discovery/results');
+        state.devices = Array.isArray(list) ? list.map(normalizeDevice) : [];
+        renderAll();
+      } catch (err) {
+        logTerm(`[${now()}] Device refresh failed: ${err.message}`, 'warn');
+      }
+    }
+
+    async function refreshMetrics(){
+      try {
+        state.metrics = await api('/api/v1/metrics');
+      } catch (_) {
+        state.metrics = {};
+      }
+    }
+
+    async function refreshNetworkInfo(){
+      try {
+        const info = await api('/api/v1/network/info');
+        $('netName').textContent = info.name || 'Network';
+        $('netCidr').textContent = info.cidr || $('netCidr').textContent;
+        $('netGw').textContent = info.gateway || '—';
+      } catch (_) {
+        $('netName').textContent = 'Network';
+      }
+    }
+
+    async function refreshSchedules(){
+      try {
+        const res = await api('/api/v1/schedules');
+        state.schedules = Array.isArray(res) ? res : [];
+      } catch (_) {
+        state.schedules = [];
+      }
+      renderSchedules();
+    }
+
+    async function refreshRules(){
+      try {
+        const res = await api('/api/v1/rules');
+        state.rules = Array.isArray(res) ? res : [];
+      } catch (_) {
+        state.rules = [];
+      }
+      renderRules();
+    }
+
+    async function bootstrap(){
+      renderAll();
+      logTerm(`[${now()}] NEON-NOC initialized. Type "help" in the terminal.`, 'ok');
+      $('healthLight').className = 'statusLight ok';
+      $('healthText').textContent = 'ENGINE: CONNECTED';
+      $('buildBadge').textContent = 'LOCAL ENGINE: CONNECTED';
+      await refreshNetworkInfo();
+      await refreshMetrics();
+      await refreshSchedules();
+      await refreshRules();
+      await refreshDevices();
+      if (state.streaming) setStreaming(true);
+      setInterval(refreshMetrics, 5000);
     }
 
     // ==============================
@@ -1407,9 +1467,8 @@
       $('statOnline').textContent = online;
       $('statOffline').textContent = offline;
 
-      // “new/changed” simulated
-      $('statNew').textContent = Math.min(total, Math.max(0, Math.floor(total * 0.20)));
-      $('statChanged').textContent = Math.min(total, Math.max(0, Math.floor(total * 0.12)));
+      $('statNew').textContent = '0';
+      $('statChanged').textContent = '0';
 
       wireRowClicks($('recentBody'));
     }
@@ -1481,10 +1540,11 @@
         <div class="k">Tags</div><div class="v">${d.tags.length ? d.tags.join(', ') : 'none'}</div>
       `;
 
-      $('mRtt').textContent = d.online ? `${rndInt(2,45)} ms` : 'timeout';
-      $('mHttp').textContent = d.online ? (Math.random()>0.25 ? '200 OK' : '503') : 'n/a';
+      const metrics = state.deviceMetrics.get(d.id) || {};
+      $('mRtt').textContent = metrics.rttMs != null ? `${metrics.rttMs} ms` : '—';
+      $('mHttp').textContent = metrics.httpStatus != null ? `${metrics.httpStatus}` : '—';
       $('mSeen').textContent = d.lastSeen;
-      $('mChange').textContent = `${d.changeScore}/100`;
+      $('mChange').textContent = metrics.changeScore != null ? `${metrics.changeScore}` : '—';
     }
 
     function renderAudit(){
@@ -1601,6 +1661,13 @@
 
     function setStreaming(on){
       state.streaming = on;
+      if (on) {
+        if (state.streamTimer) clearInterval(state.streamTimer);
+        state.streamTimer = setInterval(refreshDevices, 2500);
+      } else if (state.streamTimer) {
+        clearInterval(state.streamTimer);
+        state.streamTimer = null;
+      }
       renderJob();
     }
 
@@ -1610,9 +1677,9 @@
     }
 
     // ==============================
-    // Simulated Scan + Stream
+    // Scan + Stream
     // ==============================
-    function startScan(label){
+    async function startScan(label){
       if (state.job.active) {
         logTerm(`[${now()}] Scan request denied: job already active.`, 'warn');
         return;
@@ -1621,9 +1688,9 @@
       state.job.active = true;
       state.job.paused = false;
       state.job.name = label;
-      state.job.phase = 'Subnet estimate';
+      state.job.phase = 'Scanning';
       state.job.found = 0;
-      state.job.progress = 0;
+      state.job.progress = 5;
 
       $('healthLight').className = 'statusLight ok';
       $('healthText').textContent = 'ENGINE: RUNNING JOB';
@@ -1635,78 +1702,34 @@
       logTerm(`[${now()}] Starting scan: ${label}`, 'ok');
       renderJob();
 
-      const phases = [
-        'Subnet estimate',
-        'Reachability sweep (ICMP/TCP)',
-        'ARP table parse',
-        'mDNS browse',
-        'SSDP probe',
-        'Optional SNMP',
-        'Finalize'
-      ];
-
       let tick = 0;
-
       state.job.timer = setInterval(() => {
-        if (!state.job.active) return;
-        if (state.job.paused) return;
-
+        if (!state.job.active || state.job.paused) return;
         tick++;
-        const p = Math.min(100, Math.floor((tick / 30) * 100));
-        state.job.progress = p;
-
-        // Phase changes
-        const idx = Math.min(phases.length - 1, Math.floor((p / 100) * phases.length));
-        state.job.phase = phases[idx];
-
-        // Stream devices within first 1-2 seconds conceptually (here: early ticks)
-        if (tick % 2 === 0 && state.devices.length < 38){
-          const newDev = makeDevice(tick);
-          state.devices.unshift(newDev);
-          state.job.found++;
-          logTerm(`[${now()}] + discovered ${newDev.ip} (${newDev.hostname}) [${newDev.vendor}, ${newDev.os}]`, 'dim');
-          if (state.streaming){
-            // simulate "UI streaming": incremental render
-            renderOverview();
-            if (state.view === 'devices') renderDevices();
-            bumpCounts();
-          }
-          // occasional alert
-          if (Math.random() > 0.92){
-            addAlert('WARN', 'DEVICE_CHANGED', `${newDev.hostname} (${newDev.ip})`);
-          }
-        }
-
-        // occasional “offline”
-        if (tick % 7 === 0 && state.devices.length){
-          const d = pick(state.devices);
-          d.online = Math.random() > 0.30;
-          d.lastSeen = now();
-        }
-
-        // Progress bars
+        state.job.progress = Math.min(95, state.job.progress + 2);
         renderJob();
-        $('jobProg').style.width = `${state.job.progress}%`;
-        $('jobProg2').style.width = `${state.job.progress}%`;
+      }, 300);
 
-        // End
-        if (p >= 100){
-          clearInterval(state.job.timer);
-          state.job.timer = null;
-          state.job.active = false;
-          state.job.phase = 'Complete';
-          audit('admin', 'SCAN_END', label, `OK (${state.job.found} devices)`);
-          logTerm(`[${now()}] Scan complete. Found ${state.job.found} devices.`, 'ok');
-          $('healthText').textContent = 'ENGINE: IDLE';
-          $('wsBadge').textContent = 'WS: IDLE';
-          renderAll();
-        }
-      }, 180);
-
-      // show stream badge
-      $('streamBadge').textContent = `STREAM: ${state.streaming ? 'ON' : 'OFF'}`;
-      $('wsBadge').textContent = 'WS: STREAMING';
-      $('jobsCount').textContent = '1 active';
+      try {
+        const cidr = $('cidr').value.trim();
+        const list = await postJson('/api/v1/discovery/scan', { subnet: cidr || null, timeoutMs: 350 });
+        state.devices = Array.isArray(list) ? list.map(normalizeDevice) : [];
+        state.job.found = state.devices.length;
+        logTerm(`[${now()}] Scan complete. Found ${state.job.found} devices.`, 'ok');
+        await refreshMetrics();
+        renderAll();
+      } catch (err) {
+        logTerm(`[${now()}] Scan failed: ${err.message}`, 'bad');
+      } finally {
+        clearInterval(state.job.timer);
+        state.job.timer = null;
+        state.job.active = false;
+        state.job.phase = 'Complete';
+        state.job.progress = 100;
+        $('healthText').textContent = 'ENGINE: IDLE';
+        $('wsBadge').textContent = 'WS: IDLE';
+        renderJob();
+      }
     }
 
     function cancelJob(reason){
@@ -1721,31 +1744,55 @@
     }
 
     // ==============================
-    // Actions (SIMULATED)
+    // Actions
     // ==============================
-    function actOnDevice(action, d){
+    async function actOnDevice(action, d){
       if (!d) return;
       const tgt = `${d.hostname} (${d.ip})`;
-      audit('admin', action, tgt, 'OK (SIM)');
+      audit('admin', action, tgt, 'REQUEST');
       logTerm(`[${now()}] ACTION ${action} → ${tgt}`, 'ok');
 
-      if (action === 'PING'){
-        logTerm(`PING ${d.ip}: time=${d.online ? rndInt(2,45)+'ms' : 'timeout'} ttl=${d.online ? rndInt(50,128) : '-'}`, d.online ? 'ok' : 'warn');
-      } else if (action === 'WOL'){
-        logTerm(`WOL magic packet sent to ${d.mac} via ${$('netGw').textContent}`, 'ok');
-      } else if (action === 'HTTP_CHECK'){
-        logTerm(`HTTP GET http://${d.ip}/ => ${d.online ? pick(['200 OK','301','401','503']) : 'n/a'}`, d.online ? 'dim' : 'warn');
-      } else if (action === 'SNMP_GET'){
-        logTerm(`SNMP GET sysUpTime.0 => ${d.online ? rndInt(1000,999999)+' ticks' : 'timeout'}`, d.online ? 'dim' : 'warn');
+      try {
+        let res = null;
+        if (action === 'PING'){
+          res = await postJson('/api/v1/actions/ping', { ip: d.ip });
+          const metrics = state.deviceMetrics.get(d.id) || {};
+          metrics.rttMs = res.rttMs ?? null;
+          state.deviceMetrics.set(d.id, metrics);
+          logTerm(`PING ${d.ip}: ${res.ok ? `time=${res.rttMs ?? '-'}ms` : 'timeout'}`, res.ok ? 'ok' : 'warn');
+        } else if (action === 'WOL'){
+          res = await postJson('/api/v1/actions/wol', { mac: d.mac });
+          logTerm(`WOL magic packet ${res.ok ? 'sent' : 'failed'} to ${d.mac}`, res.ok ? 'ok' : 'warn');
+        } else if (action === 'HTTP_CHECK'){
+          const url = `http://${d.ip}/`;
+          res = await postJson('/api/v1/actions/http', { url });
+          const metrics = state.deviceMetrics.get(d.id) || {};
+          metrics.httpStatus = res.status ?? null;
+          state.deviceMetrics.set(d.id, metrics);
+          logTerm(`HTTP GET ${url} => ${res.status || 'n/a'}`, res.ok ? 'dim' : 'warn');
+        } else if (action === 'SNMP_GET'){
+          res = await postJson('/api/v1/actions/snmp', { ip: d.ip });
+          logTerm(`SNMP probe ${d.ip}: ${res.ok ? 'reachable' : 'no response'}`, res.ok ? 'dim' : 'warn');
+        } else if (action === 'SSH'){
+          res = await postJson('/api/v1/actions/ssh', { ip: d.ip });
+          logTerm(`SSH port ${res.ok ? 'open' : 'closed'} on ${d.ip}`, res.ok ? 'dim' : 'warn');
+        }
+
+        audit('admin', action, tgt, res && res.ok ? 'OK' : 'FAIL');
+      } catch (err) {
+        audit('admin', action, tgt, 'ERROR');
+        logTerm(`[${now()}] ACTION ${action} failed: ${err.message}`, 'bad');
       }
     }
 
-    function actOnMany(action, ids){
+    async function actOnMany(action, ids){
       const list = state.devices.filter(d => ids.includes(d.id));
       if (!list.length) return;
-      audit('admin', `BULK_${action}`, `${list.length} devices`, 'OK (SIM)');
+      audit('admin', `BULK_${action}`, `${list.length} devices`, 'REQUEST');
       logTerm(`[${now()}] BULK ${action} on ${list.length} devices`, 'ok');
-      list.forEach(d => actOnDevice(action, d));
+      for (const d of list) {
+        await actOnDevice(action, d);
+      }
     }
 
     // ==============================
@@ -1800,15 +1847,34 @@
       });
 
       $('exportBtn').addEventListener('click', () => {
-        audit('admin', 'EXPORT', 'device_inventory', 'OK (SIM)');
-        logTerm(`[${now()}] Export requested (SIM). In real life, download CSV/JSON.`, 'dim');
+        api('/api/v1/export/devices').then(data => {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `netninja_devices_${Date.now()}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          audit('admin', 'EXPORT', 'device_inventory', 'OK');
+          logTerm(`[${now()}] Export ready (JSON).`, 'ok');
+        }).catch(err => {
+          audit('admin', 'EXPORT', 'device_inventory', 'FAIL');
+          logTerm(`[${now()}] Export failed: ${err.message}`, 'bad');
+        });
       });
 
       // Discovery infer
       $('inferBtn').addEventListener('click', () => {
-        $('inferOut').textContent = `Inferred: ${$('netCidr').textContent} via DHCP`;
-        audit('admin', 'SUBNET_INFER', $('netCidr').textContent, 'OK (SIM)');
-        logTerm(`[${now()}] Subnet inference complete: ${$('netCidr').textContent}`, 'ok');
+        api('/api/v1/network/info').then(info => {
+          if (info.cidr) $('netCidr').textContent = info.cidr;
+          if (info.gateway) $('netGw').textContent = info.gateway;
+          $('inferOut').textContent = `Inferred: ${$('netCidr').textContent}`;
+          audit('admin', 'SUBNET_INFER', $('netCidr').textContent, 'OK');
+          logTerm(`[${now()}] Subnet inference complete: ${$('netCidr').textContent}`, 'ok');
+        }).catch(err => {
+          audit('admin', 'SUBNET_INFER', $('netCidr').textContent, 'FAIL');
+          logTerm(`[${now()}] Subnet inference failed: ${err.message}`, 'bad');
+        });
       });
 
       // Job controls
@@ -1848,6 +1914,8 @@
       $('bulkHttpBtn').addEventListener('click', () => actOnMany('HTTP_CHECK', selectedIds()));
       $('bulkSshBtn').addEventListener('click', () => {
         const ids = selectedIds();
+        if (!ids.length) return;
+        state.bulkSshIds = ids;
         audit('admin', 'BULK_SSH', `${ids.length} devices`, 'OPEN_MODAL');
         $('sshHost').value = `(${ids.length} targets)`;
         $('sshModal').classList.add('show');
@@ -1876,22 +1944,35 @@
       // Schedules + rules
       $('addSchedule').addEventListener('click', () => {
         const s = $('schedFreq').value;
-        state.schedules.push(`SCAN ${$('netCidr').textContent} @ ${s}`);
-        audit('admin','SCHEDULE_ADD', 'scan', s);
-        renderSchedules();
+        postJson('/api/v1/schedules', { subnet: $('netCidr').textContent, freq: s }).then(() => {
+          audit('admin','SCHEDULE_ADD', 'scan', s);
+          refreshSchedules();
+        }).catch(err => {
+          audit('admin','SCHEDULE_ADD', 'scan', 'FAIL');
+          logTerm(`[${now()}] Schedule add failed: ${err.message}`, 'bad');
+        });
       });
       $('pauseSchedules').addEventListener('click', () => {
-        audit('admin','SCHEDULE_PAUSE_ALL', 'scan', 'OK (SIM)');
-        logTerm(`[${now()}] Schedules paused (SIM).`, 'warn');
+        postJson('/api/v1/schedules/pause', {}).then(() => {
+          audit('admin','SCHEDULE_PAUSE_ALL', 'scan', 'OK');
+          logTerm(`[${now()}] Schedules paused.`, 'warn');
+        }).catch(err => {
+          audit('admin','SCHEDULE_PAUSE_ALL', 'scan', 'FAIL');
+          logTerm(`[${now()}] Schedule pause failed: ${err.message}`, 'bad');
+        });
       });
       $('addRule').addEventListener('click', () => {
         const match = $('ruleMatch').value.trim();
         const action = $('ruleAction').value;
         if (!match) return;
-        state.rules.push({ match, action });
-        $('ruleMatch').value = '';
-        audit('admin','RULE_ADD', match, action);
-        renderRules();
+        postJson('/api/v1/rules', { match, action }).then(() => {
+          $('ruleMatch').value = '';
+          audit('admin','RULE_ADD', match, action);
+          refreshRules();
+        }).catch(err => {
+          audit('admin','RULE_ADD', match, 'FAIL');
+          logTerm(`[${now()}] Rule add failed: ${err.message}`, 'bad');
+        });
       });
 
       // Terminal
@@ -1904,13 +1985,21 @@
       $('sshClose').addEventListener('click', () => $('sshModal').classList.remove('show'));
       $('sshRun').addEventListener('click', () => {
         const host = $('sshHost').value.trim();
-        const user = $('sshUser').value.trim() || 'user';
-        const cmd = $('sshCmd').value.trim() || 'echo hello';
         $('sshModal').classList.remove('show');
-
-        audit('admin','SSH_RUN', host || '(target)', 'OK (SIM)');
-        logTerm(`[${now()}] SSH ${user}@${host}: ${cmd}`, 'ok');
-        logTerm(`stdout: ${pick(['ok','done','permission denied (lol)','service active','Linux x86_64'])}`, 'dim');
+        const ids = state.bulkSshIds || [];
+        if (ids.length) {
+          state.bulkSshIds = [];
+          actOnMany('SSH', ids);
+          return;
+        }
+        if (!host) return;
+        postJson('/api/v1/actions/ssh', { ip: host }).then(res => {
+          audit('admin','SSH_RUN', host, res.ok ? 'OK' : 'FAIL');
+          logTerm(`[${now()}] SSH probe ${host}: ${res.ok ? 'open' : 'closed'}`, res.ok ? 'ok' : 'warn');
+        }).catch(err => {
+          audit('admin','SSH_RUN', host, 'ERROR');
+          logTerm(`[${now()}] SSH probe failed: ${err.message}`, 'bad');
+        });
       });
 
       // Scope changes
@@ -1966,13 +2055,21 @@
       if (cmd === 'ping'){
         const ip = args[0];
         if (!ip) return logTerm('usage: ping <ip>', 'warn');
-        logTerm(`PING ${ip}: time=${rndInt(2,45)}ms ttl=${rndInt(50,128)}`, 'ok');
+        postJson('/api/v1/actions/ping', { ip }).then(res => {
+          logTerm(`PING ${ip}: ${res.ok ? `time=${res.rttMs ?? '-'}ms` : 'timeout'}`, res.ok ? 'ok' : 'warn');
+        }).catch(err => {
+          logTerm(`PING ${ip}: ${err.message}`, 'bad');
+        });
         return;
       }
       if (cmd === 'wol'){
         const mac = args[0];
         if (!mac) return logTerm('usage: wol <mac>', 'warn');
-        logTerm(`WOL magic packet sent to ${mac}`, 'ok');
+        postJson('/api/v1/actions/wol', { mac }).then(res => {
+          logTerm(`WOL ${res.ok ? 'sent' : 'failed'} to ${mac}`, res.ok ? 'ok' : 'warn');
+        }).catch(err => {
+          logTerm(`WOL ${mac}: ${err.message}`, 'bad');
+        });
         return;
       }
       if (cmd === 'select'){

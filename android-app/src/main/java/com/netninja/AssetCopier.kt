@@ -8,6 +8,14 @@ object AssetCopier {
   fun copyDir(ctx: Context, assetDir: String, outDir: File) {
     val am = ctx.assets
     val list = am.list(assetDir) ?: return
+    val assetNames = list.toSet()
+    val existing = outDir.listFiles().orEmpty()
+    for (file in existing) {
+      if (!assetNames.contains(file.name)) {
+        file.deleteRecursively()
+      }
+    }
+
     for (name in list) {
       val child = if (assetDir.isEmpty()) name else "$assetDir/$name"
       val out = File(outDir, name)
@@ -16,10 +24,8 @@ object AssetCopier {
         out.mkdirs()
         copyDir(ctx, child, out)
       } else {
-        if (!out.exists() || out.length() == 0L) {
-          am.open(child).use { input ->
-            out.outputStream().use { output -> input.copyTo(output) }
-          }
+        am.open(child).use { input ->
+          out.outputStream().use { output -> input.copyTo(output) }
         }
       }
     }

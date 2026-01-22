@@ -11,3 +11,6 @@
 - [x] Fix escaped HTML attributes breaking layout
 - [x] Remove global neon button CSS from mobile page
 - [x] Wire SCAN to real engine endpoint (live-only) with data badge
+- [x] Force asset sync from APK on launch to prevent stale dashboards
+- [x] Add WebView cache hardening to avoid stale UI
+- [x] Probe local server readiness before loading WebView
