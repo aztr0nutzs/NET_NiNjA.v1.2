@@ -1,0 +1,29 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.netninja.test" >
+4
+5    <uses-sdk
+5-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:5:5-74
+6        android:minSdkVersion="26"
+6-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:5:15-41
+7        android:targetSdkVersion="34" />
+7-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:5:42-71
+8
+9    <instrumentation
+9-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:7:5-11:62
+10        android:name="androidx.test.runner.AndroidJUnitRunner"
+10-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:7:22-76
+11        android:functionalTest="false"
+11-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:10:22-52
+12        android:handleProfiling="false"
+12-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:9:22-53
+13        android:label="Tests for com.netninja"
+13-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:11:22-60
+14        android:targetPackage="com.netninja" />
+14-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14133274127593814443.xml:8:22-58
+15
+16    <application
+17        android:debuggable="true"
+18        android:extractNativeLibs="false" />
+19
+20</manifest>

@@ -1,0 +1,27 @@
+
+package com.netninja
+
+import android.content.Context
+import java.io.File
+
+object AssetCopier {
+  fun copyDir(ctx: Context, assetDir: String, outDir: File) {
+    val am = ctx.assets
+    val list = am.list(assetDir) ?: return
+    for (name in list) {
+      val child = if (assetDir.isEmpty()) name else "$assetDir/$name"
+      val out = File(outDir, name)
+      val sub = am.list(child)
+      if (sub != null && sub.isNotEmpty()) {
+        out.mkdirs()
+        copyDir(ctx, child, out)
+      } else {
+        if (!out.exists() || out.length() == 0L) {
+          am.open(child).use { input ->
+            out.outputStream().use { output -> input.copyTo(output) }
+          }
+        }
+      }
+    }
+  }
+}

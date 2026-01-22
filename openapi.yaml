@@ -1,0 +1,69 @@
+
+openapi: 3.0.3
+info:
+  title: Net-Ninja Local API
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8787
+paths:
+  /api/v1/system/info:
+    get:
+      summary: System info
+      responses:
+        '200': { description: OK }
+  /api/v1/discovery/scan:
+    post:
+      summary: Start scan
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subnet: { type: string, nullable: true }
+                timeoutMs: { type: integer, nullable: true }
+      responses:
+        '200': { description: Scan results }
+  /api/v1/discovery/results:
+    get:
+      summary: Scan results
+      responses:
+        '200': { description: Device list }
+  /api/v1/devices/{id}:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Device }
+  /api/v1/devices/{id}/history:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Device history }
+  /api/v1/devices/{id}/uptime:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Uptime }
+  /api/v1/export/devices:
+    get:
+      summary: Export devices
+      responses:
+        '200': { description: Export }
+  /api/v1/logs/stream:
+    get:
+      summary: SSE log stream
+      responses:
+        '200': { description: Stream }

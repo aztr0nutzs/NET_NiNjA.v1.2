@@ -1,0 +1,82 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.netninja.app"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="34" />
+10
+11    <permission
+11-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+12        android:name="com.example.netninja.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+12-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+13        android:protectionLevel="signature" />
+13-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+14
+15    <uses-permission android:name="com.example.netninja.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+15-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+15-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+16
+17    <application
+17-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:5:6-20:19
+18        android:allowBackup="true"
+18-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:6:9-35
+19        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+19-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+20        android:debuggable="true"
+21        android:extractNativeLibs="false"
+22        android:icon="@mipmap/ic_launcher"
+22-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:7:9-43
+23        android:label="@string/app_name"
+23-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:8:9-41
+24        android:roundIcon="@mipmap/ic_launcher_round"
+24-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:9:9-54
+25        android:supportsRtl="true"
+25-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:10:9-35
+26        android:testOnly="true"
+27        android:theme="@style/Theme.NET_NiNjA" >
+27-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:11:9-47
+28        <activity
+28-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:12:9-19:20
+29            android:name="com.example.netninja.app.MainActivity"
+29-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:13:13-41
+30            android:exported="true" >
+30-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:14:13-36
+31            <intent-filter>
+31-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:15:13-18:29
+32                <action android:name="android.intent.action.MAIN" />
+32-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:16:17-69
+32-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:16:25-66
+33
+34                <category android:name="android.intent.category.LAUNCHER" />
+34-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:17:17-77
+34-->/home/aztr0nutzs/Desktop/NET_NiNjA/app/src/main/AndroidManifest.xml:17:27-74
+35            </intent-filter>
+36        </activity>
+37
+38        <provider
+38-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+39            android:name="androidx.startup.InitializationProvider"
+39-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:25:13-67
+40            android:authorities="com.example.netninja.app.androidx-startup"
+40-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:26:13-68
+41            android:exported="false" >
+41-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:27:13-37
+42            <meta-data
+42-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+43                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+43-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:30:17-75
+44                android:value="androidx.startup" />
+44-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:31:17-49
+45            <meta-data
+45-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/4d91f9528052ca2111987ad0bd8cf837/transformed/lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
+46                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+46-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/4d91f9528052ca2111987ad0bd8cf837/transformed/lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78
+47                android:value="androidx.startup" />
+47-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/4d91f9528052ca2111987ad0bd8cf837/transformed/lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
+48        </provider>
+49    </application>
+50
+51</manifest>

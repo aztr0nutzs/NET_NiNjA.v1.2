@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.example.netninja.app-debug-21:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.example.netninja.app-main-23:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.example.netninja.app-debug-21:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.example.netninja.app-main-23:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.netninja.app-debug-21:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.example.netninja.app-main-23:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.example.netninja.app-debug-21:/layout_activity_main.xml.flat",
+        "source": "com.example.netninja.app-main-23:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.netninja.app-debug-21:/mipmap-xxxhdpi_ic_launcher_foreground.xml.flat",
+        "source": "com.example.netninja.app-main-23:/mipmap-xxxhdpi/ic_launcher_foreground.xml"
+    }
+]

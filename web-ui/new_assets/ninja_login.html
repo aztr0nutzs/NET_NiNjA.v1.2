@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NEON-NOC // Secure Login</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-deep:#05060a;
+      --panel: rgba(10, 16, 28, 0.82);
+      --panel-border: rgba(0, 240, 255, 0.35);
+      --neon-cyan:#00f0ff;
+      --neon-pink:#e562c0;
+      --neon-purple:#b967ff;
+      --text-dim: rgba(210,225,240,0.7);
+      --ok: #0cfa77;
+      --bad: #ef4444;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    *{ box-sizing:border-box; }
+    html, body{ width:100%; height:100%; }
+    body{
+      margin:0;
+      font-family: "Share Tech Mono", monospace;
+      color:#e6f1ff;
+      background: radial-gradient(circle at 20% 20%, rgba(0,240,255,0.08), transparent 45%),
+                  radial-gradient(circle at 80% 10%, rgba(229,98,192,0.08), transparent 45%),
+                  linear-gradient(180deg, #02030a 0%, #05060a 100%);
+      overflow:hidden;
+      position:relative;
+    }
+
+    /* Matrix rain canvas */
+    #matrix-cvs{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      opacity:0.35;
+      pointer-events:none;
+    }
+
+    /* Scanline + glitch overlay */
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:2;
+      background:
+        linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.35) 50%),
+        linear-gradient(90deg, rgba(0,240,255,0.08), rgba(229,98,192,0.06), rgba(185,103,255,0.08));
+      background-size: 100% 2px, 3px 100%;
+      animation: flicker .15s infinite;
+      opacity:.6;
+    }
+    @keyframes flicker{
+      0% { opacity: 0.2; } 20% { opacity: 0.85; } 40% { opacity: 0.35; }
+      60% { opacity: 0.95; } 80% { opacity: 0.30; } 100% { opacity: 0.6; }
+    }
+
+    .app{
+      position:relative;
+      z-index:3;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      padding: clamp(12px, 2vh, 18px);
+      padding-top: calc(clamp(12px, 2vh, 18px) + var(--safe-top));
+      padding-bottom: calc(clamp(12px, 2vh, 18px) + var(--safe-bottom));
+      gap:16px;
+    }
+
+    .boot-header{
+      position:relative;
+      height: clamp(140px, 26vh, 220px);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      overflow:hidden;
+      box-shadow: 0 0 24px rgba(0,240,255,0.25);
+      background:#04080f;
+    }
+    .boot-header iframe{
+      border:0;
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .panel{
+      flex:1;
+      max-width: 980px;
+      margin: 0 auto;
+      width:100%;
+      background: var(--panel);
+      border:1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: clamp(20px, 4vw, 32px);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 0 40px rgba(0,240,255,0.12);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .panel::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(120deg, rgba(0,240,255,0.05) 0%, transparent 45%),
+        repeating-linear-gradient(0deg, rgba(0,240,255,0.15) 0 1px, transparent 1px 26px);
+      opacity:0.4;
+      pointer-events:none;
+    }
+
+    .panel-inner{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap:18px;
+    }
+
+    .title{
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 12px rgba(0,240,255,0.7);
+      margin:0;
+      position:relative;
+    }
+
+    .title.glitch::before,
+    .title.glitch::after{
+      content: attr(data-text);
+      position:absolute;
+      left:0;
+      top:0;
+      opacity:0.8;
+    }
+    .title.glitch::before{
+      color: var(--neon-pink);
+      transform: translate(2px, -1px);
+      animation: glitch1 2.2s infinite;
+    }
+    .title.glitch::after{
+      color: var(--neon-purple);
+      transform: translate(-2px, 1px);
+      animation: glitch2 1.8s infinite;
+    }
+    @keyframes glitch1{
+      0%, 100%{ clip-path: inset(0 0 0 0); }
+      20%{ clip-path: inset(10% 0 70% 0); }
+      40%{ clip-path: inset(35% 0 40% 0); }
+      60%{ clip-path: inset(60% 0 25% 0); }
+      80%{ clip-path: inset(5% 0 85% 0); }
+    }
+    @keyframes glitch2{
+      0%, 100%{ clip-path: inset(0 0 0 0); }
+      20%{ clip-path: inset(65% 0 15% 0); }
+      50%{ clip-path: inset(20% 0 55% 0); }
+      70%{ clip-path: inset(45% 0 30% 0); }
+      90%{ clip-path: inset(8% 0 80% 0); }
+    }
+
+    .subtitle{
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .login-grid{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap:16px;
+    }
+
+    .input-group{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    label{
+      font-size:0.75rem;
+      letter-spacing:2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    input{
+      background: rgba(0,0,0,0.35);
+      border:1px solid rgba(255,255,255,0.12);
+      color:#fff;
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-family: "Orbitron", sans-serif;
+      letter-spacing: 1px;
+      outline:none;
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    input:focus{
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 14px rgba(0,240,255,0.25);
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:0.8rem;
+      color: var(--text-dim);
+      cursor:pointer;
+      user-select:none;
+    }
+    .toggle input{
+      accent-color: var(--neon-cyan);
+    }
+
+    .actions{
+      display:flex;
+      gap:12px;
+    }
+
+    .btn{
+      flex:1;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border:1px solid var(--panel-border);
+      font-family: "Orbitron", sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor:pointer;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+      background: rgba(0,0,0,0.35);
+      color:#e6f1ff;
+    }
+    .btn-primary{
+      background: linear-gradient(120deg, rgba(0,240,255,0.25), rgba(185,103,255,0.2));
+      box-shadow: 0 0 18px rgba(0,240,255,0.25);
+    }
+    .btn-primary:hover{ transform: translateY(-1px); }
+
+    .btn-secondary:hover{ box-shadow: 0 0 18px rgba(229,98,192,0.3); }
+
+    .status{
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size:0.8rem;
+      letter-spacing: 1px;
+      background: rgba(0,0,0,0.35);
+      border:1px solid rgba(255,255,255,0.08);
+      color: var(--text-dim);
+      min-height: 38px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .status span{ color: var(--neon-cyan); }
+
+    .logo-row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .logo-row img{
+      width:42px;
+      height:42px;
+      filter: drop-shadow(0 0 8px rgba(0,240,255,0.5));
+    }
+
+    .hint{
+      font-size:0.75rem;
+      color: var(--text-dim);
+      letter-spacing:1px;
+    }
+
+    .init-layer{
+      position:fixed;
+      inset:0;
+      background: rgba(4,6,12,0.96);
+      z-index:999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap:18px;
+      transition: opacity .6s ease;
+    }
+    .init-layer.fade-out{ opacity:0; pointer-events:none; }
+
+    .loader-ring{
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top: 4px solid var(--neon-cyan);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    .init-text{
+      font-family: "Orbitron", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 12px rgba(0,240,255,0.65);
+    }
+
+    @media (min-width: 900px){
+      .panel-inner{ grid-template-columns: 1.3fr 1fr; align-items:center; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrix-cvs"></canvas>
+
+  <div class="init-layer" id="initLayer">
+    <div class="loader-ring"></div>
+    <div class="init-text">Initializing NEON-NOC</div>
+    <div class="hint">Tap to continue</div>
+  </div>
+
+  <div class="app">
+    <div class="boot-header" aria-hidden="true">
+      <iframe title="NEON-NOC Boot Header" src="ninja_boot.html"></iframe>
+    </div>
+
+    <section class="panel">
+      <div class="panel-inner">
+        <div>
+          <div class="logo-row">
+            <img src="ninja_icon.png" alt="Net Ninja" />
+            <div>
+              <h1 class="title glitch" data-text="NEON-NOC">NEON-NOC</h1>
+              <div class="subtitle">Secure Operations Console</div>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:12px;">
+            Authenticate to access the live network operations dashboard.
+          </p>
+        </div>
+
+        <div class="login-grid">
+          <div class="input-group">
+            <label for="username">Operator ID</label>
+            <input id="username" type="text" autocomplete="username" placeholder="ninja" />
+          </div>
+          <div class="input-group">
+            <label for="password">Access Key</label>
+            <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+          </div>
+          <div class="row">
+            <label class="toggle"><input id="remember" type="checkbox" />Remember device</label>
+            <label class="toggle"><input id="showPass" type="checkbox" />Show key</label>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="loginBtn">Authenticate</button>
+            <button class="btn btn-secondary" id="clearBtn">Clear</button>
+          </div>
+          <div class="status" id="statusBox">
+            <div>Status:</div>
+            <span id="statusText">Awaiting credentials</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const els = {
+      initLayer: document.getElementById("initLayer"),
+      loginBtn: document.getElementById("loginBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      username: document.getElementById("username"),
+      password: document.getElementById("password"),
+      remember: document.getElementById("remember"),
+      showPass: document.getElementById("showPass"),
+      statusText: document.getElementById("statusText")
+    };
+
+    function setStatus(text, ok = false) {
+      els.statusText.textContent = text;
+      els.statusText.style.color = ok ? "var(--ok)" : "var(--neon-cyan)";
+    }
+
+    function clearForm(){
+      els.username.value = "";
+      els.password.value = "";
+      els.remember.checked = false;
+      setStatus("Awaiting credentials");
+      els.username.focus();
+    }
+
+    const API_BASE = (() => {
+      try {
+        if (location && location.origin && location.origin !== "null") return location.origin;
+      } catch (_) {}
+      return "http://127.0.0.1:8787";
+    })();
+
+    async function postJson(path, body) {
+      const res = await fetch(API_BASE + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body ?? {})
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const ct = res.headers.get("content-type") || "";
+      return ct.includes("application/json") ? res.json() : res.text();
+    }
+
+    async function handleLogin(){
+      const user = els.username.value.trim();
+      const pass = els.password.value;
+      if (!user || !pass) {
+        setStatus("Missing credentials", false);
+        els.statusText.style.color = "var(--bad)";
+        return;
+      }
+      try {
+        const res = await postJson("/api/v1/auth/login", { username: user, password: pass });
+        if (!res.ok) throw new Error("Unauthorized");
+        setStatus("Access granted", true);
+        localStorage.setItem("nn_token", res.token || "local");
+        if (els.remember.checked) {
+          localStorage.setItem("nn_user", user);
+        } else {
+          localStorage.removeItem("nn_user");
+        }
+        setTimeout(() => {
+          window.location.href = "ninja_mobile.html";
+        }, 450);
+      } catch (_) {
+        setStatus("Invalid credentials", false);
+        els.statusText.style.color = "var(--bad)";
+      }
+    }
+
+    els.showPass.addEventListener("change", () => {
+      els.password.type = els.showPass.checked ? "text" : "password";
+    });
+
+    els.loginBtn.addEventListener("click", handleLogin);
+    els.clearBtn.addEventListener("click", clearForm);
+
+    els.password.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+    els.username.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    const savedUser = localStorage.getItem("nn_user");
+    if (savedUser) {
+      els.username.value = savedUser;
+      els.remember.checked = true;
+      setStatus("Welcome back", true);
+    }
+
+    function hideInit(){
+      els.initLayer.classList.add("fade-out");
+    }
+
+    els.initLayer.addEventListener("click", hideInit);
+    setTimeout(hideInit, 1600);
+
+    const canvas = document.getElementById("matrix-cvs");
+    const ctx = canvas.getContext("2d");
+    const glyphs = "01NINJA";
+    let columns = [];
+
+    function resizeMatrix(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const cols = Math.floor(canvas.width / 18);
+      columns = new Array(cols).fill(0).map(() => Math.random() * canvas.height);
+    }
+
+    function drawMatrix(){
+      ctx.fillStyle = "rgba(5,6,10,0.2)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(0, 240, 255, 0.7)";
+      ctx.font = "16px Share Tech Mono";
+      columns.forEach((y, i) => {
+        const text = glyphs[Math.floor(Math.random() * glyphs.length)];
+        ctx.fillText(text, i * 18, y);
+        columns[i] = y > canvas.height ? 0 : y + 18;
+      });
+    }
+
+    window.addEventListener("resize", resizeMatrix);
+    resizeMatrix();
+    setInterval(drawMatrix, 60);
+  </script>
+</body>
+</html>
