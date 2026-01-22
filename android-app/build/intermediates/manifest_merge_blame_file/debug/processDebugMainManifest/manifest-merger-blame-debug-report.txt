@@ -1,0 +1,101 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.netninja.debug"
+4    android:versionCode="1"
+5    android:versionName="1.0.0-debug" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:5:5-67
+11-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:6:5-79
+12-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:6:22-76
+13    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+13-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:7:5-76
+13-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:7:22-73
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+14-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:8:5-77
+14-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:8:22-74
+15
+16    <permission
+16-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+17        android:name="com.netninja.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+17-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+18        android:protectionLevel="signature" />
+18-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+19
+20    <uses-permission android:name="com.netninja.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+20-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+20-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+21
+22    <application
+22-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:10:5-28:19
+23        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+23-->[androidx.core:core:1.12.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/f53075579b791e090224bf1e3f32fe63/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+24        android:debuggable="true"
+25        android:extractNativeLibs="false"
+26        android:icon="@mipmap/ic_launcher"
+26-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:12:9-43
+27        android:label="@string/app_name"
+27-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:11:9-41
+28        android:networkSecurityConfig="@xml/network_security_config"
+28-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:15:9-69
+29        android:roundIcon="@mipmap/ic_launcher_round"
+29-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:13:9-54
+30        android:theme="@style/Theme.NetNinja"
+30-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:16:9-46
+31        android:usesCleartextTraffic="true" >
+31-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:14:9-44
+32        <activity
+32-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:17:9-24:20
+33            android:name="com.netninja.MainActivity"
+33-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:18:13-41
+34            android:exported="true" >
+34-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:19:13-36
+35            <intent-filter>
+35-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:20:13-23:29
+36                <action android:name="android.intent.action.MAIN" />
+36-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:21:17-69
+36-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:21:25-66
+37
+38                <category android:name="android.intent.category.LAUNCHER" />
+38-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:22:17-77
+38-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:22:27-74
+39            </intent-filter>
+40        </activity>
+41
+42        <service
+42-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:25:9-27:40
+43            android:name="com.netninja.EngineService"
+43-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:26:13-42
+44            android:exported="false" />
+44-->/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/src/main/AndroidManifest.xml:27:13-37
+45
+46        <provider
+46-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+47            android:name="androidx.startup.InitializationProvider"
+47-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:25:13-67
+48            android:authorities="com.netninja.debug.androidx-startup"
+48-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:26:13-68
+49            android:exported="false" >
+49-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:27:13-37
+50            <meta-data
+50-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+51                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+51-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:30:17-75
+52                android:value="androidx.startup" />
+52-->[androidx.emoji2:emoji2:1.2.0] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/1a36617f74fc53c023b34edd5d01a587/transformed/emoji2-1.2.0/AndroidManifest.xml:31:17-49
+53            <meta-data
+53-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/4d91f9528052ca2111987ad0bd8cf837/transformed/lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
+54                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+54-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/4d91f9528052ca2111987ad0bd8cf837/transformed/lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78
+55                android:value="androidx.startup" />
+55-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/aztr0nutzs/.gradle/caches/9.2.1/transforms/4d91f9528052ca2111987ad0bd8cf837/transformed/lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
+56        </provider>
+57    </application>
+58
+59</manifest>

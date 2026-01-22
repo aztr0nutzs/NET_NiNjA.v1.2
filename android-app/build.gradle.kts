@@ -24,6 +24,9 @@ android {
     }
     debug {
       isMinifyEnabled = false
+      // Avoid install/update conflicts with an existing release or differently-signed package.
+      applicationIdSuffix = ".debug"
+      versionNameSuffix = "-debug"
     }
   }
 

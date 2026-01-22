@@ -28,3 +28,8 @@
 ## Verification
 - Manual checks: Launch app, verify WebView loads `ninja_mobile.html` and stays open.
 - Smoke tests: Not run (manual only).
+
+## Update: Login Auth + Theme
+- User-visible symptom: Login shows "Invalid credentials" even with correct creds; login screen background appears blue instead of black.
+- Root cause: Login UI treated any fetch failure as invalid credentials; matrix/scanline palette used cyan/pink.
+- Fix: Ping local engine before login, separate offline vs unauthorized states, and switch login background/matrix to black + purple.

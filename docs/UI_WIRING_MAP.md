@@ -2,12 +2,12 @@
 
 ## Entry Points
 - Android entry: `com.netninja.MainActivity`
-- WebView URL: `http://127.0.0.1:8787/ui/ninja_mobile.html`
+- WebView URL: `file:///android_asset/web-ui/new_assets/ninja_login.html` (bootstrap) then `http://127.0.0.1:8787/ui/new_assets/ninja_login.html`
 
 ## Assets
 - Source assets: `web-ui/`
 - Packaged assets: `android-app/src/main/assets/web-ui`
-- Served by: `AndroidLocalServer` at `/ui`
+- Served by: `AndroidLocalServer` at `/ui` (login + dashboard)
 
 ## JS/CSS Bundles
 - `web-ui/ninja_mobile.html` includes JS/CSS from `web-ui/`

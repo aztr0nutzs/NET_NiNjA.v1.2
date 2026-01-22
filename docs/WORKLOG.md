@@ -16,3 +16,5 @@
 - Loaded the login screen from `new_assets` before entering the dashboard.
 - Restyled the login page to a blacked-out theme and removed the extra init overlay.
 - Added an asset-based login bootstrap to avoid black screens while the local server starts.
+- Separated login auth failures from engine-offline conditions to avoid false invalid-credential errors.
+- Shifted login visuals to a black background with purple matrix rain.

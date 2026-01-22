@@ -1,0 +1,2145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NEON-NOC // Mobile Enhanced</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <style>
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap");
+
+:root {
+--border-color: #1482cf;
+--bg-color: #113f59;
+--neon-pink: #e562c0;
+--neon-cyan: #00f0ff;
+--neon-yellow: #fff35c;
+--neon-purple: #b967ff;
+--dark-bg: #0a0b10;
+--console-green: #0cfa77;
+--alt-color-v: linear-gradient(
+180deg,
+rgba(229, 98, 192, 1) 0%,
+rgba(229, 98, 192, 1) 4%,
+rgba(255, 255, 255, 0) 5%,
+rgba(255, 255, 255, 0) 9%,
+rgba(229, 98, 192, 1) 10%,
+rgba(229, 98, 192, 1) 14%,
+rgba(255, 255, 255, 0) 15%,
+rgba(255, 255, 255, 0) 19%,
+rgba(229, 98, 192, 1) 20%,
+rgba(229, 98, 192, 1) 24%,
+rgba(255, 255, 255, 0) 25%,
+rgba(255, 255, 255, 0) 29%,
+rgba(229, 98, 192, 1) 30%,
+rgba(229, 98, 192, 1) 34%,
+rgba(255, 255, 255, 0) 35%,
+rgba(255, 255, 255, 0) 39%,
+rgba(229, 98, 192, 1) 40%,
+rgba(229, 98, 192, 1) 44%,
+rgba(255, 255, 255, 0) 45%,
+rgba(255, 255, 255, 0) 49%,
+rgba(229, 98, 192, 1) 50%,
+rgba(229, 98, 192, 1) 54%,
+rgba(255, 255, 255, 0) 55%,
+rgba(255, 255, 255, 0) 59%,
+rgba(229, 98, 192, 1) 60%,
+rgba(229, 98, 192, 1) 64%,
+rgba(255, 255, 255, 0) 65%,
+rgba(255, 255, 255, 0) 69%,
+rgba(229, 98, 192, 1) 70%,
+rgba(229, 98, 192, 1) 74%,
+rgba(255, 255, 255, 0) 75%,
+rgba(255, 255, 255, 0) 79%,
+rgba(229, 98, 192, 1) 80%,
+rgba(229, 98, 192, 1) 84%,
+rgba(255, 255, 255, 0) 85%,
+rgba(255, 255, 255, 0) 89%,
+rgba(229, 98, 192, 1) 90%,
+rgba(229, 98, 192, 1) 94%,
+rgba(255, 255, 255, 0) 95%,
+rgba(255, 255, 255, 0) 99%,
+rgba(229, 98, 192, 1) 100%
+);
+--alt-color-h: linear-gradient(
+90deg,
+rgba(229, 98, 192, 1) 0%,
+rgba(229, 98, 192, 1) 4%,
+rgba(255, 255, 255, 0) 5%,
+rgba(255, 255, 255, 0) 9%,
+rgba(229, 98, 192, 1) 10%,
+rgba(229, 98, 192, 1) 14%,
+rgba(255, 255, 255, 0) 15%,
+rgba(255, 255, 255, 0) 19%,
+rgba(229, 98, 192, 1) 20%,
+rgba(229, 98, 192, 1) 24%,
+rgba(255, 255, 255, 0) 25%,
+rgba(255, 255, 255, 0) 29%,
+rgba(229, 98, 192, 1) 30%,
+rgba(229, 98, 192, 1) 34%,
+rgba(255, 255, 255, 0) 35%,
+rgba(255, 255, 255, 0) 39%,
+rgba(229, 98, 192, 1) 40%,
+rgba(229, 98, 192, 1) 44%,
+rgba(255, 255, 255, 0) 45%,
+rgba(255, 255, 255, 0) 49%,
+rgba(229, 98, 192, 1) 50%,
+rgba(229, 98, 192, 1) 54%,
+rgba(255, 255, 255, 0) 55%,
+rgba(255, 255, 255, 0) 59%,
+rgba(229, 98, 192, 1) 60%,
+rgba(229, 98, 192, 1) 64%,
+rgba(255, 255, 255, 0) 65%,
+rgba(255, 255, 255, 0) 69%,
+rgba(229, 98, 192, 1) 70%,
+rgba(229, 98, 192, 1) 74%,
+rgba(255, 255, 255, 0) 75%,
+rgba(255, 255, 255, 0) 79%,
+rgba(229, 98, 192, 1) 80%,
+rgba(229, 98, 192, 1) 84%,
+rgba(255, 255, 255, 0) 85%,
+rgba(255, 255, 255, 0) 89%,
+rgba(229, 98, 192, 1) 90%,
+rgba(229, 98, 192, 1) 94%,
+rgba(255, 255, 255, 0) 95%,
+rgba(255, 255, 255, 0) 99%,
+rgba(229, 98, 192, 1) 100%
+);
+--nav-size: 4rem;
+--grid-size: 20px;
+}
+
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+font-family: "Share Tech Mono", monospace;
+}
+
+body {
+background: linear-gradient(
+0deg,
+rgba(0, 0, 0, 1) 0%,
+rgba(10, 32, 43, 1) 100%
+);
+width: 100dvw;
+height: auto;
+margin: 0;
+padding: 0;
+gap: 20px;
+overflow-x: hidden;
+overflow-y: auto;
+color: white;
+position: relative;
+}
+
+body::before {
+content: "";
+position: fixed;
+top: 0;
+left: 0;
+width: 100dvw;
+height: 100dvh;
+opacity: 0.7;
+background-image: linear-gradient(rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0, 240, 255, 0.08) 1px, transparent 1px);
+background-size: var(--grid-size) var(--grid-size);
+z-index: -1;
+}
+
+body::after {
+content: "";
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10h80v80H10z' fill='none' stroke='%231482cf44' stroke-width='1'/%3E%3Cpath d='M30 10v30h30' fill='none' stroke='%231482cf44' stroke-width='1'/%3E%3Cpath d='M70 30v40h-40' fill='none' stroke='%231482cf44' stroke-width='1'/%3E%3Ccircle cx='30' cy='30' r='3' fill='%231482cf33'/%3E%3Ccircle cx='70' cy='70' r='3' fill='%231482cf33'/%3E%3Ccircle cx='70' cy='30' r='3' fill='%231482cf33'/%3E%3Ccircle cx='30' cy='70' r='3' fill='%231482cf33'/%3E%3C/svg%3E");
+opacity: 0.2;
+z-index: -2;
+animation: pcbPulse 3s infinite alternate;
+transition: all 1s ease;
+}
+
+@keyframes pcbPulse {
+from {
+opacity: 0.2;
+}
+to {
+opacity: 0.8;
+}
+}
+
+.vContainer {
+position: fixed;
+top: calc(var(--nav-size) + 10px);
+right: 0;
+height: calc(100dvh - var(--nav-size) - 10px);
+width: 200px;
+overflow: hidden;
+}
+
+.vCard {
+height: calc(96% - 10px);
+width: calc(100% - 10px);
+position: absolute;
+left: 5px;
+top: 5px;
+background: var(--bg-color);
+clip-path: polygon(
+20% 0,
+10% 5%,
+10% 35%,
+0 40%,
+0 95%,
+10% 100%,
+100% 100%,
+100% 0
+);
+z-index: 2;
+box-shadow: inset 0 0 15px rgba(20, 130, 207, 0.5);
+border: 1px solid rgba(20, 130, 207, 0.3);
+padding: 15px 10px;
+overflow: hidden;
+position: relative;
+}
+
+.vCard::before {
+content: "";
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: linear-gradient(
+135deg,
+transparent 25%,
+rgba(20, 130, 207, 0.1) 25%,
+rgba(20, 130, 207, 0.1) 50%,
+transparent 50%,
+transparent 75%,
+rgba(20, 130, 207, 0.1) 75%
+);
+background-size: 10px 10px;
+opacity: 0.5;
+}
+
+.system-status {
+position: relative;
+z-index: 5;
+font-size: 0.8rem;
+}
+
+.status-title {
+font-family: "Orbitron", sans-serif;
+font-weight: 700;
+color: var(--neon-cyan);
+text-shadow: 0 0 5px var(--neon-cyan);
+margin-bottom: 10px;
+text-transform: uppercase;
+letter-spacing: 1px;
+font-size: 1rem;
+text-align: end;
+}
+
+.status-item {
+margin-bottom: 8px;
+position: relative;
+padding-left: 12px;
+}
+
+.status-item::before {
+content: ">";
+position: absolute;
+left: 0;
+color: var(--neon-pink);
+}
+
+.status-value {
+float: right;
+color: var(--console-green);
+}
+
+.status-bar {
+height: 4px;
+width: 100%;
+background: rgba(255, 255, 255, 0.1);
+margin-top: 4px;
+position: relative;
+overflow: hidden;
+}
+
+.status-bar-fill {
+position: absolute;
+height: 100%;
+width: 70%;
+background: var(--neon-cyan);
+animation: pulse 2s infinite alternate;
+}
+
+.status-bar-fill.warning {
+background: var(--neon-yellow);
+width: 45%;
+}
+
+.status-bar-fill.danger {
+background: var(--neon-pink);
+width: 15%;
+}
+
+@keyframes pulse {
+from {
+box-shadow: 0 0 0.4em var(--neon-cyan);
+}
+to {
+box-shadow: 0 0 1.1em var(--neon-cyan);
+}
+}
+
+.vCardBorder {
+height: 96%;
+width: 100%;
+position: absolute;
+left: 0;
+top: 0;
+background: var(--border-color);
+clip-path: polygon(
+20% 0,
+10% 5%,
+10% 35%,
+0 40%,
+0 95%,
+10% 100%,
+100% 100%,
+100% 0
+);
+z-index: 1;
+animation: borderGlow 0.5s infinite alternate;
+}
+
+@keyframes borderGlow {
+from {
+box-shadow: 0 0 0.2em var(--border-color);
+}
+to {
+box-shadow: 0 0 2em var(--border-color);
+}
+}
+
+.vBottom {
+position: absolute;
+height: calc(4% + 1px);
+width: 50%;
+background-color: var(--border-color);
+bottom: 0;
+left: 30%;
+clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+}
+
+.vLeft {
+background: var(--alt-color-v);
+position: absolute;
+height: 28%;
+width: 7%;
+top: 7%;
+left: 1.5%;
+transform: skewY(-40deg);
+animation: neonFlicker 5s infinite;
+}
+
+@keyframes neonFlicker {
+0%,
+19.999%,
+22%,
+62.999%,
+64%,
+64.999%,
+70%,
+100% {
+opacity: 0.99;
+filter: brightness(1);
+}
+20%,
+21.999%,
+63%,
+63.999%,
+65%,
+69.999% {
+opacity: 0.4;
+filter: brightness(0.3);
+}
+}
+
+.vRight {
+background: var(--bg-color);
+border: 5px solid var(--border-color);
+position: absolute;
+height: 28%;
+width: 7%;
+top: -15px;
+right: 0;
+transform: skewY(40deg);
+z-index: 300;
+}
+
+.correction {
+background: var(--bg-color);
+border: 5px solid var(--border-color);
+position: absolute;
+height: 10px;
+width: 100%;
+top: 8px;
+right: 0;
+transform: skewY(-40deg);
+z-index: 301;
+}
+
+.content {
+position: relative;
+top: calc(var(--nav-size) + 10px);
+left: 0;
+height: calc(100dvh - var(--nav-size) - 10px);
+max-height: calc(100dvh - var(--nav-size) - 10px);
+width: calc(100dvw - 220px);
+max-width: calc(100dvw - 220px);
+flex-wrap: wrap;
+flex-shrink: 1;
+display: flex;
+gap: 15px;
+justify-content: center;
+align-items: center;
+padding: 20px;
+}
+
+.hContainer {
+position: relative;
+height: 10em;
+width: 20em;
+overflow: hidden;
+transition: transform 0.3s ease;
+}
+
+.hContainer:hover {
+transform: translateY(-5px);
+z-index: 10;
+}
+
+.hCard {
+height: calc(100% - 10px);
+width: calc(100% - 10px);
+position: absolute;
+left: 5px;
+top: 5px;
+clip-path: polygon(
+0 0,
+0 100%,
+25% 100%,
+30% 90%,
+50% 90%,
+55% 100%,
+100% 100%,
+100% 20%,
+70% 20%,
+65% 0
+);
+z-index: 2;
+box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.3);
+backdrop-filter: blur(5px);
+padding: 10px;
+border: 1px solid rgba(20, 130, 207, 0.3);
+display: flex;
+flex-direction: column;
+color: white;
+}
+
+.glassmorphism {
+background: rgba(17, 63, 89, 0.25);
+backdrop-filter: blur(2px);
+border: 1px solid rgba(255, 240, 255, 0.1);
+box-shadow: 0 8px 32px 0 rgba(0, 240, 255, 0.15);
+}
+
+.card-title {
+font-family: "Orbitron", sans-serif;
+text-transform: uppercase;
+font-size: 0.8rem;
+color: var(--neon-cyan);
+margin-bottom: 5px;
+letter-spacing: 1px;
+text-shadow: 0 0 5px var(--neon-cyan);
+}
+
+.card-value {
+font-size: 1.2rem;
+color: white;
+margin-bottom: 10px;
+}
+
+.card-chart {
+flex: 1;
+display: flex;
+align-items: flex-end;
+gap: 3px;
+padding-top: 5px;
+}
+
+.chart-bar {
+flex: 1;
+background: var(--neon-cyan);
+transition: height 0.5s ease;
+position: relative;
+}
+
+.chart-bar::after {
+content: "";
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: linear-gradient(to top, rgba(255, 255, 255, 0.3), transparent);
+}
+
+.chart-bar:nth-child(1) {
+height: 40%;
+animation: barHeight 8s infinite alternate;
+}
+
+.chart-bar:nth-child(2) {
+height: 70%;
+animation: barHeight 7s infinite alternate-reverse;
+}
+
+.chart-bar:nth-child(3) {
+height: 30%;
+animation: barHeight 9s infinite alternate;
+}
+
+.chart-bar:nth-child(4) {
+height: 60%;
+animation: barHeight 6s infinite alternate-reverse;
+}
+
+.chart-bar:nth-child(5) {
+height: 50%;
+animation: barHeight 10s infinite alternate;
+}
+
+.chart-bar:nth-child(6) {
+height: 80%;
+animation: barHeight 7.5s infinite alternate-reverse;
+}
+
+.chart-bar:nth-child(7) {
+height: 35%;
+animation: barHeight 8.5s infinite alternate;
+}
+
+@keyframes barHeight {
+0% {
+height: var(--height);
+}
+25% {
+height: calc(var(--height) - 10%);
+}
+50% {
+height: calc(var(--height) + 15%);
+}
+75% {
+height: calc(var(--height) - 5%);
+}
+100% {
+height: calc(var(--height) + 5%);
+}
+}
+
+.hCardBorder {
+height: 100%;
+width: 100%;
+position: absolute;
+left: 0;
+top: 0;
+background: radial-gradient(
+circle,
+rgba(20, 130, 207, 0) 75%,
+rgba(20, 130, 207, 1) 100%
+);
+clip-path: polygon(
+0 0,
+0 100%,
+25% 100%,
+30% 90%,
+50% 90%,
+55% 100%,
+100% 100%,
+100% 20%,
+70% 20%,
+65% 0
+);
+z-index: 1;
+animation: cardBorderGlow 1s infinite alternate;
+}
+
+@keyframes cardBorderGlow {
+0% {
+box-shadow: 0 0 0.4em var(--border-color);
+filter: brightness(0.8);
+}
+100% {
+box-shadow: 0 0 1.1em var(--border-color);
+filter: brightness(1.2);
+}
+}
+
+.hBottom {
+position: absolute;
+background: radial-gradient(
+circle,
+rgba(229, 98, 192, 1) 0%,
+rgba(229, 98, 192, 1) 50%,
+rgba(255, 255, 255, 0) 51%,
+rgba(255, 255, 255, 0) 100%
+);
+background-size: 5%;
+background-repeat: repeat-X;
+height: 2%;
+width: 30%;
+bottom: 4%;
+left: 25%;
+z-index: -1;
+animation: dotMove 10s linear infinite;
+}
+
+@keyframes dotMove {
+0% {
+background-position: 0 0;
+}
+100% {
+background-position: 100px 0;
+}
+}
+
+.hRight {
+position: absolute;
+background: var(--alt-color-h);
+height: calc(20% - 10px);
+right: 0;
+top: 0;
+width: 30%;
+transform: skewX(25deg);
+animation: neonStripeFlicker 4s infinite alternate;
+}
+
+@keyframes neonStripeFlicker {
+0% {
+opacity: 0.7;
+}
+25% {
+opacity: 1;
+}
+50% {
+opacity: 0.5;
+}
+75% {
+opacity: 0.9;
+}
+100% {
+opacity: 0.8;
+}
+}
+
+.hLeft {
+position: absolute;
+clip-path: polygon(0 0, 0% 100%, 100% 0);
+background: rgba(229, 98, 192, 0.5);
+height: 3em;
+width: 3em;
+left: 5px;
+top: 5px;
+z-index: 305;
+animation: trianglePulse 3s infinite alternate;
+}
+
+@keyframes trianglePulse {
+0% {
+background: rgba(229, 98, 192, 0.5);
+}
+50% {
+background: rgba(0, 240, 255, 0.5);
+}
+100% {
+background: rgba(229, 98, 192, 0.5);
+}
+}
+
+.nav {
+position: fixed;
+background: var(--border-color);
+height: var(--nav-size);
+width: 100%;
+clip-path: polygon(
+0 80%,
+2% 100%,
+35% 100%,
+40% 75%,
+60% 75%,
+65% 100%,
+98% 100%,
+100% 80%,
+100% 0,
+0 0
+);
+z-index: 999;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 0 20px;
+box-shadow: inset 0 1em 2em rgba(0, 240, 255, 0.7),
+inset 0 -1em 2em rgba(10, 32, 43, 0.4);
+}
+
+.nav-title {
+font-family: "Orbitron", sans-serif;
+font-size: 1.5rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 2px;
+color: var(--dark-bg);
+text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+}
+
+.nav-bottom {
+position: fixed;
+background: var(--alt-color-h);
+height: calc(var(--nav-size) * 0.2);
+width: 600px;
+top: calc(var(--nav-size) * 0.8);
+left: 35%;
+z-index: 998;
+transform: skewX(-75deg);
+animation: navBottomShift 5s infinite alternate;
+}
+
+@keyframes navBottomShift {
+0% {
+transform: skewX(-75deg) translateX(0);
+}
+100% {
+transform: skewX(-75deg) translateX(50px);
+}
+}
+
+.data-value {
+font-size: 0.75rem;
+color: var(--console-green);
+display: flex;
+justify-content: space-between;
+margin-bottom: 2px;
+}
+
+.data-label {
+color: rgba(255, 255, 255, 0.7);
+}
+
+.digital-clock {
+position: absolute;
+top: 10px;
+right: 20px;
+font-family: "Share Tech Mono", monospace;
+font-size: 1rem;
+color: var(--neon-cyan);
+text-shadow: 0 0 5px var(--neon-cyan);
+z-index: 1000;
+}
+
+@media (max-width: 1200px) {
+.content {
+width: calc(100dvw - 200px);
+max-width: calc(100dvw - 200px);
+}
+.hContainer {
+width: 18em;
+}
+}
+
+@media (max-width: 768px) {
+.vContainer {
+display: none;
+}
+.content {
+width: 100dvw;
+max-width: 100dvw;
+}
+}
+
+    /* Original Mobile Styles - Enhanced with black background and neon colors */
+    :root{
+      --bg0:#000000;
+      --glass: rgba(10, 11, 16, 0.65);
+      --glass2: rgba(0,0,0,0.50);
+
+      --glow-green:#0cfa77;
+      --glow-cyan:#00f0ff;
+      --glow-purple:#b967ff;
+      --glow-pink:#e562c0;
+
+      --border-green: rgba(12, 250, 119, 0.45);
+      --border-cyan: rgba(0, 240, 255, 0.50);
+      --border-purple: rgba(185, 103, 255, 0.45);
+      --border-pink: rgba(229, 98, 192, 0.45);
+
+      --text-green: #a3b1a3;
+      --text-dim: rgba(163,177,163,0.75);
+
+      --ok: #0cfa77;
+      --warn: #fff35c;
+      --bad: #e562c0;
+
+      --shadow: 0 0 25px rgba(0,240,255,0.35);
+      --radius: 16px;
+      --radius-sm: 10px;
+
+      --gap: 12px;
+
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Enhanced black background with neon grid */
+    body {
+      background: #000000 !important;
+      color: #00f0ff;
+    }
+
+    /* CRT scanline overlay - enhanced */
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index: 1000;
+      background:
+        linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+        linear-gradient(90deg, rgba(229,98,192,0.08), rgba(0,240,255,0.06), rgba(185,103,255,0.08));
+      background-size: 100% 2px, 3px 100%;
+      animation: flicker .15s infinite;
+      opacity:.55;
+    }
+    @keyframes flicker{
+      0% { opacity: 0.25; } 20% { opacity: 0.85; } 40% { opacity: 0.35; }
+      60% { opacity: 0.95; } 80% { opacity: 0.30; } 100% { opacity: 0.55; }
+    }
+
+    .app-container{
+      display:flex; flex-direction:column;
+      min-height:100vh;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bottom);
+    }
+
+    header{
+      border-bottom:2px solid var(--border-cyan);
+      box-shadow: 0 4px 30px rgba(0,240,255,0.25), inset 0 1px 0 rgba(0,240,255,0.35);
+      position: sticky;
+      top:0;
+      z-index:900;
+      padding:0;
+      overflow:hidden;
+    }
+
+    .header-video{
+      position:relative;
+      width:100%;
+      height: clamp(120px, 24vh, 190px);
+      background: #04080f;
+      z-index: 1;
+    }
+    .header-video video{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      filter: saturate(115%) contrast(108%);
+    }
+    .header-video::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(180deg, rgba(5,12,18,0.25) 0%, rgba(5,12,18,0.6) 70%, rgba(5,12,18,0.85) 100%);
+      pointer-events:none;
+    }
+
+    .header-flex{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+      padding: calc(12px + var(--safe-top)) 16px 12px 16px;
+      z-index: 2;
+    }
+    .header-left{
+      display:flex; align-items:center; gap:8px;
+      flex:1;
+    }
+    .logo-box{
+      width:40px; height:40px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      border-radius: var(--radius-sm);
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; font-weight:bold;
+      color:#000;
+      box-shadow: 0 0 15px var(--neon-cyan);
+      animation: pulse 2s infinite alternate;
+    }
+    .header-title{
+      font-size:18px; font-weight:600;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      letter-spacing: 2px;
+    }
+    .stream-badge{
+      background: var(--glass);
+      border:1px solid var(--border-pink);
+      padding:5px 12px;
+      border-radius:20px;
+      font-size:11px; text-transform:uppercase;
+      color: var(--neon-pink);
+      box-shadow: 0 0 8px var(--neon-pink);
+      animation: neonFlicker 5s infinite;
+    }
+
+    main{
+      flex:1;
+      padding:0 0 calc(80px + var(--safe-bottom)) 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    section{
+      padding:var(--gap);
+    }
+
+    h2{
+      font-size:16px; text-transform:uppercase; margin:0 0 10px 0;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 2px;
+    }
+
+    .btn-primary{
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      color:#000;
+      border:none;
+      padding:14px 24px;
+      border-radius: var(--radius);
+      font:inherit; font-weight:600; font-size:15px;
+      cursor:pointer;
+      box-shadow: 0 0 20px var(--neon-cyan), var(--shadow);
+      text-transform:uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+      animation: borderGlow 1s infinite alternate;
+    }
+    .btn-primary:active{
+      transform: scale(0.96);
+      box-shadow: 0 0 30px var(--neon-cyan);
+    }
+
+    .info-grid{
+      display:grid; grid-template-columns:1fr 1fr; gap:var(--gap);
+      margin-bottom:var(--gap);
+    }
+    .info-card{
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border:1px solid var(--border-cyan);
+      padding:12px;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 0 15px rgba(0,240,255,0.2);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .info-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        135deg,
+        transparent 25%,
+        rgba(0, 240, 255, 0.1) 25%,
+        rgba(0, 240, 255, 0.1) 50%,
+        transparent 50%,
+        transparent 75%,
+        rgba(0, 240, 255, 0.1) 75%
+      );
+      background-size: 10px 10px;
+      opacity: 0.3;
+    }
+    .info-card:active{
+      transform: translateY(-3px);
+      box-shadow: 0 0 25px rgba(0,240,255,0.4);
+    }
+    .info-label{
+      font-size:12px; color:var(--text-dim); margin-bottom:4px;
+      text-transform:uppercase;
+      position: relative;
+      z-index: 1;
+    }
+    .info-value{
+      font-size:24px; font-weight:bold;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      position: relative;
+      z-index: 1;
+    }
+
+    .filters{
+      display:flex; flex-wrap:wrap; gap:8px; margin-bottom:var(--gap);
+    }
+    .filter-btn{
+      background: var(--glass2);
+      border:1px solid var(--border-purple);
+      color: var(--neon-purple);
+      padding:8px 14px;
+      border-radius:20px;
+      font:inherit; font-size:13px;
+      cursor:pointer;
+      box-shadow: 0 0 10px rgba(185,103,255,0.2);
+      transition: all 0.2s ease;
+      animation: neonStripeFlicker 4s infinite alternate;
+    }
+    .filter-btn.active{
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+      color:#000;
+      border-color: var(--neon-purple);
+      box-shadow: 0 0 15px var(--neon-purple);
+    }
+    .filter-btn:active{
+      transform:scale(0.95);
+    }
+
+    .pipeline{
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border:1px solid var(--border-cyan);
+      border-radius: var(--radius);
+      padding:14px;
+      margin-bottom:var(--gap);
+      box-shadow: 0 0 20px rgba(0,240,255,0.2);
+    }
+    .pipeline-title{
+      font-size:13px; margin-bottom:10px; color: var(--neon-cyan);
+      text-shadow: 0 0 8px var(--neon-cyan);
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+    }
+    .pipe-steps{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .pipe-step{
+      display:flex; align-items:center; gap:8px;
+      font-size:13px;
+    }
+    .pipe-step-bullet{
+      width:24px; height:24px;
+      border-radius:50%;
+      border:2px solid var(--border-cyan);
+      background: rgba(0,240,255,0.1);
+      flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:10px; font-weight:bold;
+      color: var(--neon-cyan);
+      box-shadow: 0 0 10px var(--neon-cyan);
+      animation: pulse 2s infinite alternate;
+    }
+    .pipe-step-name{
+      font-weight:600;
+      color: var(--neon-cyan);
+    }
+    .pipe-step-desc{
+      color:var(--text-dim); font-size:11px;
+    }
+    .pipe-action{
+      margin-left:auto;
+      padding:4px 10px;
+      background: var(--glass2);
+      border:1px solid var(--border-pink);
+      border-radius:12px;
+      font-size:11px;
+      color: var(--neon-pink);
+      box-shadow: 0 0 8px rgba(229,98,192,0.3);
+    }
+
+    .device-list{
+      display:flex; flex-direction:column; gap:var(--gap);
+    }
+    .device-card{
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border:1px solid var(--border-purple);
+      border-radius: var(--radius);
+      padding:12px;
+      box-shadow: 0 0 15px rgba(185,103,255,0.2);
+      cursor:pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .device-card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(229,98,192,0.1));
+      pointer-events: none;
+    }
+    .device-card:active{
+      transform: translateX(5px);
+      box-shadow: 0 0 25px rgba(185,103,255,0.4);
+      border-color: var(--neon-pink);
+    }
+    .device-card-top{
+      display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;
+    }
+    .device-name{
+      font-weight:600; font-size:14px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 8px var(--neon-cyan);
+    }
+    .device-ip{
+      font-size:12px; color:var(--text-dim);
+    }
+    .device-status{
+      padding:4px 10px;
+      border-radius:12px;
+      font-size:11px; text-transform:uppercase; font-weight:600;
+    }
+    .device-status.online{
+      background: rgba(12,250,119,0.2);
+      color: var(--ok);
+      border:1px solid var(--ok);
+      box-shadow: 0 0 10px var(--ok);
+    }
+    .device-status.offline{
+      background: rgba(229,98,192,0.2);
+      color: var(--bad);
+      border:1px solid var(--bad);
+      box-shadow: 0 0 10px var(--bad);
+    }
+    .device-meta{
+      display:flex; gap:12px; font-size:12px; color:var(--text-dim);
+      position: relative;
+      z-index: 1;
+    }
+    .device-meta span{
+      display:flex; align-items:center; gap:4px;
+    }
+
+    .empty-state{
+      text-align:center; padding:40px 20px; color:var(--text-dim);
+    }
+
+    .bottom-nav{
+      position:fixed; bottom:0; left:0; right:0;
+      background: linear-gradient(135deg, rgba(0,240,255,0.15) 0%, rgba(229,98,192,0.15) 100%);
+      backdrop-filter: blur(15px);
+      border-top:2px solid var(--border-cyan);
+      padding:8px 8px calc(8px + var(--safe-bottom)) 8px;
+      box-shadow: 0 -4px 30px rgba(0,240,255,0.25), inset 0 -1px 0 rgba(0,240,255,0.35);
+      z-index:900;
+    }
+    .bottom-nav-inner{
+      display:flex; justify-content:space-around; align-items:center;
+    }
+    .nav-item{
+      display:flex; flex-direction:column; align-items:center;
+      gap:4px; flex:1;
+      padding:8px 4px;
+      border:none; background:none;
+      color:var(--text-dim);
+      font:inherit; font-size:12px;
+      cursor:pointer;
+      transition: all 0.3s ease;
+      border-radius:8px;
+    }
+    .nav-item.active{
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      background: rgba(0,240,255,0.1);
+    }
+    .nav-item:active{
+      transform:scale(0.92);
+    }
+    .nav-icon{
+      font-size:24px;
+    }
+
+    .modal-overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(10px);
+      z-index:1000;
+      display:none;
+      align-items:flex-end;
+    }
+    .modal-overlay.show{
+      display:flex;
+    }
+    .modal-content{
+      background: linear-gradient(135deg, rgba(0,240,255,0.2) 0%, rgba(185,103,255,0.2) 100%);
+      backdrop-filter: blur(20px);
+      width:100%;
+      max-height:85vh;
+      border-top-left-radius:24px;
+      border-top-right-radius:24px;
+      padding:20px 20px calc(20px + var(--safe-bottom)) 20px;
+      border:2px solid var(--border-cyan);
+      border-bottom:none;
+      box-shadow: 0 -4px 40px rgba(0,240,255,0.4);
+      animation:slideUp 0.3s ease;
+    }
+    @keyframes slideUp{
+      from{ transform:translateY(100%); }
+      to{ transform:translateY(0); }
+    }
+    .modal-header{
+      display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+    }
+    .modal-title{
+      font-size:18px; font-weight:600;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 2px;
+    }
+    .modal-close{
+      background: var(--glass2);
+      border:1px solid var(--border-pink);
+      width:32px; height:32px;
+      border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px;
+      cursor:pointer;
+      color: var(--neon-pink);
+      box-shadow: 0 0 10px var(--neon-pink);
+      transition: all 0.3s ease;
+    }
+    .modal-close:active{
+      transform:scale(0.9);
+      box-shadow: 0 0 20px var(--neon-pink);
+    }
+    .modal-body{
+      overflow-y:auto; max-height:calc(85vh - 80px);
+    }
+    .detail-row{
+      display:flex; justify-content:space-between;
+      padding:10px 0;
+      border-bottom:1px solid rgba(0,240,255,0.15);
+      font-size:14px;
+    }
+    .detail-row:last-child{
+      border-bottom:none;
+    }
+    .detail-label{
+      color:var(--text-dim);
+      font-weight:600;
+    }
+    .detail-value{
+      color: var(--neon-cyan);
+      text-shadow: 0 0 5px var(--neon-cyan);
+      text-align:right;
+    }
+
+    .tab-container{
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border:1px solid var(--border-cyan);
+      border-radius: var(--radius);
+      overflow:hidden;
+      box-shadow: 0 0 20px rgba(0,240,255,0.2);
+    }
+    .tabs{
+      display:flex;
+      border-bottom:1px solid var(--border-cyan);
+    }
+    .tab-btn{
+      flex:1;
+      padding:12px 8px;
+      background: transparent;
+      border:none;
+      color:var(--text-dim);
+      font:inherit; font-size:13px; text-transform:uppercase;
+      cursor:pointer;
+      transition: all 0.3s ease;
+      position:relative;
+    }
+    .tab-btn.active{
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      background: rgba(0,240,255,0.1);
+    }
+    .tab-btn.active::after{
+      content:"";
+      position:absolute;
+      bottom:0; left:0; right:0;
+      height:2px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+    .tab-content{
+      padding:14px;
+      display:none;
+    }
+    .tab-content.active{
+      display:block;
+    }
+
+    .settings-group{
+      margin-bottom:16px;
+    }
+    .settings-group-title{
+      font-size:13px; font-weight:600; margin-bottom:8px;
+      color: var(--neon-purple);
+      text-shadow: 0 0 8px var(--neon-purple);
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+    }
+    .setting-row{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 0;
+      font-size:14px;
+    }
+    .toggle{
+      width:48px; height:26px;
+      background: var(--glass2);
+      border:1px solid var(--border-cyan);
+      border-radius:13px;
+      position:relative;
+      cursor:pointer;
+      transition: all 0.3s ease;
+    }
+    .toggle::after{
+      content:"";
+      position:absolute;
+      top:3px; left:3px;
+      width:18px; height:18px;
+      background: var(--neon-cyan);
+      border-radius:50%;
+      transition: transform 0.3s ease;
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+    .toggle.on{
+      background: rgba(0,240,255,0.3);
+      border-color: var(--neon-cyan);
+    }
+    .toggle.on::after{
+      transform:translateX(22px);
+    }
+
+    .audit-entry{
+      padding:10px;
+      background: var(--glass2);
+      border-left:3px solid var(--border-pink);
+      border-radius:4px;
+      margin-bottom:8px;
+      font-size:13px;
+      box-shadow: 0 0 10px rgba(229,98,192,0.2);
+    }
+    .audit-timestamp{
+      color:var(--text-dim); font-size:11px; margin-bottom:4px;
+    }
+    .audit-text{
+      color: var(--neon-pink);
+      text-shadow: 0 0 5px var(--neon-pink);
+    }
+
+    /* Responsive adjustments */
+    @media (min-width: 600px) {
+      .app-container{
+        max-width:600px;
+        margin:0 auto;
+      }
+    }
+
+    /* Loading animation */
+    @keyframes spin{
+      to{ transform:rotate(360deg); }
+    }
+    .spinner{
+      border:3px solid rgba(0,240,255,0.2);
+      border-top-color: var(--neon-cyan);
+      border-radius:50%;
+      width:24px; height:24px;
+      animation:spin 0.8s linear infinite;
+    }
+
+    /* Enhance neon glow effects */
+    .neon-text {
+      color: var(--neon-cyan);
+      text-shadow: 
+        0 0 5px var(--neon-cyan),
+        0 0 10px var(--neon-cyan),
+        0 0 20px var(--neon-cyan);
+    }
+
+    .neon-pink-text {
+      color: var(--neon-pink);
+      text-shadow: 
+        0 0 5px var(--neon-pink),
+        0 0 10px var(--neon-pink),
+        0 0 20px var(--neon-pink);
+    }
+
+    .neon-purple-text {
+      color: var(--neon-purple);
+      text-shadow: 
+        0 0 5px var(--neon-purple),
+        0 0 10px var(--neon-purple),
+        0 0 20px var(--neon-purple);
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- HEADER -->
+    <header>
+      <div class="header-video">
+        <video src="new_assets/ninja_header.mp4" autoplay muted loop playsinline></video>
+      </div>
+      <div class="header-flex">
+        <div class="header-left">
+          <div class="logo-box">⚡</div>
+          <div>
+            <div class="header-title">NEON-NOC</div>
+          </div>
+        </div>
+        <div class="stream-badge" id="streamBadge">STREAM: OFF</div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main>
+
+      <!-- OVERVIEW -->
+      <section id="overviewSection">
+        <h2>## Overview</h2>
+        <button class="btn-primary" id="scanBtn" style="width:100%; margin-bottom:12px;">
+          TAP <span style="font-weight:700;">SCAN</span> TO STREAM RESULTS
+        </button>
+
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-label">Devices</div>
+            <div class="info-value" id="totalDevices">0</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Online</div>
+            <div class="info-value" id="onlineDevices" style="color: var(--ok); text-shadow: 0 0 10px var(--ok);">0</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Offline</div>
+            <div class="info-value" id="offlineDevices" style="color: var(--bad); text-shadow: 0 0 10px var(--bad);">0</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Streaming</div>
+            <div class="info-value" id="streamingIndicator">OFF</div>
+          </div>
+        </div>
+
+        <!-- Digital Clock Display -->
+        <div class="digital-clock" id="clock" style="position:relative; text-align:center; font-size:1.5rem; margin:12px 0; padding:10px; background:var(--glass); border-radius:var(--radius-sm); border:1px solid var(--border-cyan); box-shadow: 0 0 20px rgba(0,240,255,0.3);">
+          00:00:00
+        </div>
+
+        <div style="background: var(--glass); padding:12px; border-radius: var(--radius-sm); border:1px solid var(--border-cyan); box-shadow: 0 0 15px rgba(0,240,255,0.2);">
+          <div style="font-size:13px; color:var(--text-dim); margin-bottom:6px;">
+            <strong class="neon-text">Job streaming:</strong> Streaming results so the UI stays alive.
+          </div>
+        </div>
+      </section>
+
+      <!-- DEVICES -->
+      <section id="devicesSection">
+        <h2>Recent devices <span style="font-size:12px; font-weight:400; color:var(--text-dim);">Tap a device for details</span></h2>
+
+        <div class="filters">
+          <button class="filter-btn active">ALL</button>
+          <button class="filter-btn">ONLINE</button>
+          <button class="filter-btn">OFFLINE</button>
+          <button class="filter-btn">OS: WINDOWS</button>
+          <button class="filter-btn">OS: LINUX</button>
+          <button class="filter-btn">OS: ANDROID</button>
+          <button class="filter-btn">TAG: IOT</button>
+          <button class="filter-btn">TAG: SERVER</button>
+        </div>
+
+        <div class="device-list">
+          <div class="empty-state">
+            <div style="font-size:48px; opacity:0.5; margin-bottom:12px;">📡</div>
+            <div style="font-size:14px; margin-bottom:8px; color: var(--neon-cyan);">Devices Card list (mobile)</div>
+            <div style="font-size:13px;">No devices discovered yet. Tap <strong class="neon-pink-text">SCAN</strong> above to begin.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DISCOVERY PIPELINE -->
+      <section>
+        <h2>Discovery pipeline</h2>
+        <div class="pipeline">
+          <div class="pipe-steps">
+            <div class="pipe-step">
+              <div class="pipe-step-bullet">1</div>
+              <div style="flex:1;">
+                <div class="pipe-step-name">Subnet estimate</div>
+                <div class="pipe-step-desc">Interface/DHCP</div>
+              </div>
+            </div>
+            <div class="pipe-step">
+              <div class="pipe-step-bullet">2</div>
+              <div style="flex:1;">
+                <div class="pipe-step-name">Reachability</div>
+                <div class="pipe-step-desc">ICMP/TCP sweep</div>
+              </div>
+            </div>
+            <div class="pipe-step">
+              <div class="pipe-step-bullet">3</div>
+              <div style="flex:1;">
+                <div class="pipe-step-name">ARP map</div>
+                <div class="pipe-step-desc">OS parse</div>
+              </div>
+            </div>
+            <div class="pipe-step">
+              <div class="pipe-step-bullet">4</div>
+              <div style="flex:1;">
+                <div class="pipe-step-name">mDNS</div>
+                <div class="pipe-step-desc">Names/services</div>
+              </div>
+            </div>
+            <div class="pipe-step">
+              <div class="pipe-step-bullet">5</div>
+              <div style="flex:1;">
+                <div class="pipe-step-name">SSDP</div>
+                <div class="pipe-step-desc">Optional</div>
+              </div>
+            </div>
+            <div class="pipe-step">
+              <div class="pipe-step-bullet">6</div>
+              <div style="flex:1;">
+                <div class="pipe-step-name">SNMP</div>
+                <div class="pipe-step-desc">Optional (RO)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="inferSubnetBtn" style="width:100%;">
+          INFER SUBNET <span id="inferSubnetStatus" style="margin-left:8px; opacity:0.7;">Waiting…</span>
+        </button>
+      </section>
+
+      <!-- PLAYBOOKS -->
+      <section>
+        <h2>Playbooks</h2>
+        <div class="empty-state">
+          <div style="font-size:13px;">No rules (yet).</div>
+        </div>
+      </section>
+
+      <!-- ALERTS -->
+      <section id="alertsSection">
+        <h2>Alerts</h2>
+        <div style="background: var(--glass); padding:12px; border-radius: var(--radius-sm); border:1px solid var(--border-pink); box-shadow: 0 0 15px rgba(229,98,192,0.2); margin-bottom:12px;">
+          <div style="font-size:12px; color:var(--text-dim);">
+            <strong class="neon-pink-text">UI-ready feed.</strong> Wire engine later.
+          </div>
+        </div>
+        <div class="empty-state">
+          <div style="font-size:13px;">No alerts.</div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="settingsSection">
+        <h2>Settings</h2>
+        <div class="tab-container">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="general">General</button>
+            <button class="tab-btn" data-tab="audit">Audit</button>
+          </div>
+
+          <div class="tab-content active" id="general">
+            <div class="settings-group">
+              <div class="settings-group-title">RBAC</div>
+              <div class="setting-row">
+                <span>Admin/Viewer</span>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group-title">Streaming</div>
+              <div class="setting-row">
+                <span>Real-time updates</span>
+                <div class="toggle"></div>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group-title">Audit</div>
+              <div class="setting-row">
+                <span>Enable logging</span>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-content" id="audit">
+            <div class="empty-state">
+              <div style="font-size:13px;">No audit entries yet.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Status Panel (from style.css) -->
+      <section class="vContainer" style="position:relative; width:100%; height:auto; margin:20px 0;">
+        <div class="vCard glassmorphism">
+          <div class="vCardBorder"></div>
+          <div class="vLeft"></div>
+          <div class="vRight">
+            <div class="correction"></div>
+          </div>
+          <div class="vBottom"></div>
+          
+          <div class="system-status">
+            <div class="status-title">SYSTEM</div>
+            <div class="status-item">
+              <span>STATUS</span>
+              <span class="status-value" id="sysStatusValue">—</span>
+              <div class="status-bar">
+                <div class="status-bar-fill"></div>
+              </div>
+            </div>
+            <div class="status-item">
+              <span>CPU</span>
+              <span class="status-value" id="cpuValue">—</span>
+              <div class="status-bar">
+                <div class="status-bar-fill" id="cpuBar"></div>
+              </div>
+            </div>
+            <div class="status-item">
+              <span>MEMORY</span>
+              <span class="status-value" id="memValue">—</span>
+              <div class="status-bar">
+                <div class="status-bar-fill warning" id="memBar"></div>
+              </div>
+            </div>
+            <div class="status-item">
+              <span>NETWORK</span>
+              <span class="status-value" id="netValue">—</span>
+              <div class="status-bar">
+                <div class="status-bar-fill" id="netBar"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Horizontal Cards (from style.css) -->
+      <section class="content" style="position:relative; width:100%; height:auto;">
+        <div class="hContainer">
+          <div class="hCard glassmorphism">
+            <div class="card-title">Uptime</div>
+            <div class="card-value" id="netTrafficValue">—</div>
+            <div class="card-chart">
+              <div class="chart-bar" style="--height: 40%;"></div>
+              <div class="chart-bar" style="--height: 70%;"></div>
+              <div class="chart-bar" style="--height: 30%;"></div>
+              <div class="chart-bar" style="--height: 60%;"></div>
+              <div class="chart-bar" style="--height: 50%;"></div>
+              <div class="chart-bar" style="--height: 80%;"></div>
+              <div class="chart-bar" style="--height: 35%;"></div>
+            </div>
+          </div>
+          <div class="hCardBorder"></div>
+          <div class="hBottom"></div>
+          <div class="hRight"></div>
+          <div class="hLeft"></div>
+        </div>
+
+        <div class="hContainer">
+          <div class="hCard glassmorphism">
+            <div class="card-title">Devices Online</div>
+            <div class="card-value" id="activeConnValue">—</div>
+            <div class="card-chart">
+              <div class="chart-bar" style="--height: 55%;"></div>
+              <div class="chart-bar" style="--height: 65%;"></div>
+              <div class="chart-bar" style="--height: 45%;"></div>
+              <div class="chart-bar" style="--height: 75%;"></div>
+              <div class="chart-bar" style="--height: 60%;"></div>
+              <div class="chart-bar" style="--height: 70%;"></div>
+              <div class="chart-bar" style="--height: 50%;"></div>
+            </div>
+          </div>
+          <div class="hCardBorder"></div>
+          <div class="hBottom"></div>
+          <div class="hRight"></div>
+          <div class="hLeft"></div>
+        </div>
+
+        <div class="hContainer">
+          <div class="hCard glassmorphism">
+            <div class="card-title">CPU Load</div>
+            <div class="card-value" id="respTimeValue">—</div>
+            <div class="card-chart">
+              <div class="chart-bar" style="--height: 30%;"></div>
+              <div class="chart-bar" style="--height: 50%;"></div>
+              <div class="chart-bar" style="--height: 40%;"></div>
+              <div class="chart-bar" style="--height: 35%;"></div>
+              <div class="chart-bar" style="--height: 45%;"></div>
+              <div class="chart-bar" style="--height: 55%;"></div>
+              <div class="chart-bar" style="--height: 38%;"></div>
+            </div>
+          </div>
+          <div class="hCardBorder"></div>
+          <div class="hBottom"></div>
+          <div class="hRight"></div>
+          <div class="hLeft"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item active" data-target="overviewSection">
+          <div class="nav-icon">📊</div>
+          <div>Overview</div>
+        </button>
+        <button class="nav-item" data-target="devicesSection">
+          <div class="nav-icon">📱</div>
+          <div>Devices</div>
+        </button>
+        <button class="nav-item" data-target="alertsSection">
+          <div class="nav-icon">🔔</div>
+          <div>Alerts</div>
+        </button>
+        <button class="nav-item" data-target="settingsSection">
+          <div class="nav-icon">⚙️</div>
+          <div>Settings</div>
+        </button>
+      </div>
+    </nav>
+
+    <!-- DEVICE DETAIL MODAL -->
+    <div class="modal-overlay" id="deviceModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">Device Details</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-row">
+            <span class="detail-label">Device Name:</span>
+            <span class="detail-value" id="modalName">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">IP Address:</span>
+            <span class="detail-value" id="modalIp">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">MAC Address:</span>
+            <span class="detail-value" id="modalMac">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Operating System:</span>
+            <span class="detail-value" id="modalOs">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value" id="modalStatus">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Last Seen:</span>
+            <span class="detail-value" id="modalLastSeen">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+function updateClock() {
+const now = new Date();
+let hours = now.getHours().toString().padStart(2, "0");
+let minutes = now.getMinutes().toString().padStart(2, "0");
+let seconds = now.getSeconds().toString().padStart(2, "0");
+document.getElementById(
+"clock"
+).textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+const metricsHistory = [];
+
+function updateChartBars(history) {
+  const bars = document.querySelectorAll(".chart-bar");
+  if (!bars.length) return;
+  const slice = history.slice(-bars.length);
+  bars.forEach((bar, idx) => {
+    const value = slice[idx] ?? slice[slice.length - 1] ?? 30;
+    bar.style.height = `${value}%`;
+  });
+}
+
+async function refreshTelemetry() {
+  try {
+    const metrics = await api("/api/v1/metrics");
+    const cpuLoad = typeof metrics.cpuLoad === "number" ? Math.round(metrics.cpuLoad * 100) : null;
+    const memPct = metrics.memTotal ? Math.round((metrics.memUsed / metrics.memTotal) * 100) : null;
+    const online = metrics.devicesOnline ?? 0;
+    const total = metrics.devicesTotal ?? 0;
+    const netPct = total ? Math.round((online / total) * 100) : 0;
+    const uptimeMs = metrics.uptimeMs ?? 0;
+
+    if (cpuLoad != null) {
+      document.getElementById("cpuValue").textContent = `${cpuLoad}%`;
+      document.getElementById("cpuBar").style.width = `${cpuLoad}%`;
+      metricsHistory.push(cpuLoad);
+    }
+    if (memPct != null) {
+      document.getElementById("memValue").textContent = `${memPct}%`;
+      document.getElementById("memBar").style.width = `${memPct}%`;
+    }
+    document.getElementById("netValue").textContent = `${netPct}%`;
+    document.getElementById("netBar").style.width = `${netPct}%`;
+    document.getElementById("sysStatusValue").textContent = online ? "ACTIVE" : "IDLE";
+
+    const uptimeMinutes = Math.floor(uptimeMs / 60000);
+    const uptimeText = uptimeMs ? `${Math.floor(uptimeMinutes / 60)}h ${uptimeMinutes % 60}m` : "—";
+    document.getElementById("netTrafficValue").textContent = uptimeText;
+    document.getElementById("activeConnValue").textContent = online;
+    document.getElementById("respTimeValue").textContent = cpuLoad != null ? `${cpuLoad}%` : "—";
+
+    updateChartBars(metricsHistory);
+  } catch (_) {
+    // keep last values
+  }
+}
+
+setInterval(refreshTelemetry, 4000);
+refreshTelemetry();
+
+    const API_BASE = (() => {
+      try {
+        if (location && location.origin && location.origin !== "null") return location.origin;
+      } catch (_) {}
+      return "http://127.0.0.1:8787";
+    })();
+
+    async function api(path, opts = {}) {
+      const res = await fetch(API_BASE + path, Object.assign({
+        headers: { "Content-Type": "application/json" }
+      }, opts));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const ct = res.headers.get("content-type") || "";
+      return ct.includes("application/json") ? res.json() : res.text();
+    }
+
+    function postJson(path, body) {
+      return api(path, { method: "POST", body: JSON.stringify(body ?? {}) });
+    }
+
+    const state = {
+      streamActive: false,
+      streamTimer: null,
+      devices: [],
+      filter: "ALL"
+    };
+
+    const els = {
+      scanBtn: document.getElementById("scanBtn"),
+      streamBadge: document.getElementById("streamBadge"),
+      streamingIndicator: document.getElementById("streamingIndicator"),
+      deviceList: document.querySelector(".device-list"),
+      totalDevices: document.getElementById("totalDevices"),
+      onlineDevices: document.getElementById("onlineDevices"),
+      offlineDevices: document.getElementById("offlineDevices"),
+      inferSubnetBtn: document.getElementById("inferSubnetBtn"),
+      inferSubnetStatus: document.getElementById("inferSubnetStatus"),
+      modal: document.getElementById("deviceModal"),
+      modalName: document.getElementById("modalName"),
+      modalIp: document.getElementById("modalIp"),
+      modalMac: document.getElementById("modalMac"),
+      modalOs: document.getElementById("modalOs"),
+      modalStatus: document.getElementById("modalStatus"),
+      modalLastSeen: document.getElementById("modalLastSeen")
+    };
+
+    function setStreamingUI(active) {
+      if (!els.streamBadge || !els.streamingIndicator) return;
+      if (active) {
+        els.streamBadge.textContent = "STREAM: ON";
+        els.streamBadge.style.background = "rgba(12,250,119,0.2)";
+        els.streamBadge.style.borderColor = "var(--ok)";
+        els.streamBadge.style.color = "var(--ok)";
+        els.streamingIndicator.textContent = "ON";
+        els.streamingIndicator.style.color = "var(--ok)";
+        els.streamingIndicator.style.textShadow = "0 0 10px var(--ok)";
+        if (els.scanBtn) {
+          els.scanBtn.innerHTML = "STOP <span style=\"font-weight:700;\">STREAM</span>";
+        }
+      } else {
+        els.streamBadge.textContent = "STREAM: OFF";
+        els.streamBadge.style.background = "var(--glass)";
+        els.streamBadge.style.borderColor = "var(--border-pink)";
+        els.streamBadge.style.color = "var(--neon-pink)";
+        els.streamingIndicator.textContent = "OFF";
+        els.streamingIndicator.style.color = "var(--neon-cyan)";
+        els.streamingIndicator.style.textShadow = "0 0 10px var(--neon-cyan)";
+        if (els.scanBtn) {
+          els.scanBtn.innerHTML = "TAP <span style=\"font-weight:700;\">SCAN</span> TO STREAM RESULTS";
+        }
+      }
+    }
+
+    function deriveMeta(device) {
+      const ip = device.ip || device.id || "";
+      const parts = ip.split(".");
+      const lastOctet = parseInt(parts[3] || "0", 10);
+      const osList = ["WINDOWS", "LINUX", "ANDROID"];
+      const tagList = ["IOT", "SERVER", "WORKSTATION"];
+      return {
+        name: device.hostname || device.id || ip || "Unknown",
+        os: device.os || osList[lastOctet % osList.length],
+        tag: device.vendor || tagList[lastOctet % tagList.length]
+      };
+    }
+
+    function normalizeDevice(raw) {
+      const meta = deriveMeta(raw);
+      return Object.assign({
+        ip: raw.ip || raw.id || "0.0.0.0",
+        online: !!raw.online,
+        lastSeen: raw.lastSeen || Date.now()
+      }, raw, meta);
+    }
+
+    function updateTotals() {
+      const total = state.devices.length;
+      const online = state.devices.filter((d) => d.online).length;
+      const offline = total - online;
+      if (els.totalDevices) els.totalDevices.textContent = `${total}`;
+      if (els.onlineDevices) els.onlineDevices.textContent = `${online}`;
+      if (els.offlineDevices) els.offlineDevices.textContent = `${offline}`;
+    }
+
+    function formatLastSeen(ts) {
+      if (!ts) return "—";
+      const date = new Date(ts);
+      return date.toLocaleString();
+    }
+
+    function matchesFilter(device) {
+      const f = state.filter.toUpperCase();
+      if (f === "ALL") return true;
+      if (f === "ONLINE") return device.online;
+      if (f === "OFFLINE") return !device.online;
+      if (f.startsWith("OS:")) return device.os === f.split(":")[1].trim();
+      if (f.startsWith("TAG:")) return device.tag === f.split(":")[1].trim();
+      return true;
+    }
+
+    function renderDevices() {
+      if (!els.deviceList) return;
+      const filtered = state.devices.filter(matchesFilter);
+      els.deviceList.innerHTML = "";
+
+      if (filtered.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.innerHTML = `
+          <div style="font-size:48px; opacity:0.5; margin-bottom:12px;">📡</div>
+          <div style="font-size:14px; margin-bottom:8px; color: var(--neon-cyan);">No devices for this filter</div>
+          <div style="font-size:13px;">Tap <strong class="neon-pink-text">SCAN</strong> to refresh.</div>
+        `;
+        els.deviceList.appendChild(empty);
+        return;
+      }
+
+      filtered.forEach((device) => {
+        const card = document.createElement("div");
+        card.className = "device-card";
+        card.setAttribute("role", "button");
+        card.tabIndex = 0;
+        card.innerHTML = `
+          <div class="device-card-top">
+            <div>
+              <div class="device-name">${device.name}</div>
+              <div class="device-ip">${device.ip}</div>
+            </div>
+            <div class="device-status ${device.online ? "online" : "offline"}">
+              ${device.online ? "ONLINE" : "OFFLINE"}
+            </div>
+          </div>
+          <div class="device-meta">
+            <span>OS: ${device.os}</span>
+            <span>TAG: ${device.tag}</span>
+            <span>${formatLastSeen(device.lastSeen)}</span>
+          </div>
+        `;
+        card.addEventListener("click", () => openModal(device));
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") openModal(device);
+        });
+        els.deviceList.appendChild(card);
+      });
+    }
+
+    function inferSubnetFromDevices(devices) {
+      const sample = devices.find((d) => d.ip)?.ip;
+      if (!sample) return null;
+      const parts = sample.split(".");
+      if (parts.length !== 4) return null;
+      return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+    }
+
+    function openModal(device) {
+      if (!els.modal) return;
+      if (els.modalName) els.modalName.textContent = device.name || "—";
+      if (els.modalIp) els.modalIp.textContent = device.ip || "—";
+      if (els.modalMac) els.modalMac.textContent = device.mac || "—";
+      if (els.modalOs) els.modalOs.textContent = device.os || "—";
+      if (els.modalStatus) els.modalStatus.textContent = device.online ? "ONLINE" : "OFFLINE";
+      if (els.modalLastSeen) els.modalLastSeen.textContent = formatLastSeen(device.lastSeen);
+      els.modal.classList.add("show");
+    }
+
+    function closeModal() {
+      els.modal?.classList.remove("show");
+    }
+
+    async function runScan() {
+      try {
+        const res = await postJson("/api/v1/discovery/scan");
+        state.devices = Array.isArray(res) ? res.map(normalizeDevice) : [];
+        updateTotals();
+        renderDevices();
+      } catch (err) {
+        console.error("scan failed", err);
+      }
+    }
+
+    async function refreshDevices() {
+      try {
+        const res = await api("/api/v1/discovery/results");
+        state.devices = Array.isArray(res) ? res.map(normalizeDevice) : [];
+        updateTotals();
+        renderDevices();
+      } catch (err) {
+        console.error("refresh failed", err);
+      }
+    }
+
+    function startStream() {
+      state.streamActive = true;
+      setStreamingUI(true);
+      runScan();
+      if (state.streamTimer) clearInterval(state.streamTimer);
+      state.streamTimer = setInterval(refreshDevices, 2500);
+    }
+
+    function stopStream() {
+      state.streamActive = false;
+      setStreamingUI(false);
+      if (state.streamTimer) clearInterval(state.streamTimer);
+      state.streamTimer = null;
+    }
+
+    els.scanBtn?.addEventListener("click", () => {
+      if (state.streamActive) {
+        stopStream();
+      } else {
+        startStream();
+      }
+    });
+
+    els.inferSubnetBtn?.addEventListener("click", () => {
+      const subnet = inferSubnetFromDevices(state.devices);
+      if (els.inferSubnetStatus) {
+        els.inferSubnetStatus.textContent = subnet ? subnet : "No data";
+      }
+    });
+
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.addEventListener("click", function() {
+        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        this.classList.add("active");
+        state.filter = this.textContent.trim().toUpperCase();
+        renderDevices();
+      });
+    });
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", function() {
+        const targetTab = this.getAttribute("data-tab");
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        this.classList.add("active");
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.remove("active");
+        });
+        document.getElementById(targetTab)?.classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".toggle").forEach((toggle) => {
+      toggle.addEventListener("click", function() {
+        this.classList.toggle("on");
+      });
+    });
+
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.addEventListener("click", function() {
+        document.querySelectorAll(".nav-item").forEach((i) => i.classList.remove("active"));
+        this.classList.add("active");
+        const targetId = this.getAttribute("data-target");
+        const target = targetId ? document.getElementById(targetId) : null;
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    });
+
+    els.modal?.addEventListener("click", function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+
+    setStreamingUI(false);
+    refreshDevices();
+
+  </script>
+
+</body>
+</html>

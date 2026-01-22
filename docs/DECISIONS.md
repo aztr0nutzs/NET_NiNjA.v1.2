@@ -11,3 +11,4 @@
 - Start the UI flow at `new_assets/ninja_login.html` and transition to the dashboard after authentication.
 - Keep login styling nearly black to match the product look and avoid blue backgrounds.
 - Load the login UI from bundled assets first to avoid blank screens before the local server is ready.
+- Treat engine-offline as a distinct login state so network failures are not shown as invalid credentials.

@@ -16,3 +16,5 @@
 - [x] Probe local server readiness before loading WebView
 - [x] Load login screen before dashboard using new assets
 - [x] Restyle login screen to dark theme with boot header only
+- [x] Separate auth failures from engine-offline state on login
+- [x] Switch login backdrop to black with purple matrix rain
