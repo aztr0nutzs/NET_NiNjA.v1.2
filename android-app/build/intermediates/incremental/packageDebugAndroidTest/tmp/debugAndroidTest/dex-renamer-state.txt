@@ -1,4 +1,0 @@
-#Thu Jan 22 04:51:06 EST 2026
-base.0=/home/aztr0nutzs/Desktop/NET_NiNjA/android-app/build/intermediates/dex/debugAndroidTest/mergeProjectDexDebugAndroidTest/0/classes.dex
-path.0=0/classes.dex
-renamed.0=classes.dex

@@ -2,6 +2,7 @@
 package com.netninja
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -33,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     web.settings.cacheMode = WebSettings.LOAD_NO_CACHE
     web.settings.mediaPlaybackRequiresUserGesture = false
     web.clearCache(true)
-    loadSplash(web)
+    web.setBackgroundColor(Color.BLACK)
     web.webChromeClient = object : WebChromeClient() {
       override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
         Log.d(
@@ -44,6 +45,10 @@ class MainActivity : AppCompatActivity() {
       }
     }
     web.webViewClient = object : WebViewClient() {
+      override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+        Log.d(logTag, "page start: $url")
+      }
+
       override fun onReceivedError(
         view: WebView,
         request: WebResourceRequest,
@@ -51,6 +56,16 @@ class MainActivity : AppCompatActivity() {
       ) {
         if (request.isForMainFrame) {
           Log.e(logTag, "load error: ${error.errorCode} ${error.description}")
+        }
+      }
+
+      override fun onReceivedHttpError(
+        view: WebView,
+        request: WebResourceRequest,
+        errorResponse: android.webkit.WebResourceResponse
+      ) {
+        if (request.isForMainFrame) {
+          Log.e(logTag, "http error: ${errorResponse.statusCode} ${errorResponse.reasonPhrase} ${request.url}")
         }
       }
 
@@ -62,7 +77,10 @@ class MainActivity : AppCompatActivity() {
       }
     }
 
-    waitForServerAndLoad(web, "http://127.0.0.1:8787/ui/ninja_mobile.html")
+    val serverLoginUrl = "http://127.0.0.1:8787/ui/new_assets/ninja_login.html"
+    val assetLoginUrl = "file:///android_asset/web-ui/new_assets/ninja_login.html?bootstrap=1"
+    web.loadUrl(assetLoginUrl)
+    waitForServerAndLoad(web, serverLoginUrl)
 
     setContentView(web)
   }
@@ -82,68 +100,6 @@ class MainActivity : AppCompatActivity() {
       }
       main.post { web.loadUrl(url) }
     }
-  }
-
-  private fun loadSplash(web: WebView) {
-    val baseUrl = "file:///android_asset/web-ui/new_assets/"
-    val html = """
-      <!doctype html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Net Ninja</title>
-        <style>
-          :root { color-scheme: dark; }
-          html, body { height: 100%; margin: 0; }
-          body {
-            font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-            background: radial-gradient(120% 120% at 10% 10%, #1b2b3b, #05080c);
-            color: #d5e9ff;
-            display: grid;
-            place-items: center;
-          }
-          .panel {
-            text-align: center;
-            padding: 28px 30px;
-            border: 1px solid rgba(120, 200, 255, 0.25);
-            border-radius: 14px;
-            background: rgba(5, 12, 18, 0.65);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-          }
-          .title { font-size: 18px; letter-spacing: 2px; text-transform: uppercase; }
-          .sub { font-size: 13px; opacity: 0.8; margin-top: 8px; }
-          .spinner {
-            width: 36px; height: 36px; margin: 18px auto 0;
-            border: 3px solid rgba(213, 233, 255, 0.15);
-            border-top-color: #7cd4ff; border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          video {
-            width: 240px;
-            max-width: 70vw;
-            height: auto;
-            border-radius: 12px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-            display: block;
-            margin: 14px auto 6px;
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        </style>
-      </head>
-      <body>
-        <div class="panel">
-          <div class="title">Net Ninja</div>
-          <div class="sub">Starting local engine...</div>
-          <video autoplay muted loop playsinline>
-            <source src="ninja_boot.mp4" type="video/mp4" />
-          </video>
-          <div class="spinner"></div>
-        </div>
-      </body>
-      </html>
-    """.trimIndent()
-    web.loadDataWithBaseURL(baseUrl, html, "text/html", "utf-8", null)
   }
 
   private fun isServerReady(): Boolean {

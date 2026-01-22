@@ -14,3 +14,5 @@
 - [x] Force asset sync from APK on launch to prevent stale dashboards
 - [x] Add WebView cache hardening to avoid stale UI
 - [x] Probe local server readiness before loading WebView
+- [x] Load login screen before dashboard using new assets
+- [x] Restyle login screen to dark theme with boot header only

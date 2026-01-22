@@ -13,3 +13,6 @@
 - Switched SCAN to live-only mode and surfaced data state via a badge.
 - Synced APK web assets on every launch and removed stale files to avoid old dashboards.
 - Added WebView cache hardening and server readiness probing to reduce blank startup windows.
+- Loaded the login screen from `new_assets` before entering the dashboard.
+- Restyled the login page to a blacked-out theme and removed the extra init overlay.
+- Added an asset-based login bootstrap to avoid black screens while the local server starts.
