@@ -18,6 +18,7 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
+import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
 import kotlinx.coroutines.*
@@ -48,6 +49,7 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
   val deviceCache = ConcurrentHashMap<String, Device>()
   val schedules = java.util.concurrent.CopyOnWriteArrayList<String>()
   val rules = java.util.concurrent.CopyOnWriteArrayList<RuleEntry>()
+  val netreaper = NetReaperProcess(File(".")).apply { startIfEnabled() }
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
@@ -60,6 +62,9 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
       allowMethod(HttpMethod.Get)
       allowMethod(HttpMethod.Post)
       allowMethod(HttpMethod.Put)
+    }
+    environment.monitor.subscribe(ApplicationStopping) {
+      netreaper.stop()
     }
 
     routing {

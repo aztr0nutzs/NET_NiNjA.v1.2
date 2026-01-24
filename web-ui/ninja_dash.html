@@ -275,6 +275,17 @@
       border-color: rgba(34,211,238,0.45);
       box-shadow: 0 0 0 3px rgba(34,211,238,0.12);
     }
+    .sr-only{
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
 
     /* Buttons (based on your .btn style, expanded) */
     .btn{
@@ -725,6 +736,7 @@
           <a href="#" data-view="actions" class="neon-btn"><span></span><span></span><span></span><span></span>ACTIONS <span class="count" id="cntActions">6</span></a>
           <a href="#" data-view="automation" class="neon-btn"><span></span><span></span><span></span><span></span>AUTOMATION <span class="count" id="cntAutomation">3</span></a>
           <a href="#" data-view="alerts" class="neon-btn"><span></span><span></span><span></span><span></span>ALERTS <span class="count" id="cntAlerts">0</span></a>
+          <a href="#" data-view="netreaper" class="neon-btn"><span></span><span></span><span></span><span></span>NETREAPER <span class="count" id="cntNetreaper">0</span></a>
           <a href="#" data-view="settings" class="neon-btn"><span></span><span></span><span></span><span></span>SETTINGS <span class="count" id="cntSettings">7</span></a>
           <a href="#" data-view="logs" class="neon-btn"><span></span><span></span><span></span><span></span>AUDIT LOGS <span class="count" id="cntLogs">0</span></a>
         </div>
@@ -1023,6 +1035,70 @@
           </div>
         </section>
 
+        <section id="view-netreaper" class="view hidden">
+          <div class="row" style="gap: var(--grid-gap);">
+            <div class="card" style="flex:1;">
+              <div class="cardTitle">NetReaper Control</div>
+              <div class="kv">
+                <div class="k">Service URL</div>
+                <div class="v">
+                  <label class="sr-only" for="netreaperUrl">NetReaper service URL</label>
+                  <input id="netreaperUrl" class="input" placeholder="http://127.0.0.1:9088" />
+                </div>
+                <div class="k">Password</div>
+                <div class="v">
+                  <label class="sr-only" for="netreaperPassword">NetReaper password</label>
+                  <input id="netreaperPassword" class="input" type="password" placeholder="NETREAPER_PASSWORD" />
+                </div>
+                <div class="k">Status</div>
+                <div class="v"><span class="pill"><span class="dot warn"></span><span id="netreaperStatus">DISCONNECTED</span></span></div>
+              </div>
+              <div class="row" style="margin-top:10px;">
+                <a href="#" class="btn neon-btn" id="netreaperAuthBtn"><span></span><span></span><span></span><span></span>AUTH</a>
+                <a href="#" class="btn neon-btn" id="netreaperWsBtn"><span></span><span></span><span></span><span></span>STREAM LOGS</a>
+              </div>
+              <div class="monoDim" style="margin-top:8px;">
+                NetReaper runs as a local FastAPI service. Configure URL + password before invoking actions.
+              </div>
+            </div>
+
+            <div class="card" style="flex:1;">
+              <div class="cardTitle">Actions</div>
+              <div class="kv">
+                <div class="k">Target</div>
+                <div class="v">
+                  <label class="sr-only" for="netreaperTarget">Scan target</label>
+                  <input id="netreaperTarget" class="input" placeholder="192.168.1.1 or 192.168.1.0/24" />
+                </div>
+                <div class="k">Mode</div>
+                <div class="v">
+                  <label class="sr-only" for="netreaperMode">Scan mode</label>
+                  <select id="netreaperMode" class="input">
+                    <option value="quick">Quick Scan</option>
+                    <option value="wifi">WiFi Scan</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row" style="margin-top:10px;">
+                <a href="#" class="btn neon-btn" id="netreaperScanBtn"><span></span><span></span><span></span><span></span>SCAN</a>
+                <a href="#" class="btn neon-btn" id="netreaperDevicesBtn"><span></span><span></span><span></span><span></span>LIST DEVICES</a>
+                <a href="#" class="btn neon-btn" id="netreaperReportBtn"><span></span><span></span><span></span><span></span>GET REPORT</a>
+              </div>
+              <div class="monoDim" style="margin-top:8px;">
+                REST actions: scan, list devices, get report. Results are shown below.
+              </div>
+            </div>
+          </div>
+
+          <div class="tableWrap" style="margin-top: var(--grid-gap);">
+            <div class="cardTitle" style="padding:10px 10px; margin:0;">
+              Output
+              <span class="monoDim">NetReaper responses and parsed device data.</span>
+            </div>
+            <div id="netreaperOutput" class="termBody" style="height: 240px; overflow:auto; padding:10px;"></div>
+          </div>
+        </section>
+
         <section id="view-settings" class="view hidden">
           <div class="row" style="gap: var(--grid-gap);">
             <div class="card" style="flex:1;">
@@ -1256,6 +1332,12 @@
       rules: [],
       audit: [],
       alerts: [],
+      netreaper: {
+        baseUrl: '',
+        token: '',
+        jobs: [],
+        ws: null,
+      },
     };
 
     const $ = (id) => document.getElementById(id);
@@ -1279,6 +1361,151 @@
 
     function postJson(path, body) {
       return api(path, { method: "POST", body: JSON.stringify(body ?? {}) });
+    }
+
+    const NETREAPER_DEFAULT = "http://127.0.0.1:9088";
+
+    function getNetreaperBase() {
+      const input = $('netreaperUrl');
+      const saved = localStorage.getItem('netreaperUrl') || NETREAPER_DEFAULT;
+      if (input && !input.value) input.value = saved;
+      return (input?.value || saved).trim();
+    }
+
+    function netreaperHeaders() {
+      if (!state.netreaper.token) return {};
+      return { Authorization: `Bearer ${state.netreaper.token}` };
+    }
+
+    function netreaperLog(message, cls = 'dim') {
+      const out = $('netreaperOutput');
+      if (!out) return;
+      const line = document.createElement('div');
+      line.className = `termLine ${cls}`;
+      line.textContent = message;
+      out.appendChild(line);
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function setNetreaperStatus(text, ok = false) {
+      const el = $('netreaperStatus');
+      if (!el) return;
+      el.textContent = text;
+      const dot = el.parentElement?.querySelector('.dot');
+      if (dot) dot.className = `dot ${ok ? 'ok' : 'warn'}`;
+    }
+
+    async function netreaperAuth() {
+      const password = $('netreaperPassword')?.value || '';
+      if (!password.trim()) {
+        netreaperLog('Missing password for NetReaper auth.', 'warn');
+        return;
+      }
+      try {
+        const base = getNetreaperBase();
+        const res = await fetch(`${base}/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        if (!res.ok) throw new Error(`Auth failed (${res.status})`);
+        const data = await res.json();
+        state.netreaper.token = data.token;
+        setNetreaperStatus('AUTHENTICATED', true);
+        netreaperLog('NetReaper authenticated.', 'ok');
+        bumpCounts();
+      } catch (err) {
+        setNetreaperStatus('AUTH FAILED');
+        netreaperLog(`NetReaper auth error: ${err.message}`, 'warn');
+      }
+    }
+
+    async function netreaperScan() {
+      const target = $('netreaperTarget')?.value || '';
+      const mode = $('netreaperMode')?.value || 'quick';
+      if (!target.trim() && mode !== 'wifi') {
+        netreaperLog('Scan target is required for quick scan.', 'warn');
+        return;
+      }
+      try {
+        const base = getNetreaperBase();
+        const res = await fetch(`${base}/api/netreaper/scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...netreaperHeaders() },
+          body: JSON.stringify({ target: target || 'wifi', mode })
+        });
+        if (!res.ok) throw new Error(`Scan failed (${res.status})`);
+        const data = await res.json();
+        state.netreaper.jobs.unshift({ id: data.job_id, target, mode, ts: Date.now() });
+        netreaperLog(`Scan queued: job ${data.job_id}`, 'ok');
+        bumpCounts();
+      } catch (err) {
+        netreaperLog(`Scan error: ${err.message}`, 'warn');
+      }
+    }
+
+    async function netreaperDevices() {
+      try {
+        const base = getNetreaperBase();
+        const res = await fetch(`${base}/api/netreaper/devices`, {
+          headers: { ...netreaperHeaders() }
+        });
+        if (!res.ok) throw new Error(`Device list failed (${res.status})`);
+        const data = await res.json();
+        netreaperLog(`Devices: ${JSON.stringify(data.devices ?? [], null, 2)}`, 'ok');
+      } catch (err) {
+        netreaperLog(`Device list error: ${err.message}`, 'warn');
+      }
+    }
+
+    async function netreaperReport() {
+      try {
+        const base = getNetreaperBase();
+        const res = await fetch(`${base}/api/netreaper/report`, {
+          headers: { ...netreaperHeaders() }
+        });
+        if (!res.ok) throw new Error(`Report failed (${res.status})`);
+        const data = await res.json();
+        netreaperLog(`Report: ${JSON.stringify(data, null, 2)}`, 'ok');
+      } catch (err) {
+        netreaperLog(`Report error: ${err.message}`, 'warn');
+      }
+    }
+
+    function netreaperConnectWs() {
+      if (!state.netreaper.token) {
+        netreaperLog('Authenticate before opening log stream.', 'warn');
+        return;
+      }
+      if (state.netreaper.ws) {
+        state.netreaper.ws.close();
+        state.netreaper.ws = null;
+      }
+      const base = getNetreaperBase();
+      const wsUrl = base.replace(/^http/, 'ws') + '/ws/netreaper';
+      const ws = new WebSocket(wsUrl);
+      state.netreaper.ws = ws;
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ token: state.netreaper.token }));
+        netreaperLog('NetReaper log stream connected.', 'ok');
+      };
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.output) netreaperLog(data.output, 'dim');
+          if (data.error) netreaperLog(data.error, 'warn');
+        } catch (_) {
+          netreaperLog(event.data, 'dim');
+        }
+      };
+      ws.onerror = () => {
+        netreaperLog('NetReaper log stream error.', 'warn');
+      };
+      ws.onclose = () => {
+        netreaperLog('NetReaper log stream closed.', 'warn');
+        state.netreaper.ws = null;
+      };
     }
 
     function formatTags(tags){
@@ -1388,6 +1615,8 @@
 
     async function bootstrap(){
       renderAll();
+      getNetreaperBase();
+      setNetreaperStatus('DISCONNECTED');
       logTerm(`[${now()}] NEON-NOC initialized. Type "help" in the terminal.`, 'ok');
       $('healthLight').className = 'statusLight ok';
       $('healthText').textContent = 'ENGINE: CONNECTED';
@@ -1406,10 +1635,21 @@
     // ==============================
     function setView(view){
       state.view = view;
-      document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+      document.querySelectorAll('.nav a').forEach(b => b.classList.toggle('active', b.dataset.view === view));
       document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
       $(`view-${view}`).classList.remove('hidden');
-      $('mainTitle').textContent = view.charAt(0).toUpperCase() + view.slice(1);
+      const titles = {
+        overview: 'Overview',
+        devices: 'Devices',
+        discovery: 'Discovery',
+        actions: 'Actions',
+        automation: 'Automation',
+        alerts: 'Alerts',
+        netreaper: 'NetReaper',
+        settings: 'Settings',
+        logs: 'Audit Logs',
+      };
+      $('mainTitle').textContent = titles[view] || view;
     }
 
     function filteredDevices(){
@@ -1574,6 +1814,8 @@
       $('cntDevices').textContent = String(state.devices.length);
       $('cntLogs').textContent = String(state.audit.length);
       $('cntAlerts').textContent = String(state.alerts.length);
+      const netreaperJobs = state.netreaper.jobs.length;
+      if ($('cntNetreaper')) $('cntNetreaper').textContent = String(netreaperJobs);
     }
 
     function renderJob(){
@@ -1801,8 +2043,9 @@
     function wireUI(){
       // Navigation
       $('nav').addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-view]');
+        const btn = e.target.closest('a[data-view]');
         if (!btn) return;
+        e.preventDefault();
         setView(btn.dataset.view);
         renderAll();
       });
@@ -1844,6 +2087,32 @@
       $('panicConfirm').addEventListener('click', () => {
         $('panicModal').classList.remove('show');
         cancelJob('PANIC_STOP');
+      });
+
+      // NetReaper controls
+      $('netreaperAuthBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        netreaperAuth();
+      });
+      $('netreaperWsBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        netreaperConnectWs();
+      });
+      $('netreaperScanBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        netreaperScan();
+      });
+      $('netreaperDevicesBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        netreaperDevices();
+      });
+      $('netreaperReportBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        netreaperReport();
+      });
+      $('netreaperUrl').addEventListener('change', (e) => {
+        localStorage.setItem('netreaperUrl', e.target.value.trim());
+        setNetreaperStatus('DISCONNECTED');
       });
 
       $('exportBtn').addEventListener('click', () => {

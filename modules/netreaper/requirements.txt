@@ -1,0 +1,30 @@
+# NetReaper Python Dependencies
+# Core GUI framework
+PyQt6>=6.4.0
+
+# FastAPI server dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# Security and authentication
+PyJWT>=2.8.0
+python-jose[cryptography]>=3.3.0
+psutil>=5.9.0
+
+# Testing dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+
+# Security scanning (optional, for development)
+bandit>=1.7.5
+pip-audit>=2.6.0
+
+# Type checking (optional, for development)
+mypy>=1.7.0
+types-PyYAML>=6.0.12
+
+# Camera detection helpers
+numpy>=1.24.0
