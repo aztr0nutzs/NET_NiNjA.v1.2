@@ -1,0 +1,10 @@
+# NetReaper GUI Windows Requirements
+# Install with: pip install -r requirements_windows.txt
+
+PyQt6>=6.4.0
+PyQt6-Qt6>=6.4.0
+PyQt6-sip>=13.4.0
+
+# Optional but recommended for enhanced functionality
+psutil>=5.9.0  # For system monitoring
+requests>=2.28.0  # For web requests

@@ -1,0 +1,553 @@
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════════════════════
+# NETREAPER - Network Security & WiFi Assault Toolkit
+# ═══════════════════════════════════════════════════════════════════════════════
+# Copyright (c) 2025 Nerds489
+# SPDX-License-Identifier: Apache-2.0
+#
+# Thin dispatcher: sources libraries and modules, then routes to handlers.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+set -euo pipefail
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PRE-INIT: Suppress output for config get (must be set before sourcing libs)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# For "config get <key>", suppress ALL output (logs, init messages) so that
+# only the raw value is printed to stdout. This ensures BATS tests pass.
+if [[ "${1:-}" == "config" && "${2:-}" == "get" && -n "${3:-}" ]]; then
+    export NR_SUPPRESS_OUTPUT=1
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SOURCE LIBRARIES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Resolve NETREAPER_ROOT (parent of bin/)
+NETREAPER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export NETREAPER_ROOT
+
+# Source version helper first (provides NETREAPER_ROOT and VERSION)
+# shellcheck source=../lib/version.sh
+source "$NETREAPER_ROOT/lib/version.sh"
+
+# Source core libraries in dependency order
+# Each lib has a guard to prevent multiple sourcing
+for lib in core ui safety detection config utils wireless; do
+    # shellcheck source=/dev/null
+    source "$NETREAPER_ROOT/lib/${lib}.sh" || {
+        echo "ERROR: Failed to source lib/${lib}.sh" >&2
+        exit 1
+    }
+done
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SOURCE MODULES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Source all modules (each has its own guard)
+for mod in "$NETREAPER_ROOT/modules"/*.sh; do
+    [[ -f "$mod" ]] && source "$mod"
+done
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INITIALIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Create required directories (from core.sh)
+ensure_directories
+
+# Initialize configuration system (from config.sh)
+init_config
+
+# Apply configuration to runtime behavior
+_apply_config() {
+    local cfg_value=""
+
+    # Apply log_level from config
+    cfg_value=$(config_get log_level 2>/dev/null) || cfg_value=""
+    if [[ -n "$cfg_value" ]]; then
+        case "${cfg_value^^}" in
+            DEBUG|INFO|SUCCESS|WARNING|ERROR|FATAL)
+                set_log_level "$cfg_value"
+                ;;
+        esac
+    fi
+
+    # Apply file_logging from config
+    cfg_value=$(config_get file_logging 2>/dev/null) || cfg_value=""
+    if [[ -n "$cfg_value" ]]; then
+        if config_is_true "$cfg_value"; then
+            FILE_LOGGING=1
+        else
+            FILE_LOGGING=0
+        fi
+    fi
+
+    # Apply confirm_dangerous from config (interactive mode only)
+    # Note: This only affects interactive confirmations, not safety gates
+    cfg_value=$(config_get confirm_dangerous 2>/dev/null) || cfg_value=""
+    if [[ -n "$cfg_value" ]]; then
+        if config_is_true "$cfg_value"; then
+            export NR_CONFIRM_DANGEROUS=1
+        else
+            export NR_CONFIRM_DANGEROUS=0
+        fi
+    fi
+
+    # Apply warn_public_ip from config
+    cfg_value=$(config_get warn_public_ip 2>/dev/null) || cfg_value=""
+    if [[ -n "$cfg_value" ]]; then
+        if config_is_true "$cfg_value"; then
+            export NR_WARN_PUBLIC_IP=1
+        else
+            export NR_WARN_PUBLIC_IP=0
+        fi
+    fi
+    # Apply lite_mode from config
+    cfg_value=$(config_get lite_mode 2>/dev/null) || cfg_value=""
+    if [[ -n "$cfg_value" ]]; then
+        if config_is_true "$cfg_value"; then
+            export NR_LITE_MODE=1
+        else
+            export NR_LITE_MODE=0
+        fi
+    fi
+}
+_apply_config
+
+# Detect system info (from detection.sh)
+detect_system
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLI FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_show_version() {
+    echo "netreaper v${VERSION} (Phantom Protocol)"
+}
+
+_show_help() {
+    cat << 'EOF'
+NETREAPER - Network Security & WiFi Assault Toolkit
+
+Usage: netreaper [command] [options]
+
+Options:
+  -h, --help      Show this help message
+  -V, --version   Show version information
+  queue             Pipeline and task queue management
+    queue add <file>     Add job to queue
+    queue list           List queued jobs
+    queue run            Execute queued jobs
+    queue pause <id>     Pause a running job
+    queue resume <id>    Resume a paused job
+    queue cancel <id>    Cancel a job
+  --dry-run       Preview commands without executing
+  --lite          Enable low-resource mode (Lite mode)
+
+Commands:
+  status          Show tool installation status
+  scan <target>   Run a quick port scan
+  wifi            WiFi operations
+  stress          Stress testing (hping3, netem)
+    stress hping <target>    Run hping3 packet flood
+    stress netem <iface>     Apply network impairment
+  wizard          Guided penetration testing wizards
+    wizard web <target>      Web application reconnaissance
+    wizard creds <target>    Credential hunting
+    wizard wifi <iface>      Wireless takeover
+  config          Configuration management
+    config show              Show all configuration
+    config get <key>         Get a configuration value
+    config set <key> <val>   Set a configuration value
+    config edit              Edit config file interactively
+    config path              Show config file path
+    config reset             Reset to default configuration
+  help            Show this help message
+
+Examples:
+  netreaper --version
+  netreaper status
+  netreaper scan 192.168.1.1
+  netreaper config show
+  netreaper config set log_level DEBUG
+
+Run without arguments to launch the interactive menu.
+EOF
+}
+
+_show_status() {
+    # Show system information first
+    echo
+    echo -e "    ${C_BOLD}${C_CYAN}System Information${C_RESET}"
+    echo -e "    ${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
+    log_info "Distribution: ${DISTRO:-unknown} (${DISTRO_FAMILY:-unknown})"
+    log_info "Package manager: ${PKG_MANAGER:-unknown}"
+    log_info "NETREAPER root: ${NETREAPER_ROOT}"
+    log_info "Config directory: ${CONFIG_DIR}"
+    echo
+
+    # Delegate to tool status display
+    if declare -f show_tool_status &>/dev/null; then
+        show_tool_status
+    else
+        # Fallback: basic tool status display
+        echo -e "    ${C_BOLD}${C_CYAN}Tool Status${C_RESET}"
+        echo -e "    ${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
+        log_info "Core tools:"
+        for tool in nmap aircrack-ng hashcat wireshark tcpdump hydra; do
+            if command -v "$tool" &>/dev/null; then
+                echo -e "    ${C_GREEN}✓${C_RESET} $tool"
+            else
+                echo -e "    ${C_RED}✗${C_RESET} $tool"
+            fi
+        done
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+main() {
+    case "${1:-}" in
+        -V|--version)
+            _show_version
+            exit 0
+            ;;
+        -h|--help)
+            _show_help
+            exit 0
+            ;;
+
+        --lite)
+            # Enable low‑resource mode.  Set NR_LITE_MODE before delegating to remaining args.
+            NR_LITE_MODE=1
+            export NR_LITE_MODE
+            log_info "Lite mode enabled"
+            shift
+            if [[ -n "${1:-}" ]]; then
+                main "$@"
+            fi
+            exit 0
+            ;;
+        --dry-run)
+            NR_DRY_RUN=1
+            export NR_DRY_RUN
+            log_info "Dry-run mode enabled"
+            shift
+            if [[ -n "${1:-}" ]]; then
+                main "$@"
+            fi
+            exit 0
+            ;;
+        help)
+            _show_help
+            exit 0
+            ;;
+        config)
+            case "${2:-}" in
+                show)
+                    config_show
+                    exit 0
+                    ;;
+                get)
+                    if [[ -z "${3:-}" ]]; then
+                        log_error "Missing key argument"
+                        echo "Usage: netreaper config get <key>"
+                        exit 1
+                    fi
+                    value=$(config_get "$3") || {
+                        log_error "Key not found: $3"
+                        exit 1
+                    }
+                    # Output raw value only - no formatting, colors, or prefix
+                    printf '%s\n' "$value"
+                    exit 0
+                    ;;
+                set)
+                    if [[ -z "${3:-}" ]] || [[ -z "${4:-}" ]]; then
+                        log_error "Missing key or value argument"
+                        echo "Usage: netreaper config set <key> <value>"
+                        exit 1
+                    fi
+                    config_set "$3" "$4"
+                    exit 0
+                    ;;
+                edit)
+                    config_edit
+                    exit $?
+                    ;;
+                path)
+                    config_path
+                    exit 0
+                    ;;
+                reset)
+                    if [[ "${NR_NON_INTERACTIVE:-0}" != "1" ]] && [[ -t 0 ]]; then
+                        if ! confirm "Reset configuration to defaults?" "n"; then
+                            log_info "Reset cancelled"
+                            exit 0
+                        fi
+                    fi
+                    config_reset
+                    exit 0
+                    ;;
+                "")
+                    # No subcommand - show config
+                    config_show
+                    exit 0
+                    ;;
+                *)
+                    log_error "Unknown config subcommand: ${2:-}"
+                    echo "Usage: netreaper config [show|get|set|edit|path|reset]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        status)
+            _show_status
+            exit 0
+            ;;
+        scan)
+            shift
+            if declare -f run_nmap_quick &>/dev/null && [[ -n "${1:-}" ]]; then
+                run_nmap_quick "$1"
+            else
+                log_info "Scan command placeholder - modules not yet migrated"
+            fi
+            exit 0
+            ;;
+        wifi)
+            case "${2:-}" in
+                list)
+                    # List wireless interfaces
+                    get_wireless_interfaces
+                    exit $?
+                    ;;
+                status)
+                    # Show interface monitor mode status
+                    if [[ -z "${3:-}" ]]; then
+                        log_error "Missing interface argument"
+                        echo "Usage: netreaper wifi status <interface>"
+                        exit 1
+                    fi
+                    check_monitor_mode "$3"
+                    exit $?
+                    ;;
+                monitor)
+                    case "${3:-}" in
+                        on)
+                            if [[ -z "${4:-}" ]]; then
+                                log_error "Missing interface argument"
+                                echo "Usage: netreaper wifi monitor on <interface>"
+                                exit 1
+                            fi
+                            enable_monitor_mode "$4"
+                            exit $?
+                            ;;
+                        off)
+                            if [[ -z "${4:-}" ]]; then
+                                log_error "Missing interface argument"
+                                echo "Usage: netreaper wifi monitor off <interface>"
+                                exit 1
+                            fi
+                            disable_monitor_mode "$4"
+                            exit $?
+                            ;;
+                        *)
+                            echo "Usage: netreaper wifi monitor <on|off> <interface>"
+                            exit 1
+                            ;;
+                    esac
+                    ;;
+
+                scan)
+                    # WiFi discovery scan -> JSON (for holographic map / reporting)
+                    if [[ -z "${3:-}" ]]; then
+                        # Optional iface: auto-detect
+                        wifi_scan_json "" ""
+                        exit $?
+                    fi
+                    case "${3:-}" in
+                        --help|-h)
+                            cat <<'WIFI_SCAN_HELP'
+Usage:
+  netreaper wifi scan [iface]
+
+What it does:
+  Performs a WiFi discovery scan (authorized environments only) and writes:
+    ~/.netreaper/output/wifi_scan_latest.json
+
+Notes:
+  - Prefers nmcli when available (managed mode).
+  - Falls back to iw (requires sudo/root).
+WIFI_SCAN_HELP
+                            exit 0
+                            ;;
+                        *)
+                            wifi_scan_json "$3" ""
+                            exit $?
+                            ;;
+                    esac
+                    ;;
+                map)
+                    # Serve the holographic 3D-ish map UI
+                    local port="${3:-8787}"
+                    if [[ "$port" == "--help" || "$port" == "-h" ]]; then
+                        cat <<'WIFI_MAP_HELP'
+Usage:
+  netreaper wifi map [port]
+
+Then open in a browser:
+  http://127.0.0.1:<port>/
+
+Requires:
+  python3
+
+Tips:
+  Run a scan first:
+    netreaper wifi scan <iface>
+WIFI_MAP_HELP
+                        exit 0
+                    fi
+
+                    if ! check_tool "python3"; then
+                        log_error "python3 is required for the map server"
+                        exit 1
+                    fi
+
+                    python3 "$NETREAPER_ROOT/bin/netreaper-map" --port "$port" --data "$OUTPUT_DIR/wifi_scan_latest.json"
+                    exit $?
+                    ;;
+
+                "")
+                    # No subcommand - show wifi usage
+                    cat << 'WIFI_HELP'
+NETREAPER WiFi Commands
+
+Usage: netreaper wifi <command> [options]
+
+Commands:
+  list                    List wireless interfaces
+  status <iface>          Show interface mode (monitor/managed)
+  monitor on <iface>      Enable monitor mode
+  monitor off <iface>     Disable monitor mode
+  scan [iface]            WiFi discovery -> JSON (for map)
+  map [port]              Launch holographic map server (default 8787)
+
+Examples:
+  netreaper wifi list
+  netreaper wifi status wlan0
+  netreaper wifi monitor on wlan0
+  netreaper wifi monitor off wlan0mon
+  netreaper wifi scan wlan0
+  netreaper wifi map 8787
+WIFI_HELP
+                    exit 0
+                    ;;
+                *)
+                    log_error "Unknown wifi subcommand: ${2:-}"
+                    echo "Usage: netreaper wifi [list|status|monitor]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        stress)
+            case "${2:-}" in
+                hping)
+                    # netreaper stress hping <target> [port] [type] [duration] [rate]
+                    if [[ -z "${3:-}" ]]; then
+                        log_error "Missing target argument"
+                        echo "Usage: netreaper stress hping <target> [port] [type] [duration] [rate]"
+                        exit 1
+                    fi
+                    run_hping_attack "$3" "${4:-80}" "${5:-syn}" "${6:-30}" "${7:-1000}"
+                    exit $?
+        queue)
+            shift
+            exec "$NETREAPER_ROOT/bin/nrpipeline" "$@"
+            ;;
+                    ;;
+                netem)
+                    # netreaper stress netem <iface> [impairment] [value] [duration]
+                    if [[ -z "${3:-}" ]]; then
+                        log_error "Missing interface argument"
+                        echo "Usage: netreaper stress netem <iface> [impairment] [value] [duration]"
+                        exit 1
+                    fi
+                    run_netem "$3" "${4:-delay}" "${5:-100ms}" "${6:-60}"
+                    exit $?
+                    ;;
+                "")
+                    # No subcommand - show stress usage
+                    stress_usage
+                    exit 0
+                    ;;
+                *)
+                    log_error "Unknown stress subcommand: ${2:-}"
+                    echo "Usage: netreaper stress [hping|netem]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        wizard)
+            case "${2:-}" in
+                web)
+                    run_web_wizard "${3:-}"
+                    exit $?
+                    ;;
+                creds)
+                    run_creds_wizard "${3:-}"
+                    exit $?
+                    ;;
+                wifi)
+                    run_wifi_takeover_wizard "${3:-}"
+                    exit $?
+                    ;;
+                "")
+                    echo "NETREAPER Wizard Commands"
+                    echo ""
+                    echo "Usage: netreaper wizard <command> [options]"
+                    echo ""
+                    echo "Wizards:"
+                    echo "  web [target]     Web application reconnaissance wizard"
+                    echo "  creds [target]   Credential hunting wizard"
+                    echo "  wifi [iface]     Wireless takeover wizard"
+                    echo ""
+                    echo "Examples:"
+                    echo "  netreaper wizard web example.com"
+                    echo "  netreaper wizard creds 192.168.1.1"
+                    echo "  netreaper wizard wifi wlan0"
+                    exit 0
+                    ;;
+                *)
+                    log_error "Unknown wizard: ${2:-}"
+                    echo "Usage: netreaper wizard [web|creds|wifi]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        "")
+            # No arguments: launch interactive menu
+            if declare -f main_menu &>/dev/null; then
+                main_menu
+            else
+                log_info "Interactive menu not yet available"
+                log_info "Run 'netreaper --help' for available commands"
+            fi
+            exit 0
+            ;;
+        *)
+            log_error "Unknown command: $1"
+            echo "Run 'netreaper --help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+# Entry point (allows sourcing for tests without executing)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
