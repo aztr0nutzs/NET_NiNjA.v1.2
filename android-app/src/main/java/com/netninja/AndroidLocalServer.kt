@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Serializable data class ScheduleRequest(val subnet: String? = null, val freq: String? = null)
 @Serializable data class RuleRequest(val match: String? = null, val action: String? = null)
 @Serializable data class RuleEntry(val match: String, val action: String)
+@Serializable data class DeviceEvent(val deviceId: String, val ts: Long, val event: String)
 
 class AndroidLocalServer(private val ctx: Context) {
   private var engine: ApplicationEngine? = null
@@ -51,6 +52,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private val lastScanAt = AtomicReference<Long?>(null)
   private val schedules = java.util.concurrent.CopyOnWriteArrayList<String>()
   private val rules = java.util.concurrent.CopyOnWriteArrayList<RuleEntry>()
+  private val events = ConcurrentHashMap<String, java.util.concurrent.CopyOnWriteArrayList<DeviceEvent>>()
 
   fun start(host: String = "127.0.0.1", port: Int = 8787) {
     val uiDir = File(ctx.filesDir, "web-ui").apply { mkdirs() }
@@ -120,7 +122,14 @@ class AndroidLocalServer(private val ctx: Context) {
                     vendor = vendor,
                     os = os
                   )
+                  val prev = devices[dev.id]
                   devices[dev.id] = dev
+                  val now = System.currentTimeMillis()
+                  deviceEvents(prev, dev).forEach { event ->
+                    events.computeIfAbsent(dev.id) { java.util.concurrent.CopyOnWriteArrayList() }
+                      .add(DeviceEvent(dev.id, now, event))
+                    log("event ${dev.id} $event")
+                  }
                   if (reachable) {
                     synchronized(found) { found += dev }
                   }
@@ -135,6 +144,24 @@ class AndroidLocalServer(private val ctx: Context) {
         }
 
         get("/api/v1/discovery/results") { call.respond(devices.values.toList()) }
+
+        get("/api/v1/devices/{id}") {
+          val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+          val dev = devices[id] ?: return@get call.respond(HttpStatusCode.NotFound)
+          call.respond(dev)
+        }
+
+        get("/api/v1/devices/{id}/history") {
+          val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+          val history = events[id]?.toList().orEmpty()
+          call.respond(history)
+        }
+
+        get("/api/v1/devices/{id}/uptime") {
+          val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+          val history = events[id]?.toList().orEmpty()
+          call.respond(mapOf("uptimePct24h" to uptimePct(history, 86_400_000)))
+        }
 
         get("/api/v1/schedules") {
           call.respond(schedules.toList())
@@ -395,6 +422,38 @@ class AndroidLocalServer(private val ctx: Context) {
     val address = java.net.InetAddress.getByName("255.255.255.255")
     val dp = java.net.DatagramPacket(packet, packet.size, address, 9)
     java.net.DatagramSocket().use { it.broadcast = true; it.send(dp) }
+  }
+
+  private fun deviceEvents(old: Device?, now: Device): List<String> {
+    if (old == null) {
+      return if (now.online) listOf("NEW_DEVICE", "DEVICE_ONLINE") else listOf("NEW_DEVICE")
+    }
+    val out = mutableListOf<String>()
+    if (old.online != now.online) out += if (now.online) "DEVICE_ONLINE" else "DEVICE_OFFLINE"
+    if (old.ip != now.ip) out += "IP_CHANGED"
+    return out
+  }
+
+  private fun uptimePct(events: List<DeviceEvent>, windowMs: Long, nowMs: Long = System.currentTimeMillis()): Double {
+    if (windowMs <= 0) return 0.0
+    if (events.isEmpty()) return 0.0
+
+    val windowStart = nowMs - windowMs
+    val clipped = events.filter { it.ts >= windowStart }
+    if (clipped.isEmpty()) return 0.0
+
+    var online = false
+    var lastTs = clipped.first().ts
+    var up = 0L
+
+    for (e in clipped) {
+      if (online) up += (e.ts - lastTs)
+      online = e.event == "DEVICE_ONLINE"
+      lastTs = e.ts
+    }
+
+    if (online) up += (nowMs - lastTs)
+    return (up.toDouble() / windowMs.toDouble()) * 100.0
   }
 }
 

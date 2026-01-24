@@ -25,17 +25,36 @@ export async function runScan(subnet) {
       row.onclick = async () => {
         const detail = byId("deviceDetail");
         if (detail) {
-          const hist = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/history`);
-          const up = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/uptime`);
+          detail.style.display = "block";
+          detail.innerHTML = `<div>Loading device details...</div>`;
+          let hist = [];
+          let up = null;
+          let note = "";
+          try {
+            hist = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/history`);
+          } catch (err) {
+            note = "History unavailable (endpoint not supported on this host).";
+          }
+          try {
+            up = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/uptime`);
+          } catch (err) {
+            if (!note) note = "Uptime unavailable (endpoint not supported on this host).";
+          }
+          const uptime = up?.uptimePct24h;
+          const uptimeText = Number.isFinite(uptime) ? `${uptime.toFixed(2)}%` : "-";
+          const eventsText = Array.isArray(hist) && hist.length
+            ? hist.map(h => `${new Date(h.ts).toLocaleString()} ${h.event}`).join("\n")
+            : "(no events)";
           detail.style.display = "block";
           detail.innerHTML = `
             <h3>${d.ip}</h3>
             <div><b>MAC</b>: ${d.mac ?? "-"}</div>
             <div><b>Vendor</b>: ${d.vendor ?? "-"}</div>
             <div><b>Status</b>: ${d.online ? "ONLINE" : "OFFLINE"}</div>
-            <div><b>Uptime 24h</b>: ${Number(up.uptimePct24h ?? up.uptimePct24h).toFixed?.(2) ?? up.uptimePct24h}%</div>
+            <div><b>Uptime 24h</b>: ${uptimeText}</div>
+            ${note ? `<div class="muted" style="margin-top:6px">${note}</div>` : ""}
             <div style="margin-top:8px"><b>Events</b>:</div>
-            <pre style="white-space:pre-wrap">${hist.map(h => `${new Date(h.ts).toLocaleString()} ${h.event}`).join("\n")}</pre>
+            <pre style="white-space:pre-wrap">${eventsText}</pre>
           `;
         }
       };
