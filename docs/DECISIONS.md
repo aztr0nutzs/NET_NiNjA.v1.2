@@ -12,3 +12,6 @@
 - Keep login styling nearly black to match the product look and avoid blue backgrounds.
 - Load the login UI from bundled assets first to avoid blank screens before the local server is ready.
 - Treat engine-offline as a distinct login state so network failures are not shown as invalid credentials.
+- When UI is loaded from `file://`, force API base to `http://127.0.0.1:8787` to avoid file-scheme fetch failures.
+- Keep dashboard media/video references relative to `new_assets/` to avoid double-path lookups.
+- Prefer server-hosted dashboard after login when the engine is ready to avoid file-scheme limitations.

@@ -33,3 +33,11 @@
 - User-visible symptom: Login shows "Invalid credentials" even with correct creds; login screen background appears blue instead of black.
 - Root cause: Login UI treated any fetch failure as invalid credentials; matrix/scanline palette used cyan/pink.
 - Fix: Ping local engine before login, separate offline vs unauthorized states, and switch login background/matrix to black + purple.
+- Root cause addendum: When loaded from `file:///android_asset`, `location.origin` resolved to `file://`, causing API requests to hit `file:///api/...` and always fail.
+- Fix addendum: Treat `file:` origins as invalid and force `http://127.0.0.1:8787` for API calls.
+- User-visible symptom: Header video shows as a generic mp4 icon; SCAN button appears inert.
+- Root cause: Header video URL pointed to `new_assets/ninja_header.mp4` while already inside `new_assets/`, and API base resolved to `file://` on the dashboard page.
+- Fix: Use `ninja_header.mp4` relative URL and force API base to localhost for file-scheme loads on the dashboard.
+- Update: Added header video load/play diagnostics and fallback to the local server path if the asset URL fails.
+- Update: Added scan click logging and ensured scan button stays above overlays.
+- Update: Login now redirects to the server dashboard when the engine is ready to avoid file-scheme media/API issues.

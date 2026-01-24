@@ -18,3 +18,7 @@
 - Added an asset-based login bootstrap to avoid black screens while the local server starts.
 - Separated login auth failures from engine-offline conditions to avoid false invalid-credential errors.
 - Shifted login visuals to a black background with purple matrix rain.
+- Fixed API base resolution for file:// WebView loads so auth hits localhost instead of file:///api.
+- Corrected dashboard header video path and API base resolution for file-scheme loads.
+- Added header video diagnostics/fallback and scan click logging to confirm wiring.
+- Redirected the dashboard to the server URL after login to avoid file-scheme media and API issues.

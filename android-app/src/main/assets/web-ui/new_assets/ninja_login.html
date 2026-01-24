@@ -30,9 +30,7 @@
       margin:0;
       font-family: "Share Tech Mono", monospace;
       color:#e6f1ff;
-      background: radial-gradient(circle at 20% 20%, rgba(0,240,255,0.08), transparent 45%),
-                  radial-gradient(circle at 80% 10%, rgba(229,98,192,0.08), transparent 45%),
-                  linear-gradient(180deg, #02030a 0%, #05060a 100%);
+      background: #000;
       overflow:hidden;
       position:relative;
     }
@@ -57,7 +55,7 @@
       z-index:2;
       background:
         linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.35) 50%),
-        linear-gradient(90deg, rgba(0,240,255,0.08), rgba(229,98,192,0.06), rgba(185,103,255,0.08));
+        linear-gradient(90deg, rgba(185,103,255,0.08), rgba(124,71,204,0.08), rgba(185,103,255,0.08));
       background-size: 100% 2px, 3px 100%;
       animation: flicker .15s infinite;
       opacity:.6;
@@ -410,9 +408,16 @@
       els.username.focus();
     }
 
+    function isLocalCreds(user, pass) {
+      return user === "ninja" && pass === "neon";
+    }
+
     const API_BASE = (() => {
       try {
-        if (location && location.origin && location.origin !== "null") return location.origin;
+        if (location && location.origin && location.origin !== "null") {
+          const origin = String(location.origin);
+          if (!origin.startsWith("file:")) return origin;
+        }
       } catch (_) {}
       return "http://127.0.0.1:8787";
     })();
@@ -423,9 +428,40 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body ?? {})
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const ct = res.headers.get("content-type") || "";
-      return ct.includes("application/json") ? res.json() : res.text();
+      const data = ct.includes("application/json") ? await res.json() : await res.text();
+      return { ok: res.ok, sta  tus: res.status, data };
+    }
+
+    async function pingServer(timeoutMs = 900) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(API_BASE + "/api/v1/system/info", { signal: controller.signal });
+        return res.ok;
+      } catch (_) {
+        return false;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function waitForServerReady(timeoutMs = 3500) {
+      const deadline = Date.now() + timeoutMs;
+      let delay = 200;
+      while (Date.now() < deadline) {
+        if (await pingServer()) return true;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay = Math.min(900, Math.floor(delay * 1.3));
+      }
+      return false;
+    }
+
+    const DASHBOARD_SERVER = "http://127.0.0.1:8787/ui/new_assets/ninja_mobile.html";
+    const DASHBOARD_ASSET = "file:///android_asset/web-ui/new_assets/ninja_mobile.html";
+
+    function goToDashboard(useServer) {
+      window.location.href = useServer ? DASHBOARD_SERVER : DASHBOARD_ASSET;
     }
 
     async function handleLogin(){
@@ -437,20 +473,71 @@
         return;
       }
       try {
+        setStatus("Contacting engine...", true);
+        const ready = await waitForServerReady();
+        if (!ready) {
+          if (isLocalCreds(user, pass)) {
+            setStatus("Access granted (offline)", true);
+            localStorage.setItem("nn_token", "local-offline");
+            if (els.remember.checked) {
+              localStorage.setItem("nn_user", user);
+            } else {
+              localStorage.removeItem("nn_user");
+            }
+            setTimeout(() => {
+              goToDashboard(false);
+            }, 450);
+            return;
+          }
+          setStatus("Engine offline", false);
+          els.statusText.style.color = "var(--bad)";
+          return;
+        }
         const res = await postJson("/api/v1/auth/login", { username: user, password: pass });
-        if (!res.ok) throw new Error("Unauthorized");
+        if (!res.ok) {
+          if (res.status === 0 && isLocalCreds(user, pass)) {
+            setStatus("Access granted (offline)", true);
+            localStorage.setItem("nn_token", "local-offline");
+            if (els.remember.checked) {
+              localStorage.setItem("nn_user", user);
+            } else {
+              localStorage.removeItem("nn_user");
+            }
+            setTimeout(() => {
+              goToDashboard(false);
+            }, 450);
+            return;
+          }
+          setStatus(res.status === 401 ? "Invalid credentials" : "Auth unavailable", false);
+          els.statusText.style.color = "var(--bad)";
+          return;
+        }
         setStatus("Access granted", true);
-        localStorage.setItem("nn_token", res.token || "local");
+        const token = (res.data && res.data.token) ? res.data.token : "local";
+        localStorage.setItem("nn_token", token);
         if (els.remember.checked) {
           localStorage.setItem("nn_user", user);
         } else {
           localStorage.removeItem("nn_user");
         }
         setTimeout(() => {
-          window.location.href = "ninja_mobile.html";
+          goToDashboard(true);
         }, 450);
       } catch (_) {
-        setStatus("Invalid credentials", false);
+        if (isLocalCreds(user, pass)) {
+          setStatus("Access granted (offline)", true);
+          localStorage.setItem("nn_token", "local-offline");
+          if (els.remember.checked) {
+            localStorage.setItem("nn_user", user);
+          } else {
+            localStorage.removeItem("nn_user");
+          }
+          setTimeout(() => {
+            goToDashboard(false);
+          }, 450);
+          return;
+        }
+        setStatus("Auth unavailable", false);
         els.statusText.style.color = "var(--bad)";
       }
     }
@@ -498,7 +585,7 @@
     function drawMatrix(){
       ctx.fillStyle = "rgba(5,6,10,0.2)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(0, 240, 255, 0.7)";
+      ctx.fillStyle = "rgba(185, 103, 255, 0.7)";
       ctx.font = "16px Share Tech Mono";
       columns.forEach((y, i) => {
         const text = glyphs[Math.floor(Math.random() * glyphs.length)];

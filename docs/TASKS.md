@@ -18,3 +18,7 @@
 - [x] Restyle login screen to dark theme with boot header only
 - [x] Separate auth failures from engine-offline state on login
 - [x] Switch login backdrop to black with purple matrix rain
+- [x] Fix header video path in dashboard
+- [x] Force dashboard API base to localhost for file-scheme loads
+- [x] Add header video fallback + diagnostics and scan click logging
+- [x] Redirect dashboard to server URL after login when engine is ready

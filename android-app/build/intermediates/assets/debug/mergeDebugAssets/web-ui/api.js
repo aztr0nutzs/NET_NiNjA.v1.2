@@ -3,7 +3,10 @@
 // When loaded over http://127.0.0.1:8787/ui/... this becomes same-origin.
 export const API_BASE = (() => {
   try {
-    if (location && location.origin && location.origin !== "null") return location.origin;
+    if (location && location.origin && location.origin !== "null") {
+      const origin = String(location.origin);
+      if (!origin.startsWith("file:")) return origin;
+    }
   } catch (_) {}
   return "http://127.0.0.1:8787";
 })();

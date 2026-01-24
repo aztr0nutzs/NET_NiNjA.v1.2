@@ -863,6 +863,7 @@ max-width: 100dvw;
       object-fit:cover;
       display:block;
       filter: saturate(115%) contrast(108%);
+      background: #04080f;
     }
     .header-video::after{
       content:"";
@@ -870,6 +871,11 @@ max-width: 100dvw;
       inset:0;
       background: linear-gradient(180deg, rgba(5,12,18,0.25) 0%, rgba(5,12,18,0.6) 70%, rgba(5,12,18,0.85) 100%);
       pointer-events:none;
+    }
+
+    #scanBtn{
+      position: relative;
+      z-index: 2;
     }
 
     .header-flex{
@@ -1419,7 +1425,9 @@ max-width: 100dvw;
     <!-- HEADER -->
     <header>
       <div class="header-video">
-        <video src="new_assets/ninja_header.mp4" autoplay muted loop playsinline></video>
+        <video id="headerVideo" autoplay muted loop playsinline preload="auto">
+          <source src="ninja_header.mp4" type="video/mp4" />
+        </video>
       </div>
       <div class="header-flex">
         <div class="header-left">
@@ -1850,10 +1858,15 @@ refreshTelemetry();
 
     const API_BASE = (() => {
       try {
-        if (location && location.origin && location.origin !== "null") return location.origin;
+        if (location && location.origin && location.origin !== "null") {
+          const origin = String(location.origin);
+          if (!origin.startsWith("file:")) return origin;
+        }
       } catch (_) {}
       return "http://127.0.0.1:8787";
     })();
+
+    console.log("API_BASE", API_BASE);
 
     async function api(path, opts = {}) {
       const res = await fetch(API_BASE + path, Object.assign({
@@ -2075,6 +2088,7 @@ refreshTelemetry();
     }
 
     els.scanBtn?.addEventListener("click", () => {
+      console.log("SCAN_CLICK");
       if (state.streamActive) {
         stopStream();
       } else {
@@ -2135,6 +2149,25 @@ refreshTelemetry();
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeModal();
     });
+
+    const headerVideo = document.getElementById("headerVideo");
+    if (headerVideo) {
+      const tryPlay = () => {
+        headerVideo.muted = true;
+        headerVideo.play().catch(() => {});
+      };
+      headerVideo.addEventListener("loadeddata", () => console.log("HEADER_VIDEO_LOADED"));
+      headerVideo.addEventListener("error", () => {
+        console.log("HEADER_VIDEO_ERROR");
+        const fallback = "http://127.0.0.1:8787/ui/new_assets/ninja_header.mp4";
+        if (headerVideo.src.indexOf("127.0.0.1") === -1) {
+          headerVideo.src = fallback;
+          headerVideo.load();
+          tryPlay();
+        }
+      });
+      setTimeout(tryPlay, 250);
+    }
 
     setStreamingUI(false);
     refreshDevices();
