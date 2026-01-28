@@ -714,6 +714,16 @@ class AndroidLocalServer(private val ctx: Context) {
       )
       lastScanResults.set(devices.values.toList())
       logEvent("scan_complete", mapOf("devices" to devices.size, "subnet" to subnet))
+    } catch (e: CancellationException) {
+      scanProgress.set(
+        scanProgress.get().copy(
+          phase = "CANCELLED",
+          updatedAt = System.currentTimeMillis()
+        )
+      )
+      val reason = if (scanCancel.get()) "user_stop" else "job_cancelled"
+      logEvent("scan_cancelled", mapOf("reason" to reason, "subnet" to subnet))
+      throw e
     } catch (t: Throwable) {
       lastScanError.set(t.message)
       logEvent("scan_failed", mapOf("error" to t.message, "subnet" to subnet))
