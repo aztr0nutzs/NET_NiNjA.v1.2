@@ -27,6 +27,7 @@ import java.net.InetAddress
 import java.net.NetworkInterface
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -37,6 +38,34 @@ data class ActionRequest(val ip: String? = null, val mac: String? = null, val ur
 data class ScheduleRequest(val subnet: String? = null, val freq: String? = null)
 data class RuleRequest(val match: String? = null, val action: String? = null)
 data class RuleEntry(val match: String, val action: String)
+data class DeviceMetaUpdate(
+  val name: String? = null,
+  val owner: String? = null,
+  val room: String? = null,
+  val note: String? = null,
+  val trust: String? = null,
+  val type: String? = null,
+  val status: String? = null,
+  val via: String? = null,
+  val signal: String? = null,
+  val activityToday: String? = null,
+  val traffic: String? = null
+)
+data class PortScanRequest(val ip: String? = null, val timeoutMs: Int? = null)
+data class ScanProgress(
+  val progress: Int = 0,
+  val phase: String = "IDLE",
+  val networks: Int = 0,
+  val devices: Int = 0,
+  val rssiDbm: Double? = null,
+  val ssid: String? = null,
+  val bssid: String? = null,
+  val subnet: String? = null,
+  val gateway: String? = null,
+  val linkUp: Boolean = true,
+  val updatedAt: Long = System.currentTimeMillis()
+)
+data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Long)
 
 fun main() = startServer(File("web-ui"))
 
@@ -48,9 +77,185 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
   val deviceCache = ConcurrentHashMap<String, Device>()
   val schedules = java.util.concurrent.CopyOnWriteArrayList<String>()
   val rules = java.util.concurrent.CopyOnWriteArrayList<RuleEntry>()
+  val scheduleEntries = java.util.concurrent.CopyOnWriteArrayList<ScheduleEntry>()
+  val scanProgress = AtomicReference(ScanProgress())
+  val scanCancel = AtomicBoolean(false)
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
+
+  val schedulerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+  fun scheduleFrequencyMs(freq: String): Long? = when (freq.lowercase()) {
+    "hourly" -> 60 * 60 * 1000L
+    "daily" -> 24 * 60 * 60 * 1000L
+    "weekly" -> 7 * 24 * 60 * 60 * 1000L
+    "monthly" -> 30 * 24 * 60 * 60 * 1000L
+    else -> null
+  }
+
+  suspend fun performScan(subnet: String, timeoutMs: Int): List<Device> {
+    scanCancel.set(false)
+    val arp = ArpReader.read()
+    val ips = resolveScanIps(subnet)
+    val found = mutableListOf<Device>()
+    val sem = Semaphore(64)
+    val total = ips.size.coerceAtLeast(1)
+    val completed = java.util.concurrent.atomic.AtomicInteger(0)
+    val foundCount = java.util.concurrent.atomic.AtomicInteger(0)
+
+    val netInfo = localNetworkInfo()
+    scanProgress.set(
+      ScanProgress(
+        progress = 0,
+        phase = "DISCOVERY",
+        networks = 1,
+        devices = 0,
+        rssiDbm = null,
+        ssid = netInfo["name"]?.toString(),
+        bssid = null,
+        subnet = subnet.ifBlank { netInfo["cidr"]?.toString() },
+        gateway = netInfo["gateway"]?.toString(),
+        linkUp = true,
+        updatedAt = System.currentTimeMillis()
+      )
+    )
+
+    coroutineScope {
+      ips.map { ip ->
+        async(Dispatchers.IO) {
+          sem.withPermit {
+            if (scanCancel.get()) return@withPermit
+            val mac = arp[ip]
+            val reachable = try { InetAddress.getByName(ip).isReachable(timeoutMs) } catch (_: Exception) { false }
+            val openPorts = if (reachable) TcpScanner.scan(ip, timeoutMs) else emptyList()
+            val banners = if (openPorts.isNotEmpty()) openPorts.mapNotNull { p ->
+              BannerGrabber.grab(ip, p)?.let { p to it.trim() }
+            }.toMap() else emptyMap()
+            val hostname = if (reachable) resolveHostname(ip) else null
+            val vendor = OuiDb.lookup(mac)
+            val os = guessOs(openPorts, banners, hostname, vendor)
+            val now = System.currentTimeMillis()
+            val id = mac ?: ip
+
+            val old = devices.get(id)
+            val dev = Device(
+              id = id,
+              ip = ip,
+              name = old?.name ?: hostname ?: ip,
+              mac = mac,
+              hostname = hostname,
+              os = os,
+              vendor = vendor,
+              online = reachable,
+              lastSeen = now,
+              openPorts = openPorts,
+              banners = banners,
+              owner = old?.owner,
+              room = old?.room,
+              note = old?.note,
+              trust = old?.trust,
+              type = old?.type,
+              status = old?.status,
+              via = old?.via,
+              signal = old?.signal,
+              activityToday = old?.activityToday,
+              traffic = old?.traffic
+            )
+
+            devices.upsert(dev)
+            deviceCache[id] = dev
+            val evs = ChangeDetector.events(old, dev)
+            evs.forEach { e ->
+              events.insert(DeviceEvent(id, now, e))
+              log("event $id $e")
+            }
+
+            if (old == null) {
+              val autoBlock = rules.any { it.match == "new_device" && it.action == "block" }
+              if (autoBlock) {
+                val blocked = dev.copy(trust = "Blocked", status = "Blocked")
+                devices.upsert(blocked)
+                deviceCache[id] = blocked
+              }
+            }
+
+            if (reachable) {
+              synchronized(found) { found += dev }
+              foundCount.incrementAndGet()
+            }
+
+            val done = completed.incrementAndGet()
+            val pct = ((done.toDouble() / total.toDouble()) * 100.0).toInt().coerceIn(0, 100)
+            scanProgress.set(
+              ScanProgress(
+                progress = pct,
+                phase = if (pct >= 100) "COMPLETE" else "SCANNING",
+                networks = 1,
+                devices = foundCount.get(),
+                rssiDbm = null,
+                ssid = netInfo["name"]?.toString(),
+                bssid = null,
+                subnet = subnet.ifBlank { netInfo["cidr"]?.toString() },
+                gateway = netInfo["gateway"]?.toString(),
+                linkUp = true,
+                updatedAt = System.currentTimeMillis()
+              )
+            )
+          }
+        }
+      }.awaitAll()
+    }
+
+    if (scanCancel.get()) {
+      scanProgress.set(
+        scanProgress.get().copy(
+          phase = "CANCELLED",
+          updatedAt = System.currentTimeMillis()
+        )
+      )
+      return found
+    }
+    scanProgress.set(
+      scanProgress.get().copy(
+        progress = 100,
+        phase = "COMPLETE",
+        devices = foundCount.get(),
+        updatedAt = System.currentTimeMillis()
+      )
+    )
+
+    lastScanAt.set(System.currentTimeMillis())
+    return found
+  }
+
+  fun scheduleScan(subnet: String, freq: String): Boolean {
+    val freqMs = scheduleFrequencyMs(freq) ?: return false
+    val entry = ScheduleEntry(subnet = subnet, freqMs = freqMs, nextRunAt = System.currentTimeMillis() + freqMs)
+    scheduleEntries += entry
+    return true
+  }
+
+  fun startScheduler() {
+    schedulerScope.launch {
+      while (isActive) {
+        try {
+          val now = System.currentTimeMillis()
+          val due = scheduleEntries.filter { it.nextRunAt <= now }
+          due.forEach { entry ->
+            log("scheduled scan subnet=${entry.subnet}")
+            val found = runCatching { performScan(entry.subnet, 300) }.getOrDefault(emptyList())
+            log("scheduled scan complete devices=${found.size}")
+            scheduleEntries.remove(entry)
+            scheduleEntries += entry.copy(nextRunAt = now + entry.freqMs)
+          }
+        } catch (_: Exception) {}
+        delay(15_000)
+      }
+    }
+  }
+
+  startScheduler()
 
   embeddedServer(Netty, host = host, port = port) {
     install(ContentNegotiation) { json() }
@@ -95,59 +300,8 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
         val req = runCatching { call.receive<ScanRequest>() }.getOrNull() ?: ScanRequest()
         val subnet = req.subnet?.trim().orEmpty()
         log("scan requested subnet=$subnet")
-
-        val arp = ArpReader.read()
-        val ips = resolveScanIps(subnet)
-        val found = mutableListOf<Device>()
-        val sem = Semaphore(64)
         val timeout = req.timeoutMs ?: 300
-
-        coroutineScope {
-          ips.map { ip ->
-            async(Dispatchers.IO) {
-              sem.withPermit {
-                val mac = arp[ip]
-                val reachable = try { InetAddress.getByName(ip).isReachable(timeout) } catch (_: Exception) { false }
-                val openPorts = if (reachable) TcpScanner.scan(ip, timeout) else emptyList()
-                val banners = if (openPorts.isNotEmpty()) openPorts.mapNotNull { p ->
-                  BannerGrabber.grab(ip, p)?.let { p to it.trim() }
-                }.toMap() else emptyMap()
-                val hostname = if (reachable) resolveHostname(ip) else null
-                val vendor = OuiDb.lookup(mac)
-                val os = guessOs(openPorts, banners, hostname, vendor)
-                val now = System.currentTimeMillis()
-                val id = mac ?: ip
-                val dev = Device(
-                  id = id,
-                  ip = ip,
-                  mac = mac,
-                  hostname = hostname,
-                  os = os,
-                  vendor = vendor,
-                  online = reachable,
-                  lastSeen = now,
-                  openPorts = openPorts,
-                  banners = banners
-                )
-
-                val old = devices.get(id)
-                devices.upsert(dev)
-                deviceCache[id] = dev
-                val evs = ChangeDetector.events(old, dev)
-                evs.forEach { e ->
-                  events.insert(DeviceEvent(id, now, e))
-                  log("event $id $e")
-                }
-
-                if (reachable) {
-                  synchronized(found) { found += dev }
-                }
-              }
-            }
-          }.awaitAll()
-        }
-
-        lastScanAt.set(System.currentTimeMillis())
+        val found = performScan(subnet, timeout)
         call.respond(found)
       }
 
@@ -156,10 +310,61 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
         call.respond(out)
       }
 
+      get("/api/v1/discovery/progress") {
+        call.respond(scanProgress.get())
+      }
+
+      post("/api/v1/discovery/stop") {
+        scanCancel.set(true)
+        call.respond(mapOf("ok" to true))
+      }
+
       get("/api/v1/devices/{id}") {
         val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
         val d = deviceCache[id] ?: devices.get(id) ?: return@get call.respond(HttpStatusCode.NotFound)
         call.respond(d)
+      }
+
+      get("/api/v1/devices/{id}/meta") {
+        val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+        val d = deviceCache[id] ?: devices.get(id) ?: return@get call.respond(HttpStatusCode.NotFound)
+        call.respond(
+          DeviceMetaUpdate(
+            name = d.name,
+            owner = d.owner,
+            room = d.room,
+            note = d.note,
+            trust = d.trust,
+            type = d.type,
+            status = d.status,
+            via = d.via,
+            signal = d.signal,
+            activityToday = d.activityToday,
+            traffic = d.traffic
+          )
+        )
+      }
+
+      put("/api/v1/devices/{id}/meta") {
+        val id = call.parameters["id"] ?: return@put call.respond(HttpStatusCode.BadRequest)
+        val patch = runCatching { call.receive<DeviceMetaUpdate>() }.getOrNull() ?: DeviceMetaUpdate()
+        val d = deviceCache[id] ?: devices.get(id) ?: return@put call.respond(HttpStatusCode.NotFound)
+        val updated = d.copy(
+          name = patch.name ?: d.name,
+          owner = patch.owner ?: d.owner,
+          room = patch.room ?: d.room,
+          note = patch.note ?: d.note,
+          trust = patch.trust ?: d.trust,
+          type = patch.type ?: d.type,
+          status = patch.status ?: d.status,
+          via = patch.via ?: d.via,
+          signal = patch.signal ?: d.signal,
+          activityToday = patch.activityToday ?: d.activityToday,
+          traffic = patch.traffic ?: d.traffic
+        )
+        devices.upsert(updated)
+        deviceCache[id] = updated
+        call.respond(updated)
       }
 
       get("/api/v1/devices/{id}/history") {
@@ -179,7 +384,7 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
       }
 
       get("/api/v1/schedules") {
-        call.respond(schedules.toList())
+        call.respond(scheduleEntries.map { mapOf("subnet" to it.subnet, "freqMs" to it.freqMs, "nextRunAt" to it.nextRunAt) })
       }
 
       post("/api/v1/schedules") {
@@ -187,6 +392,7 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
         val subnet = req.subnet?.trim().orEmpty()
         val freq = req.freq?.trim().orEmpty()
         if (subnet.isBlank() || freq.isBlank()) return@post call.respond(HttpStatusCode.BadRequest)
+        if (!scheduleScan(subnet, freq)) return@post call.respond(HttpStatusCode.BadRequest)
         schedules += "SCAN $subnet @ $freq"
         call.respond(mapOf("ok" to true))
       }
@@ -228,6 +434,36 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
           }
         }.getOrDefault(0)
         call.respond(mapOf("ok" to (status in 200..399), "status" to status))
+      }
+
+      post("/api/v1/actions/portscan") {
+        val req = runCatching { call.receive<PortScanRequest>() }.getOrNull() ?: PortScanRequest()
+        val ip = req.ip?.trim()
+        if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
+        val timeout = req.timeoutMs ?: 250
+        val openPorts = TcpScanner.scan(ip, timeout)
+        call.respond(mapOf("ok" to true, "ip" to ip, "openPorts" to openPorts))
+      }
+
+      post("/api/v1/actions/security") {
+        val all = if (deviceCache.isNotEmpty()) deviceCache.values.toList() else devices.all()
+        val unknown = all.count { it.trust == null || it.trust == "Unknown" }
+        val blocked = all.count { it.status == "Blocked" }
+        val openPorts = all.sumOf { it.openPorts.size }
+        call.respond(
+          mapOf(
+            "ok" to true,
+            "devicesTotal" to all.size,
+            "unknownDevices" to unknown,
+            "blockedDevices" to blocked,
+            "openPortsDetected" to openPorts,
+            "recommendations" to listOf(
+              "Review unknown devices",
+              "Close unused ports",
+              "Enable automatic blocking for new devices"
+            )
+          )
+        )
       }
 
       post("/api/v1/actions/wol") {

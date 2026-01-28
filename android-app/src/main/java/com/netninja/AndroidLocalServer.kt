@@ -31,6 +31,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
 import android.database.sqlite.SQLiteDatabase
@@ -38,12 +39,23 @@ import android.database.sqlite.SQLiteDatabase
 @Serializable data class Device(
   val id: String,
   val ip: String,
+  val name: String? = null,
   val online: Boolean,
   val lastSeen: Long,
   val mac: String? = null,
   val hostname: String? = null,
   val vendor: String? = null,
-  val os: String? = null
+  val os: String? = null,
+  val owner: String? = null,
+  val room: String? = null,
+  val note: String? = null,
+  val trust: String? = null,
+  val type: String? = null,
+  val status: String? = null,
+  val via: String? = null,
+  val signal: String? = null,
+  val activityToday: String? = null,
+  val traffic: String? = null
 )
 
 @Serializable data class DeviceEvent(val deviceId: String, val ts: Long, val event: String)
@@ -53,6 +65,33 @@ import android.database.sqlite.SQLiteDatabase
 @Serializable data class ScheduleRequest(val subnet: String? = null, val freq: String? = null)
 @Serializable data class RuleRequest(val match: String? = null, val action: String? = null)
 @Serializable data class RuleEntry(val match: String, val action: String)
+@Serializable data class DeviceMetaUpdate(
+  val name: String? = null,
+  val owner: String? = null,
+  val room: String? = null,
+  val note: String? = null,
+  val trust: String? = null,
+  val type: String? = null,
+  val status: String? = null,
+  val via: String? = null,
+  val signal: String? = null,
+  val activityToday: String? = null,
+  val traffic: String? = null
+)
+@Serializable data class PortScanRequest(val ip: String? = null, val timeoutMs: Int? = null)
+@Serializable data class ScanProgress(
+  val progress: Int = 0,
+  val phase: String = "IDLE",
+  val networks: Int = 0,
+  val devices: Int = 0,
+  val rssiDbm: Double? = null,
+  val ssid: String? = null,
+  val bssid: String? = null,
+  val subnet: String? = null,
+  val gateway: String? = null,
+  val linkUp: Boolean = true,
+  val updatedAt: Long = System.currentTimeMillis()
+)
 
 class AndroidLocalServer(private val ctx: Context) {
 
@@ -67,6 +106,8 @@ class AndroidLocalServer(private val ctx: Context) {
 
   private val logs = ConcurrentLinkedQueue<String>()
   private val lastScanAt = AtomicReference<Long?>(null)
+  private val scanProgress = AtomicReference(ScanProgress())
+  private val scanCancel = AtomicBoolean(false)
 
   // Auth sessions
   private val sessions = ConcurrentHashMap<String, Long>()
@@ -205,11 +246,66 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(devices.values.toList())
       }
 
+      get("/api/v1/discovery/progress") {
+        if (!call.requireAuth()) return@get
+        call.respond(scanProgress.get())
+      }
+
+      post("/api/v1/discovery/stop") {
+        if (!call.requireAuth()) return@post
+        scanCancel.set(true)
+        call.respond(mapOf("ok" to true))
+      }
+
       get("/api/v1/devices/{id}") {
         if (!call.requireAuth()) return@get
         val id = call.parameters["id"]?.lowercase() ?: return@get call.respond(HttpStatusCode.BadRequest)
         val d = devices[id] ?: return@get call.respond(HttpStatusCode.NotFound)
         call.respond(d)
+      }
+
+      get("/api/v1/devices/{id}/meta") {
+        if (!call.requireAuth()) return@get
+        val id = call.parameters["id"]?.lowercase() ?: return@get call.respond(HttpStatusCode.BadRequest)
+        val d = devices[id] ?: return@get call.respond(HttpStatusCode.NotFound)
+        call.respond(
+          DeviceMetaUpdate(
+            name = d.name,
+            owner = d.owner,
+            room = d.room,
+            note = d.note,
+            trust = d.trust,
+            type = d.type,
+            status = d.status,
+            via = d.via,
+            signal = d.signal,
+            activityToday = d.activityToday,
+            traffic = d.traffic
+          )
+        )
+      }
+
+      put("/api/v1/devices/{id}/meta") {
+        if (!call.requireAuth()) return@put
+        val id = call.parameters["id"]?.lowercase() ?: return@put call.respond(HttpStatusCode.BadRequest)
+        val patch = runCatching { call.receive<DeviceMetaUpdate>() }.getOrNull() ?: DeviceMetaUpdate()
+        val d = devices[id] ?: return@put call.respond(HttpStatusCode.NotFound)
+        val updated = d.copy(
+          name = patch.name ?: d.name,
+          owner = patch.owner ?: d.owner,
+          room = patch.room ?: d.room,
+          note = patch.note ?: d.note,
+          trust = patch.trust ?: d.trust,
+          type = patch.type ?: d.type,
+          status = patch.status ?: d.status,
+          via = patch.via ?: d.via,
+          signal = patch.signal ?: d.signal,
+          activityToday = patch.activityToday ?: d.activityToday,
+          traffic = patch.traffic ?: d.traffic
+        )
+        devices[id] = updated
+        saveDevice(updated)
+        call.respond(updated)
       }
 
       get("/api/v1/devices/{id}/history") {
@@ -318,6 +414,16 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(mapOf("ok" to (status in 200..399), "status" to status))
       }
 
+      post("/api/v1/actions/portscan") {
+        if (!call.requireAuth()) return@post
+        val req = runCatching { call.receive<PortScanRequest>() }.getOrNull() ?: PortScanRequest()
+        val ip = req.ip?.trim()
+        if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
+        val timeout = req.timeoutMs ?: 250
+        val openPorts = scanPorts(ip, timeout)
+        call.respond(mapOf("ok" to true, "ip" to ip, "openPorts" to openPorts))
+      }
+
       post("/api/v1/actions/wol") {
         if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
@@ -343,6 +449,26 @@ class AndroidLocalServer(private val ctx: Context) {
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
         val ok = runCatching { scanPorts(ip, 350).contains(22) }.getOrDefault(false)
         call.respond(mapOf("ok" to ok, "ip" to ip, "note" to "SSH port probe only"))
+      }
+
+      post("/api/v1/actions/security") {
+        if (!call.requireAuth()) return@post
+        val all = devices.values.toList()
+        val unknown = all.count { it.trust == null || it.trust == "Unknown" }
+        val blocked = all.count { it.status == "Blocked" }
+        call.respond(
+          mapOf(
+            "ok" to true,
+            "devicesTotal" to all.size,
+            "unknownDevices" to unknown,
+            "blockedDevices" to blocked,
+            "recommendations" to listOf(
+              "Review unknown devices",
+              "Close unused ports",
+              "Enable automatic blocking for new devices"
+            )
+          )
+        )
       }
 
       get("/api/v1/metrics") {
@@ -422,15 +548,37 @@ class AndroidLocalServer(private val ctx: Context) {
       return
     }
     try {
+      scanCancel.set(false)
       val timeout = 300
       val arp = readArpTable()
       val ips = cidrToIps(subnet).take(4096)
       val sem = Semaphore(48)
+      val total = ips.size.coerceAtLeast(1)
+      val completed = java.util.concurrent.atomic.AtomicInteger(0)
+      val foundCount = java.util.concurrent.atomic.AtomicInteger(0)
+
+      val netInfo = localNetworkInfo()
+      scanProgress.set(
+        ScanProgress(
+          progress = 0,
+          phase = "DISCOVERY",
+          networks = 1,
+          devices = 0,
+          rssiDbm = null,
+          ssid = netInfo["name"]?.toString(),
+          bssid = null,
+          subnet = subnet,
+          gateway = netInfo["gateway"]?.toString(),
+          linkUp = true,
+          updatedAt = System.currentTimeMillis()
+        )
+      )
 
       coroutineScope {
         ips.map { ip ->
           async(Dispatchers.IO) {
             sem.withPermit {
+              if (scanCancel.get()) return@withPermit
               val arpDev = arp.firstOrNull { it.ip == ip }
               val mac = arpDev?.mac
               val reachable = isLikelyReachable(ip, timeout)
@@ -444,27 +592,78 @@ class AndroidLocalServer(private val ctx: Context) {
               val id = (mac ?: ip).lowercase()
               val now = System.currentTimeMillis()
 
+              val prev = devices[id]
               val newDev = Device(
                 id = id,
                 ip = ip,
+                name = prev?.name ?: hostname ?: ip,
                 online = reachable,
                 lastSeen = now,
                 mac = mac?.lowercase(),
                 hostname = hostname,
                 vendor = vendor,
-                os = os
+                os = os,
+                owner = prev?.owner,
+                room = prev?.room,
+                note = prev?.note,
+                trust = prev?.trust,
+                type = prev?.type,
+                status = prev?.status,
+                via = prev?.via,
+                signal = prev?.signal,
+                activityToday = prev?.activityToday,
+                traffic = prev?.traffic
               )
 
               val old = devices.put(id, newDev)
               saveDevice(newDev)
               emitEvents(old, newDev)
               evaluateRules(old, newDev)
+
+              if (newDev.online) {
+                foundCount.incrementAndGet()
+              }
+
+              val done = completed.incrementAndGet()
+              val pct = ((done.toDouble() / total.toDouble()) * 100.0).toInt().coerceIn(0, 100)
+              scanProgress.set(
+                ScanProgress(
+                  progress = pct,
+                  phase = if (pct >= 100) "COMPLETE" else "SCANNING",
+                  networks = 1,
+                  devices = foundCount.get(),
+                  rssiDbm = null,
+                  ssid = netInfo["name"]?.toString(),
+                  bssid = null,
+                  subnet = subnet,
+                  gateway = netInfo["gateway"]?.toString(),
+                  linkUp = true,
+                  updatedAt = System.currentTimeMillis()
+                )
+              )
             }
           }
         }.awaitAll()
       }
 
       lastScanAt.set(System.currentTimeMillis())
+      if (scanCancel.get()) {
+        scanProgress.set(
+          scanProgress.get().copy(
+            phase = "CANCELLED",
+            updatedAt = System.currentTimeMillis()
+          )
+        )
+        return
+      }
+      scanProgress.set(
+        scanProgress.get().copy(
+          progress = 100,
+          phase = "COMPLETE",
+          devices = foundCount.get(),
+          updatedAt = System.currentTimeMillis()
+        )
+      )
       log("scan complete: devices=${devices.size}")
     } catch (t: Throwable) {
       log("scan crash: ${t.message}")
@@ -492,6 +691,12 @@ class AndroidLocalServer(private val ctx: Context) {
     when (rule.action.lowercase()) {
       "log" -> log("rule log: ${device.id}")
       "wol" -> device.mac?.let { runCatching { sendMagicPacket(it) } }
+      "block" -> {
+        val updated = device.copy(trust = "Blocked", status = "Blocked")
+        devices[device.id] = updated
+        saveDevice(updated)
+        log("device blocked by rule: ${device.id}")
+      }
       else -> log("unknown rule action: ${rule.action}")
     }
   }
@@ -572,18 +777,29 @@ class AndroidLocalServer(private val ctx: Context) {
     val r = db.readableDatabase
 
     runCatching {
-      r.rawQuery("SELECT id, ip, online, lastSeen, mac, hostname, vendor, os FROM devices", null).use { c ->
+      r.rawQuery("SELECT id, ip, name, online, lastSeen, mac, hostname, vendor, os, owner, room, note, trust, type, status, via, signal, activityToday, traffic FROM devices", null).use { c ->
         while (c.moveToNext()) {
           val id = c.getString(0)
           devices[id] = Device(
             id = id,
             ip = c.getString(1),
-            online = c.getInt(2) == 1,
-            lastSeen = c.getLong(3),
-            mac = c.getString(4),
-            hostname = c.getString(5),
-            vendor = c.getString(6),
-            os = c.getString(7)
+            name = c.getString(2),
+            online = c.getInt(3) == 1,
+            lastSeen = c.getLong(4),
+            mac = c.getString(5),
+            hostname = c.getString(6),
+            vendor = c.getString(7),
+            os = c.getString(8),
+            owner = c.getString(9),
+            room = c.getString(10),
+            note = c.getString(11),
+            trust = c.getString(12),
+            type = c.getString(13),
+            status = c.getString(14),
+            via = c.getString(15),
+            signal = c.getString(16),
+            activityToday = c.getString(17),
+            traffic = c.getString(18)
           )
         }
       }
@@ -621,12 +837,23 @@ class AndroidLocalServer(private val ctx: Context) {
     val cv = ContentValues().apply {
       put("id", d.id)
       put("ip", d.ip)
+      put("name", d.name)
       put("online", if (d.online) 1 else 0)
       put("lastSeen", d.lastSeen)
       put("mac", d.mac)
       put("hostname", d.hostname)
       put("vendor", d.vendor)
       put("os", d.os)
+      put("owner", d.owner)
+      put("room", d.room)
+      put("note", d.note)
+      put("trust", d.trust)
+      put("type", d.type)
+      put("status", d.status)
+      put("via", d.via)
+      put("signal", d.signal)
+      put("activityToday", d.activityToday)
+      put("traffic", d.traffic)
     }
     w.insertWithOnConflict("devices", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
   }
@@ -716,6 +943,7 @@ class AndroidLocalServer(private val ctx: Context) {
       out += Device(
         id = mac.lowercase(),
         ip = ip,
+        name = ip,
         online = online,
         lastSeen = System.currentTimeMillis(),
         mac = mac.lowercase()

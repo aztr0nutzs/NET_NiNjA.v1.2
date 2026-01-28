@@ -4,19 +4,30 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 1) {
+class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 2) {
 
   override fun onCreate(db: SQLiteDatabase) {
     db.execSQL(
       """CREATE TABLE IF NOT EXISTS devices(
         id TEXT PRIMARY KEY,
         ip TEXT,
+        name TEXT,
         online INTEGER,
         lastSeen INTEGER,
         mac TEXT,
         hostname TEXT,
         vendor TEXT,
-        os TEXT
+        os TEXT,
+        owner TEXT,
+        room TEXT,
+        note TEXT,
+        trust TEXT,
+        type TEXT,
+        status TEXT,
+        via TEXT,
+        signal TEXT,
+        activityToday TEXT,
+        traffic TEXT
       )"""
     )
 
@@ -50,6 +61,23 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 1
   }
 
   override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-    // No migrations yet. Bump version + migrate when schema changes.
+    if (oldVersion < 2) {
+      val columns = listOf(
+        "name",
+        "owner",
+        "room",
+        "note",
+        "trust",
+        "type",
+        "status",
+        "via",
+        "signal",
+        "activityToday",
+        "traffic"
+      )
+      columns.forEach { col ->
+        runCatching { db.execSQL("ALTER TABLE devices ADD COLUMN $col TEXT") }
+      }
+    }
   }
 }
