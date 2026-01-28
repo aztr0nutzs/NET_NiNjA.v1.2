@@ -132,8 +132,8 @@ class AndroidLocalServer(private val ctx: Context) {
 
   private fun Application.setupRoutes(uiDir: File) {
     routing {
-      staticFiles("/ui", uiDir, index = "ninja_mobile_fixed.html")
-      get("/") { call.respondRedirect("/ui/ninja_mobile_fixed.html") }
+      staticFiles("/ui", uiDir, index = "ninja_mobile_new.html")
+      get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
 
       // Public probe
       get("/api/v1/system/info") {

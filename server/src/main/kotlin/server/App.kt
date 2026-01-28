@@ -64,8 +64,8 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
 
     routing {
       // Serve web-ui
-      staticFiles("/ui", webUiDir, index = "ninja_mobile_fixed.html")
-      get("/") { call.respondRedirect("/ui/ninja_mobile_fixed.html") }
+      staticFiles("/ui", webUiDir, index = "ninja_mobile_new.html")
+      get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
 
       get("/api/v1/system/info") {
         call.respond(mapOf(
