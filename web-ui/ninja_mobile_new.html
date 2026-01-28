@@ -2050,15 +2050,15 @@
     function loadStore(){
       try{
         const raw = localStorage.getItem(DATASTORE_KEY);
-        if(!raw) return { ...defaultStore };
+        if(!raw) return JSON.parse(JSON.stringify(defaultStore));
         const parsed = JSON.parse(raw);
         return {
-          ...defaultStore,
+          ...JSON.parse(JSON.stringify(defaultStore)),
           ...parsed,
           modules: { ...defaultStore.modules, ...(parsed.modules || {}) }
         };
       } catch (_){
-        return { ...defaultStore };
+        return JSON.parse(JSON.stringify(defaultStore));
       }
     }
 
