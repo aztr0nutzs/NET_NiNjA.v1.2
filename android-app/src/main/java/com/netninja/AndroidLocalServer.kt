@@ -2,9 +2,12 @@ package com.netninja
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.SystemClock
 import android.text.format.Formatter
+import androidx.core.content.ContextCompat
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -106,8 +109,13 @@ class AndroidLocalServer(private val ctx: Context) {
 
   private val logs = ConcurrentLinkedQueue<String>()
   private val lastScanAt = AtomicReference<Long?>(null)
+  private val lastScanRequestedAt = AtomicReference<Long?>(null)
+  private val lastScanResults = AtomicReference<List<Device>>(emptyList())
+  private val lastScanError = AtomicReference<String?>(null)
   private val scanProgress = AtomicReference(ScanProgress())
   private val scanCancel = AtomicBoolean(false)
+  private val scanScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+  private var scanJob: Job? = null
 
   // Auth sessions
   private val sessions = ConcurrentHashMap<String, Long>()
@@ -167,6 +175,8 @@ class AndroidLocalServer(private val ctx: Context) {
   fun stop() {
     runCatching { schedulerJob?.cancel() }
     runCatching { schedulerScope.cancel() }
+    runCatching { scanJob?.cancel() }
+    runCatching { scanScope.cancel() }
     runCatching { watchdogScope.cancel() }
     runCatching { engine?.stop(500, 1000) }
   }
@@ -236,14 +246,21 @@ class AndroidLocalServer(private val ctx: Context) {
         if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ScanRequest>() }.getOrNull() ?: ScanRequest()
         val subnet = req.subnet?.trim().takeUnless { it.isNullOrBlank() } ?: deriveSubnetCidr()
-        log("scan request subnet=$subnet")
-        performScan(subnet)
-        call.respond(devices.values.toList())
+        if (subnet == null) {
+          val msg = "scan blocked: missing subnet (permission or network unavailable)"
+          logEvent("scan_blocked", mapOf("reason" to "missing_subnet"))
+          updateScanProgress("PERMISSION_BLOCKED", message = msg)
+          call.respond(cachedResults())
+          return@post
+        }
+        logEvent("scan_request", mapOf("subnet" to subnet))
+        scheduleScan(subnet, reason = "manual")
+        call.respond(cachedResults())
       }
 
       get("/api/v1/discovery/results") {
         if (!call.requireAuth()) return@get
-        call.respond(devices.values.toList())
+        call.respond(cachedResults())
       }
 
       get("/api/v1/discovery/progress") {
@@ -254,6 +271,8 @@ class AndroidLocalServer(private val ctx: Context) {
       post("/api/v1/discovery/stop") {
         if (!call.requireAuth()) return@post
         scanCancel.set(true)
+        scanJob?.cancel()
+        logEvent("scan_cancelled", mapOf("reason" to "user_stop"))
         call.respond(mapOf("ok" to true))
       }
 
@@ -380,7 +399,7 @@ class AndroidLocalServer(private val ctx: Context) {
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
         val start = System.currentTimeMillis()
-        val ok = isLikelyReachable(ip, 350)
+        val ok = isLikelyReachable(ip, 350, retries = 2)
         val rtt = if (ok) (System.currentTimeMillis() - start) else null
         call.respond(mapOf("ok" to ok, "ip" to ip, "rttMs" to rtt))
       }
@@ -489,6 +508,26 @@ class AndroidLocalServer(private val ctx: Context) {
         )
       }
 
+      get("/api/v1/system/permissions") {
+        if (!call.requireAuth()) return@get
+        call.respond(permissionSummary())
+      }
+
+      get("/api/v1/system/state") {
+        if (!call.requireAuth()) return@get
+        call.respond(
+          mapOf(
+            "scanInProgress" to (scanJob?.isActive == true),
+            "lastScanAt" to lastScanAt.get(),
+            "lastScanRequestedAt" to lastScanRequestedAt.get(),
+            "lastScanError" to lastScanError.get(),
+            "cachedResults" to cachedResults().size,
+            "rateLimitMs" to minScanIntervalMs,
+            "permissions" to permissionSummary()
+          )
+        )
+      }
+
       get("/api/v1/logs/stream") {
         if (!call.requireAuth()) return@get
         call.response.cacheControl(CacheControl.NoCache(null))
@@ -536,19 +575,20 @@ class AndroidLocalServer(private val ctx: Context) {
       if (parts.size < 2) continue
       val subnet = parts[0].removePrefix("SCAN").trim()
       if (subnet.isBlank()) continue
-      log("scheduled scan triggered: $subnet")
-      performScan(subnet)
+      logEvent("scan_scheduled", mapOf("subnet" to subnet))
+      scheduleScan(subnet, reason = "scheduled")
     }
   }
 
   private suspend fun performScan(subnet: String) {
     // Prevent overlapping scans
     if (!scanMutex.tryLock()) {
-      log("scan skipped: already running")
+      logEvent("scan_skipped", mapOf("reason" to "already_running"))
       return
     }
     try {
       scanCancel.set(false)
+      lastScanError.set(null)
       val timeout = 300
       val arp = readArpTable()
       val ips = cidrToIps(subnet).take(4096)
@@ -569,8 +609,16 @@ class AndroidLocalServer(private val ctx: Context) {
           bssid = null,
           subnet = subnet,
           gateway = netInfo["gateway"]?.toString(),
-          linkUp = true,
+          linkUp = netInfo["linkUp"] as? Boolean ?: true,
           updatedAt = System.currentTimeMillis()
+        )
+      )
+      logEvent(
+        "scan_start",
+        mapOf(
+          "subnet" to subnet,
+          "targets" to ips.size,
+          "timeoutMs" to timeout
         )
       )
 
@@ -581,7 +629,7 @@ class AndroidLocalServer(private val ctx: Context) {
               if (scanCancel.get()) return@withPermit
               val arpDev = arp.firstOrNull { it.ip == ip }
               val mac = arpDev?.mac
-              val reachable = isLikelyReachable(ip, timeout)
+              val reachable = isLikelyReachable(ip, timeout, retries = 2)
 
               if (!reachable && mac == null) return@withPermit
 
@@ -664,9 +712,11 @@ class AndroidLocalServer(private val ctx: Context) {
           updatedAt = System.currentTimeMillis()
         )
       )
-      log("scan complete: devices=${devices.size}")
+      lastScanResults.set(devices.values.toList())
+      logEvent("scan_complete", mapOf("devices" to devices.size, "subnet" to subnet))
     } catch (t: Throwable) {
-      log("scan crash: ${t.message}")
+      lastScanError.set(t.message)
+      logEvent("scan_failed", mapOf("error" to t.message, "subnet" to subnet))
     } finally {
       scanMutex.unlock()
     }
@@ -830,6 +880,8 @@ class AndroidLocalServer(private val ctx: Context) {
         }
       }
     }
+
+    lastScanResults.set(devices.values.toList())
   }
 
   private fun saveDevice(d: Device) {
@@ -891,6 +943,27 @@ class AndroidLocalServer(private val ctx: Context) {
     saveLog(line)
   }
 
+  private fun logEvent(event: String, fields: Map<String, Any?> = emptyMap()) {
+    val payload = buildString {
+      append("{\"event\":\"")
+      append(event)
+      append("\",\"ts\":")
+      append(System.currentTimeMillis())
+      for ((k, v) in fields) {
+        append(",\"")
+        append(k)
+        append("\":")
+        when (v) {
+          null -> append("null")
+          is Number, is Boolean -> append(v.toString())
+          else -> append("\"").append(v.toString().replace("\"", "\\\"")).append("\"")
+        }
+      }
+      append("}")
+    }
+    log(payload)
+  }
+
   private fun saveLog(msg: String) {
     try {
       val w = db.writableDatabase
@@ -906,23 +979,33 @@ class AndroidLocalServer(private val ctx: Context) {
 
   // ----------------- Network helpers -----------------
 
-  private fun deriveSubnetCidr(): String {
+  private fun deriveSubnetCidr(): String? {
+    if (!canAccessWifiDetails()) return null
     val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-    val dhcp = wm.dhcpInfo
+    val dhcp = runCatching { wm.dhcpInfo }.getOrNull() ?: return null
     val ip = Formatter.formatIpAddress(dhcp.ipAddress)
     val mask = Formatter.formatIpAddress(dhcp.netmask)
+    if (ip == "0.0.0.0" || mask == "0.0.0.0") return null
     val prefix = maskToPrefix(mask)
     return "${ip.substringBeforeLast(".")}.0/$prefix"
   }
 
   private fun localNetworkInfo(): Map<String, Any?> {
+    if (!canAccessWifiDetails()) {
+      return mapOf("name" to "Wi-Fi", "ip" to null, "cidr" to null, "gateway" to null, "linkUp" to false)
+    }
     val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-    val dhcp = wm.dhcpInfo
-    val ip = Formatter.formatIpAddress(dhcp.ipAddress)
-    val gw = Formatter.formatIpAddress(dhcp.gateway)
-    val mask = Formatter.formatIpAddress(dhcp.netmask)
-    val cidr = "${ip.substringBeforeLast(".")}.0/${maskToPrefix(mask)}"
-    return mapOf("name" to "Wi-Fi", "ip" to ip, "cidr" to cidr, "gateway" to gw)
+    val dhcp = runCatching { wm.dhcpInfo }.getOrNull()
+    val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
+    val gw = dhcp?.let { Formatter.formatIpAddress(it.gateway) }
+    val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
+    val cidr = if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0") {
+      "${ip.substringBeforeLast(".")}.0/${maskToPrefix(mask)}"
+    } else {
+      null
+    }
+    val linkUp = ip != null && ip != "0.0.0.0"
+    return mapOf("name" to "Wi-Fi", "ip" to ip, "cidr" to cidr, "gateway" to gw, "linkUp" to linkUp)
   }
 
   private fun readArpTable(): List<Device> {
@@ -993,32 +1076,109 @@ class AndroidLocalServer(private val ctx: Context) {
     val open = ArrayList<Int>(4)
     val timeout = timeoutMs.coerceIn(80, 2_000)
     for (p in ports) {
-      try {
-        Socket().use { s ->
-          s.connect(InetSocketAddress(ip, p), timeout)
-          open += p
+      repeat(2) { attempt ->
+        try {
+          Socket().use { s ->
+            s.connect(InetSocketAddress(ip, p), timeout)
+            open += p
+          }
+          return@repeat
+        } catch (_: Exception) {
+          if (attempt == 0) Thread.sleep(25)
         }
-      } catch (_: Exception) {
-        // ignore
       }
     }
     return open
   }
 
-  private fun isLikelyReachable(ip: String, timeoutMs: Int): Boolean {
+  private fun isLikelyReachable(ip: String, timeoutMs: Int, retries: Int = 1): Boolean {
     val timeout = timeoutMs.coerceIn(80, 1_000)
     val probePorts = intArrayOf(80, 443, 22)
-    for (p in probePorts) {
-      try {
-        Socket().use { s ->
-          s.connect(InetSocketAddress(ip, p), timeout)
-          return true
+    repeat(retries.coerceAtLeast(1)) { attempt ->
+      for (p in probePorts) {
+        try {
+          Socket().use { s ->
+            s.connect(InetSocketAddress(ip, p), timeout)
+            return true
+          }
+        } catch (_: Exception) {
+          // keep trying
         }
-      } catch (_: Exception) {
-        // keep trying
       }
+      if (attempt < retries - 1) Thread.sleep(40L * (attempt + 1))
     }
     return false
+  }
+
+  private fun hasPermission(permission: String): Boolean =
+    ContextCompat.checkSelfPermission(ctx, permission) == PackageManager.PERMISSION_GRANTED
+
+  private fun canAccessWifiDetails(): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      return hasPermission("android.permission.NEARBY_WIFI_DEVICES")
+    }
+    return hasPermission("android.permission.ACCESS_FINE_LOCATION") || hasPermission("android.permission.ACCESS_COARSE_LOCATION")
+  }
+
+  private fun permissionSummary(): Map<String, Any?> {
+    val nearbyWifi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      hasPermission("android.permission.NEARBY_WIFI_DEVICES")
+    } else {
+      null
+    }
+    return mapOf(
+      "nearbyWifi" to nearbyWifi,
+      "fineLocation" to hasPermission("android.permission.ACCESS_FINE_LOCATION"),
+      "coarseLocation" to hasPermission("android.permission.ACCESS_COARSE_LOCATION"),
+      "networkState" to hasPermission("android.permission.ACCESS_NETWORK_STATE"),
+      "wifiState" to hasPermission("android.permission.ACCESS_WIFI_STATE")
+    )
+  }
+
+  private fun cachedResults(): List<Device> {
+    val current = devices.values.toList()
+    return if (current.isNotEmpty()) current else lastScanResults.get()
+  }
+
+  private fun updateScanProgress(phase: String, message: String? = null) {
+    val now = System.currentTimeMillis()
+    val current = scanProgress.get()
+    val nextProgress = if (phase == "PERMISSION_BLOCKED" || phase == "RATE_LIMITED") 0 else current.progress
+    scanProgress.set(
+      current.copy(
+        progress = nextProgress,
+        phase = phase,
+        updatedAt = now
+      )
+    )
+    if (message != null) {
+      logEvent("scan_status", mapOf("phase" to phase, "message" to message))
+    }
+  }
+
+  private fun scheduleScan(subnet: String, reason: String) {
+    if (!canAccessWifiDetails()) {
+      val msg = "scan blocked: wifi permissions missing"
+      logEvent("scan_blocked", mapOf("reason" to "permissions", "subnet" to subnet))
+      updateScanProgress("PERMISSION_BLOCKED", message = msg)
+      return
+    }
+    val now = System.currentTimeMillis()
+    val lastReq = lastScanRequestedAt.get() ?: 0L
+    if (now - lastReq < minScanIntervalMs) {
+      logEvent("scan_rate_limited", mapOf("sinceMs" to (now - lastReq), "subnet" to subnet))
+      updateScanProgress("RATE_LIMITED", message = "Scan rate-limited to protect battery.")
+      return
+    }
+    lastScanRequestedAt.set(now)
+    if (scanJob?.isActive == true) {
+      scanCancel.set(true)
+      scanJob?.cancel()
+      logEvent("scan_cancelled", mapOf("reason" to "stale_job", "subnet" to subnet, "source" to reason))
+    }
+    scanJob = scanScope.launch {
+      performScan(subnet)
+    }
   }
 
   private fun resolveHostname(ip: String): String? =
