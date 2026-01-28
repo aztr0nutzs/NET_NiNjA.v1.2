@@ -408,10 +408,6 @@
       els.username.focus();
     }
 
-    function isLocalCreds(user, pass) {
-      return user === "ninja" && pass === "neon";
-    }
-
     const API_BASE = (() => {
       try {
         if (location && location.origin && location.origin !== "null") {
@@ -458,10 +454,9 @@
     }
 
     const DASHBOARD_SERVER = "http://127.0.0.1:8787/ui/ninja_mobile_new.html";
-    const DASHBOARD_ASSET = "file:///android_asset/web-ui/ninja_mobile_new.html";
 
-    function goToDashboard(useServer) {
-      window.location.href = useServer ? DASHBOARD_SERVER : DASHBOARD_ASSET;
+    function goToDashboard() {
+      window.location.href = DASHBOARD_SERVER;
     }
 
     async function handleLogin(){
@@ -476,38 +471,12 @@
         setStatus("Contacting engine...", true);
         const ready = await waitForServerReady();
         if (!ready) {
-          if (isLocalCreds(user, pass)) {
-            setStatus("Access granted (offline)", true);
-            localStorage.setItem("nn_token", "local-offline");
-            if (els.remember.checked) {
-              localStorage.setItem("nn_user", user);
-            } else {
-              localStorage.removeItem("nn_user");
-            }
-            setTimeout(() => {
-              goToDashboard(false);
-            }, 450);
-            return;
-          }
           setStatus("Engine offline", false);
           els.statusText.style.color = "var(--bad)";
           return;
         }
         const res = await postJson("/api/v1/auth/login", { username: user, password: pass });
         if (!res.ok) {
-          if (res.status === 0 && isLocalCreds(user, pass)) {
-            setStatus("Access granted (offline)", true);
-            localStorage.setItem("nn_token", "local-offline");
-            if (els.remember.checked) {
-              localStorage.setItem("nn_user", user);
-            } else {
-              localStorage.removeItem("nn_user");
-            }
-            setTimeout(() => {
-              goToDashboard(false);
-            }, 450);
-            return;
-          }
           setStatus(res.status === 401 ? "Invalid credentials" : "Auth unavailable", false);
           els.statusText.style.color = "var(--bad)";
           return;
@@ -521,22 +490,9 @@
           localStorage.removeItem("nn_user");
         }
         setTimeout(() => {
-          goToDashboard(true);
+          goToDashboard();
         }, 450);
       } catch (_) {
-        if (isLocalCreds(user, pass)) {
-          setStatus("Access granted (offline)", true);
-          localStorage.setItem("nn_token", "local-offline");
-          if (els.remember.checked) {
-            localStorage.setItem("nn_user", user);
-          } else {
-            localStorage.removeItem("nn_user");
-          }
-          setTimeout(() => {
-            goToDashboard(false);
-          }, 450);
-          return;
-        }
         setStatus("Auth unavailable", false);
         els.statusText.style.color = "var(--bad)";
       }

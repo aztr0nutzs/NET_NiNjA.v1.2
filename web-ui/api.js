@@ -12,7 +12,7 @@ function authHeaders(extra = {}) {
   const token = getToken();
   const headers = Object.assign({ "Content-Type": "application/json" }, extra);
 
-  if (token && token !== "local" && token !== "local-offline") {
+  if (token && token !== "local") {
     headers["Authorization"] = `Bearer ${token}`;
   }
   return headers;
@@ -46,7 +46,7 @@ export async function postJson(path, body) {
 export function sse(path, onMsg) {
   const token = getToken();
   const url = new URL(API_BASE + path);
-  if (token && token !== "local" && token !== "local-offline") {
+  if (token && token !== "local") {
     url.searchParams.set("token", token);
   }
 

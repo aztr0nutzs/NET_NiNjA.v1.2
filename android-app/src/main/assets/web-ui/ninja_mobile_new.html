@@ -1122,7 +1122,6 @@
             <div class="muted" id="myNetText">Home Wi‑Fi (SSID) – Secure</div>
             <div class="card-actions">
               <button class="btn btn-primary" id="btnScanMyNetwork">Scan my network</button>
-              <button class="btn btn-ghost purple" id="btnScanNearby">Scan nearby networks</button>
             </div>
           </div>
 
@@ -1156,8 +1155,8 @@
             </div>
             <div class="muted">Keep it simple: no nested menus here.</div>
             <div class="card-actions">
-              <button class="btn btn-ghost" id="btnPauseInternet">Pause internet for a device</button>
-              <button class="btn btn-danger" id="btnBlockNew">Block new devices</button>
+              <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
+              <button class="btn btn-danger" id="btnBlockNew">Auto‑block new devices</button>
               <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi‑Fi details</button>
             </div>
           </div>
@@ -1172,7 +1171,7 @@
               <div class="card-title">Live Scan Progress</div>
               <div class="pill" id="nnScanPill">Idle</div>
             </div>
-            <div class="muted">Wired for real data via <code>window.applyScanData(payload)</code>. In the meantime, it simulates when you tap Scan.</div>
+            <div class="muted">Live progress is read from <code>/api/v1/discovery/progress</code> while scans run.</div>
 
             <div class="nn-prog" style="margin-top:10px;">
               <div class="kvRow"><span class="k">Phase</span><span class="v" id="scanPhase">IDLE</span></div>
@@ -1222,7 +1221,7 @@
             <div class="card-title">What changed</div>
             <div class="pill" id="changePill">Last scan: never</div>
           </div>
-          <div class="muted" id="changeText">Run a scan to see changes, new devices, and nearby networks.</div>
+          <div class="muted" id="changeText">Run a scan to see changes and new devices.</div>
         </div>
       </section>
 
@@ -1291,8 +1290,8 @@
             </div>
 
             <div class="row" style="margin-bottom: 10px;">
-              <button class="btn btn-ghost" id="spPause">Pause internet</button>
-              <button class="btn btn-danger" id="spBlock">Block device</button>
+              <button class="btn btn-ghost" id="spPause">Set status: Paused</button>
+              <button class="btn btn-danger" id="spBlock">Set status: Blocked</button>
               <button class="btn btn-ghost purple" id="spTrust">Mark as trusted</button>
               <button class="btn btn-ghost" id="spPortScan">Run port scan</button>
             </div>
@@ -1358,7 +1357,6 @@
         <div class="toolbar">
           <div class="row">
             <button class="btn btn-primary" id="btnNetworksScanMy">Scan my network</button>
-            <button class="btn btn-ghost purple" id="btnNetworksScanNearby">Scan nearby networks</button>
             <button class="btn btn-ghost" id="btnNetworksSecurity">Run security check</button>
           </div>
         </div>
@@ -1984,8 +1982,8 @@
       const last = state.lastScanAt ? `Last scan: ${state.lastScanAt}` : "Last scan: never";
       $("#changePill").textContent = last;
       $("#changeText").textContent = state.lastScanAt
-        ? "Scan results updated. Review unknown devices and nearby networks."
-        : "Run a scan to see changes, new devices, and nearby networks.";
+        ? "Scan results updated. Review unknown devices."
+        : "Run a scan to see changes and new devices.";
 
       // naive "changed" indicator
       $("#onlineDeltaPill").textContent = state.lastScanAt ? `Changed: ${state.lastChangeCount}` : "Changed: 0";
@@ -2154,8 +2152,8 @@
             ])}
           </div>
           <div class="card-actions">
-            <button class="btn btn-ghost" id="mPause">Pause internet</button>
-            <button class="btn btn-danger" id="mBlock">Block device</button>
+            <button class="btn btn-ghost" id="mPause">Set status: Paused</button>
+            <button class="btn btn-danger" id="mBlock">Set status: Blocked</button>
             <button class="btn btn-ghost purple" id="mTrust">${d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted"}</button>
             <button class="btn btn-ghost" id="mPort">Run port scan</button>
           </div>
@@ -2224,7 +2222,7 @@
 
       // Wire actions
       $("#mPause").addEventListener("click", () => pauseDevice(d.id));
-      $("#mBlock").addEventListener("click", () => doAction("Block device", d, () => blockDevice(d.id)));
+      $("#mBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
       $("#mTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
       $("#mPort").addEventListener("click", () => doAction("Run port scan", d, () => openToolDialog("portScan", d.id)));
 
@@ -2261,8 +2259,8 @@
           <div class="muted">${escapeHtml(d.type)} • ${escapeHtml(d.ip)} • ${escapeHtml(d.trust)}</div>
           <div class="card-actions" style="margin-top: 12px;">
             <button class="btn btn-ghost" id="aView">View details</button>
-            <button class="btn btn-ghost" id="aPause">Pause internet</button>
-            <button class="btn btn-danger" id="aBlock">Block from network</button>
+            <button class="btn btn-ghost" id="aPause">Set status: Paused</button>
+            <button class="btn btn-danger" id="aBlock">Set status: Blocked</button>
             <button class="btn btn-ghost purple" id="aTrust">${d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted"}</button>
             <button class="btn btn-ghost" id="aRename">Rename device</button>
             <button class="btn btn-ghost purple" id="aOwner">Assign owner / room</button>
@@ -2272,7 +2270,7 @@
 
       $("#aView").addEventListener("click", () => { closeOverlay("deviceOverlay"); openDeviceDetails(d.id); });
       $("#aPause").addEventListener("click", () => pauseDevice(d.id));
-      $("#aBlock").addEventListener("click", () => doAction("Block device", d, () => blockDevice(d.id)));
+      $("#aBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
       $("#aTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
       $("#aRename").addEventListener("click", () => {
         const next = prompt("Rename device:", d.name);
@@ -2319,7 +2317,7 @@
         pushHistory({
           when: nowLabel(),
           title: `Blocked ${d.name}`,
-          detail: "Device blocked from network.",
+          detail: "Device status set to Blocked.",
           undo: () => {
             updateDeviceMeta(d.id, { status: prev.status, trust: prev.trust }).then(() => {
               showToast("Unblocked", `${d.name} restored.`);
@@ -2331,7 +2329,7 @@
           title: `Device blocked: ${d.name}`,
           detail: "Tap Undo in Recent actions to revert."
         });
-        showToast("Blocked", `${d.name} blocked.`, [{ label: "Undo", onClick: () => undoLast() }]);
+        showToast("Status updated", `${d.name} marked as Blocked.`, [{ label: "Undo", onClick: () => undoLast() }]);
       }).catch(() => {
         showToast("Block failed", "Unable to block device.");
       });
@@ -2345,14 +2343,14 @@
         pushHistory({
           when: nowLabel(),
           title: `Paused ${d.name}`,
-          detail: `${d.ip} paused`,
+          detail: `${d.ip} status set to Paused`,
           undo: () => {
             updateDeviceMeta(d.id, { status: prev }).then(() => {
-              showToast("Resumed", `${d.name} restored.`);
+              showToast("Status updated", `${d.name} restored.`);
             }).catch(() => showToast("Undo failed", "Unable to restore device."));
           }
         });
-        showToast("Paused", `${d.name} internet paused.`);
+        showToast("Status updated", `${d.name} marked as Paused.`);
       }).catch(() => {
         showToast("Pause failed", "Unable to pause device.");
       });
@@ -2441,7 +2439,7 @@
 
     // export / rescan
     $("#btnRescanDevices").addEventListener("click", () => {
-      runScan("my");
+      runScan();
     });
     $("#btnExportDevices").addEventListener("click", () => {
       fetchJson("/api/v1/export/devices").then((data) => {
@@ -2533,7 +2531,7 @@
         </div>
       `;
       $("#naViewDevices").addEventListener("click", () => { closeOverlay("toolOverlay"); setTab("devices"); });
-      $("#naScan").addEventListener("click", () => { closeOverlay("toolOverlay"); runScan("my"); });
+      $("#naScan").addEventListener("click", () => { closeOverlay("toolOverlay"); runScan(); });
       $("#naSecurity").addEventListener("click", () => { closeOverlay("toolOverlay"); openToolDialog("security"); });
       openOverlay("toolOverlay");
     }
@@ -2544,7 +2542,7 @@
     $("#btnNetScan").addEventListener("click", () => {
       const n = networks.find(x => x.id === state.selectedNetworkId);
       if(!n) return showToast("Select a network", "Pick a network row first.");
-      runScan("my");
+      runScan();
     });
     $("#btnNetSec").addEventListener("click", () => openToolDialog("security"));
 
@@ -2563,7 +2561,7 @@
       if(kind === "fullScan"){
         const onPrimary = () => {
           closeOverlay("toolOverlay");
-          runScan("my");
+          runScan();
           pushHistory({ when: nowLabel(), title: "Full scan started", detail: "Full device scan.", undo: null });
         };
         $("#toolBody").innerHTML = toolTemplate(
@@ -2701,7 +2699,7 @@
           "Schedule scans or auto‑block unknown devices.",
           [
             { label: "Schedule", type: "select", id: "schFreq", options: ["Daily", "Weekly", "Monthly"], value: "Weekly" },
-            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Scan nearby networks", "Auto‑block unknown devices"], value: "Scan my network" }
+            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Auto‑block unknown devices"], value: "Scan my network" }
           ],
           "Create schedule",
           onPrimary
@@ -2734,7 +2732,7 @@
         return "";
       }).join("");
 
-      // Basic "Advanced options" expander (placeholder)
+      // Basic "Advanced options" expander
       return `
         <div class="card" style="cursor:default;">
           <div class="card-head">
@@ -2774,7 +2772,7 @@
     });
 
     // ---- Global buttons ----
-    async function runScan(which){
+    async function runScan(){
       if(scanInFlight){
         showToast("Scan already running", "Please wait for the current scan to finish.");
         return;
@@ -2785,7 +2783,7 @@
 
       state.lastScanAt = nowLabel();
       $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
-      $("#changeText").textContent = "Scan results updated. Review unknown devices and nearby networks.";
+      $("#changeText").textContent = "Scan results updated. Review unknown devices.";
       showToast("Scan started", "Starting network scan.");
       pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
 
@@ -2837,11 +2835,9 @@
 
     window.nnRunScan = runScan;
 
-    $("#scanNowBtn").addEventListener("click", () => runScan("my"));
-    $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan("my"); });
-    $("#btnScanNearby").addEventListener("click", (e) => { e.stopPropagation(); runScan("nearby"); });
-    $("#btnNetworksScanMy").addEventListener("click", () => runScan("my"));
-    $("#btnNetworksScanNearby").addEventListener("click", () => runScan("nearby"));
+    $("#scanNowBtn").addEventListener("click", () => runScan());
+    $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan(); });
+    $("#btnNetworksScanMy").addEventListener("click", () => runScan());
 
     $("#btnViewOnlineDevices").addEventListener("click", (e) => {
       e.stopPropagation();
@@ -2858,7 +2854,7 @@
     $("#btnPauseInternet").addEventListener("click", (e) => {
       e.stopPropagation();
       setTab("devices");
-      showToast("Pick a device", "Select a device to pause internet.");
+      showToast("Pick a device", "Select a device to set its status.");
     });
 
     $("#btnBlockNew").addEventListener("click", (e) => {
@@ -2868,7 +2864,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ match: "new_device", action: "block" })
       }).then(() => {
-        pushHistory({ when: nowLabel(), title: "Block new devices", detail: "Auto-block unknown devices enabled.", undo: null });
+        pushHistory({ when: nowLabel(), title: "Auto-block new devices", detail: "Auto-block unknown devices enabled.", undo: null });
         showToast("Enabled", "Auto-block unknown devices enabled.");
       }).catch(() => {
         showToast("Enable failed", "Unable to create auto-block rule.");
@@ -3088,7 +3084,7 @@
 
     // ---- Settings / initial state ----
     function init(){
-      // initial notification placeholder
+      // initial notification
       pushNotification({ when: nowLabel(), title: "Welcome", detail: "Scan your network to start discovering devices." });
 
       // initial dashboard rendering

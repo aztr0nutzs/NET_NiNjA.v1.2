@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Start server with `./gradlew :server:run`
-2. Open http://localhost:8787/ui/ninja_dash.html
+2. Open http://localhost:8787/ui/ninja_mobile_new.html
 3. Click X
 
 **Expected behavior**
