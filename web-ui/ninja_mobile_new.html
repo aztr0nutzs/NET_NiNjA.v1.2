@@ -1680,7 +1680,10 @@
       notifications: []
     };
 
-    const devices = [
+    let scanInFlight = false;
+    let scanPulseTimer = null;
+
+    let devices = [
       {
         id: "d1",
         name: "Living Room TV",
@@ -1762,6 +1765,138 @@
     // expose for embedded widgets (discovery map, etc)
     window.devices = devices;
 
+    // Local UI overrides (trust, notes, owner, etc.) preserved across refreshes
+    const deviceOverrides = new Map();
+    const firstSeenMap = new Map();
+    let cachedNetworkInfo = null;
+
+    function updateOverride(id, patch){
+      if(!id) return;
+      const prev = deviceOverrides.get(id) || {};
+      deviceOverrides.set(id, { ...prev, ...patch });
+    }
+
+    function formatSeen(ms){
+      if(!ms) return "—";
+      const now = Date.now();
+      const delta = now - ms;
+      if(delta < 120000) return "Now";
+      if(delta < 3600000) return `${Math.round(delta / 60000)} min ago`;
+      if(delta < 86400000) return `${Math.round(delta / 3600000)}h ago`;
+      if(delta < 172800000) return "Yesterday";
+      return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    function inferType(raw){
+      const host = String(raw?.hostname || "").toLowerCase();
+      const os = String(raw?.os || "").toLowerCase();
+      const vendor = String(raw?.vendor || "").toLowerCase();
+      if(os.includes("android") || os.includes("ios")) return "Phone";
+      if(os.includes("tizen") || os.includes("webos") || os.includes("tv")) return "TV";
+      if(os.includes("windows") || os.includes("linux") || os.includes("mac")) return "PC";
+      if(host.includes("printer") || os.includes("printer")) return "Printer";
+      if(vendor.includes("hikvision") || vendor.includes("tuya")) return "IoT";
+      return "IoT";
+    }
+
+    function mergeDevice(raw){
+      const id = raw?.id || raw?.mac || raw?.ip;
+      if(!id) return null;
+      const overrides = deviceOverrides.get(id) || {};
+      if(!firstSeenMap.has(id)){
+        firstSeenMap.set(id, raw?.lastSeen || Date.now());
+      }
+      const online = !!raw?.online;
+      const trust = overrides.trust || "Unknown";
+      const status = overrides.status || (trust === "Blocked" ? "Blocked" : (online ? "Online" : "Offline"));
+
+      return {
+        id,
+        name: overrides.name || raw?.hostname || raw?.ip || "Device",
+        owner: overrides.owner || "",
+        type: overrides.type || inferType(raw),
+        status,
+        ip: raw?.ip || "—",
+        mac: raw?.mac || "—",
+        vendor: raw?.vendor || "—",
+        firstSeen: overrides.firstSeen || formatSeen(firstSeenMap.get(id)),
+        lastSeen: overrides.lastSeen || formatSeen(raw?.lastSeen),
+        trust,
+        os: raw?.os || "—",
+        via: overrides.via || "LAN",
+        signal: overrides.signal || "—",
+        iface: overrides.iface || "—",
+        activityToday: overrides.activityToday || "—",
+        traffic: overrides.traffic || "—",
+        note: overrides.note || "",
+        room: overrides.room || ""
+      };
+    }
+
+    async function fetchJson(url, options){
+      const res = await fetch(url, options);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function applyDevicesFromBackend(rawList){
+      if(!Array.isArray(rawList)) return;
+      const next = rawList.map(mergeDevice).filter(Boolean);
+      devices = next;
+      window.devices = devices;
+    }
+
+    function updateNetworkUi(info){
+      if(!info || typeof info !== "object") return;
+      cachedNetworkInfo = info;
+
+      const name = info.name || "Network";
+      const ip = info.ip || "—";
+      const cidr = info.cidr || "—";
+      const gateway = info.gateway || "—";
+
+      $("#myNetText").textContent = `${name} (${cidr})`;
+      $("#brandSub").textContent = `${name} • ${cidr}`;
+
+      const n1 = networks.find(n => n.id === "n1");
+      if(n1){
+        n1.name = name;
+        n1.details.ssid = name;
+        n1.details.gateway = gateway;
+        n1.details.yourIp = ip;
+        n1.details.dns = "—";
+        n1.details.security = n1.details.security || "—";
+        n1.details.openPorts = "—";
+      }
+
+      // keep scan target fields aligned
+      window.applyScanData?.({
+        ssid: name,
+        subnet: cidr,
+        gateway: gateway
+      });
+
+      renderNetworks();
+    }
+
+    async function refreshNetworkInfo(){
+      try{
+        const info = await fetchJson("/api/v1/network/info");
+        updateNetworkUi(info);
+      } catch (_){}
+    }
+
+    async function refreshDiscoveryResults(){
+      try{
+        const data = await fetchJson("/api/v1/discovery/results");
+        applyDevicesFromBackend(data);
+        renderDashboard();
+        renderDevices();
+        renderNetworks();
+        window.nnUpdateDiscoveryMap?.();
+      } catch (_) {}
+    }
+
 
     const networks = [
       {
@@ -1812,6 +1947,41 @@
       const hh = String(d.getHours()).padStart(2,"0");
       const mm = String(d.getMinutes()).padStart(2,"0");
       return `${hh}:${mm}`;
+    }
+
+    function startScanPulse(label){
+      clearInterval(scanPulseTimer);
+      let progress = 6;
+      window.applyScanData?.({
+        progress,
+        phase: "DISCOVERY",
+        networks: 0,
+        devices: 0,
+        rssiDbm: NaN,
+        ssid: label || cachedNetworkInfo?.name || "--",
+        bssid: "--",
+        subnet: cachedNetworkInfo?.cidr || "--",
+        gateway: cachedNetworkInfo?.gateway || "--",
+        linkUp: true
+      });
+      scanPulseTimer = setInterval(() => {
+        progress = Math.min(95, progress + (Math.random() * 6 + 2));
+        window.applyScanData?.({
+          progress,
+          phase: "SCANNING",
+          networks: 0,
+          devices: 0,
+          rssiDbm: NaN,
+          ssid: label || cachedNetworkInfo?.name || "--",
+          subnet: cachedNetworkInfo?.cidr || "--",
+          gateway: cachedNetworkInfo?.gateway || "--",
+          linkUp: true
+        });
+      }, 380);
+    }
+
+    function stopScanPulse(){
+      if(scanPulseTimer){ clearInterval(scanPulseTimer); scanPulseTimer = null; }
     }
 
     function showToast(title, body, actions = []){
@@ -2135,6 +2305,7 @@
         d.note = $("#mNote").value;
         d.room = $("#mRoom").value || "";
         d.owner = $("#mOwner").value || "";
+        updateOverride(d.id, { note: d.note, room: d.room, owner: d.owner });
         pushHistory({ when: nowLabel(), title: `Saved notes for ${d.name}`, detail: "Notes / labels updated", undo: null });
         showToast("Saved", "Notes and labels updated.");
         renderDevices();
@@ -2177,11 +2348,12 @@
         if(next && next.trim()){
           const prev = d.name;
           d.name = next.trim();
+          updateOverride(d.id, { name: d.name });
           pushHistory({
             when: nowLabel(),
             title: `Renamed device`,
             detail: `${prev} → ${d.name}`,
-            undo: () => { d.name = prev; renderDevices(); renderDashboard(); showToast("Undone", "Rename reverted."); }
+            undo: () => { d.name = prev; updateOverride(d.id, { name: prev }); renderDevices(); renderDashboard(); showToast("Undone", "Rename reverted."); }
           });
           showToast("Renamed", d.name);
           renderDevices(); renderDashboard();
@@ -2208,12 +2380,14 @@
       const prev = { status: d.status, trust: d.trust };
       d.status = "Blocked";
       d.trust = "Blocked";
+      updateOverride(d.id, { status: d.status, trust: d.trust });
       pushHistory({
         when: nowLabel(),
         title: `Blocked ${d.name}`,
         detail: "Device blocked from network (demo).",
         undo: () => {
           d.status = prev.status; d.trust = prev.trust;
+          updateOverride(d.id, { status: d.status, trust: d.trust });
           renderDevices(); renderDashboard();
           showToast("Unblocked", `${d.name} restored.`);
         }
@@ -2232,11 +2406,12 @@
       if(!d) return;
       const prev = d.trust;
       d.trust = (d.trust === "Trusted") ? "Unknown" : "Trusted";
+      updateOverride(d.id, { trust: d.trust, status: d.status });
       pushHistory({
         when: nowLabel(),
         title: `Trust changed: ${d.name}`,
         detail: `${prev} → ${d.trust}`,
-        undo: () => { d.trust = prev; renderDevices(); renderDashboard(); showToast("Undone", "Trust reverted."); }
+        undo: () => { d.trust = prev; updateOverride(d.id, { trust: prev, status: d.status }); renderDevices(); renderDashboard(); showToast("Undone", "Trust reverted."); }
       });
       showToast("Updated", `${d.name} is now ${d.trust}.`);
       renderDevices(); renderDashboard();
@@ -2269,6 +2444,7 @@
       d.note = $("#spNote").value;
       d.room = $("#spRoom").value || "";
       d.owner = $("#spOwner").value || "";
+      updateOverride(d.id, { note: d.note, room: d.room, owner: d.owner });
       pushHistory({ when: nowLabel(), title: `Saved notes for ${d.name}`, detail: "Notes / labels updated", undo: null });
       showToast("Saved", "Notes and labels updated.");
       renderDevices(); renderDashboard();
@@ -2299,14 +2475,17 @@
 
     // export / rescan (demo)
     $("#btnRescanDevices").addEventListener("click", () => {
-      showToast("Scan started", "Rescanning devices (demo).");
-      pushHistory({ when: nowLabel(), title: "Rescanned devices", detail: "ARP + ping sweep (demo).", undo: null });
+      runScan("my");
     });
     $("#btnExportDevices").addEventListener("click", () => {
-      const payload = JSON.stringify(devices, null, 2);
-      downloadText(payload, "devices.json", "application/json");
-      pushHistory({ when: nowLabel(), title: "Exported device list", detail: "devices.json downloaded", undo: null });
-      showToast("Exported", "Downloaded devices.json");
+      fetchJson("/api/v1/export/devices").then((data) => {
+        const payload = JSON.stringify(data, null, 2);
+        downloadText(payload, "devices.json", "application/json");
+        pushHistory({ when: nowLabel(), title: "Exported device list", detail: "devices.json downloaded", undo: null });
+        showToast("Exported", "Downloaded devices.json");
+      }).catch(() => {
+        showToast("Export failed", "Backend unavailable.");
+      });
     });
 
     // ---- Networks ----
@@ -2388,21 +2567,18 @@
         </div>
       `;
       $("#naViewDevices").addEventListener("click", () => { closeOverlay("toolOverlay"); setTab("devices"); });
-      $("#naScan").addEventListener("click", () => { closeOverlay("toolOverlay"); showToast("Scan started", `Scanning ${n.name} (demo).`); });
-      $("#naSecurity").addEventListener("click", () => { closeOverlay("toolOverlay"); showToast("Security check", `Checking ${n.name} (demo).`); });
+      $("#naScan").addEventListener("click", () => { closeOverlay("toolOverlay"); runScan("my"); });
+      $("#naSecurity").addEventListener("click", () => { closeOverlay("toolOverlay"); openToolDialog("security"); });
       openOverlay("toolOverlay");
     }
 
-    $("#btnNetworksScanMy").addEventListener("click", () => runScan("my"));
-    $("#btnNetworksScanNearby").addEventListener("click", () => runScan("nearby"));
     $("#btnNetworksSecurity").addEventListener("click", () => openToolDialog("security"));
 
     $("#btnNetViewDevices").addEventListener("click", () => setTab("devices"));
     $("#btnNetScan").addEventListener("click", () => {
       const n = networks.find(x => x.id === state.selectedNetworkId);
       if(!n) return showToast("Select a network", "Pick a network row first.");
-      showToast("Scan started", `Scanning ${n.name} (demo).`);
-      pushHistory({ when: nowLabel(), title: `Scanned ${n.name}`, detail: "Network scan (demo).", undo: null });
+      runScan("my");
     });
     $("#btnNetSec").addEventListener("click", () => openToolDialog("security"));
 
@@ -2419,6 +2595,11 @@
       $("#toolTitle").textContent = titleMap[kind] || "Tool";
 
       if(kind === "fullScan"){
+        const onPrimary = () => {
+          closeOverlay("toolOverlay");
+          runScan("my");
+          pushHistory({ when: nowLabel(), title: "Full scan started", detail: "Full device scan.", undo: null });
+        };
         $("#toolBody").innerHTML = toolTemplate(
           "Scan all addresses on your network for any device.",
           [
@@ -2426,13 +2607,17 @@
             { label: "Speed", type: "select", id: "fsSpeed", options: ["Fast", "Balanced", "Thorough"], value: "Balanced" }
           ],
           "Run full scan",
-          () => {
-            closeOverlay("toolOverlay");
-            runScan("my");
-            pushHistory({ when: nowLabel(), title: "Full scan started", detail: "Full device scan (demo).", undo: null });
-          }
+          onPrimary
         );
+        wireToolPrimary(onPrimary);
       } else if(kind === "portScan"){
+        const onPrimary = () => {
+          const devName = $("#psDevice")?.value || "device";
+          const profile = $("#psProfile")?.value || "Quick scan";
+          closeOverlay("toolOverlay");
+          showToast("Port scan started", `${devName} • ${profile} (demo).`);
+          pushHistory({ when: nowLabel(), title: `Port scan: ${devName}`, detail: profile + " (demo).", undo: null });
+        };
         $("#toolBody").innerHTML = toolTemplate(
           "Check which ports are open on a device.",
           [
@@ -2440,15 +2625,15 @@
             { label: "Profile", type: "select", id: "psProfile", options: ["Quick scan", "Full scan", "Custom"], value: "Quick scan" }
           ],
           "Run port scan",
-          () => {
-            const devName = $("#psDevice")?.value || "device";
-            const profile = $("#psProfile")?.value || "Quick scan";
-            closeOverlay("toolOverlay");
-            showToast("Port scan started", `${devName} • ${profile} (demo).`);
-            pushHistory({ when: nowLabel(), title: `Port scan: ${devName}`, detail: profile + " (demo).", undo: null });
-          }
+          onPrimary
         );
+        wireToolPrimary(onPrimary);
       } else if(kind === "security"){
+        const onPrimary = () => {
+          closeOverlay("toolOverlay");
+          showToast("Security check started", "Running checks (demo).");
+          pushHistory({ when: nowLabel(), title: "Security check started", detail: "Security check (demo).", undo: null });
+        };
         $("#toolBody").innerHTML = toolTemplate(
           "Look for weak security on your network.",
           [
@@ -2456,13 +2641,20 @@
             { label: "Depth", type: "select", id: "scDepth", options: ["Quick", "Balanced", "Thorough"], value: "Quick" }
           ],
           "Run security check",
-          () => {
-            closeOverlay("toolOverlay");
-            showToast("Security check started", "Running checks (demo).");
-            pushHistory({ when: nowLabel(), title: "Security check started", detail: "Security check (demo).", undo: null });
-          }
+          onPrimary
         );
+        wireToolPrimary(onPrimary);
       } else if(kind === "reports"){
+        const onPrimary = () => {
+          const fmt = $("#rpFmt")?.value || "CSV";
+          closeOverlay("toolOverlay");
+          const content = fmt === "CSV" ? makeDevicesCsv() : JSON.stringify({ devices }, null, 2);
+          const mime = fmt === "CSV" ? "text/csv" : "application/json";
+          const name = fmt === "CSV" ? "report.csv" : "report.json";
+          downloadText(content, name, mime);
+          pushHistory({ when: nowLabel(), title: "Report generated", detail: name + " downloaded", undo: null });
+          showToast("Report generated", name + " downloaded");
+        };
         $("#toolBody").innerHTML = toolTemplate(
           "Export devices, activity, and scan results.",
           [
@@ -2470,18 +2662,17 @@
             { label: "Include", type: "select", id: "rpInc", options: ["Devices", "Devices + activity", "Everything"], value: "Devices" }
           ],
           "Generate report",
-          () => {
-            const fmt = $("#rpFmt")?.value || "CSV";
-            closeOverlay("toolOverlay");
-            const content = fmt === "CSV" ? makeDevicesCsv() : JSON.stringify({ devices }, null, 2);
-            const mime = fmt === "CSV" ? "text/csv" : "application/json";
-            const name = fmt === "CSV" ? "report.csv" : "report.json";
-            downloadText(content, name, mime);
-            pushHistory({ when: nowLabel(), title: "Report generated", detail: name + " downloaded", undo: null });
-            showToast("Report generated", name + " downloaded");
-          }
+          onPrimary
         );
+        wireToolPrimary(onPrimary);
       } else if(kind === "schedule"){
+        const onPrimary = () => {
+          const freq = $("#schFreq")?.value || "Weekly";
+          const act = $("#schAct")?.value || "Scan my network";
+          closeOverlay("toolOverlay");
+          pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} • ${freq} (demo).`, undo: null });
+          showToast("Scheduled", `${act} • ${freq} (demo).`);
+        };
         $("#toolBody").innerHTML = toolTemplate(
           "Schedule scans or auto‑block unknown devices.",
           [
@@ -2489,17 +2680,18 @@
             { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Scan nearby networks", "Auto‑block unknown devices"], value: "Scan my network" }
           ],
           "Create schedule",
-          () => {
-            const freq = $("#schFreq")?.value || "Weekly";
-            const act = $("#schAct")?.value || "Scan my network";
-            closeOverlay("toolOverlay");
-            pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} • ${freq} (demo).`, undo: null });
-            showToast("Scheduled", `${act} • ${freq} (demo).`);
-          }
+          onPrimary
         );
+        wireToolPrimary(onPrimary);
       }
 
       openOverlay("toolOverlay");
+    }
+
+    function wireToolPrimary(onPrimary){
+      const btn = $("#toolPrimaryBtn");
+      if(!btn) return;
+      btn.addEventListener("click", () => onPrimary?.());
     }
 
     function toolTemplate(desc, fields, primaryLabel, onPrimary){
@@ -2558,29 +2750,74 @@
     });
 
     // ---- Global buttons ----
-    function runScan(which){
+    async function runScan(which){
+      if(scanInFlight){
+        showToast("Scan already running", "Please wait for the current scan to finish.");
+        return;
+      }
+
+      scanInFlight = true;
+      const label = which === "nearby" ? "Nearby networks" : "My network";
+      startScanPulse(label);
+
       state.lastScanAt = nowLabel();
       $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
       $("#changeText").textContent = "Scan results updated. Review unknown devices and nearby networks.";
-      showToast("Scan started", which === "nearby" ? "Scanning nearby networks (demo)." : "Scanning my network (demo).");
+      showToast("Scan started", which === "nearby" ? "Starting scan for nearby networks." : "Starting scan for my network.");
+      pushHistory({ when: nowLabel(), title: "Scan started", detail: which === "nearby" ? "Nearby networks scan." : "My network scan.", undo: null });
 
-      pushHistory({ when: nowLabel(), title: "Scan started", detail: which === "nearby" ? "Nearby networks scan (demo)." : "My network scan (demo).", undo: null });
+      try{
+        await refreshNetworkInfo();
+        const subnet = cachedNetworkInfo?.cidr || "";
+        const payload = { subnet };
+        const found = await fetchJson("/api/v1/discovery/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-      // simulate a new device notification on scan
-      if(which !== "nearby"){
-        const unknown = devices.find(d => d.trust === "Unknown");
-        if(unknown){
-          pushNotification({
-            when: nowLabel(),
-            title: `New device detected: ${unknown.name}`,
-            detail: "Tap Review to inspect and trust/block."
-          });
+        applyDevicesFromBackend(found);
+        renderDashboard();
+        renderDevices();
+        renderNetworks();
+
+        window.applyScanData?.({
+          progress: 100,
+          phase: "COMPLETE",
+          networks: 1,
+          devices: devices.length,
+          rssiDbm: NaN,
+          ssid: cachedNetworkInfo?.name || "--",
+          bssid: "--",
+          subnet: cachedNetworkInfo?.cidr || "--",
+          gateway: cachedNetworkInfo?.gateway || "--",
+          linkUp: true
+        });
+
+        if(which !== "nearby"){
+          const unknown = devices.find(d => d.trust === "Unknown");
+          if(unknown){
+            pushNotification({
+              when: nowLabel(),
+              title: `New device detected: ${unknown.name}`,
+              detail: "Tap Review to inspect and trust/block."
+            });
+          }
+        } else {
+          showToast("Scan complete", "Nearby Wi‑Fi discovery is not exposed by the backend; device scan completed instead.");
         }
+
+        window.nnUpdateDiscoveryMap?.();
+      } catch (err){
+        showToast("Scan failed", "Backend unavailable or scan failed.");
+      } finally {
+        stopScanPulse();
+        scanInFlight = false;
       }
-      renderDashboard();
-      window.nnStartScanSim?.(which);
-      window.nnUpdateDiscoveryMap?.();
     }
+
+    window.nnRunScan = runScan;
+    window.nnStopScanPulse = stopScanPulse;
 
     $("#scanNowBtn").addEventListener("click", () => runScan("my"));
     $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan("my"); });
@@ -2614,7 +2851,7 @@
 
     $("#btnShareWifi").addEventListener("click", (e) => {
       e.stopPropagation();
-      const text = "Home Wi‑Fi (SSID) • WPA2";
+      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} • ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wi‑Fi (SSID) • WPA2";
       navigator.clipboard?.writeText(text).then(() => {
         showToast("Copied", "Wi‑Fi details copied to clipboard.");
         pushHistory({ when: nowLabel(), title: "Shared Wi‑Fi details", detail: "Copied to clipboard", undo: null });
@@ -2623,11 +2860,24 @@
       });
     });
 
-    // clickable cards (no nested menus)
-    $("#cardMyNetwork").addEventListener("click", () => {});
-    $("#cardWhosOnline").addEventListener("click", () => {});
-    $("#cardUnknown").addEventListener("click", () => {});
-    $("#cardQuickActions").addEventListener("click", () => {});
+    function wireCardButton(id, handler){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener("click", handler);
+      el.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault();
+          handler();
+        }
+      });
+    }
+
+    // clickable cards
+    wireCardButton("cardMyNetwork", () => setTab("networks"));
+    wireCardButton("cardWhosOnline", () => { setTab("devices"); setFilter("online"); });
+    wireCardButton("cardUnknown", () => { setTab("devices"); setFilter("unknown"); });
+    wireCardButton("cardQuickActions", () => setTab("tools"));
+    wireCardButton("cardStatus", () => openOverlay("historyOverlay"));
 
     function setFilter(filter){
       state.deviceFilter = filter;
@@ -2710,6 +2960,7 @@
     $("#historyBtn").addEventListener("click", () => openOverlay("historyOverlay"));
     $("#notifBtn").addEventListener("click", () => openOverlay("notifOverlay"));
     $("#settingsBtn").addEventListener("click", () => openOverlay("settingsOverlay"));
+    $("#logoutBtn").addEventListener("click", () => { window.location.href = "/ui/new_assets/ninja_login.html"; });
 
     // close buttons
     $$("[data-close]").forEach(b => b.addEventListener("click", () => closeOverlay(b.dataset.close)));
@@ -2792,6 +3043,10 @@
       renderSidePanel();
 
       // Basic "settings icon instead of a tab" is already top-right.
+
+      // hydrate from backend if available
+      refreshNetworkInfo();
+      refreshDiscoveryResults();
     }
 
     init();
@@ -2977,9 +3232,16 @@
       startSim(label);
     };
 
-    btnStart?.addEventListener("click", () => startSim("Home WiFi"));
+    btnStart?.addEventListener("click", () => {
+      if(typeof window.nnRunScan === "function"){
+        window.nnRunScan("my");
+      } else {
+        startSim("Home WiFi");
+      }
+    });
     btnStop?.addEventListener("click", () => {
       stopAll();
+      window.nnStopScanPulse?.();
       window.applyScanData({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
     });
 
