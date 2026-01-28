@@ -14,6 +14,7 @@
       --bg0:#000;
       --panel: rgba(10, 11, 16, 0.72);
       --panel2: rgba(0,0,0,0.55);
+      --topbar-bg: #020205;
 
       --neon-cyan:#00f0ff;
       --neon-purple:#b967ff;
@@ -41,6 +42,40 @@
 
       --tabbar-h: 74px;
       --topbar-h: 96px;
+    }
+
+    body[data-theme="neon-void"]{
+      --bg0: #04040d;
+      --panel: rgba(12, 14, 24, 0.78);
+      --panel2: rgba(3, 4, 10, 0.7);
+      --topbar-bg: #05060f;
+      --neon-cyan:#2cf2ff;
+      --neon-purple:#9a6bff;
+      --neon-mint:#6bffe7;
+      --border-cyan: rgba(44, 242, 255, 0.42);
+      --border-purple: rgba(154, 107, 255, 0.42);
+    }
+    body[data-theme="neon-ember"]{
+      --bg0: #09060c;
+      --panel: rgba(16, 10, 20, 0.8);
+      --panel2: rgba(7, 5, 12, 0.72);
+      --topbar-bg: #0b0714;
+      --neon-cyan:#26ffe4;
+      --neon-purple:#ff6ff2;
+      --neon-mint:#95ff6b;
+      --border-cyan: rgba(38, 255, 228, 0.4);
+      --border-purple: rgba(255, 111, 242, 0.4);
+    }
+    body[data-theme="neon-volt"]{
+      --bg0: #040a0f;
+      --panel: rgba(8, 16, 20, 0.78);
+      --panel2: rgba(3, 8, 12, 0.68);
+      --topbar-bg: #020a12;
+      --neon-cyan:#00e7ff;
+      --neon-purple:#6b7bff;
+      --neon-mint:#6bffb8;
+      --border-cyan: rgba(0, 231, 255, 0.42);
+      --border-purple: rgba(107, 123, 255, 0.42);
     }
 
     *{ box-sizing:border-box; margin:0; padding:0; }
@@ -94,7 +129,7 @@
       z-index:1000;
       height: calc(var(--topbar-h) + var(--safe-top));
       padding: 0 12px;
-      background: #020205;
+      background: var(--topbar-bg);
       border-bottom: 1px solid var(--border-purple);
       box-shadow: var(--shadow-purple);
       overflow:hidden;
@@ -562,6 +597,15 @@
     }
     .kv .k{ color: rgba(255,255,255,0.65); }
     .kv .v{ color: rgba(255,255,255,0.92); text-align:right; }
+    .kv select{
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(185,103,255,0.25);
+      border-radius: 10px;
+      color: rgba(255,255,255,0.92);
+      font: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+    }
 
     .notes{
       margin-top: 12px;
@@ -739,6 +783,196 @@
 
     .divider{ height:1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
 
+    .status-banner{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(0,240,255,0.25);
+      background: linear-gradient(135deg, rgba(0,0,0,0.65), rgba(0,0,0,0.35));
+      box-shadow: 0 0 20px rgba(0,240,255,0.18);
+      margin-bottom: 12px;
+    }
+    .status-banner strong{
+      font-family: "Orbitron", sans-serif;
+      font-size: 12px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      display:block;
+      margin-bottom: 4px;
+    }
+    .status-banner .meta{
+      font-size: 11px;
+      color: rgba(255,255,255,0.68);
+    }
+    .status-banner .tag{
+      align-self:center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(120,255,220,0.35);
+      color: var(--neon-mint);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .live-counters{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .counter{
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(185,103,255,0.25);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: inset 0 0 18px rgba(0,240,255,0.08);
+    }
+    .counter .label{
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.6);
+    }
+    .counter .value{
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      margin-top: 4px;
+      text-shadow: 0 0 12px rgba(0,240,255,0.28);
+    }
+
+    .life-card{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .heartbeat{
+      position:relative;
+      flex: 1;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(0,240,255,0.18);
+      overflow:hidden;
+    }
+    .heartbeat::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, transparent, rgba(0,240,255,0.2), transparent);
+      transform: translateX(-100%);
+      animation: heartbeatSweep 2.4s infinite;
+    }
+    .heartbeat-line{
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, rgba(0,240,255,0.05), rgba(0,240,255,0.7), rgba(185,103,255,0.4));
+      clip-path: polygon(0 55%, 18% 55%, 22% 30%, 30% 70%, 40% 40%, 50% 60%, 60% 52%, 100% 52%, 100% 100%, 0 100%);
+      opacity: 0.8;
+    }
+    .pulse-dot{
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--neon-mint);
+      box-shadow: 0 0 12px rgba(120,255,220,0.6);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes heartbeatSweep{
+      0%{ transform: translateX(-100%); opacity: 0; }
+      50%{ opacity: 0.7; }
+      100%{ transform: translateX(100%); opacity: 0; }
+    }
+    @keyframes pulse{
+      0%,100%{ transform: scale(1); opacity: 0.7; }
+      50%{ transform: scale(1.4); opacity: 1; }
+    }
+
+    .device-card-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .device-card{
+      background: var(--panel);
+      border: 1px solid rgba(0,240,255,0.18);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 0 18px rgba(0,240,255,0.14);
+    }
+    .device-card summary{
+      list-style: none;
+      cursor: pointer;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .device-card summary::-webkit-details-marker{ display:none; }
+    .device-card .title{
+      font-family:"Orbitron", sans-serif;
+      font-size: 12px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+    .device-card .meta{
+      font-size: 11px;
+      color: rgba(255,255,255,0.68);
+      margin-top: 6px;
+    }
+    .device-card .details{
+      margin-top: 10px;
+      display:grid;
+      gap:6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.78);
+    }
+
+    .module-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .module-card{
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(185,103,255,0.28);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 0 16px rgba(185,103,255,0.18);
+    }
+    .module-card summary{
+      list-style: none;
+      cursor: pointer;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-family:"Orbitron", sans-serif;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .module-card summary::-webkit-details-marker{ display:none; }
+    .module-card .module-meta{
+      margin-top: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.68);
+    }
+    .module-toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+    }
+
     /* Accessibility */
     .sr-only{
       position:absolute; width:1px; height:1px;
@@ -850,6 +1084,10 @@
       transform-origin: bottom;
       animation: nnBar 1.35s infinite ease-in-out;
       opacity: 0.9;
+      animation-play-state: paused;
+    }
+    .scan-active .nn-activity span{
+      animation-play-state: running;
     }
     .nn-activity span:nth-child(2){ animation-delay: -0.25s; }
     .nn-activity span:nth-child(3){ animation-delay: -0.55s; }
@@ -1113,6 +1351,33 @@
       <section class="tab-page active" id="tab-dashboard" aria-labelledby="tabbtn-dashboard">
         <h2>Dashboard</h2>
 
+        <div class="status-banner" id="statusBanner" role="status" aria-live="polite">
+          <div>
+            <strong id="statusBannerTitle">No threats detected</strong>
+            <div class="meta" id="statusBannerMeta">System ready. Awaiting scan.</div>
+          </div>
+          <div class="tag" id="statusBannerTag">Stable</div>
+        </div>
+
+        <div class="live-counters" aria-label="Live counters">
+          <div class="counter">
+            <div class="label">Total devices</div>
+            <div class="value" id="totalDevicesCount">0</div>
+          </div>
+          <div class="counter">
+            <div class="label">Online now</div>
+            <div class="value" id="onlineCount">0</div>
+          </div>
+          <div class="counter">
+            <div class="label">New since last scan</div>
+            <div class="value" id="newDevicesCount">0</div>
+          </div>
+          <div class="counter">
+            <div class="label">Changes detected</div>
+            <div class="value" id="changeCount">0</div>
+          </div>
+        </div>
+
         <div class="grid grid-2">
           <div class="card" id="cardMyNetwork" role="button" tabindex="0">
             <div class="card-head">
@@ -1130,7 +1395,7 @@
               <div class="card-title">Who’s Online</div>
               <div class="pill" id="onlineDeltaPill">Changed: 0</div>
             </div>
-            <div class="big" id="onlineCount">0</div>
+            <div class="big" id="onlineCountCard">0</div>
             <div class="muted">devices online</div>
             <div class="card-actions">
               <button class="btn btn-ghost" id="btnViewOnlineDevices">View devices</button>
@@ -1158,6 +1423,23 @@
               <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
               <button class="btn btn-danger" id="btnBlockNew">Auto‑block new devices</button>
               <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi‑Fi details</button>
+            </div>
+          </div>
+
+          <div class="card" id="cardProofOfLife" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Proof of life</div>
+              <div class="pill ok" id="lifePill">Heartbeat</div>
+            </div>
+            <div class="life-card">
+              <div>
+                <div class="muted">Last heartbeat</div>
+                <div class="big" style="font-size: 20px;" id="lifeTime">--:--</div>
+              </div>
+              <div class="heartbeat" aria-hidden="true">
+                <div class="heartbeat-line"></div>
+              </div>
+              <div class="pulse-dot" aria-hidden="true"></div>
             </div>
           </div>
         </div>
@@ -1223,6 +1505,14 @@
           </div>
           <div class="muted" id="changeText">Run a scan to see changes and new devices.</div>
         </div>
+
+        <div class="card" id="scanHistoryCard" style="cursor:default; margin-top:12px;">
+          <div class="card-head">
+            <div class="card-title">Scan history</div>
+            <div class="pill">Saved</div>
+          </div>
+          <div class="list" id="scanHistoryList"></div>
+        </div>
       </section>
 
       <!-- DEVICES -->
@@ -1252,6 +1542,10 @@
               <button class="chip" data-filter="blocked">Blocked</button>
             </div>
           </div>
+        </div>
+
+        <div class="device-card-grid" id="deviceCardGrid" aria-label="Device cards">
+          <!-- populated by JS -->
         </div>
 
         <div class="split">
@@ -1498,6 +1792,43 @@
         <div class="muted" style="margin-top: 10px;">
           Each tool dialog keeps only 2–3 core controls plus an “Advanced options” expander. Because humans love clicking things.
         </div>
+
+        <div class="divider"></div>
+        <h2>Modules</h2>
+        <div class="module-grid" id="moduleGrid">
+          <details class="module-card" open>
+            <summary>
+              <span>Scanner</span>
+              <span class="pill ok">Active</span>
+            </summary>
+            <div class="module-meta">Primary discovery engine with scan diff support and live progress.</div>
+            <label class="module-toggle"><input type="checkbox" checked data-module="scanner" /> Enabled</label>
+          </details>
+          <details class="module-card">
+            <summary>
+              <span>Monitor</span>
+              <span class="pill">Idle</span>
+            </summary>
+            <div class="module-meta">Background monitoring, alerts, and continuous device tracking.</div>
+            <label class="module-toggle"><input type="checkbox" checked data-module="monitor" /> Enabled</label>
+          </details>
+          <details class="module-card">
+            <summary>
+              <span>Tools</span>
+              <span class="pill">Loaded</span>
+            </summary>
+            <div class="module-meta">Diagnostics, reports, and security checks.</div>
+            <label class="module-toggle"><input type="checkbox" checked data-module="tools" /> Enabled</label>
+          </details>
+          <details class="module-card">
+            <summary>
+              <span>Lab</span>
+              <span class="pill warn">Experimental</span>
+            </summary>
+            <div class="module-meta">Experimental add-ons. Use with caution.</div>
+            <label class="module-toggle"><input type="checkbox" data-module="lab" /> Enabled</label>
+          </details>
+        </div>
       </section>
     </main>
 
@@ -1620,7 +1951,17 @@
               <div class="pill">Theme</div>
             </div>
             <div class="kv">
-              <div class="line"><span class="k">App theme</span><span class="v">Neon dark</span></div>
+              <div class="line">
+                <span class="k">App theme</span>
+                <span class="v">
+                  <select id="themeSelect" aria-label="Select theme">
+                    <option value="default">Neon dark</option>
+                    <option value="neon-void">Neon void</option>
+                    <option value="neon-ember">Neon ember</option>
+                    <option value="neon-volt">Neon volt</option>
+                  </select>
+                </span>
+              </div>
               <div class="line"><span class="k">Language</span><span class="v">English</span></div>
             </div>
           </div>
@@ -1675,11 +2016,13 @@
       selectedNetworkId: null,
       lastScanAt: null,
       lastChangeCount: 0,
+      lastDiff: null,
       history: [],
       notifications: []
     };
 
     let scanInFlight = false;
+    let scanActiveFlag = false;
 
     let devices = [];
 
@@ -1689,6 +2032,41 @@
     // Local UI caches
     const firstSeenMap = new Map();
     let cachedNetworkInfo = null;
+
+    // Local DataStore (localStorage-backed) for scan history + device tracking.
+    const DATASTORE_KEY = "nn_datastore_v1";
+    const defaultStore = {
+      scans: [],
+      deviceHistory: {},
+      theme: "default",
+      modules: {
+        scanner: true,
+        monitor: true,
+        tools: true,
+        lab: false
+      }
+    };
+
+    function loadStore(){
+      try{
+        const raw = localStorage.getItem(DATASTORE_KEY);
+        if(!raw) return { ...defaultStore };
+        const parsed = JSON.parse(raw);
+        return {
+          ...defaultStore,
+          ...parsed,
+          modules: { ...defaultStore.modules, ...(parsed.modules || {}) }
+        };
+      } catch (_){
+        return { ...defaultStore };
+      }
+    }
+
+    function saveStore(){
+      localStorage.setItem(DATASTORE_KEY, JSON.stringify(dataStore));
+    }
+
+    const dataStore = loadStore();
 
     function formatSeen(ms){
       if(!ms) return "—";
@@ -1776,6 +2154,7 @@
       const next = rawList.map(mergeDevice).filter(Boolean);
       devices = next;
       window.devices = devices;
+      updateDeviceHistory(devices);
     }
 
     function upsertDeviceFromBackend(raw){
@@ -1927,6 +2306,188 @@
     }
     function hideToast(){ $("#toast").classList.remove("show"); }
 
+    function formatTimestamp(ts){
+      if(!ts) return "—";
+      const d = new Date(ts);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    function summarizeDiff(diff){
+      if(!diff) return "No diff yet.";
+      const parts = [];
+      if(diff.newCount) parts.push(`${diff.newCount} new`);
+      if(diff.removedCount) parts.push(`${diff.removedCount} removed`);
+      if(diff.statusChanged) parts.push(`${diff.statusChanged} status`);
+      if(diff.trustChanged) parts.push(`${diff.trustChanged} trust`);
+      if(parts.length === 0) return "No changes since last scan.";
+      return parts.join(" • ");
+    }
+
+    function computeScanDiff(prevScan, nextScan){
+      if(!prevScan || !Array.isArray(prevScan.devices)){
+        return {
+          newCount: nextScan.devices.length,
+          removedCount: 0,
+          statusChanged: 0,
+          trustChanged: 0,
+          totalChanges: nextScan.devices.length
+        };
+      }
+      const prevMap = new Map(prevScan.devices.map(d => [d.id, d]));
+      const nextMap = new Map(nextScan.devices.map(d => [d.id, d]));
+      let newCount = 0;
+      let removedCount = 0;
+      let statusChanged = 0;
+      let trustChanged = 0;
+
+      nextMap.forEach((d, id) => {
+        if(!prevMap.has(id)){
+          newCount += 1;
+          return;
+        }
+        const prev = prevMap.get(id);
+        if(prev.status !== d.status) statusChanged += 1;
+        if(prev.trust !== d.trust) trustChanged += 1;
+      });
+      prevMap.forEach((_, id) => {
+        if(!nextMap.has(id)) removedCount += 1;
+      });
+
+      return {
+        newCount,
+        removedCount,
+        statusChanged,
+        trustChanged,
+        totalChanges: newCount + removedCount + statusChanged + trustChanged
+      };
+    }
+
+    function snapshotDevices(list){
+      return list.map(d => ({
+        id: d.id,
+        name: d.name,
+        ip: d.ip,
+        mac: d.mac,
+        status: d.status,
+        trust: d.trust,
+        vendor: d.vendor,
+        os: d.os
+      }));
+    }
+
+    function recordScan(list){
+      const ts = Date.now();
+      const snapshot = { ts, devices: snapshotDevices(list) };
+      const prev = dataStore.scans[0];
+      const diff = computeScanDiff(prev, snapshot);
+      dataStore.scans.unshift({
+        id: `scan_${ts}`,
+        ts,
+        devices: snapshot.devices,
+        diff
+      });
+      dataStore.scans = dataStore.scans.slice(0, 25);
+
+      updateDeviceHistory(list, ts);
+      saveStore();
+      state.lastDiff = diff;
+      state.lastChangeCount = diff.totalChanges;
+      return diff;
+    }
+
+    function updateDeviceHistory(list, ts = Date.now()){
+      list.forEach(d => {
+        const entry = dataStore.deviceHistory[d.id] || {
+          id: d.id,
+          firstSeenTs: ts,
+          lastSeenTs: ts
+        };
+        entry.name = d.name;
+        entry.ip = d.ip;
+        entry.vendor = d.vendor;
+        entry.trust = d.trust;
+        entry.status = d.status;
+        entry.lastSeenTs = ts;
+        dataStore.deviceHistory[d.id] = entry;
+      });
+      saveStore();
+    }
+
+    function renderScanHistory(){
+      const list = $("#scanHistoryList");
+      if(!list) return;
+      const rows = dataStore.scans.slice(0, 5).map(scan => {
+        const diffText = summarizeDiff(scan.diff);
+        return `
+          <div class="list-item">
+            <div class="line1">
+              <span>${formatTimestamp(scan.ts)}</span>
+              <span>${scan.devices.length} devices</span>
+            </div>
+            <div class="line2">${diffText}</div>
+          </div>
+        `;
+      }).join("");
+      list.innerHTML = rows || `<div class="muted">No scans saved yet.</div>`;
+    }
+
+    function updateStatusBanner(){
+      const bannerTitle = $("#statusBannerTitle");
+      const bannerMeta = $("#statusBannerMeta");
+      const bannerTag = $("#statusBannerTag");
+      const lifePill = $("#lifePill");
+      const threats = devices.filter(d => d.status === "Blocked" || d.trust === "Unknown");
+
+      if(scanInFlight || scanActiveFlag){
+        bannerTitle.textContent = "Scanning network…";
+        bannerMeta.textContent = "Live scan running. Progress updates stream in real time.";
+        bannerTag.textContent = "Scanning";
+        if(lifePill){
+          lifePill.textContent = "Live";
+          lifePill.className = "pill warn";
+        }
+        return;
+      }
+
+      if(state.lastDiff?.newCount){
+        bannerTitle.textContent = `${state.lastDiff.newCount} new devices found`;
+        bannerMeta.textContent = summarizeDiff(state.lastDiff);
+        bannerTag.textContent = "Review";
+        if(lifePill){
+          lifePill.textContent = "Sync";
+          lifePill.className = "pill ok";
+        }
+        return;
+      }
+
+      if(threats.length){
+        bannerTitle.textContent = `${threats.length} devices need review`;
+        bannerMeta.textContent = "Unknown or blocked devices detected.";
+        bannerTag.textContent = "Attention";
+        if(lifePill){
+          lifePill.textContent = "Alert";
+          lifePill.className = "pill warn";
+        }
+        return;
+      }
+
+      bannerTitle.textContent = "No threats detected";
+      bannerMeta.textContent = "System ready. Awaiting scan.";
+      bannerTag.textContent = "Stable";
+      if(lifePill){
+        lifePill.textContent = "Heartbeat";
+        lifePill.className = "pill ok";
+      }
+    }
+    window.updateStatusBanner = updateStatusBanner;
+
+    function setScanActive(active){
+      document.getElementById("nnScanProgressCard")?.classList.toggle("scan-active", active);
+    }
+    window.setScanActive = setScanActive;
+
     function openOverlay(id){
       const el = document.getElementById(id);
       if(!el) return;
@@ -1966,7 +2527,10 @@
     // ---- Dashboard ----
     function renderDashboard(){
       const onlineCount = devices.filter(d => d.status === "Online").length;
+      const totalCount = devices.length;
       $("#onlineCount").textContent = String(onlineCount);
+      $("#onlineCountCard").textContent = String(onlineCount);
+      $("#totalDevicesCount").textContent = String(totalCount);
 
       const unknown = devices.filter(d => d.trust === "Unknown").slice(0, 5);
       if(unknown.length === 0){
@@ -1982,11 +2546,15 @@
       const last = state.lastScanAt ? `Last scan: ${state.lastScanAt}` : "Last scan: never";
       $("#changePill").textContent = last;
       $("#changeText").textContent = state.lastScanAt
-        ? "Scan results updated. Review unknown devices."
+        ? summarizeDiff(state.lastDiff)
         : "Run a scan to see changes and new devices.";
 
       // naive "changed" indicator
       $("#onlineDeltaPill").textContent = state.lastScanAt ? `Changed: ${state.lastChangeCount}` : "Changed: 0";
+      $("#newDevicesCount").textContent = String(state.lastDiff?.newCount ?? 0);
+      $("#changeCount").textContent = String(state.lastDiff?.totalChanges ?? 0);
+      updateStatusBanner();
+      renderScanHistory();
     }
 
     // ---- Devices ----
@@ -2025,6 +2593,7 @@
 
     function renderDevices(){
       const tbody = $("#deviceTbody");
+      const cardGrid = $("#deviceCardGrid");
       const rows = devices
         .filter(deviceMatchesFilter)
         .filter(deviceMatchesSearch);
@@ -2065,6 +2634,33 @@
 
       // refresh side panel
       renderSidePanel();
+
+      if(cardGrid){
+        cardGrid.innerHTML = rows.length
+          ? rows.slice(0, 8).map(d => `
+            <details class="device-card">
+              <summary>
+                <div>
+                  <div class="title">${escapeHtml(d.name)}</div>
+                  <div class="meta">${escapeHtml(d.ip)} • ${escapeHtml(d.type)}</div>
+                </div>
+                ${trustPill(d.trust)}
+              </summary>
+              <div class="details">
+                <div><b>Status:</b> ${escapeHtml(d.status)}</div>
+                <div><b>MAC:</b> ${escapeHtml(d.mac)}</div>
+                <div><b>Vendor:</b> ${escapeHtml(d.vendor || "—")}</div>
+                <div><b>OS:</b> ${escapeHtml(d.os || "—")}</div>
+                <div><b>First seen:</b> ${escapeHtml(d.firstSeen || "—")}</div>
+                <div><b>Last seen:</b> ${escapeHtml(d.lastSeen || "—")}</div>
+                <div><b>Room:</b> ${escapeHtml(d.room || "—")}</div>
+                <div><b>Owner:</b> ${escapeHtml(d.owner || "—")}</div>
+                <div><b>Traffic:</b> ${escapeHtml(d.traffic || "—")}</div>
+              </div>
+            </details>
+          `).join("")
+          : `<div class="muted">No devices to display yet.</div>`;
+      }
     }
 
     function selectDevice(id, openDetails){
@@ -2779,13 +3375,15 @@
       }
 
       scanInFlight = true;
+      setScanActive(true);
       const prevIds = new Set(devices.map(d => d.id));
 
       state.lastScanAt = nowLabel();
       $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
-      $("#changeText").textContent = "Scan results updated. Review unknown devices.";
+      $("#changeText").textContent = "Scanning network…";
       showToast("Scan started", "Starting network scan.");
       pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
+      updateStatusBanner();
 
       try{
         await refreshNetworkInfo();
@@ -2798,6 +3396,7 @@
         });
 
         applyDevicesFromBackend(found);
+        const diff = recordScan(devices);
         state.lastChangeCount = devices.filter(d => !prevIds.has(d.id)).length;
         renderDashboard();
         renderDevices();
@@ -2824,12 +3423,20 @@
             detail: "Tap Review to inspect and trust/block."
           });
         }
+        if(diff?.newCount){
+          showToast("Scan complete", `${diff.newCount} new devices found.`);
+        } else {
+          showToast("Scan complete", "No new devices detected.");
+        }
 
         window.nnUpdateDiscoveryMap?.();
       } catch (err){
         showToast("Scan failed", "Backend unavailable or scan failed.");
       } finally {
         scanInFlight = false;
+        scanActiveFlag = false;
+        setScanActive(false);
+        updateStatusBanner();
       }
     }
 
@@ -3087,12 +3694,42 @@
       // initial notification
       pushNotification({ when: nowLabel(), title: "Welcome", detail: "Scan your network to start discovering devices." });
 
+      const themeSelect = $("#themeSelect");
+      if(themeSelect){
+        themeSelect.value = dataStore.theme || "default";
+        document.body.dataset.theme = themeSelect.value === "default" ? "" : themeSelect.value;
+        themeSelect.addEventListener("change", () => {
+          dataStore.theme = themeSelect.value;
+          document.body.dataset.theme = themeSelect.value === "default" ? "" : themeSelect.value;
+          saveStore();
+        });
+      }
+
+      $$("[data-module]").forEach(input => {
+        const key = input.dataset.module;
+        input.checked = !!dataStore.modules[key];
+        input.addEventListener("change", () => {
+          dataStore.modules[key] = input.checked;
+          saveStore();
+          showToast("Module updated", `${key} module ${input.checked ? "enabled" : "disabled"}.`);
+        });
+      });
+
+      if(dataStore.scans.length){
+        const latest = dataStore.scans[0];
+        state.lastDiff = latest.diff;
+        state.lastScanAt = formatTimestamp(latest.ts);
+      }
+
+      $("#lifeTime").textContent = nowLabel();
+
       // initial dashboard rendering
       renderDashboard();
       renderDevices();
       renderNetworks();
       renderHistory();
       renderNotifications();
+      renderScanHistory();
 
       // default text while loading
       $("#myNetText").textContent = "Loading network…";
@@ -3110,6 +3747,7 @@
       // live scan progress + periodic refresh
       window.startPolling?.("/api/v1/discovery/progress", 600);
       setInterval(() => {
+        $("#lifeTime").textContent = nowLabel();
         refreshNetworkInfo();
         refreshDiscoveryResults();
       }, 20_000);
@@ -3204,6 +3842,10 @@
         elPhase.textContent = "COMPLETE";
       }
       setPill(elPhase.textContent, p);
+      const active = elPhase.textContent !== "IDLE" && p < 100;
+      scanActiveFlag = active;
+      window.setScanActive?.(active);
+      window.updateStatusBanner?.();
     };
 
     function stopAll(){
