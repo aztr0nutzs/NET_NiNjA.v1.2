@@ -1051,6 +1051,33 @@
       text-shadow: 0 0 12px rgba(185,103,255,0.35);
       pointer-events:none;
     }
+    .nn-permList{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px 12px;
+      margin: 12px 0 0 0;
+      font-size: 13px;
+    }
+    .nn-permList span:last-child{
+      font-weight:600;
+    }
+    .nn-debugPanel{
+      display:none;
+      margin-top: 16px;
+      padding: 12px;
+      border: 1px dashed rgba(115,255,230,0.45);
+      border-radius: 12px;
+      background: rgba(5,14,24,0.7);
+    }
+    .nn-debugPanel.visible{
+      display:block;
+    }
+    .nn-debugPanel pre{
+      font-size: 11px;
+      white-space: pre-wrap;
+      margin: 0;
+      color: rgba(210,255,245,0.92);
+    }
 
   </style>
 </head>
@@ -1067,7 +1094,7 @@
         <div class="header-overlay" aria-hidden="true"></div>
 
         <div class="brand">
-          <div class="brand-badge">MN</div>
+          <div class="brand-badge" id="brandBadge">MN</div>
           <div style="min-width:0;">
             <div class="brand-title">My Network Control</div>
             <div class="brand-sub" id="brandSub">Home Wi‑Fi (SSID) • secure</div>
@@ -1215,6 +1242,29 @@
           </div>
         </div>
 
+
+        <div class="card" id="nnPermissionsCard" role="button" tabindex="0" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Permissions & Background Scans</div>
+            <div class="pill warn" id="permSummaryPill">Needs review</div>
+          </div>
+          <div class="muted">
+            Android requires Location or Nearby Wi‑Fi access to read SSID/BSSID and scan your network.
+            Background scans are rate‑limited and will pause if Wi‑Fi is disconnected or permissions are denied.
+          </div>
+          <div class="nn-permList" aria-live="polite">
+            <span>Nearby Wi‑Fi</span><span id="permNearbyWifi">Unknown</span>
+            <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
+            <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
+            <span>Network state</span><span id="permNetworkState">Unknown</span>
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            Tip: Tap the MN badge 5 times to open the hidden debug panel.
+          </div>
+          <div class="nn-debugPanel" id="nnDebugPanel" aria-live="polite">
+            <pre id="nnDebugText">Debug panel idle.</pre>
+          </div>
+        </div>
 
         <div class="card" id="cardStatus" role="button" tabindex="0" style="cursor:default;">
           <div class="card-head">
@@ -1874,6 +1924,67 @@
         renderNetworks();
         window.nnUpdateDiscoveryMap?.();
       } catch (_) {}
+    }
+
+    function formatPerm(value){
+      if(value === true) return "Granted";
+      if(value === false) return "Denied";
+      return "Unknown";
+    }
+
+    async function refreshPermissionStatus(){
+      try{
+        const perms = await fetchJson("/api/v1/system/permissions");
+        const nearbyWifi = perms?.nearbyWifi;
+        const fine = perms?.fineLocation === true;
+        const coarse = perms?.coarseLocation === true;
+        const locationGranted = fine || coarse;
+
+        $("#permNearbyWifi").textContent = formatPerm(nearbyWifi);
+        $("#permLocation").textContent = formatPerm(locationGranted);
+        $("#permWifiState").textContent = formatPerm(perms?.wifiState);
+        $("#permNetworkState").textContent = formatPerm(perms?.networkState);
+
+        const summaryOk = (nearbyWifi === true) || (nearbyWifi === null && locationGranted);
+        const pill = $("#permSummaryPill");
+        if(summaryOk){
+          pill.textContent = "OK";
+          pill.className = "pill ok";
+        } else {
+          pill.textContent = "Needs review";
+          pill.className = "pill warn";
+        }
+      } catch (_) {}
+    }
+
+    async function refreshDebugState(){
+      const panel = $("#nnDebugPanel");
+      if(!panel || !panel.classList.contains("visible")) return;
+      try{
+        const state = await fetchJson("/api/v1/system/state");
+        const text = JSON.stringify(state, null, 2);
+        $("#nnDebugText").textContent = text;
+      } catch (_) {
+        $("#nnDebugText").textContent = "Debug panel unavailable.";
+      }
+    }
+
+    function setupDebugPanel(){
+      const badge = $("#brandBadge");
+      const panel = $("#nnDebugPanel");
+      if(!badge || !panel) return;
+      let tapCount = 0;
+      let tapTimer = null;
+      badge.addEventListener("click", () => {
+        tapCount += 1;
+        if(tapTimer) clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
+        if(tapCount >= 5){
+          tapCount = 0;
+          panel.classList.toggle("visible");
+          refreshDebugState();
+        }
+      });
     }
 
 
@@ -2783,8 +2894,8 @@
 
       state.lastScanAt = nowLabel();
       $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
-      $("#changeText").textContent = "Scan results updated. Review unknown devices.";
-      showToast("Scan started", "Starting network scan.");
+      $("#changeText").textContent = "Scan requested. Live progress will update below.";
+      showToast("Scan started", "Scan queued. Live progress will update below.");
       pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
 
       try{
@@ -2804,8 +2915,8 @@
         renderNetworks();
 
         window.applyScanData?.({
-          progress: 100,
-          phase: "COMPLETE",
+          progress: 5,
+          phase: "SCANNING",
           networks: 1,
           devices: devices.length,
           rssiDbm: NaN,
@@ -2827,7 +2938,7 @@
 
         window.nnUpdateDiscoveryMap?.();
       } catch (err){
-        showToast("Scan failed", "Backend unavailable or scan failed.");
+        showToast("Scan failed", "Backend unavailable or scan blocked.");
       } finally {
         scanInFlight = false;
       }
@@ -3106,12 +3217,17 @@
       // hydrate from backend if available
       refreshNetworkInfo();
       refreshDiscoveryResults();
+      refreshPermissionStatus();
+      setupDebugPanel();
+      refreshDebugState();
 
       // live scan progress + periodic refresh
       window.startPolling?.("/api/v1/discovery/progress", 600);
       setInterval(() => {
         refreshNetworkInfo();
         refreshDiscoveryResults();
+        refreshPermissionStatus();
+        refreshDebugState();
       }, 20_000);
     }
 
