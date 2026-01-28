@@ -11,17 +11,46 @@ object Db {
       """CREATE TABLE IF NOT EXISTS devices(
           id TEXT PRIMARY KEY,
           ip TEXT,
+          name TEXT,
           mac TEXT,
           hostname TEXT,
           os TEXT,
           vendor TEXT,
           online INTEGER,
-          lastSeen INTEGER
+          lastSeen INTEGER,
+          owner TEXT,
+          room TEXT,
+          note TEXT,
+          trust TEXT,
+          type TEXT,
+          status TEXT,
+          via TEXT,
+          signal TEXT,
+          activityToday TEXT,
+          traffic TEXT
       )"""
     )
     // Lightweight migration for existing installs
     runCatching {
       c.createStatement().execute("ALTER TABLE devices ADD COLUMN os TEXT")
+    }
+    val deviceColumns = listOf(
+      "name",
+      "owner",
+      "room",
+      "note",
+      "trust",
+      "type",
+      "status",
+      "via",
+      "signal",
+      "activityToday",
+      "traffic"
+    )
+    deviceColumns.forEach { col ->
+      runCatching {
+        c.createStatement().execute("ALTER TABLE devices ADD COLUMN $col TEXT")
+      }
     }
     c.createStatement().execute(
       """CREATE TABLE IF NOT EXISTS events(
