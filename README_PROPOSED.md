@@ -7,11 +7,11 @@ Overview
 Quick dev run
 - With Java/Gradle:
   ./gradlew :server:run
-  Open http://localhost:8787/ui/ninja_dash.html
+  Open http://localhost:8787/ui/ninja_mobile_new.html
 
 - With Docker:
   docker-compose up --build
-  Open http://localhost:8787/ui/ninja_dash.html
+  Open http://localhost:8787/ui/ninja_mobile_new.html
 
 Development notes
 - API base defaults to http://127.0.0.1:8787

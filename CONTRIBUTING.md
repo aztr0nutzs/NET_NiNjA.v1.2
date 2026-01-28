@@ -8,7 +8,7 @@ Thank you for contributing! This document explains how to set up a development e
   - Build: ./gradlew :server:build
   - Run (local dev): ./gradlew :server:run
   - Or use docker-compose: docker-compose up --build
-- Open UI: http://localhost:8787/ui/ninja_dash.html
+- Open UI: http://localhost:8787/ui/ninja_mobile_new.html
 
 2. Branching & PRs
 - Branch from `main` using descriptive names: `feature/<short-desc>` or `fix/<short-desc>`.
