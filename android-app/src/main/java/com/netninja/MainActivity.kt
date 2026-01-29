@@ -33,6 +33,9 @@ class MainActivity : AppCompatActivity() {
     web.settings.domStorageEnabled = true
     web.settings.cacheMode = WebSettings.LOAD_NO_CACHE
     web.settings.mediaPlaybackRequiresUserGesture = false
+    web.settings.allowFileAccessFromFileURLs = true
+    web.settings.allowUniversalAccessFromFileURLs = true
+    web.settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
     web.clearCache(true)
     web.setBackgroundColor(Color.BLACK)
     web.webChromeClient = object : WebChromeClient() {
