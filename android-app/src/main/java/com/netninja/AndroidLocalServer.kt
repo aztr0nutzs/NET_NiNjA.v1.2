@@ -128,7 +128,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private val minScanIntervalMs = 60_000L
 
   private val watchdogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-  private var engine: ApplicationEngine? = null
+  private var engine: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 
   private val scanMutex = Mutex()
 
@@ -157,6 +157,7 @@ class AndroidLocalServer(private val ctx: Context) {
               allowHeader(HttpHeaders.Authorization)
               allowHost("127.0.0.1")
               allowHost("localhost")
+              allowOrigins { origin -> origin == "null" }
             }
 
             setupRoutes(uiDir)
@@ -1016,7 +1017,7 @@ class AndroidLocalServer(private val ctx: Context) {
 
     val out = mutableListOf<Device>()
     for (line in lines.drop(1)) {
-      val parts = line.trim().split(Regex("\s+")).filter { it.isNotBlank() }
+      val parts = line.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
       if (parts.size < 4) continue
       val ip = parts[0]
       val flags = parts[2]

@@ -338,8 +338,6 @@
     }
   </style>
 
-  <script src="api.js"></script>
-  <script src="state.js"></script>
 </head>
 
 <body>
@@ -348,7 +346,6 @@
     <video autoplay muted loop playsinline>
       <source src="/ui/assets/ninja_header.mp4" type="video/mp4">
       <source src="/ui/ninja_header.mp4" type="video/mp4">
-      <source src="file:///android_asset/web-ui/new_assets/ninja_header.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
     <div class="video-overlay">
@@ -470,8 +467,13 @@
     let metrics = {};
     let logStream = null;
 
-    // API base URL
-    const API_BASE = window.location.origin;
+    // API base URL (support file:// origins)
+    const API_BASE = (() => {
+      try {
+        if (location && location.origin && location.origin !== 'null') return location.origin;
+      } catch (_) {}
+      return 'http://127.0.0.1:8787';
+    })();
 
     // Error handling
     function showError(message) {
@@ -498,8 +500,12 @@
           headers
         });
 
+        const text = await response.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+
         if (!response.ok) {
-          if (response.status === 401) {
+          if (response.status === 401 && endpoint !== '/api/v1/auth/login') {
             // Token expired, try to re-authenticate
             authToken = null;
             localStorage.removeItem('authToken');
@@ -509,7 +515,7 @@
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        return await response.json();
+        return data;
       } catch (error) {
         showError(`API Error: ${error.message}`);
         throw error;
@@ -529,7 +535,7 @@
           })
         });
 
-        if (response.ok && response.token) {
+        if (response && response.token) {
           authToken = response.token;
           localStorage.setItem('authToken', authToken);
           return true;
@@ -592,7 +598,7 @@
                 ${device.hostname || device.ip}
               </div>
               <div style="font-size: 12px; color: rgba(255,255,255,0.7);">
-                ${device.ip} ${device.mac ? '• ' + device.mac : ''}
+                ${device.ip} ${device.mac ? '| ' + device.mac : ''}
               </div>
             </div>
             <div class="pill ${device.online ? 'ok' : 'bad'}">
@@ -697,7 +703,9 @@
       logsContent.innerHTML = '<div class="muted">Connecting to log stream...</div>';
 
       try {
-        const url = `${API_BASE}/api/v1/logs/stream?token=${encodeURIComponent(authToken)}`;
+        const url = authToken
+          ? `${API_BASE}/api/v1/logs/stream?token=${encodeURIComponent(authToken)}`
+          : `${API_BASE}/api/v1/logs/stream`;
         logStream = new EventSource(url);
         
         const logs = [];

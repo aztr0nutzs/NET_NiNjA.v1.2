@@ -12,11 +12,11 @@ import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
 import java.io.File
 
-fun startServer(
+fun startStaticServer(
   uiDir: File,
   port: Int = 8787,
   dbPath: String = "netninja.db"
-): NettyApplicationEngine {
+): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
   require(uiDir.exists() && uiDir.isDirectory) { "web-ui directory not found: ${uiDir.absolutePath}" }
 
   val conn = Db.open(dbPath)
@@ -24,7 +24,6 @@ fun startServer(
   val eventDao = EventDao(conn)
 
   val engine = embeddedServer(Netty, port = port) {
-    module(deviceDao, eventDao)
     routing {
       staticFiles("/", uiDir) {
         default("index.html")

@@ -10,7 +10,7 @@ object ArpReader {
     if (!f.exists()) return emptyMap()
     val out = mutableMapOf<String, String>()
     f.readLines().drop(1).forEach { line ->
-      val parts = line.trim().split(Regex("\s+"))
+      val parts = line.trim().split(Regex("\\s+"))
       if (parts.size >= 4) {
         val ip = parts[0]
         val mac = parts[3]

@@ -67,7 +67,9 @@ data class ScanProgress(
 )
 data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Long)
 
-fun main() = startServer(File("web-ui"))
+fun main() {
+  startServer(File("web-ui"))
+}
 
 fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
   val conn = Db.open("netninja.db")
@@ -257,7 +259,7 @@ fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
 
   startScheduler()
 
-  embeddedServer(Netty, host = host, port = port) {
+  embeddedServer(Netty, port = port, host = host) {
     install(ContentNegotiation) { json() }
     install(CORS) {
       anyHost()

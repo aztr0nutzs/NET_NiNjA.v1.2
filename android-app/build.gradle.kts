@@ -8,7 +8,7 @@ plugins {
 
 android {
   namespace = "com.netninja"
-  compileSdk = 34
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.netninja"
@@ -46,19 +46,19 @@ android {
 }
 
 dependencies {
-  implementation("androidx.core:core-ktx:1.12.0")
-  implementation("androidx.appcompat:appcompat:1.6.1")
-  implementation("androidx.webkit:webkit:1.10.0")
+  implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.appcompat)
+  implementation(libs.androidx.webkit)
 
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+  implementation(libs.kotlinx.coroutines.android)
+  implementation(libs.kotlinx.serialization.json)
 
   // Embedded local API server (Android)
-  implementation("io.ktor:ktor-server-cio:2.3.7")
-  implementation("io.ktor:ktor-server-core:2.3.7")
-  implementation("io.ktor:ktor-server-cors:2.3.7")
-  implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
-  implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+  implementation(libs.ktor.server.cio)
+  implementation(libs.ktor.server.core)
+  implementation(libs.ktor.server.cors)
+  implementation(libs.ktor.server.content.negotiation)
+  implementation(libs.ktor.serialization.kotlinx.json)
 }
 
 tasks.register<Copy>("copyWebUiIntoAssets") {
