@@ -68,11 +68,17 @@ data class ScanProgress(
 data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Long)
 
 fun main() {
-  startServer(File("web-ui"))
+  val config = resolveServerConfig()
+  startServer(File("web-ui"), host = config.host, port = config.port, dbPath = config.dbPath)
 }
 
-fun startServer(webUiDir: File, host: String = "127.0.0.1", port: Int = 8787) {
-  val conn = Db.open("netninja.db")
+fun startServer(
+  webUiDir: File,
+  host: String = "127.0.0.1",
+  port: Int = 8787,
+  dbPath: String = "netninja.db"
+) {
+  val conn = Db.open(dbPath)
   val devices = DeviceDao(conn)
   val events = EventDao(conn)
   val lastScanAt = AtomicReference<Long?>(null)
