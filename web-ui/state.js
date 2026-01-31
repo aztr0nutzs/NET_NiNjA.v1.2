@@ -13,7 +13,9 @@ export async function runScan(subnet) {
   await postJson("/api/v1/discovery/scan", { subnet: subnet ?? null, timeoutMs: 250 });
 
   if (prog) prog.style.width = "70%";
-  const devices = await api("/api/v1/discovery/results");
+  // unwrap the result from api() – it returns { ok, status, data }
+  const devicesRes = await api("/api/v1/discovery/results");
+  const devices = devicesRes?.data || [];
 
   const list = byId("devicesList");
   if (list) {
@@ -25,8 +27,11 @@ export async function runScan(subnet) {
       row.onclick = async () => {
         const detail = byId("deviceDetail");
         if (detail) {
-          const hist = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/history`);
-          const up = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/uptime`);
+           // unwrap history and uptime responses from api()
+           const histRes = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/history`);
+           const hist = histRes?.data || [];
+           const upRes = await api(`/api/v1/devices/${encodeURIComponent(d.id)}/uptime`);
+           const up = upRes?.data || {};
           detail.style.display = "block";
           detail.innerHTML = `
             <h3>${d.ip}</h3>
