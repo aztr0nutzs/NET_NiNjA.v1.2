@@ -1,0 +1,2971 @@
+*** Begin Patch
+*** Add File: web-ui/net_ninja_cam.html
++<!DOCTYPE html>
++<html lang="en">
++<head>
++<meta charset="UTF-8" />
++<meta name="viewport" content="width=device-width, initial-scale=1.0" />
++<title>NET_NiNjA :: CAM VIEWER</title>
++
++<!-- Attached theme CSS (verbatim) -->
++<style>
++/* Created by: Justin Linwood Ross */
++@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
++
++:root{
++  --bg1:#050012;
++  --neon-pink:#ff00ff;
++  --neon-blue:#00f0ff;
++  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
++}
++
++*{box-sizing:border-box}
++html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
++body{
++  background: radial-gradient(circle at 30% 20%, #120023 0%, #04000a 60%, #000 100%);
++  color:#e8e6ff;
++  overflow:hidden;
++  position:relative;
++}
++
++#bg { position:fixed; inset:0; z-index:0; display:block; }
++
++.glass-panel{
++  position:absolute; z-index:2;
++  width:440px; padding:22px; border-radius:16px;
++  background: var(--glass-bg);
++  border: 1px solid rgba(255,255,255,0.06);
++  box-shadow:
++    0 8px 40px rgba(0,0,0,0.6),
++    0 0 35px rgba(255,0,255,0.08),
++    0 0 80px rgba(0,240,255,0.06);
++  backdrop-filter: blur(10px) saturate(140%);
++  color:#fff;
++  overflow:visible;
++}
++
++#translator-panel{ left:6%; top:50%; transform:translateY(-50%); width:520px; }
++#country-panel{ right:6%; top:12%; width:360px; max-height:76vh; overflow:auto; }
++
++.visually-hidden{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
++
++.neon-title{
++  font-size:2.6rem; color:var(--neon-pink); margin:4px 0 6px;
++  text-shadow: 0 0 10px var(--neon-pink), 0 0 40px var(--neon-blue), 0 0 90px var(--neon-pink);
++  letter-spacing:2px;
++  animation: neonFlicker 2.5s infinite alternate;
++}
++@keyframes neonFlicker {
++  0%,100%{ text-shadow:0 0 10px #ff00ff,0 0 40px #00f0ff,0 0 90px #ff00ff; }
++  25%{ text-shadow:0 0 15px #ff00ff,0 0 50px #00f0ff,0 0 100px #ff00ff; }
++  50%{ text-shadow:0 0 12px #ff00ff,0 0 45px #00f0ff,0 0 95px #ff00ff; }
++  75%{ text-shadow:0 0 18px #ff00ff,0 0 55px #00f0ff,0 0 105px #ff00ff; }
++}
++
++.subtitle{ color:#bcb7df; margin:0 0 12px; font-size:0.95rem; }
++
++.controls{ display:flex; flex-direction:column; gap:12px; }
++textarea{
++  width:100%; min-height:110px; resize:vertical; border-radius:10px; padding:12px; font-size:14px;
++  background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.04); color:#fff; outline:none;
++  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
++}
++.controls-row{ display:flex; gap:12px; align-items:center; }
++.select-wrap{ flex:1; }
++.actions{ display:flex; gap:8px; align-items:center; }
++
++select, button{
++  padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06);
++  background: rgba(0,0,0,0.45); color:#fff; font-weight:700;
++}
++button{
++  background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
++  background-size:200% 200%;
++  color:#000; cursor:pointer;
++  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,0,255,0.06);
++  animation: buttonGlow 4s ease infinite;
++}
++button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,0,255,0.12); }
++@keyframes buttonGlow {
++  0% { background-position: 0% 50%; }
++  50% { background-position: 100% 50%; }
++  100% { background-position: 0% 50%; }
++}
++
++.output-glass{ margin-top:12px; background: rgba(0,0,0,0.35); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.03); color:#dfefff; line-height:1.45; 
++box-shadow: 0 0 8px #00f0ff, 0 0 24px #ff00ff, 0 0 48px #00f0ff;
++animation: panelPulse 3s infinite alternate;}
++@keyframes panelPulse {
++  0%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
++  50%{box-shadow:0 0 12px #00f0ff,0 0 30px #ff00ff,0 0 60px #00f0ff;}
++  100%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
++}
++.output-glass h2{ margin:0 0 8px; color:var(--neon-blue); font-size:1rem; }
++.output-text{ color:#dfefff; font-size:0.98rem; min-height:36px; }
++
++#country-meta{ font-size:0.95rem; color:#d9eaff; }
++#country-meta strong{ color:var(--neon-pink); font-size:1.05rem; }
++#country-desc-text{ margin-top:8px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); color:#bfefff; line-height:1.45; }
++
++#country-panel::-webkit-scrollbar{ width:8px; }
++#country-panel::-webkit-scrollbar-thumb{ background: linear-gradient(45deg,var(--neon-pink),var(--neon-blue)); border-radius:8px; }
++
++.ripple { position: absolute; left: 50%; transform: translateX(-50%); border-radius:50%; border: 2px solid rgba(0,240,255,0.12); pointer-events:none; animation:ripple 2s ease-out forwards; top: 6px; filter: blur(1.8px);}
++.ripple.small { width:80px; height:80px; }
++.ripple.medium { width:120px; height:120px; }
++.ripple.large { width:160px; height:160px; }
++@keyframes ripple { to { transform: translateX(-50%) scale(6); opacity:0; } }
++
++.arc { position: fixed; width:6px; height:6px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 24px var(--neon-blue); pointer-events:none; animation: arcfade 280ms ease-out forwards; }
++@keyframes arcfade { to { transform: scale(2); opacity:0; } }
++
++.flicker { animation: flicker 200ms linear 0s 3; }
++@keyframes flicker { 0%{opacity:1} 50%{opacity:0.85; transform:translateY(-2px);} 100%{opacity:1} }
++
++@media (max-width:1100px) {
++  #translator-panel{ left:4%; width:86vw; }
++  #country-panel{ display:none; }
++}
++</style>
++
++<!-- Added: cyber button skin (required because only markup was provided) -->
++<style>
++
++/* NET_NiNjA cyber button skin (since only markup was provided).
++   Keeps the glitch span from rendering as plain text when styles are missing. */
++.cybr-btn{
++  --btn-bg: rgba(0,0,0,0.55);
++  --btn-border: rgba(255,255,255,0.10);
++  --btn-text: #e8e6ff;
++  --btn-glow1: var(--neon-blue);
++  --btn-glow2: var(--neon-pink);
++
++  position: relative;
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++
++  padding: 12px 16px;
++  min-height: 44px;
++
++  border-radius: 12px;
++  border: 1px solid var(--btn-border);
++  background: linear-gradient(90deg, rgba(255,0,255,0.22), rgba(0,240,255,0.18)) , var(--btn-bg);
++  color: var(--btn-text);
++  font-family: inherit;
++  font-weight: 900;
++  letter-spacing: 0.5px;
++
++  cursor: pointer;
++  user-select: none;
++
++  box-shadow:
++    0 10px 26px rgba(0,0,0,0.55),
++    0 0 18px rgba(0,240,255,0.16),
++    0 0 18px rgba(255,0,255,0.14);
++  backdrop-filter: blur(10px) saturate(140%);
++}
++.cybr-btn:active{ transform: translateY(1px); }
++.cybr-btn:hover{
++  box-shadow:
++    0 16px 34px rgba(0,0,0,0.62),
++    0 0 26px rgba(0,240,255,0.22),
++    0 0 26px rgba(255,0,255,0.18);
++}
++
++/* The glitch span exists in your markup; keep it hidden unless you want it. */
++.cybr-btn__glitch{
++  position: absolute;
++  inset: 0;
++  display: none; /* Prevent duplicate text */
++  align-items: center;
++  justify-content: center;
++  opacity: 0.0;
++  pointer-events: none;
++}
++
++/* Optional: quick “glitch flicker” on hover without duplicating text */
++.cybr-btn:hover .cybr-btn__glitch{
++  display:flex;
++  opacity: 0.12;
++  filter: blur(0.4px);
++  text-shadow: 0 0 10px var(--btn-glow1), 0 0 14px var(--btn-glow2);
++  animation: cybrFlicker 420ms steps(2,end) 1;
++}
++@keyframes cybrFlicker{
++  0%{ transform: translate(0,0); opacity: 0.0; }
++  25%{ transform: translate(1px,-1px); opacity: 0.12; }
++  55%{ transform: translate(-1px,1px); opacity: 0.08; }
++  100%{ transform: translate(0,0); opacity: 0.10; }
++}
++
++</style>
++
++<!-- Added: camera dashboard layout -->
++<style>
++
++/* ===== Camera dashboard layout layer ===== */
++#cam-grid-panel{
++  position:absolute; z-index:3;
++  left:50%; top:52%;
++  transform:translate(-50%, -50%);
++  width:min(1100px, 92vw);
++  height:min(78vh, 720px);
++  padding:16px; border-radius:16px;
++  background: var(--glass-bg);
++  border: 1px solid rgba(255,255,255,0.06);
++  box-shadow: 0 8px 40px rgba(0,0,0,0.6),
++              0 0 35px rgba(255,0,255,0.08),
++              0 0 80px rgba(0,240,255,0.06);
++  backdrop-filter: blur(10px) saturate(140%);
++  overflow:hidden;
++  display:flex;
++  flex-direction:column;
++  gap:12px;
++}
++
++.grid-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
++.grid-toolbar .left, .grid-toolbar .right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
++
++.pill{
++  display:inline-flex; align-items:center; gap:8px;
++  padding:8px 10px; border-radius:999px;
++  background: rgba(0,0,0,0.45);
++  border:1px solid rgba(255,255,255,0.06);
++  color:#fff; font-weight:800; font-size:12px;
++  white-space:nowrap;
++}
++.dot{ width:8px; height:8px; border-radius:50%;
++  background: var(--neon-blue);
++  box-shadow: 0 0 18px rgba(0,240,255,0.55);
++}
++.dot.warn{ background: var(--neon-pink); box-shadow: 0 0 18px rgba(255,0,255,0.55); }
++
++#cam-grid{
++  flex:1;
++  display:grid;
++  gap:12px;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  overflow:auto;
++  padding-right:6px;
++}
++#cam-grid.grid-1{ grid-template-columns: 1fr; }
++#cam-grid.grid-4{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
++#cam-grid.grid-9{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
++#cam-grid.grid-wall{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
++
++.tile{
++  position:relative;
++  border-radius:14px;
++  overflow:hidden;
++  background: rgba(0,0,0,0.55);
++  border:1px solid rgba(255,255,255,0.06);
++  box-shadow: inset 0 0 14px rgba(0,0,0,0.7),
++              0 0 24px rgba(0,240,255,0.06),
++              0 0 24px rgba(255,0,255,0.06);
++  min-height:190px;
++}
++.tile video, .tile img{
++  width:100%; height:100%;
++  object-fit:cover;
++  display:block;
++  background: rgba(0,0,0,0.35);
++}
++
++.hud{
++  position:absolute; inset:0;
++  display:flex; flex-direction:column;
++  justify-content:space-between;
++  pointer-events:none;
++}
++.hud-top{
++  padding:10px;
++  display:flex; align-items:center; justify-content:space-between; gap:10px;
++  background: linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0));
++}
++.hud-name{
++  font-weight:900; font-size:13px;
++  color: var(--neon-blue);
++  text-shadow: 0 0 10px rgba(0,240,255,0.35), 0 0 24px rgba(255,0,255,0.20);
++  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
++  max-width:70%;
++}
++.hud-tag{
++  font-size:11px; font-weight:900; color:#000;
++  background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
++  padding:6px 10px; border-radius:999px;
++  box-shadow: 0 0 18px rgba(255,0,255,0.10);
++  white-space:nowrap;
++}
++.hud-bottom{
++  padding:10px;
++  display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
++  background: linear-gradient(0deg, rgba(0,0,0,0.80), rgba(0,0,0,0));
++}
++.hud-status{
++  font-size:12px; color:#bfefff; line-height:1.2;
++  max-width:65%;
++  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
++}
++.hud-actions{
++  pointer-events:auto;
++  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
++}
++.hud-actions .cybr-btn{
++  min-height: 34px;
++  padding: 8px 10px;
++  font-size: 11px;
++}
++
++/* If any imported button CSS tries to center body, force normal page flow */
++body{
++  display:block !important;
++  justify-content: unset !important;
++  align-items: unset !important;
++  flex-direction: unset !important;
++  font-size: unset !important;
++  min-height: 100vh !important;
++}
++
++/* ===== Mobile: stop absolute overlays and stack panels ===== */
++@media (max-width: 780px){
++  body{
++    overflow:auto !important;
++  }
++  #translator-panel, #country-panel, #cam-grid-panel{
++    position: relative !important;
++    left: auto !important;
++    right: auto !important;
++    top: auto !important;
++    transform: none !important;
++    width: 92vw !important;
++    margin: 14px auto !important;
++  }
++  #cam-grid-panel{
++    height: 64vh !important;
++  }
++  #country-panel{
++    max-height: none !important;
++    overflow: visible !important;
++  }
++}
++
++</style>
++</head>
++
++<body>
++<canvas id="bg"></canvas>
++
++<div class="nn-overlay" id="nnOverlay"></div>
++
++<nav class="nn-side" id="nnSide">
++  <div class="panel-title">NET_NiNjA MENU</div>
++
++  <div class="menu">
++    <button class="cybr-btn" type="button" data-nav="overview">
++      Overview <span class="hint">grid focus</span>
++      <span aria-hidden class="cybr-btn__glitch">Overview</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-nav="cameras">
++      Cameras <span class="hint">list + grid</span>
++      <span aria-hidden class="cybr-btn__glitch">Cameras</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-nav="configure">
++      Configure <span class="hint">urls + modes</span>
++      <span aria-hidden class="cybr-btn__glitch">Configure</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="addCam">
++      Add camera <span class="hint">name + url</span>
++      <span aria-hidden class="cybr-btn__glitch">Add camera</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="import">
++      Import list <span class="hint">paste urls</span>
++      <span aria-hidden class="cybr-btn__glitch">Import list</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-act="export">
++      Export list <span class="hint">copy</span>
++      <span aria-hidden class="cybr-btn__glitch">Export list</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="gateway">
++      RTSP gateway <span class="hint">MediaMTX</span>
++      <span aria-hidden class="cybr-btn__glitch">RTSP gateway</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="settings">
++      Settings <span class="hint">layout</span>
++      <span aria-hidden class="cybr-btn__glitch">Settings</span>
++    </button>
++  </div>
++</nav>
++
++<header class="nn-topbar">
++  <div class="left">
++    <button class="nn-hamburger" id="nnHamburger" type="button" aria-label="Open menu">
++      <div class="bars">
++        <div class="bar"></div>
++        <div class="bar"></div>
++        <div class="bar"></div>
++      </div>
++    </button>
++
++    <div class="nn-brand">NET_NiNjA :: CAMS</div>
++
++    <div class="nn-chip" title="Quick status">
++      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-blue);box-shadow:0 0 16px rgba(0,240,255,.55)"></span>
++      <span id="nnQuickStatus">READY</span>
++    </div>
++  </div>
++
++  <div class="right">
++    <button class="cybr-btn" type="button" id="nnBtnAdd">
++      Add
++      <span aria-hidden class="cybr-btn__glitch">Add</span>
++    </button>
++
++    <button class="cybr-btn" type="button" id="nnBtnReconnect">
++      Reconnect
++      <span aria-hidden class="cybr-btn__glitch">Reconnect</span>
++    </button>
++
++    <button class="cybr-btn" type="button" id="nnBtnView">
++      View
++      <span aria-hidden class="cybr-btn__glitch">View</span>
++    </button>
++  </div>
++</header>
++
++<!-- ===== Modals ===== -->
++<div class="nn-modal" id="modalAddCam" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">ADD CAMERA</div>
++    <p class="subtitle">Give it a name and a stream URL (HLS/MJPEG/HTTP). RTSP needs gateway.</p>
++
++    <div class="controls">
++      <div class="row">
++        <div style="flex:1;min-width:220px">
++          <label class="visually-hidden" for="addCamName">Name</label>
++          <input id="addCamName" placeholder="Camera name (e.g. Front Door)"/>
++        </div>
++        <div style="flex:2;min-width:240px">
++          <label class="visually-hidden" for="addCamUrl">URL</label>
++          <input id="addCamUrl" placeholder="https://...m3u8 OR http://...mjpeg"/>
++        </div>
++      </div>
++
++      <div class="row" style="justify-content:flex-end;">
++        <button class="cybr-btn" type="button" data-close="addCam">Cancel<span aria-hidden class="cybr-btn__glitch">Cancel</span></button>
++        <button class="cybr-btn" type="button" id="btnAddCamConfirm">Add<span aria-hidden class="cybr-btn__glitch">Add</span></button>
++      </div>
++    </div>
++  </section>
++</div>
++
++<div class="nn-modal" id="modalImport" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">IMPORT CAMERA LIST</div>
++    <p class="subtitle">Paste URLs (one per line). Optional: “Name | URL”.</p>
++
++    <div class="controls">
++      <textarea id="importText" placeholder="Front Door | https://...m3u8&#10;Garage | http://...mjpeg&#10;https://...m3u8"></textarea>
++
++      <div class="row" style="justify-content:flex-end;">
++        <button class="cybr-btn" type="button" data-close="import">Cancel<span aria-hidden class="cybr-btn__glitch">Cancel</span></button>
++        <button class="cybr-btn" type="button" id="btnImportConfirm">Import<span aria-hidden class="cybr-btn__glitch">Import</span></button>
++      </div>
++    </div>
++  </section>
++</div>
++
++<div class="nn-modal" id="modalGateway" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">RTSP GATEWAY</div>
++    <p class="subtitle">Browsers do not play RTSP. Use MediaMTX (or similar) to convert RTSP → HLS/WebRTC.</p>
++    <div class="output-glass">
++      <h2>What to do</h2>
++      <div class="output-text">
++        1) Run MediaMTX on your LAN.<br/>
++        2) Add RTSP inputs.<br/>
++        3) Use the generated HLS (.m3u8) or WebRTC URL in this dashboard.
++      </div>
++    </div>
++    <div class="row" style="justify-content:flex-end;margin-top:12px;">
++      <button class="cybr-btn" type="button" data-close="gateway">Close<span aria-hidden class="cybr-btn__glitch">Close</span></button>
++    </div>
++  </section>
++</div>
++
++<div class="nn-modal" id="modalSettings" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">SETTINGS</div>
++    <p class="subtitle">UI controls that don’t pretend to be magic.</p>
++
++    <div class="controls">
++      <div class="row">
++        <div style="flex:1;min-width:220px">
++          <div class="subtitle" style="margin-bottom:6px;">Panels</div>
++          <select id="settingPanels">
++            <option value="all" selected>Show input + list + grid</option>
++            <option value="grid">Grid only</option>
++            <option value="config">Input + grid</option>
++            <option value="list">List + grid</option>
++          </select>
++        </div>
++        <div style="flex:1;min-width:220px">
++          <div class="subtitle" style="margin-bottom:6px;">Default view</div>
++          <select id="settingDefaultView">
++            <option value="cameras" selected>Cameras</option>
++            <option value="overview">Overview</option>
++            <option value="configure">Configure</option>
++          </select>
++        </div>
++      </div>
++
++      <div class="row" style="justify-content:flex-end;">
++        <button class="cybr-btn" type="button" data-close="settings">Close<span aria-hidden class="cybr-btn__glitch">Close</span></button>
++        <button class="cybr-btn" type="button" id="btnSettingsApply">Apply<span aria-hidden class="cybr-btn__glitch">Apply</span></button>
++      </div>
++    </div>
++  </section>
++</div>
++
++<div class="nn-main-offset"></div>
++
++<section id="translator-panel" class="glass-panel">
++  <div id="titleText" class="neon-title">NET_NiNjA CAM VIEWER</div>
++  <p class="subtitle">HLS / HTTP / MJPEG in-browser. RTSP needs gateway (MediaMTX → HLS/WebRTC).</p>
++
++  <div class="controls">
++    <label class="visually-hidden" for="inputText">Camera URLs</label>
++    <textarea id="inputText" placeholder="Paste camera URLs (one per line).&#10;Example:&#10;https://.../stream.m3u8&#10;http://.../video.mjpeg"></textarea>
++
++    <div class="controls-row">
++      <!-- Keep for script.js compatibility -->
++      <div class="select-wrap visually-hidden">
++        <select id="languageSelect"></select>
++      </div>
++
++      <div class="actions" style="flex:1; justify-content:flex-end; gap:12px; flex-wrap:wrap;">
++        <button class="cybr-btn" id="translateBtn" type="button">
++          Load grid
++          <span aria-hidden class="cybr-btn__glitch">Load grid</span>
++        </button>
++
++        <button class="cybr-btn" id="btnDiscover" type="button">
++          ONVIF hint
++          <span aria-hidden class="cybr-btn__glitch">ONVIF hint</span>
++        </button>
++      </div>
++    </div>
++
++    <div class="output-glass">
++      <h2>Status</h2>
++      <div id="outputText" class="output-text">Ready.</div>
++      <div class="visually-hidden"><span id="detectedLang">en</span></div>
++    </div>
++
++    <div class="controls-row" style="margin-top:10px;">
++      <div class="select-wrap">
++        <select id="gridMode">
++          <option value="grid-4" selected>2×2</option>
++          <option value="grid-9">3×3</option>
++          <option value="grid-1">Focus</option>
++          <option value="grid-wall">Wall</option>
++        </select>
++      </div>
++      <div class="select-wrap">
++        <select id="muteMode">
++          <option value="all" selected>Mute all</option>
++          <option value="focus">Mute except focused</option>
++          <option value="none">Allow audio</option>
++        </select>
++      </div>
++    </div>
++  </div>
++</section>
++
++<aside id="country-panel" class="glass-panel">
++  <div id="country-meta">
++    <strong id="country-name">CAMERA LIST</strong>
++    <div class="subtitle" style="margin-top:6px;">Tap a camera to focus.</div>
++  </div>
++  <div id="country-desc-text"><div id="camList"></div></div>
++</aside>
++
++<section id="cam-grid-panel">
++  <div class="grid-toolbar">
++    <div class="left">
++      <div class="pill"><span class="dot" id="runDot"></span><span id="runState">IDLE</span></div>
++      <div class="pill">CAMS: <b id="camCount">0</b></div>
++      <div class="pill">LIVE: <b id="liveCount">0</b></div>
++    </div>
++    <div class="right">
++      <button class="cybr-btn" id="btnReconnectAll" type="button">
++        Reconnect all
++        <span aria-hidden class="cybr-btn__glitch">Reconnect all</span>
++      </button>
++    </div>
++  </div>
++  <div id="cam-grid" class="grid-4"></div>
++</section>
++
++<!-- Attached JS (verbatim). Loaded as a normal script (not module) so it works on more servers/webviews. -->
++<script>
++// March 2025 (UPDATED 11/4/2025) Created by: Justin Linwood Ross
++// MIT License: https://github.com/Blackstarproject/EXTREME-TRANSLATE
++// Copyright (c) 2025 
++// Permission is hereby granted, free of charge, to any person obtaining a copy
++// of this software and associated documentation files (the "Software"), to deal
++// in the Software without restriction, including without limitation the rights
++// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++// copies of the Software, and to permit persons to whom the Software is
++// furnished to do so, subject to the following conditions:
++// The above copyright notice and this permission notice shall be included in all
++// copies or substantial portions of the Software.
++
++import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
++
++document.addEventListener('DOMContentLoaded', () => {
++
++  // Three.js neon background 
++  const canvas = document.getElementById('bg');
++  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
++  renderer.setSize(window.innerWidth, window.innerHeight);
++  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
++
++  const scene = new THREE.Scene();
++  scene.fog = new THREE.FogExp2(0x030014, 0.02);
++
++  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
++  camera.position.set(0, 2.2, 6);
++
++  const hemi = new THREE.HemisphereLight(0x202038, 0x001020, 0.6);
++  scene.add(hemi);
++
++  const dir = new THREE.DirectionalLight(0xffffff, 0.5);
++  dir.position.set(5, 10, 5);
++  scene.add(dir);
++
++  // Particles 
++  const particleCount = 1400;
++  const positions = new Float32Array(particleCount * 3);
++  for (let i = 0; i < particleCount; i++) {
++    positions[i * 3] = (Math.random() - 0.5) * 40;
++    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
++    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
++  }
++
++  const pGeo = new THREE.BufferGeometry();
++  pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
++  const pMat = new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.04, transparent: true, opacity: 0.9 });
++  const particles = new THREE.Points(pGeo, pMat);
++  scene.add(particles);
++
++  const neonLight = new THREE.PointLight(0xff00ff, 1.8, 40);
++  neonLight.position.set(0, 4, 6);
++  scene.add(neonLight);
++
++  // Mouse trails 
++  const trailPool = [];
++  const poolSize = 300;
++  for (let i = 0; i < poolSize; i++) {
++    const g = new THREE.SphereGeometry(0.03, 8, 6);
++    const m = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.95 });
++    const mesh = new THREE.Mesh(g, m);
++    mesh.visible = false;
++    scene.add(mesh);
++    trailPool.push(mesh);
++  }
++  let poolIndex = 0;
++
++  function emitTrail(pos, size = 0.03, life = 420) {
++    const m = trailPool[poolIndex % poolSize];
++    poolIndex++;
++    m.position.copy(pos);
++    m.scale.setScalar(size);
++    m.material.opacity = 0.95;
++    m.visible = true;
++    const start = performance.now();
++    const id = setInterval(() => {
++      const t = (performance.now() - start) / life;
++      if (t >= 1) { m.visible = false; clearInterval(id); }
++      else m.material.opacity = 0.95 * (1 - t);
++    }, 60);
++    return m;
++  }
++
++  // Lightning 
++  const lightningGroup = new THREE.Group();
++  scene.add(lightningGroup);
++
++  function spawnLightningAt(worldPos, intensity = 1.0) {
++    const segments = Math.floor(Math.random() * 5) + 4;
++    const points = [];
++    for (let i = 0; i < segments; i++) {
++      const t = i / (segments - 1);
++      points.push(new THREE.Vector3(
++        worldPos.x + (Math.random() - 0.5) * 0.6 * (1 + t),
++        worldPos.y - t * (1.2 + Math.random() * 1.4),
++        worldPos.z + (Math.random() - 0.5) * 0.6 * (1 + t)
++      ));
++    }
++    const geom = new THREE.BufferGeometry().setFromPoints(points);
++    const mat = new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.95 * intensity });
++    const line = new THREE.Line(geom, mat);
++    lightningGroup.add(line);
++    for (let i = 0; i < Math.floor(Math.random() * 4) + 3; i++) {
++      const idx = Math.floor(Math.random() * points.length);
++      const p = points[idx];
++      emitTrail(new THREE.Vector3(p.x + Math.random() * 0.12 - 0.06, p.y + Math.random() * 0.12 - 0.06, p.z + Math.random() * 0.12 - 0.06), 0.02, 240 + Math.random() * 260);
++    }
++    const start = performance.now();
++    const life = 220 + Math.random() * 380;
++    (function fade() {
++      const t = (performance.now() - start) / life;
++      if (t >= 1) { lightningGroup.remove(line); geom.dispose(); mat.dispose(); }
++      else { mat.opacity = 0.95 * (1 - t); requestAnimationFrame(fade); }
++    })();
++  }
++
++  function rand(a, b) { return Math.random() * (b - a) + a; }
++  function mouseToWorld(clientX, clientY, depth = 0.5) {
++    const nx = (clientX / window.innerWidth) * 2 - 1;
++    const ny = -(clientY / window.innerHeight) * 2 + 1;
++    return new THREE.Vector3(nx, ny, depth).unproject(camera);
++  }
++
++  let last = { x: 0, y: 0, t: 0 };
++  let mouseTarget = { x: 0, y: 2.1 };
++  window.addEventListener('mousemove', e => {
++    const pos = mouseToWorld(e.clientX, e.clientY, 0.45);
++    for (let i = 0; i < Math.floor(rand(1, 3)); i++) {
++      emitTrail(new THREE.Vector3(pos.x + rand(-0.02, 0.02), pos.y + rand(-0.02, 0.02), pos.z + rand(-0.02, 0.02)), rand(0.02, 0.05), 380 + Math.random() * 200);
++    }
++    const now = performance.now();
++    const dx = Math.abs(e.clientX - last.x);
++    const dy = Math.abs(e.clientY - last.y);
++    const dt = Math.max(16, now - (last.t || now));
++    const speed = Math.sqrt(dx * dx + dy * dy) / dt;
++    if (speed > 0.4 && Math.random() < Math.min(speed * 1.8, 0.85)) {
++      spawnLightningAt(pos, Math.min(1.6, speed * 1.6));
++    }
++    last.x = e.clientX; last.y = e.clientY; last.t = now;
++    mouseTarget.x = (e.clientX / window.innerWidth - 0.5) * 1.2;
++    mouseTarget.y = (0.5 - e.clientY / window.innerHeight) * 0.8 + 1.8;
++  });
++
++  function animate() {
++    requestAnimationFrame(animate);
++    const posArr = pGeo.attributes.position.array;
++    for (let i = 0; i < particleCount; i++) {
++      const idx = i * 3 + 2;
++      posArr[idx] += 0.0006 * (1 + Math.sin(performance.now() * 0.0001 + i));
++      if (posArr[idx] > 40) posArr[idx] = -40;
++    }
++    pGeo.attributes.position.needsUpdate = true;
++    camera.position.x += (mouseTarget.x - camera.position.x) * 0.03;
++    camera.position.y += (mouseTarget.y - camera.position.y) * 0.03;
++    camera.lookAt(0, 1.4, 0);
++    renderer.render(scene, camera);
++  }
++  animate();
++
++  // Ripples 
++  const titleEl = document.getElementById('titleText');
++  function createRipple(sizeClass = 'medium') {
++    const r = document.createElement('div');
++    r.className = `ripple ${sizeClass}`;
++    titleEl.appendChild(r);
++    setTimeout(() => r.remove(), 2200);
++  }
++  setInterval(() => { createRipple(['small', 'medium', 'large'][Math.floor(Math.random() * 3)]); }, 1100 + Math.random() * 400);
++
++  // Translation 
++  const inputText = document.getElementById('inputText');
++  const translateBtn = document.getElementById('translateBtn');
++  const outputText = document.getElementById('outputText');
++  const detectedLangEl = document.getElementById('detectedLang');
++  const countryNameEl = document.getElementById('country-name');
++  const countryDescEl = document.getElementById('country-desc-text');
++  const languageSelect = document.getElementById('languageSelect');
++
++  // All 118 languages 
++ const languages = [
++  { code: 'af', name: 'Afrikaans' },
++  { code: 'sq', name: 'Albanian' },
++  { code: 'am', name: 'Amharic' },
++  { code: 'ar', name: 'Arabic' },
++  { code: 'hy', name: 'Armenian' },
++  { code: 'az', name: 'Azerbaijani' },
++  { code: 'eu', name: 'Basque' },
++  { code: 'be', name: 'Belarusian' },
++  { code: 'bn', name: 'Bengali' },
++  { code: 'bs', name: 'Bosnian' },
++  { code: 'bg', name: 'Bulgarian' },
++  { code: 'ca', name: 'Catalan' },
++  { code: 'ceb', name: 'Cebuano' },
++  { code: 'ny', name: 'Chichewa' },
++  { code: 'zh-CN', name: 'Chinese (Simplified)' },
++  { code: 'zh-TW', name: 'Chinese (Traditional)' },
++  { code: 'co', name: 'Corsican' },
++  { code: 'hr', name: 'Croatian' },
++  { code: 'cs', name: 'Czech' },
++  { code: 'da', name: 'Danish' },
++  { code: 'nl', name: 'Dutch' },
++  { code: 'en', name: 'English' },
++  { code: 'eo', name: 'Esperanto' },
++  { code: 'et', name: 'Estonian' },
++  { code: 'tl', name: 'Filipino' },
++  { code: 'fi', name: 'Finnish' },
++  { code: 'fr', name: 'French' },
++  { code: 'fy', name: 'Frisian' },
++  { code: 'gl', name: 'Galician' },
++  { code: 'ka', name: 'Georgian' },
++  { code: 'de', name: 'German' },
++  { code: 'el', name: 'Greek' },
++  { code: 'gu', name: 'Gujarati' },
++  { code: 'ht', name: 'Haitian Creole' },
++  { code: 'ha', name: 'Hausa' },
++  { code: 'haw', name: 'Hawaiian' },
++  { code: 'he', name: 'Hebrew' },
++  { code: 'hi', name: 'Hindi' },
++  { code: 'hmn', name: 'Hmong' },
++  { code: 'hu', name: 'Hungarian' },
++  { code: 'is', name: 'Icelandic' },
++  { code: 'ig', name: 'Igbo' },
++  { code: 'id', name: 'Indonesian' },
++  { code: 'ga', name: 'Irish' },
++  { code: 'it', name: 'Italian' },
++  { code: 'ja', name: 'Japanese' },
++  { code: 'jw', name: 'Javanese' },
++  { code: 'kn', name: 'Kannada' },
++  { code: 'kk', name: 'Kazakh' },
++  { code: 'km', name: 'Khmer' },
++  { code: 'rw', name: 'Kinyarwanda' },
++  { code: 'ko', name: 'Korean' },
++  { code: 'ku', name: 'Kurdish (Kurmanji)' },
++  { code: 'ky', name: 'Kyrgyz' },
++  { code: 'lo', name: 'Lao' },
++  { code: 'la', name: 'Latin' },
++  { code: 'lv', name: 'Latvian' },
++  { code: 'lt', name: 'Lithuanian' },
++  { code: 'lb', name: 'Luxembourgish' },
++  { code: 'mk', name: 'Macedonian' },
++  { code: 'mg', name: 'Malagasy' },
++  { code: 'ms', name: 'Malay' },
++  { code: 'ml', name: 'Malayalam' },
++  { code: 'mt', name: 'Maltese' },
++  { code: 'mi', name: 'Maori' },
++  { code: 'mr', name: 'Marathi' },
++  { code: 'mn', name: 'Mongolian' },
++  { code: 'my', name: 'Myanmar (Burmese)' },
++  { code: 'ne', name: 'Nepali' },
++  { code: 'no', name: 'Norwegian' },
++  { code: 'or', name: 'Odia' },
++  { code: 'ps', name: 'Pashto' },
++  { code: 'fa', name: 'Persian' },
++  { code: 'pl', name: 'Polish' },
++  { code: 'pt', name: 'Portuguese' },
++  { code: 'pa', name: 'Punjabi' },
++  { code: 'ro', name: 'Romanian' },
++  { code: 'ru', name: 'Russian' },
++  { code: 'sm', name: 'Samoan' },
++  { code: 'gd', name: 'Scots Gaelic' },
++  { code: 'sr', name: 'Serbian' },
++  { code: 'st', name: 'Sesotho' },
++  { code: 'sn', name: 'Shona' },
++  { code: 'sd', name: 'Sindhi' },
++  { code: 'si', name: 'Sinhala' },
++  { code: 'sk', name: 'Slovak' },
++  { code: 'sl', name: 'Slovenian' },
++  { code: 'so', name: 'Somali' },
++  { code: 'es', name: 'Spanish' },
++  { code: 'su', name: 'Sundanese' },
++  { code: 'sw', name: 'Swahili' },
++  { code: 'sv', name: 'Swedish' },
++  { code: 'tg', name: 'Tajik' },
++  { code: 'ta', name: 'Tamil' },
++  { code: 'tt', name: 'Tatar' },
++  { code: 'te', name: 'Telugu' },
++  { code: 'th', name: 'Thai' },
++  { code: 'tr', name: 'Turkish' },
++  { code: 'tk', name: 'Turkmen' },
++  { code: 'uk', name: 'Ukrainian' },
++  { code: 'ur', name: 'Urdu' },
++  { code: 'ug', name: 'Uyghur' },
++  { code: 'uz', name: 'Uzbek' },
++  { code: 'vi', name: 'Vietnamese' },
++  { code: 'cy', name: 'Welsh' },
++  { code: 'xh', name: 'Xhosa' },
++  { code: 'yi', name: 'Yiddish' },
++  { code: 'yo', name: 'Yoruba' },
++  { code: 'zu', name: 'Zulu' }
++];
++
++
++  // Populate selector, English first
++  languageSelect.innerHTML = '';
++  const enOption = languages.find(l => l.code === 'en');
++  if (enOption) {
++    const opt = document.createElement('option'); opt.value = enOption.code; opt.textContent = enOption.name;
++    languageSelect.appendChild(opt);
++  }
++  languages.filter(l => l.code !== 'en').forEach(l => {
++    const opt = document.createElement('option'); opt.value = l.code; opt.textContent = l.name;
++    languageSelect.appendChild(opt);
++  });
++
++  // langToCountry mapping 
++  const langToCountry = {
++  af: 'ZA', sq: 'AL', am: 'ET', ar: 'AE', hy: 'AM', az: 'AZ', eu: 'ES', be: 'BY',
++  bn: 'BD', bs: 'BA', bg: 'BG', ca: 'ES', ceb: 'PH', ny: 'MW', 'zh-CN': 'CN', 'zh-TW': 'TW',
++  co: 'FR', hr: 'HR', cs: 'CZ', da: 'DK', nl: 'NL', en: 'GB', eo: 'PL', et: 'EE',
++  tl: 'PH', fi: 'FI', fr: 'FR', fy: 'NL', gl: 'ES', ka: 'GE', de: 'DE', el: 'GR',
++  gu: 'IN', ht: 'HT', ha: 'NG', haw: 'US', he: 'IL', hi: 'IN', hmn: 'US', hu: 'HU',
++  is: 'IS', ig: 'NG', id: 'ID', ga: 'IE', it: 'IT', ja: 'JP', jw: 'ID', kn: 'IN',
++  kk: 'KZ', km: 'KH', rw: 'RW', ko: 'KR', ku: 'TR', ky: 'KG', lo: 'LA', la: 'VA',
++  lv: 'LV', lt: 'LT', lb: 'LU', mk: 'MK', mg: 'MG', ms: 'MY', ml: 'IN', mt: 'MT',
++  mi: 'NZ', mr: 'IN', mn: 'MN', my: 'MM', ne: 'NP', no: 'NO', or: 'IN', ps: 'AF',
++  fa: 'IR', pl: 'PL', pt: 'PT', pa: 'IN', ro: 'RO', ru: 'RU', sm: 'WS', gd: 'GB',
++  sr: 'RS', st: 'LS', sn: 'ZW', sd: 'PK', si: 'LK', sk: 'SK', sl: 'SI', so: 'SO',
++  es: 'ES', su: 'ID', sw: 'TZ', sv: 'SE', tg: 'TJ', ta: 'IN', tt: 'RU', te: 'IN',
++  th: 'TH', tr: 'TR', tk: 'TM', uk: 'UA', ur: 'PK', ug: 'CN', uz: 'UZ', vi: 'VN',
++  cy: 'GB', xh: 'ZA', yi: 'DE', yo: 'NG', zu: 'ZA'
++};
++
++
++  // Danger Levels 
++ const dangerLevels = {
++  "Afghanistan":"High","Albania":"Moderate","Algeria":"Moderate","Andorra":"Low","Angola":"Moderate",
++  "Argentina":"Moderate","Armenia":"Low","Australia":"Low","Austria":"Low","Azerbaijan":"Moderate",
++  "Bahamas":"Low","Bahrain":"Low","Bangladesh":"Moderate","Barbados":"Low","Belarus":"Moderate",
++  "Belgium":"Low","Belize":"Low","Benin":"Moderate","Bhutan":"Low","Bolivia":"Moderate",
++  "Bosnia and Herzegovina":"Moderate","Brazil":"Moderate","Brunei":"Low","Bulgaria":"Low","Burkina Faso":"High",
++  "Burundi":"High","Cambodia":"Moderate","Cameroon":"High","Canada":"Low","Chad":"High",
++  "Chile":"Low","China":"Low","Colombia":"Moderate","Comoros":"Moderate","Costa Rica":"Low",
++  "Croatia":"Low","Cuba":"Low","Cyprus":"Low","Czech Republic":"Low","Democratic Republic of the Congo":"High",
++  "Denmark":"Low","Djibouti":"Moderate","Dominica":"Low","Dominican Republic":"Low","East Timor":"Moderate",
++  "Ecuador":"Low","Egypt":"Moderate","El Salvador":"Moderate","Equatorial Guinea":"Moderate","Eritrea":"High",
++  "Estonia":"Low","Eswatini":"Low","Ethiopia":"Moderate","Fiji":"Low","Finland":"Low",
++  "France":"Low","Gabon":"Moderate","Gambia":"Low","Georgia":"Low","Germany":"Low",
++  "Ghana":"Moderate","Greece":"Low","Grenada":"Low","Guatemala":"Moderate","Guinea":"High",
++  "Guinea-Bissau":"High","Guyana":"Moderate","Haiti":"High","Honduras":"High","Hungary":"Low",
++  "Iceland":"Low","India":"Moderate","Indonesia":"Moderate","Iran":"High","Iraq":"High",
++  "Ireland":"Low","Israel":"Low","Italy":"Low","Ivory Coast":"High","Jamaica":"Moderate",
++  "Japan":"Low","Jordan":"Moderate","Kazakhstan":"Low","Kenya":"Moderate","Kiribati":"Low",
++  "Kosovo":"Low","Kuwait":"Low","Kyrgyzstan":"Moderate","Laos":"Moderate","Latvia":"Low",
++  "Lebanon":"High","Lesotho":"Moderate","Liberia":"High","Libya":"High","Liechtenstein":"Low",
++  "Lithuania":"Low","Luxembourg":"Low","Madagascar":"Moderate","Malawi":"Moderate","Malaysia":"Low",
++  "Maldives":"Low","Mali":"High","Malta":"Low","Marshall Islands":"Low","Mauritania":"High",
++  "Mauritius":"Low","Mexico":"Moderate","Micronesia":"Low","Moldova":"Moderate","Monaco":"Low",
++  "Mongolia":"Low","Montenegro":"Low","Morocco":"Low","Mozambique":"High","Myanmar":"High",
++  "Namibia":"Low","Nauru":"Low","Nepal":"Moderate","Netherlands":"Low","New Zealand":"Low",
++  "Nicaragua":"Moderate","Niger":"High","Nigeria":"High","North Korea":"High","North Macedonia":"Moderate",
++  "Norway":"Low","Oman":"Low","Pakistan":"High","Palau":"Low","Panama":"Low",
++  "Papua New Guinea":"High","Paraguay":"Moderate","Peru":"Moderate","Philippines":"Moderate","Poland":"Low",
++  "Portugal":"Low","Qatar":"Low","Republic of the Congo":"Moderate","Romania":"Low","Russia":"Moderate",
++  "Rwanda":"Moderate","Saint Kitts and Nevis":"Low","Saint Lucia":"Low","Saint Vincent and the Grenadines":"Low","Samoa":"Low",
++  "San Marino":"Low","Sao Tome and Principe":"Low","Saudi Arabia":"Moderate","Senegal":"Moderate","Serbia":"Moderate",
++  "Seychelles":"Low","Sierra Leone":"High","Singapore":"Low","Slovakia":"Low","Slovenia":"Low",
++  "Solomon Islands":"Moderate","Somalia":"High","South Africa":"Moderate","South Korea":"Low","South Sudan":"High",
++  "Spain":"Low","Sri Lanka":"Moderate","Sudan":"High","Suriname":"Moderate","Sweden":"Low",
++  "Switzerland":"Low","Syria":"High","Taiwan":"Low","Tajikistan":"Moderate","Tanzania":"Moderate",
++  "Thailand":"Low","Togo":"Moderate","Tonga":"Low","Trinidad and Tobago":"Low","Tunisia":"Low",
++  "Turkey":"Moderate","Turkmenistan":"Moderate","Tuvalu":"Low","Uganda":"Moderate","Ukraine":"Moderate",
++  "United Arab Emirates":"Low","United Kingdom":"Low","United States":"Low","Uruguay":"Low","Uzbekistan":"Moderate",
++  "Vanuatu":"Low","Vatican City":"Low","Venezuela":"High","Vietnam":"Low","Yemen":"High",
++  "Zambia":"Moderate","Zimbabwe":"Moderate"
++};
++
++
++  // Fetch country info 
++  async function getCountryInfo(countryCode) {
++    try {
++      const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
++      const data = await res.json();
++      const c = data[0];
++      return {
++        name: c.name.common,
++        flag: c.flags.svg,
++        region: c.region,
++        population: c.population.toLocaleString(),
++        capital: c.capital ? c.capital[0] : 'N/A',
++        danger: dangerLevels[c.name.common] || 'Moderate'
++      };
++    } catch (e) { console.error(e); return null; }
++  }
++
++  // Translate Button
++  translateBtn.addEventListener('click', async () => {
++    const text = inputText.value.trim();
++    const target = languageSelect.value;
++    if (!text) { alert('Enter text'); return; }
++    if (!target) { alert('Select language'); return; }
++    try {
++      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
++      const res = await fetch(url);
++      if (!res.ok) throw new Error('Fetch failed');
++      const data = await res.json();
++      const translated = data[0].map(t => t[0]).join('');
++      outputText.textContent = translated;
++
++      // Detected language
++      const detectedLang = data[2] || 'en';
++      detectedLangEl.textContent = detectedLang;
++
++      // Speech synthesis
++      const utter = new SpeechSynthesisUtterance(translated);
++      const voices = speechSynthesis.getVoices();
++      const voiceMatch = voices.find(v => v.lang.startsWith(target));
++      if (voiceMatch) utter.voice = voiceMatch;
++      utter.lang = target;
++      speechSynthesis.speak(utter);
++
++      // Country info based on detected language
++      const countryCode = langToCountry[detectedLang] || 'GB';
++      const countryData = await getCountryInfo(countryCode);
++      if (countryData) {
++        countryNameEl.innerHTML = `<img src="${countryData.flag}" alt="${countryData.name} flag" style="width:32px;vertical-align:middle;margin-right:6px;"> ${countryData.name}`;
++        countryDescEl.innerHTML = `<p>${countryData.name} is in ${countryData.region}. Capital: ${countryData.capital}. Population: ${countryData.population}.</p><p><strong>Danger Level:</strong> ${countryData.danger}</p>`;
++      }
++    } catch (e) { console.error(e); alert('Translation failed'); }
++  });
++
++});
++</script>
++
++<!-- Camera dashboard logic -->
++<script>
++(function detachAttachedTranslateHandler(){
++  // script.js attaches listeners to #translateBtn. We replace the node to remove those listeners.
++  const oldBtn = document.getElementById('translateBtn');
++  if(!oldBtn) return;
++  const clone = oldBtn.cloneNode(true);
++  oldBtn.parentNode.replaceChild(clone, oldBtn);
++})();
++
++const state = { cams: [], focused: null };
++const elGrid = document.getElementById('cam-grid');
++const elList = document.getElementById('camList');
++const elStatus = document.getElementById('outputText');
++const elRunState = document.getElementById('runState');
++const elRunDot = document.getElementById('runDot');
++const elCamCount = document.getElementById('camCount');
++const elLiveCount = document.getElementById('liveCount');
++
++function setStatus(msg, warn=false){
++  elStatus.textContent = msg;
++  elRunState.textContent = warn ? 'WARN' : (state.cams.length ? 'RUN' : 'IDLE');
++  elRunDot.className = warn ? 'dot warn' : 'dot';
++}
++
++function parseLinesToCams(text){
++  const lines = (text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
++  return lines.map((url, i) => {
++    const lower = url.toLowerCase();
++    const type =
++      lower.includes('.m3u8') ? 'HLS' :
++      (lower.includes('mjpeg') || lower.endsWith('.mjpg') || lower.endsWith('.mjpeg')) ? 'MJPEG' :
++      lower.startsWith('rtsp://') ? 'RTSP' :
++      'HTTP';
++    return {
++      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('cam-' + Date.now() + '-' + i),
++      name: 'Cam ' + (i + 1),
++      url,
++      type,
++      playing: false,
++      err: null
++    };
++  });
++}
++
++function setGridClass(cls){
++  elGrid.classList.remove('grid-1','grid-4','grid-9','grid-wall');
++  elGrid.classList.add(cls);
++}
++
++function requestFullscreen(el){
++  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
++  if(req) req.call(el);
++}
++
++function reconnectTile(tile){
++  const media = tile.querySelector('video, img');
++  if(!media) return;
++  const src = media.src;
++  media.src = '';
++  setTimeout(() => {
++    media.src = src;
++    if(media.tagName.toLowerCase() === 'video'){
++      media.load();
++      media.play().catch(() => {});
++    }
++  }, 350);
++}
++
++function escapeHtml(s){
++  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
++}
++
++function updateLive(){
++  const live = state.cams.filter(c => c.playing).length;
++  elLiveCount.textContent = String(live);
++}
++
++function render(){
++  elGrid.innerHTML = '';
++  elList.innerHTML = '';
++  elCamCount.textContent = String(state.cams.length);
++
++  let live = 0;
++
++  state.cams.forEach((cam) => {
++    const item = document.createElement('div');
++    item.style.marginBottom = '10px';
++    item.style.padding = '10px';
++    item.style.borderRadius = '10px';
++    item.style.border = '1px solid rgba(255,255,255,0.06)';
++    item.style.background = 'rgba(0,0,0,0.35)';
++    item.style.cursor = 'pointer';
++    item.innerHTML =
++      '<div style="font-weight:900;color:var(--neon-blue);text-shadow:0 0 10px rgba(0,240,255,0.25)">' + escapeHtml(cam.name) + '</div>' +
++      '<div style="font-size:12px;color:#bfefff;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(cam.url) + '</div>' +
++      '<div style="margin-top:6px;font-size:12px;"><span class="hud-tag">' + escapeHtml(cam.type) + '</span></div>';
++    item.onclick = () => { state.focused = cam.id; render(); };
++    elList.appendChild(item);
++
++    const tile = document.createElement('div');
++    tile.className = 'tile';
++    tile.__camId = cam.id;
++    if(state.focused === cam.id) tile.style.outline = '2px solid rgba(0,240,255,0.28)';
++
++    let media;
++    if(cam.type === 'MJPEG'){
++      media = document.createElement('img');
++      media.src = cam.url;
++      cam.playing = true;
++    } else {
++      media = document.createElement('video');
++      media.src = cam.url;
++      media.autoplay = true;
++      media.muted = true;
++      media.playsInline = true;
++      media.preload = 'metadata';
++      media.onplaying = () => { cam.playing = true; cam.err = null; updateLive(); };
++      media.onerror = () => { cam.playing = false; cam.err = 'error'; updateLive(); };
++      media.onstalled = () => { cam.playing = false; cam.err = 'stalled'; updateLive(); };
++      media.play().catch(() => { cam.playing = false; cam.err = 'autoplay'; updateLive(); });
++    }
++
++    const hud = document.createElement('div');
++    hud.className = 'hud';
++    hud.innerHTML =
++      '<div class="hud-top">' +
++        '<div class="hud-name">' + escapeHtml(cam.name) + '</div>' +
++        '<div class="hud-tag">' + escapeHtml(cam.type) + '</div>' +
++      '</div>' +
++      '<div class="hud-bottom">' +
++        '<div class="hud-status">' + escapeHtml(cam.url) + '</div>' +
++        '<div class="hud-actions">' +
++          '<button class="cybr-btn" data-act="reconnect" type="button">Reconnect<span aria-hidden class="cybr-btn__glitch">Reconnect</span></button>' +
++          '<button class="cybr-btn" data-act="full" type="button">Fullscreen<span aria-hidden class="cybr-btn__glitch">Fullscreen</span></button>' +
++        '</div>' +
++      '</div>';
++
++    tile.appendChild(media);
++    tile.appendChild(hud);
++
++    tile.querySelector('[data-act="reconnect"]').onclick = (e) => { e.stopPropagation(); reconnectTile(tile); };
++    tile.querySelector('[data-act="full"]').onclick = (e) => { e.stopPropagation(); requestFullscreen(tile); };
++    tile.onclick = () => { state.focused = cam.id; render(); };
++
++    elGrid.appendChild(tile);
++    if(cam.playing) live++;
++  });
++
++  elLiveCount.textContent = String(live);
++
++  if(!state.cams.length) setStatus('Ready. Paste URLs and press Load grid.');
++  else setStatus('Loaded ' + state.cams.length + ' camera(s). Tap a tile to focus.', false);
++}
++
++// Wire controls
++document.getElementById('translateBtn').addEventListener('click', () => {
++  const txt = document.getElementById('inputText').value;
++  state.cams = parseLinesToCams(txt);
++  state.focused = state.cams[0]?.id || null;
++  render();
++});
++
++document.getElementById('gridMode').addEventListener('change', (e) => setGridClass(e.target.value));
++
++document.getElementById('muteMode').addEventListener('change', (e) => {
++  const mode = e.target.value;
++  document.querySelectorAll('#cam-grid video').forEach(v => {
++    if(mode === 'all') v.muted = true;
++    else if(mode === 'none') v.muted = false;
++    else {
++      const tile = v.closest('.tile');
++      const id = tile && tile.__camId;
++      v.muted = (id !== state.focused);
++    }
++  });
++});
++
++document.getElementById('btnReconnectAll').addEventListener('click', () => {
++  document.querySelectorAll('#cam-grid .tile').forEach(t => reconnectTile(t));
++  setStatus('Reconnect all triggered.');
++});
++
++document.getElementById('btnDiscover').addEventListener('click', () => {
++  setStatus('ONVIF discovery is a hook. Feed discovered stream URLs into the list.', true);
++});
++
++setGridClass('grid-4');
++setStatus('Ready. Paste URLs and press Load grid.');
++render();
++
++// ===== Public API so the nav/menu can control the dashboard =====
++window.NetNinjaCam = {
++  addCamera: ({name, url}) => {
++    const ta = document.getElementById('inputText');
++    const line = (name && name.trim() ? (name.trim() + ' | ' + url.trim()) : url.trim());
++    // Also keep the raw list in the textarea for user visibility.
++    if(ta){
++      ta.value = (ta.value ? (ta.value.trimEnd() + '\n') : '') + line;
++    }
++    // Load to grid (re-uses existing handler)
++    document.getElementById('translateBtn')?.click();
++  },
++  importList: (text) => {
++    // Accept "Name | URL" or just URL.
++    const lines = String(text || '').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
++    const ta = document.getElementById('inputText');
++    if(ta){
++      ta.value = lines.join('\n');
++    }
++    document.getElementById('translateBtn')?.click();
++  },
++  exportList: () => {
++    const ta = document.getElementById('inputText');
++    return (ta?.value || '').trim();
++  },
++  reconnectAll: () => {
++    document.getElementById('btnReconnectAll')?.click();
++  },
++  setGridMode: (mode) => {
++    const sel = document.getElementById('gridMode');
++    if(sel){
++      sel.value = mode;
++      sel.dispatchEvent(new Event('change'));
++    }
++  }
++};
++
++</script>
++
++<script>
++(function(){
++  const side = document.getElementById('nnSide');
++  const overlay = document.getElementById('nnOverlay');
++  const ham = document.getElementById('nnHamburger');
++
++  const modalAdd = document.getElementById('modalAddCam');
++  const modalImport = document.getElementById('modalImport');
++  const modalGateway = document.getElementById('modalGateway');
++  const modalSettings = document.getElementById('modalSettings');
++
++  const quick = document.getElementById('nnQuickStatus');
++
++  function openSide(){
++    side.classList.add('open');
++    overlay.classList.add('open');
++  }
++  function closeSide(){
++    side.classList.remove('open');
++    overlay.classList.remove('open');
++  }
++
++  function openModal(which){
++    const map = {
++      addCam: modalAdd,
++      import: modalImport,
++      gateway: modalGateway,
++      settings: modalSettings
++    };
++    const m = map[which];
++    if(!m) return;
++    m.classList.add('open');
++    m.setAttribute('aria-hidden','false');
++    overlay.classList.add('open');
++  }
++  function closeAllModals(){
++    [modalAdd, modalImport, modalGateway, modalSettings].forEach(m=>{
++      m.classList.remove('open');
++      m.setAttribute('aria-hidden','true');
++    });
++    overlay.classList.remove('open');
++  }
++
++  ham?.addEventListener('click', ()=> {
++    if(side.classList.contains('open')) closeSide(); else openSide();
++  });
++  overlay?.addEventListener('click', ()=> {
++    closeSide();
++    closeAllModals();
++  });
++
++  // Side menu buttons
++  side?.addEventListener('click', (e)=>{
++    const btn = e.target.closest('button');
++    if(!btn) return;
++
++    const nav = btn.getAttribute('data-nav');
++    const open = btn.getAttribute('data-open');
++    const act = btn.getAttribute('data-act');
++
++    if(nav){
++      setView(nav);
++      closeSide();
++      return;
++    }
++    if(open){
++      closeSide();
++      openModal(open);
++      return;
++    }
++    if(act === 'export'){
++      doExport();
++      closeSide();
++      return;
++    }
++  });
++
++  document.querySelectorAll('[data-close]').forEach(b=>{
++    b.addEventListener('click', ()=>{
++      closeAllModals();
++    });
++  });
++
++  // Topbar quick buttons
++  document.getElementById('nnBtnAdd')?.addEventListener('click', ()=> openModal('addCam'));
++  document.getElementById('nnBtnReconnect')?.addEventListener('click', ()=> {
++    window.NetNinjaCam?.reconnectAll?.();
++    pulseQuick('RECONNECT');
++  });
++  document.getElementById('nnBtnView')?.addEventListener('click', ()=> {
++    setView('overview');
++    pulseQuick('VIEW');
++  });
++
++  function pulseQuick(txt){
++    if(!quick) return;
++    quick.textContent = txt;
++    quick.classList.add('flicker');
++    setTimeout(()=> quick.classList.remove('flicker'), 420);
++    setTimeout(()=> quick.textContent = 'READY', 900);
++  }
++
++  function setPanels(mode){
++    const t = document.getElementById('translator-panel');
++    const c = document.getElementById('country-panel');
++    // grid always visible
++    const show = (el, v)=>{ if(!el) return; el.style.display = v ? '' : 'none'; };
++
++    if(mode === 'grid'){ show(t,false); show(c,false); }
++    else if(mode === 'config'){ show(t,true); show(c,false); }
++    else if(mode === 'list'){ show(t,false); show(c,true); }
++    else { show(t,true); show(c,true); }
++  }
++
++  function setView(view){
++    // Views are just combinations of panel visibility + mild behavior changes.
++    // This is UI, not magic.
++    if(view === 'overview'){
++      setPanels('grid');
++      window.scrollTo({top:0, behavior:'smooth'});
++    } else if(view === 'configure'){
++      setPanels('config');
++      window.scrollTo({top:0, behavior:'smooth'});
++    } else {
++      // cameras
++      setPanels('all');
++      window.scrollTo({top:0, behavior:'smooth'});
++    }
++  }
++
++  // Add camera modal
++  document.getElementById('btnAddCamConfirm')?.addEventListener('click', ()=>{
++    const name = (document.getElementById('addCamName')?.value || '').trim();
++    const url  = (document.getElementById('addCamUrl')?.value || '').trim();
++    if(!url){
++      pulseQuick('NEED URL');
++      return;
++    }
++    window.NetNinjaCam?.addCamera?.({name, url});
++    closeAllModals();
++    pulseQuick('ADDED');
++  });
++
++  // Import modal
++  document.getElementById('btnImportConfirm')?.addEventListener('click', ()=>{
++    const txt = (document.getElementById('importText')?.value || '').trim();
++    if(!txt){
++      pulseQuick('EMPTY');
++      return;
++    }
++    window.NetNinjaCam?.importList?.(txt);
++    closeAllModals();
++    pulseQuick('IMPORTED');
++  });
++
++  // Settings modal
++  document.getElementById('btnSettingsApply')?.addEventListener('click', ()=>{
++    const p = document.getElementById('settingPanels')?.value || 'all';
++    const v = document.getElementById('settingDefaultView')?.value || 'cameras';
++    setPanels(p);
++    setView(v);
++    closeAllModals();
++    pulseQuick('APPLIED');
++  });
++
++  function doExport(){
++    const txt = window.NetNinjaCam?.exportList?.() || '';
++    if(!txt){
++      pulseQuick('NONE');
++      return;
++    }
++    try{
++      navigator.clipboard.writeText(txt);
++      pulseQuick('COPIED');
++    }catch{
++      // fallback: dump into inputText
++      const ta = document.getElementById('inputText');
++      if(ta){ ta.value = txt; }
++      pulseQuick('EXPORT');
++    }
++  }
++
++  // Default offset so panels don't hide behind topbar (desktop too).
++  document.body.classList.add('nn-main-offset');
++
++  // Apply default view
++  setView('cameras');
++})();
++</script>
++
++</body>
++</html>
+
+*** End Patch
+*** Begin Patch
+*** Add File: android-app/src/main/assets/web-ui/net_ninja_cam.html
++<!DOCTYPE html>
++<html lang="en">
++<head>
++<meta charset="UTF-8" />
++<meta name="viewport" content="width=device-width, initial-scale=1.0" />
++<title>NET_NiNjA :: CAM VIEWER</title>
++
++<!-- Attached theme CSS (verbatim) -->
++<style>
++/* Created by: Justin Linwood Ross */
++@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
++
++:root{
++  --bg1:#050012;
++  --neon-pink:#ff00ff;
++  --neon-blue:#00f0ff;
++  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
++}
++
++*{box-sizing:border-box}
++html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
++body{
++  background: radial-gradient(circle at 30% 20%, #120023 0%, #04000a 60%, #000 100%);
++  color:#e8e6ff;
++  overflow:hidden;
++  position:relative;
++}
++
++#bg { position:fixed; inset:0; z-index:0; display:block; }
++
++.glass-panel{
++  position:absolute; z-index:2;
++  width:440px; padding:22px; border-radius:16px;
++  background: var(--glass-bg);
++  border: 1px solid rgba(255,255,255,0.06);
++  box-shadow:
++    0 8px 40px rgba(0,0,0,0.6),
++    0 0 35px rgba(255,0,255,0.08),
++    0 0 80px rgba(0,240,255,0.06);
++  backdrop-filter: blur(10px) saturate(140%);
++  color:#fff;
++  overflow:visible;
++}
++
++#translator-panel{ left:6%; top:50%; transform:translateY(-50%); width:520px; }
++#country-panel{ right:6%; top:12%; width:360px; max-height:76vh; overflow:auto; }
++
++.visually-hidden{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
++
++.neon-title{
++  font-size:2.6rem; color:var(--neon-pink); margin:4px 0 6px;
++  text-shadow: 0 0 10px var(--neon-pink), 0 0 40px var(--neon-blue), 0 0 90px var(--neon-pink);
++  letter-spacing:2px;
++  animation: neonFlicker 2.5s infinite alternate;
++}
++@keyframes neonFlicker {
++  0%,100%{ text-shadow:0 0 10px #ff00ff,0 0 40px #00f0ff,0 0 90px #ff00ff; }
++  25%{ text-shadow:0 0 15px #ff00ff,0 0 50px #00f0ff,0 0 100px #ff00ff; }
++  50%{ text-shadow:0 0 12px #ff00ff,0 0 45px #00f0ff,0 0 95px #ff00ff; }
++  75%{ text-shadow:0 0 18px #ff00ff,0 0 55px #00f0ff,0 0 105px #ff00ff; }
++}
++
++.subtitle{ color:#bcb7df; margin:0 0 12px; font-size:0.95rem; }
++
++.controls{ display:flex; flex-direction:column; gap:12px; }
++textarea{
++  width:100%; min-height:110px; resize:vertical; border-radius:10px; padding:12px; font-size:14px;
++  background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.04); color:#fff; outline:none;
++  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
++}
++.controls-row{ display:flex; gap:12px; align-items:center; }
++.select-wrap{ flex:1; }
++.actions{ display:flex; gap:8px; align-items:center; }
++
++select, button{
++  padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06);
++  background: rgba(0,0,0,0.45); color:#fff; font-weight:700;
++}
++button{
++  background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
++  background-size:200% 200%;
++  color:#000; cursor:pointer;
++  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,0,255,0.06);
++  animation: buttonGlow 4s ease infinite;
++}
++button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,0,255,0.12); }
++@keyframes buttonGlow {
++  0% { background-position: 0% 50%; }
++  50% { background-position: 100% 50%; }
++  100% { background-position: 0% 50%; }
++}
++
++.output-glass{ margin-top:12px; background: rgba(0,0,0,0.35); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.03); color:#dfefff; line-height:1.45; 
++box-shadow: 0 0 8px #00f0ff, 0 0 24px #ff00ff, 0 0 48px #00f0ff;
++animation: panelPulse 3s infinite alternate;}
++@keyframes panelPulse {
++  0%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
++  50%{box-shadow:0 0 12px #00f0ff,0 0 30px #ff00ff,0 0 60px #00f0ff;}
++  100%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
++}
++.output-glass h2{ margin:0 0 8px; color:var(--neon-blue); font-size:1rem; }
++.output-text{ color:#dfefff; font-size:0.98rem; min-height:36px; }
++
++#country-meta{ font-size:0.95rem; color:#d9eaff; }
++#country-meta strong{ color:var(--neon-pink); font-size:1.05rem; }
++#country-desc-text{ margin-top:8px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); color:#bfefff; line-height:1.45; }
++
++#country-panel::-webkit-scrollbar{ width:8px; }
++#country-panel::-webkit-scrollbar-thumb{ background: linear-gradient(45deg,var(--neon-pink),var(--neon-blue)); border-radius:8px; }
++
++.ripple { position: absolute; left: 50%; transform: translateX(-50%); border-radius:50%; border: 2px solid rgba(0,240,255,0.12); pointer-events:none; animation:ripple 2s ease-out forwards; top: 6px; filter: blur(1.8px);}
++.ripple.small { width:80px; height:80px; }
++.ripple.medium { width:120px; height:120px; }
++.ripple.large { width:160px; height:160px; }
++@keyframes ripple { to { transform: translateX(-50%) scale(6); opacity:0; } }
++
++.arc { position: fixed; width:6px; height:6px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 24px var(--neon-blue); pointer-events:none; animation: arcfade 280ms ease-out forwards; }
++@keyframes arcfade { to { transform: scale(2); opacity:0; } }
++
++.flicker { animation: flicker 200ms linear 0s 3; }
++@keyframes flicker { 0%{opacity:1} 50%{opacity:0.85; transform:translateY(-2px);} 100%{opacity:1} }
++
++@media (max-width:1100px) {
++  #translator-panel{ left:4%; width:86vw; }
++  #country-panel{ display:none; }
++}
++</style>
++
++<!-- Added: cyber button skin (required because only markup was provided) -->
++<style>
++
++/* NET_NiNjA cyber button skin (since only markup was provided).
++   Keeps the glitch span from rendering as plain text when styles are missing. */
++.cybr-btn{
++  --btn-bg: rgba(0,0,0,0.55);
++  --btn-border: rgba(255,255,255,0.10);
++  --btn-text: #e8e6ff;
++  --btn-glow1: var(--neon-blue);
++  --btn-glow2: var(--neon-pink);
++
++  position: relative;
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++
++  padding: 12px 16px;
++  min-height: 44px;
++
++  border-radius: 12px;
++  border: 1px solid var(--btn-border);
++  background: linear-gradient(90deg, rgba(255,0,255,0.22), rgba(0,240,255,0.18)) , var(--btn-bg);
++  color: var(--btn-text);
++  font-family: inherit;
++  font-weight: 900;
++  letter-spacing: 0.5px;
++
++  cursor: pointer;
++  user-select: none;
++
++  box-shadow:
++    0 10px 26px rgba(0,0,0,0.55),
++    0 0 18px rgba(0,240,255,0.16),
++    0 0 18px rgba(255,0,255,0.14);
++  backdrop-filter: blur(10px) saturate(140%);
++}
++.cybr-btn:active{ transform: translateY(1px); }
++.cybr-btn:hover{
++  box-shadow:
++    0 16px 34px rgba(0,0,0,0.62),
++    0 0 26px rgba(0,240,255,0.22),
++    0 0 26px rgba(255,0,255,0.18);
++}
++
++/* The glitch span exists in your markup; keep it hidden unless you want it. */
++.cybr-btn__glitch{
++  position: absolute;
++  inset: 0;
++  display: none; /* Prevent duplicate text */
++  align-items: center;
++  justify-content: center;
++  opacity: 0.0;
++  pointer-events: none;
++}
++
++/* Optional: quick “glitch flicker” on hover without duplicating text */
++.cybr-btn:hover .cybr-btn__glitch{
++  display:flex;
++  opacity: 0.12;
++  filter: blur(0.4px);
++  text-shadow: 0 0 10px var(--btn-glow1), 0 0 14px var(--btn-glow2);
++  animation: cybrFlicker 420ms steps(2,end) 1;
++}
++@keyframes cybrFlicker{
++  0%{ transform: translate(0,0); opacity: 0.0; }
++  25%{ transform: translate(1px,-1px); opacity: 0.12; }
++  55%{ transform: translate(-1px,1px); opacity: 0.08; }
++  100%{ transform: translate(0,0); opacity: 0.10; }
++}
++
++</style>
++
++<!-- Added: camera dashboard layout -->
++<style>
++
++/* ===== Camera dashboard layout layer ===== */
++#cam-grid-panel{
++  position:absolute; z-index:3;
++  left:50%; top:52%;
++  transform:translate(-50%, -50%);
++  width:min(1100px, 92vw);
++  height:min(78vh, 720px);
++  padding:16px; border-radius:16px;
++  background: var(--glass-bg);
++  border: 1px solid rgba(255,255,255,0.06);
++  box-shadow: 0 8px 40px rgba(0,0,0,0.6),
++              0 0 35px rgba(255,0,255,0.08),
++              0 0 80px rgba(0,240,255,0.06);
++  backdrop-filter: blur(10px) saturate(140%);
++  overflow:hidden;
++  display:flex;
++  flex-direction:column;
++  gap:12px;
++}
++
++.grid-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
++.grid-toolbar .left, .grid-toolbar .right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
++
++.pill{
++  display:inline-flex; align-items:center; gap:8px;
++  padding:8px 10px; border-radius:999px;
++  background: rgba(0,0,0,0.45);
++  border:1px solid rgba(255,255,255,0.06);
++  color:#fff; font-weight:800; font-size:12px;
++  white-space:nowrap;
++}
++.dot{ width:8px; height:8px; border-radius:50%;
++  background: var(--neon-blue);
++  box-shadow: 0 0 18px rgba(0,240,255,0.55);
++}
++.dot.warn{ background: var(--neon-pink); box-shadow: 0 0 18px rgba(255,0,255,0.55); }
++
++#cam-grid{
++  flex:1;
++  display:grid;
++  gap:12px;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  overflow:auto;
++  padding-right:6px;
++}
++#cam-grid.grid-1{ grid-template-columns: 1fr; }
++#cam-grid.grid-4{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
++#cam-grid.grid-9{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
++#cam-grid.grid-wall{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
++
++.tile{
++  position:relative;
++  border-radius:14px;
++  overflow:hidden;
++  background: rgba(0,0,0,0.55);
++  border:1px solid rgba(255,255,255,0.06);
++  box-shadow: inset 0 0 14px rgba(0,0,0,0.7),
++              0 0 24px rgba(0,240,255,0.06),
++              0 0 24px rgba(255,0,255,0.06);
++  min-height:190px;
++}
++.tile video, .tile img{
++  width:100%; height:100%;
++  object-fit:cover;
++  display:block;
++  background: rgba(0,0,0,0.35);
++}
++
++.hud{
++  position:absolute; inset:0;
++  display:flex; flex-direction:column;
++  justify-content:space-between;
++  pointer-events:none;
++}
++.hud-top{
++  padding:10px;
++  display:flex; align-items:center; justify-content:space-between; gap:10px;
++  background: linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0));
++}
++.hud-name{
++  font-weight:900; font-size:13px;
++  color: var(--neon-blue);
++  text-shadow: 0 0 10px rgba(0,240,255,0.35), 0 0 24px rgba(255,0,255,0.20);
++  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
++  max-width:70%;
++}
++.hud-tag{
++  font-size:11px; font-weight:900; color:#000;
++  background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
++  padding:6px 10px; border-radius:999px;
++  box-shadow: 0 0 18px rgba(255,0,255,0.10);
++  white-space:nowrap;
++}
++.hud-bottom{
++  padding:10px;
++  display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
++  background: linear-gradient(0deg, rgba(0,0,0,0.80), rgba(0,0,0,0));
++}
++.hud-status{
++  font-size:12px; color:#bfefff; line-height:1.2;
++  max-width:65%;
++  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
++}
++.hud-actions{
++  pointer-events:auto;
++  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
++}
++.hud-actions .cybr-btn{
++  min-height: 34px;
++  padding: 8px 10px;
++  font-size: 11px;
++}
++
++/* If any imported button CSS tries to center body, force normal page flow */
++body{
++  display:block !important;
++  justify-content: unset !important;
++  align-items: unset !important;
++  flex-direction: unset !important;
++  font-size: unset !important;
++  min-height: 100vh !important;
++}
++
++/* ===== Mobile: stop absolute overlays and stack panels ===== */
++@media (max-width: 780px){
++  body{
++    overflow:auto !important;
++  }
++  #translator-panel, #country-panel, #cam-grid-panel{
++    position: relative !important;
++    left: auto !important;
++    right: auto !important;
++    top: auto !important;
++    transform: none !important;
++    width: 92vw !important;
++    margin: 14px auto !important;
++  }
++  #cam-grid-panel{
++    height: 64vh !important;
++  }
++  #country-panel{
++    max-height: none !important;
++    overflow: visible !important;
++  }
++}
++
++</style>
++</head>
++
++<body>
++<canvas id="bg"></canvas>
++
++<div class="nn-overlay" id="nnOverlay"></div>
++
++<nav class="nn-side" id="nnSide">
++  <div class="panel-title">NET_NiNjA MENU</div>
++
++  <div class="menu">
++    <button class="cybr-btn" type="button" data-nav="overview">
++      Overview <span class="hint">grid focus</span>
++      <span aria-hidden class="cybr-btn__glitch">Overview</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-nav="cameras">
++      Cameras <span class="hint">list + grid</span>
++      <span aria-hidden class="cybr-btn__glitch">Cameras</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-nav="configure">
++      Configure <span class="hint">urls + modes</span>
++      <span aria-hidden class="cybr-btn__glitch">Configure</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="addCam">
++      Add camera <span class="hint">name + url</span>
++      <span aria-hidden class="cybr-btn__glitch">Add camera</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="import">
++      Import list <span class="hint">paste urls</span>
++      <span aria-hidden class="cybr-btn__glitch">Import list</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-act="export">
++      Export list <span class="hint">copy</span>
++      <span aria-hidden class="cybr-btn__glitch">Export list</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="gateway">
++      RTSP gateway <span class="hint">MediaMTX</span>
++      <span aria-hidden class="cybr-btn__glitch">RTSP gateway</span>
++    </button>
++
++    <button class="cybr-btn" type="button" data-open="settings">
++      Settings <span class="hint">layout</span>
++      <span aria-hidden class="cybr-btn__glitch">Settings</span>
++    </button>
++  </div>
++</nav>
++
++<header class="nn-topbar">
++  <div class="left">
++    <button class="nn-hamburger" id="nnHamburger" type="button" aria-label="Open menu">
++      <div class="bars">
++        <div class="bar"></div>
++        <div class="bar"></div>
++        <div class="bar"></div>
++      </div>
++    </button>
++
++    <div class="nn-brand">NET_NiNjA :: CAMS</div>
++
++    <div class="nn-chip" title="Quick status">
++      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-blue);box-shadow:0 0 16px rgba(0,240,255,.55)"></span>
++      <span id="nnQuickStatus">READY</span>
++    </div>
++  </div>
++
++  <div class="right">
++    <button class="cybr-btn" type="button" id="nnBtnAdd">
++      Add
++      <span aria-hidden class="cybr-btn__glitch">Add</span>
++    </button>
++
++    <button class="cybr-btn" type="button" id="nnBtnReconnect">
++      Reconnect
++      <span aria-hidden class="cybr-btn__glitch">Reconnect</span>
++    </button>
++
++    <button class="cybr-btn" type="button" id="nnBtnView">
++      View
++      <span aria-hidden class="cybr-btn__glitch">View</span>
++    </button>
++  </div>
++</header>
++
++<!-- ===== Modals ===== -->
++<div class="nn-modal" id="modalAddCam" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">ADD CAMERA</div>
++    <p class="subtitle">Give it a name and a stream URL (HLS/MJPEG/HTTP). RTSP needs gateway.</p>
++
++    <div class="controls">
++      <div class="row">
++        <div style="flex:1;min-width:220px">
++          <label class="visually-hidden" for="addCamName">Name</label>
++          <input id="addCamName" placeholder="Camera name (e.g. Front Door)"/>
++        </div>
++        <div style="flex:2;min-width:240px">
++          <label class="visually-hidden" for="addCamUrl">URL</label>
++          <input id="addCamUrl" placeholder="https://...m3u8 OR http://...mjpeg"/>
++        </div>
++      </div>
++
++      <div class="row" style="justify-content:flex-end;">
++        <button class="cybr-btn" type="button" data-close="addCam">Cancel<span aria-hidden class="cybr-btn__glitch">Cancel</span></button>
++        <button class="cybr-btn" type="button" id="btnAddCamConfirm">Add<span aria-hidden class="cybr-btn__glitch">Add</span></button>
++      </div>
++    </div>
++  </section>
++</div>
++
++<div class="nn-modal" id="modalImport" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">IMPORT CAMERA LIST</div>
++    <p class="subtitle">Paste URLs (one per line). Optional: “Name | URL”.</p>
++
++    <div class="controls">
++      <textarea id="importText" placeholder="Front Door | https://...m3u8&#10;Garage | http://...mjpeg&#10;https://...m3u8"></textarea>
++
++      <div class="row" style="justify-content:flex-end;">
++        <button class="cybr-btn" type="button" data-close="import">Cancel<span aria-hidden class="cybr-btn__glitch">Cancel</span></button>
++        <button class="cybr-btn" type="button" id="btnImportConfirm">Import<span aria-hidden class="cybr-btn__glitch">Import</span></button>
++      </div>
++    </div>
++  </section>
++</div>
++
++<div class="nn-modal" id="modalGateway" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">RTSP GATEWAY</div>
++    <p class="subtitle">Browsers do not play RTSP. Use MediaMTX (or similar) to convert RTSP → HLS/WebRTC.</p>
++    <div class="output-glass">
++      <h2>What to do</h2>
++      <div class="output-text">
++        1) Run MediaMTX on your LAN.<br/>
++        2) Add RTSP inputs.<br/>
++        3) Use the generated HLS (.m3u8) or WebRTC URL in this dashboard.
++      </div>
++    </div>
++    <div class="row" style="justify-content:flex-end;margin-top:12px;">
++      <button class="cybr-btn" type="button" data-close="gateway">Close<span aria-hidden class="cybr-btn__glitch">Close</span></button>
++    </div>
++  </section>
++</div>
++
++<div class="nn-modal" id="modalSettings" aria-hidden="true">
++  <section class="glass-panel">
++    <div class="neon-title" style="font-size:1.6rem">SETTINGS</div>
++    <p class="subtitle">UI controls that don’t pretend to be magic.</p>
++
++    <div class="controls">
++      <div class="row">
++        <div style="flex:1;min-width:220px">
++          <div class="subtitle" style="margin-bottom:6px;">Panels</div>
++          <select id="settingPanels">
++            <option value="all" selected>Show input + list + grid</option>
++            <option value="grid">Grid only</option>
++            <option value="config">Input + grid</option>
++            <option value="list">List + grid</option>
++          </select>
++        </div>
++        <div style="flex:1;min-width:220px">
++          <div class="subtitle" style="margin-bottom:6px;">Default view</div>
++          <select id="settingDefaultView">
++            <option value="cameras" selected>Cameras</option>
++            <option value="overview">Overview</option>
++            <option value="configure">Configure</option>
++          </select>
++        </div>
++      </div>
++
++      <div class="row" style="justify-content:flex-end;">
++        <button class="cybr-btn" type="button" data-close="settings">Close<span aria-hidden class="cybr-btn__glitch">Close</span></button>
++        <button class="cybr-btn" type="button" id="btnSettingsApply">Apply<span aria-hidden class="cybr-btn__glitch">Apply</span></button>
++      </div>
++    </div>
++  </section>
++</div>
++
++<div class="nn-main-offset"></div>
++
++<section id="translator-panel" class="glass-panel">
++  <div id="titleText" class="neon-title">NET_NiNjA CAM VIEWER</div>
++  <p class="subtitle">HLS / HTTP / MJPEG in-browser. RTSP needs gateway (MediaMTX → HLS/WebRTC).</p>
++
++  <div class="controls">
++    <label class="visually-hidden" for="inputText">Camera URLs</label>
++    <textarea id="inputText" placeholder="Paste camera URLs (one per line).&#10;Example:&#10;https://.../stream.m3u8&#10;http://.../video.mjpeg"></textarea>
++
++    <div class="controls-row">
++      <!-- Keep for script.js compatibility -->
++      <div class="select-wrap visually-hidden">
++        <select id="languageSelect"></select>
++      </div>
++
++      <div class="actions" style="flex:1; justify-content:flex-end; gap:12px; flex-wrap:wrap;">
++        <button class="cybr-btn" id="translateBtn" type="button">
++          Load grid
++          <span aria-hidden class="cybr-btn__glitch">Load grid</span>
++        </button>
++
++        <button class="cybr-btn" id="btnDiscover" type="button">
++          ONVIF hint
++          <span aria-hidden class="cybr-btn__glitch">ONVIF hint</span>
++        </button>
++      </div>
++    </div>
++
++    <div class="output-glass">
++      <h2>Status</h2>
++      <div id="outputText" class="output-text">Ready.</div>
++      <div class="visually-hidden"><span id="detectedLang">en</span></div>
++    </div>
++
++    <div class="controls-row" style="margin-top:10px;">
++      <div class="select-wrap">
++        <select id="gridMode">
++          <option value="grid-4" selected>2×2</option>
++          <option value="grid-9">3×3</option>
++          <option value="grid-1">Focus</option>
++          <option value="grid-wall">Wall</option>
++        </select>
++      </div>
++      <div class="select-wrap">
++        <select id="muteMode">
++          <option value="all" selected>Mute all</option>
++          <option value="focus">Mute except focused</option>
++          <option value="none">Allow audio</option>
++        </select>
++      </div>
++    </div>
++  </div>
++</section>
++
++<aside id="country-panel" class="glass-panel">
++  <div id="country-meta">
++    <strong id="country-name">CAMERA LIST</strong>
++    <div class="subtitle" style="margin-top:6px;">Tap a camera to focus.</div>
++  </div>
++  <div id="country-desc-text"><div id="camList"></div></div>
++</aside>
++
++<section id="cam-grid-panel">
++  <div class="grid-toolbar">
++    <div class="left">
++      <div class="pill"><span class="dot" id="runDot"></span><span id="runState">IDLE</span></div>
++      <div class="pill">CAMS: <b id="camCount">0</b></div>
++      <div class="pill">LIVE: <b id="liveCount">0</b></div>
++    </div>
++    <div class="right">
++      <button class="cybr-btn" id="btnReconnectAll" type="button">
++        Reconnect all
++        <span aria-hidden class="cybr-btn__glitch">Reconnect all</span>
++      </button>
++    </div>
++  </div>
++  <div id="cam-grid" class="grid-4"></div>
++</section>
++
++<!-- Attached JS (verbatim). Loaded as a normal script (not module) so it works on more servers/webviews. -->
++<script>
++// March 2025 (UPDATED 11/4/2025) Created by: Justin Linwood Ross
++// MIT License: https://github.com/Blackstarproject/EXTREME-TRANSLATE
++// Copyright (c) 2025 
++// Permission is hereby granted, free of charge, to any person obtaining a copy
++// of this software and associated documentation files (the "Software"), to deal
++// in the Software without restriction, including without limitation the rights
++// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++// copies of the Software, and to permit persons to whom the Software is
++// furnished to do so, subject to the following conditions:
++// The above copyright notice and this permission notice shall be included in all
++// copies or substantial portions of the Software.
++
++import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
++
++document.addEventListener('DOMContentLoaded', () => {
++
++  // Three.js neon background 
++  const canvas = document.getElementById('bg');
++  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
++  renderer.setSize(window.innerWidth, window.innerHeight);
++  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
++
++  const scene = new THREE.Scene();
++  scene.fog = new THREE.FogExp2(0x030014, 0.02);
++
++  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
++  camera.position.set(0, 2.2, 6);
++
++  const hemi = new THREE.HemisphereLight(0x202038, 0x001020, 0.6);
++  scene.add(hemi);
++
++  const dir = new THREE.DirectionalLight(0xffffff, 0.5);
++  dir.position.set(5, 10, 5);
++  scene.add(dir);
++
++  // Particles 
++  const particleCount = 1400;
++  const positions = new Float32Array(particleCount * 3);
++  for (let i = 0; i < particleCount; i++) {
++    positions[i * 3] = (Math.random() - 0.5) * 40;
++    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
++    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
++  }
++
++  const pGeo = new THREE.BufferGeometry();
++  pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
++  const pMat = new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.04, transparent: true, opacity: 0.9 });
++  const particles = new THREE.Points(pGeo, pMat);
++  scene.add(particles);
++
++  const neonLight = new THREE.PointLight(0xff00ff, 1.8, 40);
++  neonLight.position.set(0, 4, 6);
++  scene.add(neonLight);
++
++  // Mouse trails 
++  const trailPool = [];
++  const poolSize = 300;
++  for (let i = 0; i < poolSize; i++) {
++    const g = new THREE.SphereGeometry(0.03, 8, 6);
++    const m = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.95 });
++    const mesh = new THREE.Mesh(g, m);
++    mesh.visible = false;
++    scene.add(mesh);
++    trailPool.push(mesh);
++  }
++  let poolIndex = 0;
++
++  function emitTrail(pos, size = 0.03, life = 420) {
++    const m = trailPool[poolIndex % poolSize];
++    poolIndex++;
++    m.position.copy(pos);
++    m.scale.setScalar(size);
++    m.material.opacity = 0.95;
++    m.visible = true;
++    const start = performance.now();
++    const id = setInterval(() => {
++      const t = (performance.now() - start) / life;
++      if (t >= 1) { m.visible = false; clearInterval(id); }
++      else m.material.opacity = 0.95 * (1 - t);
++    }, 60);
++    return m;
++  }
++
++  // Lightning 
++  const lightningGroup = new THREE.Group();
++  scene.add(lightningGroup);
++
++  function spawnLightningAt(worldPos, intensity = 1.0) {
++    const segments = Math.floor(Math.random() * 5) + 4;
++    const points = [];
++    for (let i = 0; i < segments; i++) {
++      const t = i / (segments - 1);
++      points.push(new THREE.Vector3(
++        worldPos.x + (Math.random() - 0.5) * 0.6 * (1 + t),
++        worldPos.y - t * (1.2 + Math.random() * 1.4),
++        worldPos.z + (Math.random() - 0.5) * 0.6 * (1 + t)
++      ));
++    }
++    const geom = new THREE.BufferGeometry().setFromPoints(points);
++    const mat = new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.95 * intensity });
++    const line = new THREE.Line(geom, mat);
++    lightningGroup.add(line);
++    for (let i = 0; i < Math.floor(Math.random() * 4) + 3; i++) {
++      const idx = Math.floor(Math.random() * points.length);
++      const p = points[idx];
++      emitTrail(new THREE.Vector3(p.x + Math.random() * 0.12 - 0.06, p.y + Math.random() * 0.12 - 0.06, p.z + Math.random() * 0.12 - 0.06), 0.02, 240 + Math.random() * 260);
++    }
++    const start = performance.now();
++    const life = 220 + Math.random() * 380;
++    (function fade() {
++      const t = (performance.now() - start) / life;
++      if (t >= 1) { lightningGroup.remove(line); geom.dispose(); mat.dispose(); }
++      else { mat.opacity = 0.95 * (1 - t); requestAnimationFrame(fade); }
++    })();
++  }
++
++  function rand(a, b) { return Math.random() * (b - a) + a; }
++  function mouseToWorld(clientX, clientY, depth = 0.5) {
++    const nx = (clientX / window.innerWidth) * 2 - 1;
++    const ny = -(clientY / window.innerHeight) * 2 + 1;
++    return new THREE.Vector3(nx, ny, depth).unproject(camera);
++  }
++
++  let last = { x: 0, y: 0, t: 0 };
++  let mouseTarget = { x: 0, y: 2.1 };
++  window.addEventListener('mousemove', e => {
++    const pos = mouseToWorld(e.clientX, e.clientY, 0.45);
++    for (let i = 0; i < Math.floor(rand(1, 3)); i++) {
++      emitTrail(new THREE.Vector3(pos.x + rand(-0.02, 0.02), pos.y + rand(-0.02, 0.02), pos.z + rand(-0.02, 0.02)), rand(0.02, 0.05), 380 + Math.random() * 200);
++    }
++    const now = performance.now();
++    const dx = Math.abs(e.clientX - last.x);
++    const dy = Math.abs(e.clientY - last.y);
++    const dt = Math.max(16, now - (last.t || now));
++    const speed = Math.sqrt(dx * dx + dy * dy) / dt;
++    if (speed > 0.4 && Math.random() < Math.min(speed * 1.8, 0.85)) {
++      spawnLightningAt(pos, Math.min(1.6, speed * 1.6));
++    }
++    last.x = e.clientX; last.y = e.clientY; last.t = now;
++    mouseTarget.x = (e.clientX / window.innerWidth - 0.5) * 1.2;
++    mouseTarget.y = (0.5 - e.clientY / window.innerHeight) * 0.8 + 1.8;
++  });
++
++  function animate() {
++    requestAnimationFrame(animate);
++    const posArr = pGeo.attributes.position.array;
++    for (let i = 0; i < particleCount; i++) {
++      const idx = i * 3 + 2;
++      posArr[idx] += 0.0006 * (1 + Math.sin(performance.now() * 0.0001 + i));
++      if (posArr[idx] > 40) posArr[idx] = -40;
++    }
++    pGeo.attributes.position.needsUpdate = true;
++    camera.position.x += (mouseTarget.x - camera.position.x) * 0.03;
++    camera.position.y += (mouseTarget.y - camera.position.y) * 0.03;
++    camera.lookAt(0, 1.4, 0);
++    renderer.render(scene, camera);
++  }
++  animate();
++
++  // Ripples 
++  const titleEl = document.getElementById('titleText');
++  function createRipple(sizeClass = 'medium') {
++    const r = document.createElement('div');
++    r.className = `ripple ${sizeClass}`;
++    titleEl.appendChild(r);
++    setTimeout(() => r.remove(), 2200);
++  }
++  setInterval(() => { createRipple(['small', 'medium', 'large'][Math.floor(Math.random() * 3)]); }, 1100 + Math.random() * 400);
++
++  // Translation 
++  const inputText = document.getElementById('inputText');
++  const translateBtn = document.getElementById('translateBtn');
++  const outputText = document.getElementById('outputText');
++  const detectedLangEl = document.getElementById('detectedLang');
++  const countryNameEl = document.getElementById('country-name');
++  const countryDescEl = document.getElementById('country-desc-text');
++  const languageSelect = document.getElementById('languageSelect');
++
++  // All 118 languages 
++ const languages = [
++  { code: 'af', name: 'Afrikaans' },
++  { code: 'sq', name: 'Albanian' },
++  { code: 'am', name: 'Amharic' },
++  { code: 'ar', name: 'Arabic' },
++  { code: 'hy', name: 'Armenian' },
++  { code: 'az', name: 'Azerbaijani' },
++  { code: 'eu', name: 'Basque' },
++  { code: 'be', name: 'Belarusian' },
++  { code: 'bn', name: 'Bengali' },
++  { code: 'bs', name: 'Bosnian' },
++  { code: 'bg', name: 'Bulgarian' },
++  { code: 'ca', name: 'Catalan' },
++  { code: 'ceb', name: 'Cebuano' },
++  { code: 'ny', name: 'Chichewa' },
++  { code: 'zh-CN', name: 'Chinese (Simplified)' },
++  { code: 'zh-TW', name: 'Chinese (Traditional)' },
++  { code: 'co', name: 'Corsican' },
++  { code: 'hr', name: 'Croatian' },
++  { code: 'cs', name: 'Czech' },
++  { code: 'da', name: 'Danish' },
++  { code: 'nl', name: 'Dutch' },
++  { code: 'en', name: 'English' },
++  { code: 'eo', name: 'Esperanto' },
++  { code: 'et', name: 'Estonian' },
++  { code: 'tl', name: 'Filipino' },
++  { code: 'fi', name: 'Finnish' },
++  { code: 'fr', name: 'French' },
++  { code: 'fy', name: 'Frisian' },
++  { code: 'gl', name: 'Galician' },
++  { code: 'ka', name: 'Georgian' },
++  { code: 'de', name: 'German' },
++  { code: 'el', name: 'Greek' },
++  { code: 'gu', name: 'Gujarati' },
++  { code: 'ht', name: 'Haitian Creole' },
++  { code: 'ha', name: 'Hausa' },
++  { code: 'haw', name: 'Hawaiian' },
++  { code: 'he', name: 'Hebrew' },
++  { code: 'hi', name: 'Hindi' },
++  { code: 'hmn', name: 'Hmong' },
++  { code: 'hu', name: 'Hungarian' },
++  { code: 'is', name: 'Icelandic' },
++  { code: 'ig', name: 'Igbo' },
++  { code: 'id', name: 'Indonesian' },
++  { code: 'ga', name: 'Irish' },
++  { code: 'it', name: 'Italian' },
++  { code: 'ja', name: 'Japanese' },
++  { code: 'jw', name: 'Javanese' },
++  { code: 'kn', name: 'Kannada' },
++  { code: 'kk', name: 'Kazakh' },
++  { code: 'km', name: 'Khmer' },
++  { code: 'rw', name: 'Kinyarwanda' },
++  { code: 'ko', name: 'Korean' },
++  { code: 'ku', name: 'Kurdish (Kurmanji)' },
++  { code: 'ky', name: 'Kyrgyz' },
++  { code: 'lo', name: 'Lao' },
++  { code: 'la', name: 'Latin' },
++  { code: 'lv', name: 'Latvian' },
++  { code: 'lt', name: 'Lithuanian' },
++  { code: 'lb', name: 'Luxembourgish' },
++  { code: 'mk', name: 'Macedonian' },
++  { code: 'mg', name: 'Malagasy' },
++  { code: 'ms', name: 'Malay' },
++  { code: 'ml', name: 'Malayalam' },
++  { code: 'mt', name: 'Maltese' },
++  { code: 'mi', name: 'Maori' },
++  { code: 'mr', name: 'Marathi' },
++  { code: 'mn', name: 'Mongolian' },
++  { code: 'my', name: 'Myanmar (Burmese)' },
++  { code: 'ne', name: 'Nepali' },
++  { code: 'no', name: 'Norwegian' },
++  { code: 'or', name: 'Odia' },
++  { code: 'ps', name: 'Pashto' },
++  { code: 'fa', name: 'Persian' },
++  { code: 'pl', name: 'Polish' },
++  { code: 'pt', name: 'Portuguese' },
++  { code: 'pa', name: 'Punjabi' },
++  { code: 'ro', name: 'Romanian' },
++  { code: 'ru', name: 'Russian' },
++  { code: 'sm', name: 'Samoan' },
++  { code: 'gd', name: 'Scots Gaelic' },
++  { code: 'sr', name: 'Serbian' },
++  { code: 'st', name: 'Sesotho' },
++  { code: 'sn', name: 'Shona' },
++  { code: 'sd', name: 'Sindhi' },
++  { code: 'si', name: 'Sinhala' },
++  { code: 'sk', name: 'Slovak' },
++  { code: 'sl', name: 'Slovenian' },
++  { code: 'so', name: 'Somali' },
++  { code: 'es', name: 'Spanish' },
++  { code: 'su', name: 'Sundanese' },
++  { code: 'sw', name: 'Swahili' },
++  { code: 'sv', name: 'Swedish' },
++  { code: 'tg', name: 'Tajik' },
++  { code: 'ta', name: 'Tamil' },
++  { code: 'tt', name: 'Tatar' },
++  { code: 'te', name: 'Telugu' },
++  { code: 'th', name: 'Thai' },
++  { code: 'tr', name: 'Turkish' },
++  { code: 'tk', name: 'Turkmen' },
++  { code: 'uk', name: 'Ukrainian' },
++  { code: 'ur', name: 'Urdu' },
++  { code: 'ug', name: 'Uyghur' },
++  { code: 'uz', name: 'Uzbek' },
++  { code: 'vi', name: 'Vietnamese' },
++  { code: 'cy', name: 'Welsh' },
++  { code: 'xh', name: 'Xhosa' },
++  { code: 'yi', name: 'Yiddish' },
++  { code: 'yo', name: 'Yoruba' },
++  { code: 'zu', name: 'Zulu' }
++];
++
++
++  // Populate selector, English first
++  languageSelect.innerHTML = '';
++  const enOption = languages.find(l => l.code === 'en');
++  if (enOption) {
++    const opt = document.createElement('option'); opt.value = enOption.code; opt.textContent = enOption.name;
++    languageSelect.appendChild(opt);
++  }
++  languages.filter(l => l.code !== 'en').forEach(l => {
++    const opt = document.createElement('option'); opt.value = l.code; opt.textContent = l.name;
++    languageSelect.appendChild(opt);
++  });
++
++  // langToCountry mapping 
++  const langToCountry = {
++  af: 'ZA', sq: 'AL', am: 'ET', ar: 'AE', hy: 'AM', az: 'AZ', eu: 'ES', be: 'BY',
++  bn: 'BD', bs: 'BA', bg: 'BG', ca: 'ES', ceb: 'PH', ny: 'MW', 'zh-CN': 'CN', 'zh-TW': 'TW',
++  co: 'FR', hr: 'HR', cs: 'CZ', da: 'DK', nl: 'NL', en: 'GB', eo: 'PL', et: 'EE',
++  tl: 'PH', fi: 'FI', fr: 'FR', fy: 'NL', gl: 'ES', ka: 'GE', de: 'DE', el: 'GR',
++  gu: 'IN', ht: 'HT', ha: 'NG', haw: 'US', he: 'IL', hi: 'IN', hmn: 'US', hu: 'HU',
++  is: 'IS', ig: 'NG', id: 'ID', ga: 'IE', it: 'IT', ja: 'JP', jw: 'ID', kn: 'IN',
++  kk: 'KZ', km: 'KH', rw: 'RW', ko: 'KR', ku: 'TR', ky: 'KG', lo: 'LA', la: 'VA',
++  lv: 'LV', lt: 'LT', lb: 'LU', mk: 'MK', mg: 'MG', ms: 'MY', ml: 'IN', mt: 'MT',
++  mi: 'NZ', mr: 'IN', mn: 'MN', my: 'MM', ne: 'NP', no: 'NO', or: 'IN', ps: 'AF',
++  fa: 'IR', pl: 'PL', pt: 'PT', pa: 'IN', ro: 'RO', ru: 'RU', sm: 'WS', gd: 'GB',
++  sr: 'RS', st: 'LS', sn: 'ZW', sd: 'PK', si: 'LK', sk: 'SK', sl: 'SI', so: 'SO',
++  es: 'ES', su: 'ID', sw: 'TZ', sv: 'SE', tg: 'TJ', ta: 'IN', tt: 'RU', te: 'IN',
++  th: 'TH', tr: 'TR', tk: 'TM', uk: 'UA', ur: 'PK', ug: 'CN', uz: 'UZ', vi: 'VN',
++  cy: 'GB', xh: 'ZA', yi: 'DE', yo: 'NG', zu: 'ZA'
++};
++
++
++  // Danger Levels 
++ const dangerLevels = {
++  "Afghanistan":"High","Albania":"Moderate","Algeria":"Moderate","Andorra":"Low","Angola":"Moderate",
++  "Argentina":"Moderate","Armenia":"Low","Australia":"Low","Austria":"Low","Azerbaijan":"Moderate",
++  "Bahamas":"Low","Bahrain":"Low","Bangladesh":"Moderate","Barbados":"Low","Belarus":"Moderate",
++  "Belgium":"Low","Belize":"Low","Benin":"Moderate","Bhutan":"Low","Bolivia":"Moderate",
++  "Bosnia and Herzegovina":"Moderate","Brazil":"Moderate","Brunei":"Low","Bulgaria":"Low","Burkina Faso":"High",
++  "Burundi":"High","Cambodia":"Moderate","Cameroon":"High","Canada":"Low","Chad":"High",
++  "Chile":"Low","China":"Low","Colombia":"Moderate","Comoros":"Moderate","Costa Rica":"Low",
++  "Croatia":"Low","Cuba":"Low","Cyprus":"Low","Czech Republic":"Low","Democratic Republic of the Congo":"High",
++  "Denmark":"Low","Djibouti":"Moderate","Dominica":"Low","Dominican Republic":"Low","East Timor":"Moderate",
++  "Ecuador":"Low","Egypt":"Moderate","El Salvador":"Moderate","Equatorial Guinea":"Moderate","Eritrea":"High",
++  "Estonia":"Low","Eswatini":"Low","Ethiopia":"Moderate","Fiji":"Low","Finland":"Low",
++  "France":"Low","Gabon":"Moderate","Gambia":"Low","Georgia":"Low","Germany":"Low",
++  "Ghana":"Moderate","Greece":"Low","Grenada":"Low","Guatemala":"Moderate","Guinea":"High",
++  "Guinea-Bissau":"High","Guyana":"Moderate","Haiti":"High","Honduras":"High","Hungary":"Low",
++  "Iceland":"Low","India":"Moderate","Indonesia":"Moderate","Iran":"High","Iraq":"High",
++  "Ireland":"Low","Israel":"Low","Italy":"Low","Ivory Coast":"High","Jamaica":"Moderate",
++  "Japan":"Low","Jordan":"Moderate","Kazakhstan":"Low","Kenya":"Moderate","Kiribati":"Low",
++  "Kosovo":"Low","Kuwait":"Low","Kyrgyzstan":"Moderate","Laos":"Moderate","Latvia":"Low",
++  "Lebanon":"High","Lesotho":"Moderate","Liberia":"High","Libya":"High","Liechtenstein":"Low",
++  "Lithuania":"Low","Luxembourg":"Low","Madagascar":"Moderate","Malawi":"Moderate","Malaysia":"Low",
++  "Maldives":"Low","Mali":"High","Malta":"Low","Marshall Islands":"Low","Mauritania":"High",
++  "Mauritius":"Low","Mexico":"Moderate","Micronesia":"Low","Moldova":"Moderate","Monaco":"Low",
++  "Mongolia":"Low","Montenegro":"Low","Morocco":"Low","Mozambique":"High","Myanmar":"High",
++  "Namibia":"Low","Nauru":"Low","Nepal":"Moderate","Netherlands":"Low","New Zealand":"Low",
++  "Nicaragua":"Moderate","Niger":"High","Nigeria":"High","North Korea":"High","North Macedonia":"Moderate",
++  "Norway":"Low","Oman":"Low","Pakistan":"High","Palau":"Low","Panama":"Low",
++  "Papua New Guinea":"High","Paraguay":"Moderate","Peru":"Moderate","Philippines":"Moderate","Poland":"Low",
++  "Portugal":"Low","Qatar":"Low","Republic of the Congo":"Moderate","Romania":"Low","Russia":"Moderate",
++  "Rwanda":"Moderate","Saint Kitts and Nevis":"Low","Saint Lucia":"Low","Saint Vincent and the Grenadines":"Low","Samoa":"Low",
++  "San Marino":"Low","Sao Tome and Principe":"Low","Saudi Arabia":"Moderate","Senegal":"Moderate","Serbia":"Moderate",
++  "Seychelles":"Low","Sierra Leone":"High","Singapore":"Low","Slovakia":"Low","Slovenia":"Low",
++  "Solomon Islands":"Moderate","Somalia":"High","South Africa":"Moderate","South Korea":"Low","South Sudan":"High",
++  "Spain":"Low","Sri Lanka":"Moderate","Sudan":"High","Suriname":"Moderate","Sweden":"Low",
++  "Switzerland":"Low","Syria":"High","Taiwan":"Low","Tajikistan":"Moderate","Tanzania":"Moderate",
++  "Thailand":"Low","Togo":"Moderate","Tonga":"Low","Trinidad and Tobago":"Low","Tunisia":"Low",
++  "Turkey":"Moderate","Turkmenistan":"Moderate","Tuvalu":"Low","Uganda":"Moderate","Ukraine":"Moderate",
++  "United Arab Emirates":"Low","United Kingdom":"Low","United States":"Low","Uruguay":"Low","Uzbekistan":"Moderate",
++  "Vanuatu":"Low","Vatican City":"Low","Venezuela":"High","Vietnam":"Low","Yemen":"High",
++  "Zambia":"Moderate","Zimbabwe":"Moderate"
++};
++
++
++  // Fetch country info 
++  async function getCountryInfo(countryCode) {
++    try {
++      const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
++      const data = await res.json();
++      const c = data[0];
++      return {
++        name: c.name.common,
++        flag: c.flags.svg,
++        region: c.region,
++        population: c.population.toLocaleString(),
++        capital: c.capital ? c.capital[0] : 'N/A',
++        danger: dangerLevels[c.name.common] || 'Moderate'
++      };
++    } catch (e) { console.error(e); return null; }
++  }
++
++  // Translate Button
++  translateBtn.addEventListener('click', async () => {
++    const text = inputText.value.trim();
++    const target = languageSelect.value;
++    if (!text) { alert('Enter text'); return; }
++    if (!target) { alert('Select language'); return; }
++    try {
++      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
++      const res = await fetch(url);
++      if (!res.ok) throw new Error('Fetch failed');
++      const data = await res.json();
++      const translated = data[0].map(t => t[0]).join('');
++      outputText.textContent = translated;
++
++      // Detected language
++      const detectedLang = data[2] || 'en';
++      detectedLangEl.textContent = detectedLang;
++
++      // Speech synthesis
++      const utter = new SpeechSynthesisUtterance(translated);
++      const voices = speechSynthesis.getVoices();
++      const voiceMatch = voices.find(v => v.lang.startsWith(target));
++      if (voiceMatch) utter.voice = voiceMatch;
++      utter.lang = target;
++      speechSynthesis.speak(utter);
++
++      // Country info based on detected language
++      const countryCode = langToCountry[detectedLang] || 'GB';
++      const countryData = await getCountryInfo(countryCode);
++      if (countryData) {
++        countryNameEl.innerHTML = `<img src="${countryData.flag}" alt="${countryData.name} flag" style="width:32px;vertical-align:middle;margin-right:6px;"> ${countryData.name}`;
++        countryDescEl.innerHTML = `<p>${countryData.name} is in ${countryData.region}. Capital: ${countryData.capital}. Population: ${countryData.population}.</p><p><strong>Danger Level:</strong> ${countryData.danger}</p>`;
++      }
++    } catch (e) { console.error(e); alert('Translation failed'); }
++  });
++
++});
++</script>
++
++<!-- Camera dashboard logic -->
++<script>
++(function detachAttachedTranslateHandler(){
++  // script.js attaches listeners to #translateBtn. We replace the node to remove those listeners.
++  const oldBtn = document.getElementById('translateBtn');
++  if(!oldBtn) return;
++  const clone = oldBtn.cloneNode(true);
++  oldBtn.parentNode.replaceChild(clone, oldBtn);
++})();
++
++const state = { cams: [], focused: null };
++const elGrid = document.getElementById('cam-grid');
++const elList = document.getElementById('camList');
++const elStatus = document.getElementById('outputText');
++const elRunState = document.getElementById('runState');
++const elRunDot = document.getElementById('runDot');
++const elCamCount = document.getElementById('camCount');
++const elLiveCount = document.getElementById('liveCount');
++
++function setStatus(msg, warn=false){
++  elStatus.textContent = msg;
++  elRunState.textContent = warn ? 'WARN' : (state.cams.length ? 'RUN' : 'IDLE');
++  elRunDot.className = warn ? 'dot warn' : 'dot';
++}
++
++function parseLinesToCams(text){
++  const lines = (text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
++  return lines.map((url, i) => {
++    const lower = url.toLowerCase();
++    const type =
++      lower.includes('.m3u8') ? 'HLS' :
++      (lower.includes('mjpeg') || lower.endsWith('.mjpg') || lower.endsWith('.mjpeg')) ? 'MJPEG' :
++      lower.startsWith('rtsp://') ? 'RTSP' :
++      'HTTP';
++    return {
++      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('cam-' + Date.now() + '-' + i),
++      name: 'Cam ' + (i + 1),
++      url,
++      type,
++      playing: false,
++      err: null
++    };
++  });
++}
++
++function setGridClass(cls){
++  elGrid.classList.remove('grid-1','grid-4','grid-9','grid-wall');
++  elGrid.classList.add(cls);
++}
++
++function requestFullscreen(el){
++  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
++  if(req) req.call(el);
++}
++
++function reconnectTile(tile){
++  const media = tile.querySelector('video, img');
++  if(!media) return;
++  const src = media.src;
++  media.src = '';
++  setTimeout(() => {
++    media.src = src;
++    if(media.tagName.toLowerCase() === 'video'){
++      media.load();
++      media.play().catch(() => {});
++    }
++  }, 350);
++}
++
++function escapeHtml(s){
++  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
++}
++
++function updateLive(){
++  const live = state.cams.filter(c => c.playing).length;
++  elLiveCount.textContent = String(live);
++}
++
++function render(){
++  elGrid.innerHTML = '';
++  elList.innerHTML = '';
++  elCamCount.textContent = String(state.cams.length);
++
++  let live = 0;
++
++  state.cams.forEach((cam) => {
++    const item = document.createElement('div');
++    item.style.marginBottom = '10px';
++    item.style.padding = '10px';
++    item.style.borderRadius = '10px';
++    item.style.border = '1px solid rgba(255,255,255,0.06)';
++    item.style.background = 'rgba(0,0,0,0.35)';
++    item.style.cursor = 'pointer';
++    item.innerHTML =
++      '<div style="font-weight:900;color:var(--neon-blue);text-shadow:0 0 10px rgba(0,240,255,0.25)">' + escapeHtml(cam.name) + '</div>' +
++      '<div style="font-size:12px;color:#bfefff;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(cam.url) + '</div>' +
++      '<div style="margin-top:6px;font-size:12px;"><span class="hud-tag">' + escapeHtml(cam.type) + '</span></div>';
++    item.onclick = () => { state.focused = cam.id; render(); };
++    elList.appendChild(item);
++
++    const tile = document.createElement('div');
++    tile.className = 'tile';
++    tile.__camId = cam.id;
++    if(state.focused === cam.id) tile.style.outline = '2px solid rgba(0,240,255,0.28)';
++
++    let media;
++    if(cam.type === 'MJPEG'){
++      media = document.createElement('img');
++      media.src = cam.url;
++      cam.playing = true;
++    } else {
++      media = document.createElement('video');
++      media.src = cam.url;
++      media.autoplay = true;
++      media.muted = true;
++      media.playsInline = true;
++      media.preload = 'metadata';
++      media.onplaying = () => { cam.playing = true; cam.err = null; updateLive(); };
++      media.onerror = () => { cam.playing = false; cam.err = 'error'; updateLive(); };
++      media.onstalled = () => { cam.playing = false; cam.err = 'stalled'; updateLive(); };
++      media.play().catch(() => { cam.playing = false; cam.err = 'autoplay'; updateLive(); });
++    }
++
++    const hud = document.createElement('div');
++    hud.className = 'hud';
++    hud.innerHTML =
++      '<div class="hud-top">' +
++        '<div class="hud-name">' + escapeHtml(cam.name) + '</div>' +
++        '<div class="hud-tag">' + escapeHtml(cam.type) + '</div>' +
++      '</div>' +
++      '<div class="hud-bottom">' +
++        '<div class="hud-status">' + escapeHtml(cam.url) + '</div>' +
++        '<div class="hud-actions">' +
++          '<button class="cybr-btn" data-act="reconnect" type="button">Reconnect<span aria-hidden class="cybr-btn__glitch">Reconnect</span></button>' +
++          '<button class="cybr-btn" data-act="full" type="button">Fullscreen<span aria-hidden class="cybr-btn__glitch">Fullscreen</span></button>' +
++        '</div>' +
++      '</div>';
++
++    tile.appendChild(media);
++    tile.appendChild(hud);
++
++    tile.querySelector('[data-act="reconnect"]').onclick = (e) => { e.stopPropagation(); reconnectTile(tile); };
++    tile.querySelector('[data-act="full"]').onclick = (e) => { e.stopPropagation(); requestFullscreen(tile); };
++    tile.onclick = () => { state.focused = cam.id; render(); };
++
++    elGrid.appendChild(tile);
++    if(cam.playing) live++;
++  });
++
++  elLiveCount.textContent = String(live);
++
++  if(!state.cams.length) setStatus('Ready. Paste URLs and press Load grid.');
++  else setStatus('Loaded ' + state.cams.length + ' camera(s). Tap a tile to focus.', false);
++}
++
++// Wire controls
++document.getElementById('translateBtn').addEventListener('click', () => {
++  const txt = document.getElementById('inputText').value;
++  state.cams = parseLinesToCams(txt);
++  state.focused = state.cams[0]?.id || null;
++  render();
++});
++
++document.getElementById('gridMode').addEventListener('change', (e) => setGridClass(e.target.value));
++
++document.getElementById('muteMode').addEventListener('change', (e) => {
++  const mode = e.target.value;
++  document.querySelectorAll('#cam-grid video').forEach(v => {
++    if(mode === 'all') v.muted = true;
++    else if(mode === 'none') v.muted = false;
++    else {
++      const tile = v.closest('.tile');
++      const id = tile && tile.__camId;
++      v.muted = (id !== state.focused);
++    }
++  });
++});
++
++document.getElementById('btnReconnectAll').addEventListener('click', () => {
++  document.querySelectorAll('#cam-grid .tile').forEach(t => reconnectTile(t));
++  setStatus('Reconnect all triggered.');
++});
++
++document.getElementById('btnDiscover').addEventListener('click', () => {
++  setStatus('ONVIF discovery is a hook. Feed discovered stream URLs into the list.', true);
++});
++
++setGridClass('grid-4');
++setStatus('Ready. Paste URLs and press Load grid.');
++render();
++
++// ===== Public API so the nav/menu can control the dashboard =====
++window.NetNinjaCam = {
++  addCamera: ({name, url}) => {
++    const ta = document.getElementById('inputText');
++    const line = (name && name.trim() ? (name.trim() + ' | ' + url.trim()) : url.trim());
++    // Also keep the raw list in the textarea for user visibility.
++    if(ta){
++      ta.value = (ta.value ? (ta.value.trimEnd() + '\n') : '') + line;
++    }
++    // Load to grid (re-uses existing handler)
++    document.getElementById('translateBtn')?.click();
++  },
++  importList: (text) => {
++    // Accept "Name | URL" or just URL.
++    const lines = String(text || '').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
++    const ta = document.getElementById('inputText');
++    if(ta){
++      ta.value = lines.join('\n');
++    }
++    document.getElementById('translateBtn')?.click();
++  },
++  exportList: () => {
++    const ta = document.getElementById('inputText');
++    return (ta?.value || '').trim();
++  },
++  reconnectAll: () => {
++    document.getElementById('btnReconnectAll')?.click();
++  },
++  setGridMode: (mode) => {
++    const sel = document.getElementById('gridMode');
++    if(sel){
++      sel.value = mode;
++      sel.dispatchEvent(new Event('change'));
++    }
++  }
++};
++
++</script>
++
++<script>
++(function(){
++  const side = document.getElementById('nnSide');
++  const overlay = document.getElementById('nnOverlay');
++  const ham = document.getElementById('nnHamburger');
++
++  const modalAdd = document.getElementById('modalAddCam');
++  const modalImport = document.getElementById('modalImport');
++  const modalGateway = document.getElementById('modalGateway');
++  const modalSettings = document.getElementById('modalSettings');
++
++  const quick = document.getElementById('nnQuickStatus');
++
++  function openSide(){
++    side.classList.add('open');
++    overlay.classList.add('open');
++  }
++  function closeSide(){
++    side.classList.remove('open');
++    overlay.classList.remove('open');
++  }
++
++  function openModal(which){
++    const map = {
++      addCam: modalAdd,
++      import: modalImport,
++      gateway: modalGateway,
++      settings: modalSettings
++    };
++    const m = map[which];
++    if(!m) return;
++    m.classList.add('open');
++    m.setAttribute('aria-hidden','false');
++    overlay.classList.add('open');
++  }
++  function closeAllModals(){
++    [modalAdd, modalImport, modalGateway, modalSettings].forEach(m=>{
++      m.classList.remove('open');
++      m.setAttribute('aria-hidden','true');
++    });
++    overlay.classList.remove('open');
++  }
++
++  ham?.addEventListener('click', ()=> {
++    if(side.classList.contains('open')) closeSide(); else openSide();
++  });
++  overlay?.addEventListener('click', ()=> {
++    closeSide();
++    closeAllModals();
++  });
++
++  // Side menu buttons
++  side?.addEventListener('click', (e)=>{
++    const btn = e.target.closest('button');
++    if(!btn) return;
++
++    const nav = btn.getAttribute('data-nav');
++    const open = btn.getAttribute('data-open');
++    const act = btn.getAttribute('data-act');
++
++    if(nav){
++      setView(nav);
++      closeSide();
++      return;
++    }
++    if(open){
++      closeSide();
++      openModal(open);
++      return;
++    }
++    if(act === 'export'){
++      doExport();
++      closeSide();
++      return;
++    }
++  });
++
++  document.querySelectorAll('[data-close]').forEach(b=>{
++    b.addEventListener('click', ()=>{
++      closeAllModals();
++    });
++  });
++
++  // Topbar quick buttons
++  document.getElementById('nnBtnAdd')?.addEventListener('click', ()=> openModal('addCam'));
++  document.getElementById('nnBtnReconnect')?.addEventListener('click', ()=> {
++    window.NetNinjaCam?.reconnectAll?.();
++    pulseQuick('RECONNECT');
++  });
++  document.getElementById('nnBtnView')?.addEventListener('click', ()=> {
++    setView('overview');
++    pulseQuick('VIEW');
++  });
++
++  function pulseQuick(txt){
++    if(!quick) return;
++    quick.textContent = txt;
++    quick.classList.add('flicker');
++    setTimeout(()=> quick.classList.remove('flicker'), 420);
++    setTimeout(()=> quick.textContent = 'READY', 900);
++  }
++
++  function setPanels(mode){
++    const t = document.getElementById('translator-panel');
++    const c = document.getElementById('country-panel');
++    // grid always visible
++    const show = (el, v)=>{ if(!el) return; el.style.display = v ? '' : 'none'; };
++
++    if(mode === 'grid'){ show(t,false); show(c,false); }
++    else if(mode === 'config'){ show(t,true); show(c,false); }
++    else if(mode === 'list'){ show(t,false); show(c,true); }
++    else { show(t,true); show(c,true); }
++  }
++
++  function setView(view){
++    // Views are just combinations of panel visibility + mild behavior changes.
++    // This is UI, not magic.
++    if(view === 'overview'){
++      setPanels('grid');
++      window.scrollTo({top:0, behavior:'smooth'});
++    } else if(view === 'configure'){
++      setPanels('config');
++      window.scrollTo({top:0, behavior:'smooth'});
++    } else {
++      // cameras
++      setPanels('all');
++      window.scrollTo({top:0, behavior:'smooth'});
++    }
++  }
++
++  // Add camera modal
++  document.getElementById('btnAddCamConfirm')?.addEventListener('click', ()=>{
++    const name = (document.getElementById('addCamName')?.value || '').trim();
++    const url  = (document.getElementById('addCamUrl')?.value || '').trim();
++    if(!url){
++      pulseQuick('NEED URL');
++      return;
++    }
++    window.NetNinjaCam?.addCamera?.({name, url});
++    closeAllModals();
++    pulseQuick('ADDED');
++  });
++
++  // Import modal
++  document.getElementById('btnImportConfirm')?.addEventListener('click', ()=>{
++    const txt = (document.getElementById('importText')?.value || '').trim();
++    if(!txt){
++      pulseQuick('EMPTY');
++      return;
++    }
++    window.NetNinjaCam?.importList?.(txt);
++    closeAllModals();
++    pulseQuick('IMPORTED');
++  });
++
++  // Settings modal
++  document.getElementById('btnSettingsApply')?.addEventListener('click', ()=>{
++    const p = document.getElementById('settingPanels')?.value || 'all';
++    const v = document.getElementById('settingDefaultView')?.value || 'cameras';
++    setPanels(p);
++    setView(v);
++    closeAllModals();
++    pulseQuick('APPLIED');
++  });
++
++  function doExport(){
++    const txt = window.NetNinjaCam?.exportList?.() || '';
++    if(!txt){
++      pulseQuick('NONE');
++      return;
++    }
++    try{
++      navigator.clipboard.writeText(txt);
++      pulseQuick('COPIED');
++    }catch{
++      // fallback: dump into inputText
++      const ta = document.getElementById('inputText');
++      if(ta){ ta.value = txt; }
++      pulseQuick('EXPORT');
++    }
++  }
++
++  // Default offset so panels don't hide behind topbar (desktop too).
++  document.body.classList.add('nn-main-offset');
++
++  // Apply default view
++  setView('cameras');
++})();
++</script>
++
++</body>
++</html>
+
+*** End Patch
+
+*** Begin Patch
+*** Update File: web-ui/ninja_mobile_new.html
+@@ <div class="tabbar">
+     <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
+       <i class="ri-tools-line"></i>
+       <span>Tools</span>
+     </button>
++    <!-- Cameras tab button -->
++    <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
++      <i class="ri-camera-line"></i>
++      <span>Cameras</span>
++    </button>
+@@
+   </section><!-- #tab-tools -->
++  <!-- Cameras tab page -->
++  <section id="tab-cameras" class="tab-page" style="display:none;">
++    <!-- Load the camera viewer via iframe -->
++    <iframe src="net_ninja_cam.html" style="border:none;width:100%;height:100%;"></iframe>
++  </section>
+*** End Patch
+*** Begin Patch
+*** Update File: android-app/src/main/assets/web-ui/ninja_mobile_new.html
+@@ <div class="tabbar">
+     <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
+       <i class="ri-tools-line"></i>
+       <span>Tools</span>
+     </button>
++    <!-- Cameras tab button -->
++    <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
++      <i class="ri-camera-line"></i>
++      <span>Cameras</span>
++    </button>
+@@
+   </section><!-- #tab-tools -->
++  <!-- Cameras tab page -->
++  <section id="tab-cameras" class="tab-page" style="display:none;">
++    <!-- Load the camera viewer via iframe -->
++    <iframe src="net_ninja_cam.html" style="border:none;width:100%;height:100%;"></iframe>
++  </section>
+*** End Patch
