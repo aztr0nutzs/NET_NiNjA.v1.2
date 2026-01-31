@@ -12,7 +12,7 @@ These instructions apply to the entire repository. Follow them for every change.
 ## Workflow
 1. Inspect relevant files, build system, and dependencies before editing.
 2. Plan edits before making changes.
-3. Implement complete solutions for any touched files or functions.
+3. Ensure any touched files or functions are left in a complete, working state.
 4. Validate changes (tests/builds) when feasible, and report what was run or why it could not be run.
 
 ## Quality bar
