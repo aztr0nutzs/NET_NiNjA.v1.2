@@ -16,5 +16,6 @@ fun main(args: Array<String>) {
     return
   }
 
-  startServer(uiDir)
+  val config = resolveServerConfig()
+  startServer(uiDir, host = config.host, port = config.port, dbPath = config.dbPath)
 }

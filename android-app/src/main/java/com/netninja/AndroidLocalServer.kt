@@ -149,15 +149,19 @@ class AndroidLocalServer(private val ctx: Context) {
           engine = embeddedServer(CIO, host = host, port = port) {
             install(ContentNegotiation) { json() }
 
-            // Localhost-only
+            // Localhost-only (permit file-scheme origins used by WebView bootstrap)
             install(CORS) {
+              anyHost()
               allowMethod(HttpMethod.Get)
               allowMethod(HttpMethod.Post)
               allowHeader(HttpHeaders.ContentType)
               allowHeader(HttpHeaders.Authorization)
-              allowHost("127.0.0.1")
-              allowHost("localhost")
-              allowOrigins { origin -> origin == "null" }
+              allowOrigins { origin ->
+                origin == "null" ||
+                  origin.startsWith("file://") ||
+                  origin.startsWith("http://127.0.0.1") ||
+                  origin.startsWith("http://localhost")
+              }
             }
 
             setupRoutes(uiDir)
