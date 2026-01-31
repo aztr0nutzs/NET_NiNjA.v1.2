@@ -63,12 +63,20 @@ body{
 .subtitle{ color:#bcb7df; margin:0 0 12px; font-size:0.95rem; }
 
 .controls{ display:flex; flex-direction:column; gap:12px; }
+.helper-text{
+  font-size:12px;
+  color:#9fd4ff;
+  opacity:0.9;
+}
+.helper-text strong{ color: var(--neon-blue); }
 textarea{
   width:100%; min-height:110px; resize:vertical; border-radius:10px; padding:12px; font-size:14px;
   background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.04); color:#fff; outline:none;
   box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
 }
 .controls-row{ display:flex; gap:12px; align-items:center; }
+.controls-row.secondary{ justify-content:space-between; }
+.quick-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .select-wrap{ flex:1; }
 .actions{ display:flex; gap:8px; align-items:center; }
 
@@ -269,6 +277,25 @@ animation: panelPulse 3s infinite alternate;}
   display:block;
   background: rgba(0,0,0,0.35);
 }
+.cam-placeholder{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:20px;
+  font-size:13px;
+  line-height:1.4;
+  color:#ffb6e6;
+  background: radial-gradient(circle at 30% 20%, rgba(255,0,255,0.16), rgba(0,0,0,0.75));
+}
+.tile.has-error{
+  border-color: rgba(255, 0, 128, 0.35);
+  box-shadow: inset 0 0 14px rgba(0,0,0,0.7),
+              0 0 24px rgba(255,0,128,0.18),
+              0 0 24px rgba(0,240,255,0.04);
+}
 
 .hud{
   position:absolute; inset:0;
@@ -300,8 +327,13 @@ animation: panelPulse 3s infinite alternate;}
   display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
   background: linear-gradient(0deg, rgba(0,0,0,0.80), rgba(0,0,0,0));
 }
-.hud-status{
+.hud-url{
   font-size:12px; color:#bfefff; line-height:1.2;
+  max-width:65%;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.hud-status{
+  font-size:11px; color:#9fd4ff; line-height:1.2;
   max-width:65%;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
@@ -313,6 +345,19 @@ animation: panelPulse 3s infinite alternate;}
   min-height: 34px;
   padding: 8px 10px;
   font-size: 11px;
+}
+.list-hint{
+  font-size:12px;
+  color:#bfefff;
+  margin-bottom:8px;
+}
+.cam-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height:48vh;
+  overflow:auto;
+  padding-right:6px;
 }
 
 /* If any imported button CSS tries to center body, force normal page flow */
@@ -540,7 +585,10 @@ body{
 
   <div class="controls">
     <label class="visually-hidden" for="inputText">Camera URLs</label>
-    <textarea id="inputText" placeholder="Paste camera URLs (one per line).&#10;Example:&#10;https://.../stream.m3u8&#10;http://.../video.mjpeg"></textarea>
+    <textarea id="inputText" placeholder="Paste camera URLs (one per line).&#10;Use Name | URL to label feeds.&#10;Example:&#10;Lobby | https://.../stream.m3u8&#10;http://.../video.mjpeg"></textarea>
+    <div class="helper-text" id="inputHelp">
+      Tips: use <strong>Name | URL</strong>, lines starting with <strong>#</strong> are ignored, RTSP needs a gateway.
+    </div>
 
     <div class="controls-row">
       <div class="select-wrap">
@@ -574,6 +622,31 @@ body{
       </div>
     </div>
 
+    <div class="controls-row secondary">
+      <div class="select-wrap">
+        <select id="autoReconnect">
+          <option value="0" selected>Auto reconnect: Off</option>
+          <option value="30000">Auto reconnect: 30s</option>
+          <option value="60000">Auto reconnect: 60s</option>
+          <option value="120000">Auto reconnect: 120s</option>
+        </select>
+      </div>
+      <div class="quick-actions">
+        <button class="cybr-btn" type="button" id="btnPasteClipboard">
+          Paste
+          <span aria-hidden class="cybr-btn__glitch">Paste</span>
+        </button>
+        <button class="cybr-btn" type="button" id="btnClearList">
+          Clear
+          <span aria-hidden class="cybr-btn__glitch">Clear</span>
+        </button>
+        <button class="cybr-btn" type="button" id="btnDownloadList">
+          Download
+          <span aria-hidden class="cybr-btn__glitch">Download</span>
+        </button>
+      </div>
+    </div>
+
     <div class="output-glass">
       <h2>STATUS</h2>
       <div class="output-text" id="outputText">Ready.</div>
@@ -603,7 +676,10 @@ body{
     <div><strong id="countryName">---</strong></div>
     <div id="countryDetails">Region: -- | Capital: --</div>
   </div>
-  <div id="country-desc-text">Translation info will appear here.</div>
+  <div id="country-desc-text">
+    <div class="list-hint">Camera list (tap to focus). Translation info will appear below.</div>
+    <div id="camList" class="cam-list"></div>
+  </div>
 </section>
 
 <!-- Theme scripts -->
@@ -630,7 +706,16 @@ document.addEventListener('DOMContentLoaded', () => {
   oldBtn.parentNode.replaceChild(clone, oldBtn);
 })();
 
-const state = { cams: [], focused: null };
+const state = {
+  cams: [],
+  focused: null,
+  muteMode: 'all',
+  gridMode: 'grid-4',
+  autoReconnectMs: 0,
+  autoReconnectTimer: null
+};
+const STORAGE_KEY = 'net_ninja_cam_state_v2';
+const CAM_TIMEOUT_MS = 12000;
 const elGrid = document.getElementById('cam-grid');
 const elList = document.getElementById('camList');
 const elStatus = document.getElementById('outputText');
@@ -638,6 +723,8 @@ const elRunState = document.getElementById('runState');
 const elRunDot = document.getElementById('runDot');
 const elCamCount = document.getElementById('camCount');
 const elLiveCount = document.getElementById('liveCount');
+const elAutoReconnect = document.getElementById('autoReconnect');
+const supports = { hls: supportsHls() };
 
 function setStatus(msg, warn=false){
   elStatus.textContent = msg;
@@ -645,29 +732,80 @@ function setStatus(msg, warn=false){
   elRunDot.className = warn ? 'dot warn' : 'dot';
 }
 
+function normalizeUrl(raw){
+  if(!raw) return '';
+  const trimmed = raw.trim();
+  if(!trimmed) return '';
+  if(/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return trimmed;
+  if(trimmed.startsWith('//')) return `http:${trimmed}`;
+  if(/^[\w.-]+(:\d+)?(\/|$)/.test(trimmed)) return `http://${trimmed}`;
+  return trimmed;
+}
+
+function splitNameAndUrl(line){
+  if(!line) return { name: '', url: '' };
+  const parts = line.split('|');
+  if(parts.length >= 2){
+    const name = parts[0].trim();
+    const url = parts.slice(1).join('|').trim();
+    return { name, url };
+  }
+  return { name: '', url: line.trim() };
+}
+
+function guessType(url){
+  const lower = url.toLowerCase();
+  if(lower.startsWith('rtsp://')) return 'RTSP';
+  if(lower.includes('.m3u8')) return 'HLS';
+  if(lower.includes('mjpeg') || lower.endsWith('.mjpg') || lower.endsWith('.mjpeg')) return 'MJPEG';
+  if(lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.ogg')) return 'VIDEO';
+  if(lower.endsWith('.ts') || lower.endsWith('.mpegts')) return 'MPEGTS';
+  return 'HTTP';
+}
+
+function guessName(url, index){
+  try{
+    const u = new URL(url);
+    const host = u.hostname ? u.hostname.replace(/^www\./,'') : '';
+    if(host) return `${host}:${u.port || ''}`.replace(/:$/, '');
+  }catch{
+    // ignore
+  }
+  return `Cam ${index + 1}`;
+}
+
 function parseLinesToCams(text){
-  const lines = (text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  return lines.map((url, i) => {
-    const lower = url.toLowerCase();
-    const type =
-      lower.includes('.m3u8') ? 'HLS' :
-      (lower.includes('mjpeg') || lower.endsWith('.mjpg') || lower.endsWith('.mjpeg')) ? 'MJPEG' :
-      lower.startsWith('rtsp://') ? 'RTSP' :
-      'HTTP';
-    return {
-      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('cam-' + Date.now() + '-' + i),
-      name: 'Cam ' + (i + 1),
-      url,
+  const lines = (text || '')
+    .split(/\r?\n/)
+    .map(s => s.trim())
+    .filter(line => line && !line.startsWith('#') && !line.startsWith('//'));
+
+  const cams = [];
+  lines.forEach((line) => {
+    const { name, url } = splitNameAndUrl(line);
+    const normalized = normalizeUrl(url);
+    if(!normalized) return;
+    const type = guessType(normalized);
+    const displayName = name || guessName(normalized, cams.length);
+    cams.push({
+      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('cam-' + Date.now() + '-' + cams.length),
+      name: displayName,
+      url: normalized,
       type,
       playing: false,
-      err: null
-    };
+      err: null,
+      statusText: 'Queued',
+      warn: false,
+      timeoutId: null
+    });
   });
+  return cams;
 }
 
 function setGridClass(cls){
   elGrid.classList.remove('grid-1','grid-4','grid-9','grid-wall');
   elGrid.classList.add(cls);
+  state.gridMode = cls;
 }
 
 function requestFullscreen(el){
@@ -678,10 +816,15 @@ function requestFullscreen(el){
 function reconnectTile(tile){
   const media = tile.querySelector('video, img');
   if(!media) return;
-  const src = media.src;
+  const src = media.dataset.src || media.src;
   media.src = '';
   setTimeout(() => {
-    media.src = src;
+    if(media.tagName.toLowerCase() === 'img'){
+      const bust = src.includes('?') ? `${src}&nn=${Date.now()}` : `${src}?nn=${Date.now()}`;
+      media.src = bust;
+    } else {
+      media.src = src;
+    }
     if(media.tagName.toLowerCase() === 'video'){
       media.load();
       media.play().catch(() => {});
@@ -693,14 +836,147 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 }
 
+function supportsHls(){
+  const v = document.createElement('video');
+  if(!v.canPlayType) return false;
+  return Boolean(v.canPlayType('application/vnd.apple.mpegurl') || v.canPlayType('application/x-mpegURL'));
+}
+
+function updateCamStatus(cam, text, isError=false){
+  cam.statusText = text;
+  cam.err = isError ? text : null;
+  if(cam._statusEl){
+    cam._statusEl.textContent = text;
+    cam._statusEl.style.color = isError ? '#ff7b7b' : '#bfefff';
+  }
+  if(cam._listStatusEl){
+    cam._listStatusEl.textContent = text;
+    cam._listStatusEl.style.color = isError ? '#ff7b7b' : '#9fd4ff';
+  }
+  if(cam._tileEl){
+    cam._tileEl.classList.toggle('has-error', isError);
+  }
+}
+
+function applyMuteMode(){
+  const mode = state.muteMode;
+  document.querySelectorAll('#cam-grid video').forEach(v => {
+    if(mode === 'all') v.muted = true;
+    else if(mode === 'none') v.muted = false;
+    else {
+      const tile = v.closest('.tile');
+      const id = tile && tile.__camId;
+      v.muted = (id !== state.focused);
+    }
+  });
+}
+
+function reconnectAll(){
+  document.querySelectorAll('#cam-grid .tile').forEach(t => reconnectTile(t));
+}
+
+function setAutoReconnect(ms){
+  if(state.autoReconnectTimer){
+    clearInterval(state.autoReconnectTimer);
+    state.autoReconnectTimer = null;
+  }
+  state.autoReconnectMs = ms;
+  if(ms > 0){
+    state.autoReconnectTimer = setInterval(() => {
+      if(!state.cams.length) return;
+      reconnectAll();
+      setStatus(`Auto reconnect ran (${Math.round(ms / 1000)}s).`);
+    }, ms);
+  }
+}
+
+async function pasteFromClipboard(){
+  try{
+    const text = await navigator.clipboard.readText();
+    if(!text){
+      setStatus('Clipboard is empty.', true);
+      return;
+    }
+    const ta = document.getElementById('inputText');
+    if(ta){
+      ta.value = (ta.value ? ta.value.trimEnd() + '\n' : '') + text.trim();
+    }
+    setStatus('Clipboard pasted. Press Load grid.', false);
+  }catch{
+    setStatus('Clipboard access blocked. Paste manually.', true);
+  }
+}
+
+function downloadList(){
+  const ta = document.getElementById('inputText');
+  const content = (ta?.value || '').trim();
+  if(!content){
+    setStatus('Nothing to download.', true);
+    return;
+  }
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'net_ninja_cam_list.txt';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  setStatus('List downloaded.');
+}
+
 function updateLive(){
   const live = state.cams.filter(c => c.playing).length;
   elLiveCount.textContent = String(live);
 }
 
+function persistState(){
+  try{
+    const ta = document.getElementById('inputText');
+    const payload = {
+      list: ta?.value || '',
+      gridMode: state.gridMode,
+      muteMode: state.muteMode,
+      autoReconnectMs: state.autoReconnectMs
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }catch{
+    // ignore storage failures
+  }
+}
+
+function restoreState(){
+  try{
+    const ta = document.getElementById('inputText');
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    if(ta && !ta.value.trim() && saved.list){
+      ta.value = saved.list;
+    }
+    if(saved.gridMode){
+      state.gridMode = saved.gridMode;
+      const sel = document.getElementById('gridMode');
+      if(sel) sel.value = saved.gridMode;
+    }
+    if(saved.muteMode){
+      state.muteMode = saved.muteMode;
+      const sel = document.getElementById('muteMode');
+      if(sel) sel.value = saved.muteMode;
+    }
+    if(typeof saved.autoReconnectMs === 'number'){
+      state.autoReconnectMs = saved.autoReconnectMs;
+      if(elAutoReconnect) elAutoReconnect.value = String(saved.autoReconnectMs);
+    }
+  }catch{
+    // ignore parse errors
+  }
+}
+
 function render(){
   elGrid.innerHTML = '';
-  elList.innerHTML = '';
+  if(elList) elList.innerHTML = '';
   elCamCount.textContent = String(state.cams.length);
 
   let live = 0;
@@ -713,12 +989,18 @@ function render(){
     item.style.border = '1px solid rgba(255,255,255,0.06)';
     item.style.background = 'rgba(0,0,0,0.35)';
     item.style.cursor = 'pointer';
+    const statusEl = document.createElement('div');
+    statusEl.style.marginTop = '6px';
+    statusEl.style.fontSize = '12px';
+    statusEl.style.color = '#9fd4ff';
+
     item.innerHTML =
       '<div style="font-weight:900;color:var(--neon-blue);text-shadow:0 0 10px rgba(0,240,255,0.25)">' + escapeHtml(cam.name) + '</div>' +
       '<div style="font-size:12px;color:#bfefff;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(cam.url) + '</div>' +
       '<div style="margin-top:6px;font-size:12px;"><span class="hud-tag">' + escapeHtml(cam.type) + '</span></div>';
+    item.appendChild(statusEl);
     item.onclick = () => { state.focused = cam.id; render(); };
-    elList.appendChild(item);
+    if(elList) elList.appendChild(item);
 
     const tile = document.createElement('div');
     tile.className = 'tile';
@@ -726,40 +1008,150 @@ function render(){
     if(state.focused === cam.id) tile.style.outline = '2px solid rgba(0,240,255,0.28)';
 
     let media;
-    if(cam.type === 'MJPEG'){
+    cam._tileEl = tile;
+    cam._statusEl = null;
+    cam._listStatusEl = statusEl;
+    cam.warn = false;
+
+    if(cam.type === 'RTSP'){
+      media = document.createElement('div');
+      media.className = 'cam-placeholder';
+      media.textContent = 'RTSP requires a gateway (MediaMTX → HLS/WebRTC).';
+      updateCamStatus(cam, 'RTSP needs gateway', true);
+      cam.warn = true;
+    } else if(cam.type === 'MJPEG'){
       media = document.createElement('img');
+      media.dataset.src = cam.url;
       media.src = cam.url;
-      cam.playing = true;
+      updateCamStatus(cam, 'Connecting…');
+      cam.timeoutId = setTimeout(() => {
+        if(!cam.playing){
+          updateCamStatus(cam, 'No signal (timeout)', true);
+          updateLive();
+        }
+      }, CAM_TIMEOUT_MS);
+      media.onload = () => {
+        cam.playing = true;
+        clearTimeout(cam.timeoutId);
+        updateCamStatus(cam, 'Live');
+        updateLive();
+      };
+      media.onerror = () => {
+        cam.playing = false;
+        clearTimeout(cam.timeoutId);
+        updateCamStatus(cam, 'MJPEG error', true);
+        updateLive();
+      };
     } else {
-      media = document.createElement('video');
-      media.src = cam.url;
-      media.autoplay = true;
-      media.muted = true;
-      media.playsInline = true;
-      media.preload = 'metadata';
-      media.onplaying = () => { cam.playing = true; cam.err = null; updateLive(); };
-      media.onerror = () => { cam.playing = false; cam.err = 'error'; updateLive(); };
-      media.onstalled = () => { cam.playing = false; cam.err = 'stalled'; updateLive(); };
-      media.play().catch(() => { cam.playing = false; cam.err = 'autoplay'; updateLive(); });
+      if(cam.type === 'HLS' && !supports.hls){
+        media = document.createElement('div');
+        media.className = 'cam-placeholder';
+        media.textContent = 'HLS not supported in this browser. Use Safari or a gateway.';
+        updateCamStatus(cam, 'HLS unsupported', true);
+        cam.warn = true;
+      } else {
+        media = document.createElement('video');
+        media.dataset.src = cam.url;
+        media.src = cam.url;
+        media.autoplay = true;
+        media.muted = true;
+        media.playsInline = true;
+        media.preload = 'metadata';
+        updateCamStatus(cam, 'Connecting…');
+        cam.timeoutId = setTimeout(() => {
+          if(!cam.playing){
+            updateCamStatus(cam, 'No signal (timeout)', true);
+            updateLive();
+          }
+        }, CAM_TIMEOUT_MS);
+        media.onplaying = () => {
+          cam.playing = true;
+          clearTimeout(cam.timeoutId);
+          updateCamStatus(cam, 'Live');
+          updateLive();
+        };
+        media.onwaiting = () => {
+          if(!cam.playing) return;
+          updateCamStatus(cam, 'Buffering…');
+        };
+        media.onerror = () => {
+          cam.playing = false;
+          clearTimeout(cam.timeoutId);
+          if(cam.type === 'HTTP' && !cam._fallbackAttempted){
+            cam._fallbackAttempted = true;
+            media.remove();
+            cam.type = 'MJPEG';
+            const img = document.createElement('img');
+            img.dataset.src = cam.url;
+            img.src = cam.url;
+            img.onload = () => {
+              cam.playing = true;
+              updateCamStatus(cam, 'Live (MJPEG)');
+              updateLive();
+            };
+            img.onerror = () => {
+              cam.playing = false;
+              updateCamStatus(cam, 'Stream error', true);
+              updateLive();
+            };
+            tile.insertBefore(img, tile.firstChild);
+            updateCamStatus(cam, 'Switching to MJPEG…');
+            return;
+          }
+          updateCamStatus(cam, 'Stream error', true);
+          updateLive();
+        };
+        media.onstalled = () => {
+          cam.playing = false;
+          updateCamStatus(cam, 'Stalled', true);
+          updateLive();
+        };
+        media.play().catch(() => {
+          cam.playing = false;
+          updateCamStatus(cam, 'Autoplay blocked', true);
+          updateLive();
+        });
+      }
     }
 
     const hud = document.createElement('div');
     hud.className = 'hud';
-    hud.innerHTML =
-      '<div class="hud-top">' +
-        '<div class="hud-name">' + escapeHtml(cam.name) + '</div>' +
-        '<div class="hud-tag">' + escapeHtml(cam.type) + '</div>' +
-      '</div>' +
-      '<div class="hud-bottom">' +
-        '<div class="hud-status">' + escapeHtml(cam.url) + '</div>' +
-        '<div class="hud-actions">' +
-          '<button class="cybr-btn" data-act="reconnect" type="button">Reconnect<span aria-hidden class="cybr-btn__glitch">Reconnect</span></button>' +
-          '<button class="cybr-btn" data-act="full" type="button">Fullscreen<span aria-hidden class="cybr-btn__glitch">Fullscreen</span></button>' +
-        '</div>' +
-      '</div>';
+    const hudTop = document.createElement('div');
+    hudTop.className = 'hud-top';
+    const hudName = document.createElement('div');
+    hudName.className = 'hud-name';
+    hudName.textContent = cam.name;
+    const hudTag = document.createElement('div');
+    hudTag.className = 'hud-tag';
+    hudTag.textContent = cam.type;
+    hudTop.appendChild(hudName);
+    hudTop.appendChild(hudTag);
+
+    const hudBottom = document.createElement('div');
+    hudBottom.className = 'hud-bottom';
+    const hudUrl = document.createElement('div');
+    hudUrl.className = 'hud-url';
+    hudUrl.textContent = cam.url;
+    const hudStatus = document.createElement('div');
+    hudStatus.className = 'hud-status';
+    hudStatus.textContent = cam.statusText || 'Queued';
+    const hudActions = document.createElement('div');
+    hudActions.className = 'hud-actions';
+    hudActions.innerHTML =
+      '<button class="cybr-btn" data-act="reconnect" type="button">Reconnect<span aria-hidden class="cybr-btn__glitch">Reconnect</span></button>' +
+      '<button class="cybr-btn" data-act="full" type="button">Fullscreen<span aria-hidden class="cybr-btn__glitch">Fullscreen</span></button>';
+
+    hudBottom.appendChild(hudUrl);
+    hudBottom.appendChild(hudStatus);
+    hudBottom.appendChild(hudActions);
+    hud.appendChild(hudTop);
+    hud.appendChild(hudBottom);
 
     tile.appendChild(media);
     tile.appendChild(hud);
+    cam._statusEl = hudStatus;
+    cam._listStatusEl = statusEl;
+    updateCamStatus(cam, cam.statusText || 'Connecting…', Boolean(cam.err));
 
     tile.querySelector('[data-act="reconnect"]').onclick = (e) => { e.stopPropagation(); reconnectTile(tile); };
     tile.querySelector('[data-act="full"]').onclick = (e) => { e.stopPropagation(); requestFullscreen(tile); };
@@ -770,36 +1162,63 @@ function render(){
   });
 
   elLiveCount.textContent = String(live);
+  applyMuteMode();
+
+  const warn = state.cams.some(cam => cam.warn);
+  if(elList && !state.cams.length){
+    const empty = document.createElement('div');
+    empty.className = 'list-hint';
+    empty.textContent = 'No cameras loaded yet. Add URLs or import a list.';
+    elList.appendChild(empty);
+  }
 
   if(!state.cams.length) setStatus('Ready. Paste URLs and press Load grid.');
-  else setStatus('Loaded ' + state.cams.length + ' camera(s). Tap a tile to focus.', false);
+  else setStatus('Loaded ' + state.cams.length + ' camera(s). Tap a tile to focus.', warn);
+}
+
+function closeAllOverlays(){
+  document.querySelectorAll('.nn-modal').forEach(m=>{
+    m.classList.remove('open');
+    m.setAttribute('aria-hidden','true');
+  });
+  document.getElementById('nnSide')?.classList.remove('open');
+  document.getElementById('nnOverlay')?.classList.remove('open');
 }
 
 // Wire controls
+document.getElementById('inputText').addEventListener('change', () => {
+  persistState();
+});
+
 document.getElementById('translateBtn').addEventListener('click', () => {
   const txt = document.getElementById('inputText').value;
   state.cams = parseLinesToCams(txt);
   state.focused = state.cams[0]?.id || null;
+  if(!state.cams.length){
+    setStatus('No valid camera URLs found. Add URLs or use Name | URL.', true);
+    render();
+    return;
+  }
   render();
+  persistState();
 });
 
-document.getElementById('gridMode').addEventListener('change', (e) => setGridClass(e.target.value));
+document.getElementById('gridMode').addEventListener('change', (e) => {
+  const mode = e.target.value;
+  setGridClass(mode);
+  const label = document.getElementById('gridModeLabel');
+  if(label) label.textContent = mode.replace('grid-','').toUpperCase();
+  persistState();
+});
 
 document.getElementById('muteMode').addEventListener('change', (e) => {
-  const mode = e.target.value;
-  document.querySelectorAll('#cam-grid video').forEach(v => {
-    if(mode === 'all') v.muted = true;
-    else if(mode === 'none') v.muted = false;
-    else {
-      const tile = v.closest('.tile');
-      const id = tile && tile.__camId;
-      v.muted = (id !== state.focused);
-    }
-  });
+  state.muteMode = e.target.value;
+  applyMuteMode();
+  persistState();
 });
 
 document.getElementById('btnReconnectAll').addEventListener('click', () => {
-  document.querySelectorAll('#cam-grid .tile').forEach(t => reconnectTile(t));
+  reconnectAll();
   setStatus('Reconnect all triggered.');
 });
 
@@ -807,7 +1226,49 @@ document.getElementById('btnDiscover').addEventListener('click', () => {
   setStatus('ONVIF discovery is a hook. Feed discovered stream URLs into the list.', true);
 });
 
-setGridClass('grid-4');
+elAutoReconnect?.addEventListener('change', (e) => {
+  const ms = Number(e.target.value);
+  setAutoReconnect(Number.isFinite(ms) ? ms : 0);
+  persistState();
+  setStatus(ms ? `Auto reconnect enabled (${Math.round(ms / 1000)}s).` : 'Auto reconnect disabled.');
+});
+
+document.getElementById('btnPasteClipboard').addEventListener('click', () => {
+  pasteFromClipboard();
+});
+
+document.getElementById('btnClearList').addEventListener('click', () => {
+  const ok = confirm('Clear the current camera list?');
+  if(!ok) return;
+  const ta = document.getElementById('inputText');
+  if(ta) ta.value = '';
+  state.cams = [];
+  state.focused = null;
+  render();
+  persistState();
+  setStatus('Camera list cleared.');
+});
+
+document.getElementById('btnDownloadList').addEventListener('click', () => {
+  downloadList();
+});
+
+document.addEventListener('keydown', (e) => {
+  if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+    e.preventDefault();
+    document.getElementById('translateBtn')?.click();
+  }
+  if(e.key === 'Escape'){
+    closeAllOverlays();
+  }
+});
+
+restoreState();
+setGridClass(state.gridMode);
+const gridLabel = document.getElementById('gridModeLabel');
+if(gridLabel) gridLabel.textContent = state.gridMode.replace('grid-','').toUpperCase();
+if(elAutoReconnect) elAutoReconnect.value = String(state.autoReconnectMs || 0);
+setAutoReconnect(state.autoReconnectMs || 0);
 setStatus('Ready. Paste URLs and press Load grid.');
 render();
 
@@ -815,7 +1276,9 @@ render();
 window.NetNinjaCam = {
   addCamera: ({name, url}) => {
     const ta = document.getElementById('inputText');
-    const line = (name && name.trim() ? (name.trim() + ' | ' + url.trim()) : url.trim());
+    const normalized = normalizeUrl(url || '');
+    if(!normalized) return;
+    const line = (name && name.trim() ? (name.trim() + ' | ' + normalized) : normalized);
     // Also keep the raw list in the textarea for user visibility.
     if(ta){
       ta.value = (ta.value ? (ta.value.trimEnd() + '\n') : '') + line;
