@@ -301,7 +301,7 @@ fun startServer(
     install(CORS) {
       allowedOrigins
         .mapNotNull { origin -> runCatching { java.net.URI(origin) }.getOrNull() }
-        .filter { it.scheme != null && !it.host.isNullOrBlank() }
+        .filter { it.scheme != null && !it.host.isNullOrBlank() && !it.host.contains('*') }
         .forEach { uri ->
           val hostPort = if (uri.port == -1) uri.host else "${uri.host}:${uri.port}"
           allowHost(hostPort, schemes = listOf(uri.scheme))
