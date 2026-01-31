@@ -1,8 +1,11 @@
 
 package com.netninja
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,18 +18,22 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
   private val logTag = "NetNinjaWebView"
+  private val permissionRequestCode = 1201
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     // Start engine service (foreground) so localhost server is up.
     startForegroundService(Intent(this, EngineService::class.java))
+    ensureRuntimePermissions()
 
     val web = WebView(this)
     web.settings.javaScriptEnabled = true
@@ -86,6 +93,29 @@ class MainActivity : AppCompatActivity() {
     waitForServerAndLoad(web, serverLoginUrl)
 
     setContentView(web)
+  }
+
+  private fun ensureRuntimePermissions() {
+    val needed = mutableListOf<String>()
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+      != PackageManager.PERMISSION_GRANTED
+    ) {
+      needed.add(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+      != PackageManager.PERMISSION_GRANTED
+    ) {
+      needed.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+      ContextCompat.checkSelfPermission(this, Manifest.permission.NEARBY_WIFI_DEVICES)
+      != PackageManager.PERMISSION_GRANTED
+    ) {
+      needed.add(Manifest.permission.NEARBY_WIFI_DEVICES)
+    }
+    if (needed.isNotEmpty()) {
+      ActivityCompat.requestPermissions(this, needed.toTypedArray(), permissionRequestCode)
+    }
   }
 
   private fun waitForServerAndLoad(web: WebView, url: String) {

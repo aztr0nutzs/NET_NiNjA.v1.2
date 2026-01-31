@@ -2,10 +2,13 @@ package com.netninja
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
 import android.text.format.Formatter
 import androidx.core.content.ContextCompat
 import io.ktor.http.*
@@ -95,6 +98,7 @@ import android.database.sqlite.SQLiteDatabase
   val linkUp: Boolean = true,
   val updatedAt: Long = System.currentTimeMillis()
 )
+@Serializable data class PermissionsActionRequest(val action: String? = null)
 
 class AndroidLocalServer(private val ctx: Context) {
 
@@ -516,6 +520,13 @@ class AndroidLocalServer(private val ctx: Context) {
       get("/api/v1/system/permissions") {
         if (!call.requireAuth()) return@get
         call.respond(permissionSummary())
+      }
+
+      post("/api/v1/system/permissions/action") {
+        if (!call.requireAuth()) return@post
+        val req = runCatching { call.receive<PermissionsActionRequest>() }.getOrNull()
+        val ok = runCatching { handlePermissionAction(req?.action) }.getOrDefault(false)
+        call.respond(mapOf("ok" to ok))
       }
 
       get("/api/v1/system/state") {
@@ -1138,6 +1149,20 @@ class AndroidLocalServer(private val ctx: Context) {
       "networkState" to hasPermission("android.permission.ACCESS_NETWORK_STATE"),
       "wifiState" to hasPermission("android.permission.ACCESS_WIFI_STATE")
     )
+  }
+
+  private fun handlePermissionAction(action: String?): Boolean {
+    val intent = when (action) {
+      "app_settings" -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = Uri.fromParts("package", ctx.packageName, null)
+      }
+      "location_settings" -> Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+      "wifi_settings" -> Intent(Settings.ACTION_WIFI_SETTINGS)
+      else -> null
+    } ?: return false
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    ctx.startActivity(intent)
+    return true
   }
 
   private fun cachedResults(): List<Device> {

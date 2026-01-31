@@ -1258,6 +1258,12 @@
             <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
             <span>Network state</span><span id="permNetworkState">Unknown</span>
           </div>
+          <div class="card-actions" style="margin-top:12px;">
+            <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
+            <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
+            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi‑Fi settings</button>
+            <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
+          </div>
           <div class="muted" style="margin-top:10px;">
             Tip: Tap the MN badge 5 times to open the hidden debug panel.
           </div>
@@ -1970,6 +1976,34 @@
           pill.className = "pill warn";
         }
       } catch (_) {}
+    }
+
+    async function sendPermissionAction(action){
+      try{
+        const res = await fetchJson("/api/v1/system/permissions/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action })
+        });
+        if(res?.ok){
+          showToast("Opening settings", "Use the system screen to grant permissions.");
+        } else {
+          showToast("Permission control unavailable", "This action is not supported on this device.");
+        }
+      } catch (_){
+        showToast("Permission control unavailable", "Unable to reach the local service.");
+      }
+    }
+
+    function setupPermissionControls(){
+      const appBtn = $("#btnOpenAppSettings");
+      const locBtn = $("#btnOpenLocationSettings");
+      const wifiBtn = $("#btnOpenWifiSettings");
+      const refreshBtn = $("#btnRefreshPermissions");
+      appBtn?.addEventListener("click", () => sendPermissionAction("app_settings"));
+      locBtn?.addEventListener("click", () => sendPermissionAction("location_settings"));
+      wifiBtn?.addEventListener("click", () => sendPermissionAction("wifi_settings"));
+      refreshBtn?.addEventListener("click", () => refreshPermissionStatus());
     }
 
     async function refreshDebugState(){
@@ -3234,6 +3268,7 @@
       refreshNetworkInfo();
       refreshDiscoveryResults();
       refreshPermissionStatus();
+      setupPermissionControls();
       setupDebugPanel();
       refreshDebugState();
 
