@@ -1,7 +1,7 @@
 # Security Policy
 
 Responsible disclosure:
-- Report security issues by opening an email to security@<replace-with-your-domain> or create a private issue including reproducible steps and impact.
+- Report security issues by opening an email to security@netninja.local or create a private issue including reproducible steps and impact.
 - Do not post public details until patched or coordinated disclosure is agreed.
 
 Supported scope:
