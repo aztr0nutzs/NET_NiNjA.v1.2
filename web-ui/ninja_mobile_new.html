@@ -1800,6 +1800,22 @@
       return localStorage.getItem("nn_token");
     }
 
+    const API_BASE = (() => {
+      try {
+        if (location && location.origin && location.origin !== "null") {
+          const origin = String(location.origin);
+          if (!origin.startsWith("file:")) return origin;
+        }
+      } catch (_) {}
+      return "http://127.0.0.1:8787";
+    })();
+
+    function resolveApiUrl(url){
+      if (typeof url !== "string") return url;
+      if (url.startsWith("/")) return API_BASE + url;
+      return url;
+    }
+
     async function fetchJson(url, options = {}){
       const token = getAuthToken();
       const headers = {
@@ -1813,7 +1829,7 @@
       const controller = new AbortController();
       const timeoutBudget = Number.isFinite(timeoutMs) ? timeoutMs : 8000;
       const timeout = timeoutBudget > 0 ? setTimeout(() => controller.abort(), timeoutBudget) : null;
-      const res = await fetch(url, { ...fetchOptions, headers, signal: controller.signal });
+      const res = await fetch(resolveApiUrl(url), { ...fetchOptions, headers, signal: controller.signal });
       if(timeout) clearTimeout(timeout);
       if(res.status === 401){
         window.location.href = "/ui/new_assets/ninja_login.html";
@@ -2952,6 +2968,21 @@
 
     window.nnRunScan = runScan;
 
+    async function stopScan(){
+      scanInFlight = false;
+      try{
+        await fetchJson("/api/v1/discovery/stop", { method: "POST" });
+        window.applyScanData?.({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
+        showToast("Scan stopped", "Discovery scan canceled.");
+      } catch (_){
+        showToast("Stop failed", "Unable to stop scan.");
+      } finally {
+        refreshDiscoveryResults();
+      }
+    }
+
+    window.nnStopScan = stopScan;
+
     $("#scanNowBtn").addEventListener("click", () => runScan());
     $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan(); });
     $("#btnNetworksScanMy").addEventListener("click", () => runScan());
@@ -3374,13 +3405,7 @@
     });
     btnStop?.addEventListener("click", () => {
       stopAll();
-      fetchJson("/api/v1/discovery/stop", { method: "POST" })
-        .then(() => {
-          window.applyScanData({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
-        })
-        .catch(() => {
-          window.applyScanData({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
-        });
+      window.nnStopScan?.();
     });
 
     // Initial state
