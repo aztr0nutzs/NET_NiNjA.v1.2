@@ -1922,16 +1922,12 @@ refreshTelemetry();
     }
 
     function deriveMeta(device) {
-      const ip = device.ip || device.id || "";
-      const parts = ip.split(".");
-      const lastOctet = parseInt(parts[3] || "0", 10);
-      const osList = ["WINDOWS", "LINUX", "ANDROID"];
-      const tagList = ["IOT", "SERVER", "WORKSTATION"];
-      return {
-        name: device.hostname || device.id || ip || "Unknown",
-        os: device.os || osList[lastOctet % osList.length],
-        tag: device.vendor || tagList[lastOctet % tagList.length]
-      };
+       // Use actual fields from the backend and avoid random OS/tag assignments
+       return {
+         name: device.name || device.hostname || device.id || device.ip || "Unknown",
+         os: device.os || "Unknown",
+         tag: device.vendor || device.tag || "Unknown"
+       };
     }
 
     function normalizeDevice(raw) {
