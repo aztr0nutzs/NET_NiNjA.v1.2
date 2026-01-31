@@ -22,6 +22,16 @@ NET NiNjA is a local-first network dashboard that combines a Ktor-based server, 
 - **Web UI**: Static HTML/CSS/JS under `web-ui/`, including the login flow in `web-ui/new_assets/` and the mobile dashboard.
 - **Android app**: WebView wrapper that syncs `web-ui/` assets into internal storage and then loads the local server URLs.
 
+## Ninja CAM (IP camera viewer tab)
+![Ninja CAM header](ninja_cam_header.png)
+
+The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that loads the IP camera viewer via `net_ninja_cam.html` and keeps it isolated from the rest of the dashboard UI. The tab is wired into the primary bottom navigation and rendered as an embedded view so it feels native to the app shell.
+
+### What it supports
+- **Flexible stream inputs**: Add a camera by name and URL, including HLS, MJPEG, or HTTP streams. RTSP streams are supported via a gateway such as MediaMTX that converts RTSP to HLS/WebRTC for browser playback.
+- **Bulk import**: Paste a multi-line list of cameras using the `Name | URL` format for quick onboarding.
+- **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
+
 ## Quick start
 ### Run the server (Gradle)
 ```bash
