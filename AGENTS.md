@@ -22,5 +22,6 @@ These instructions apply to the entire repository. Follow them for every change.
 - For networking changes, include timeouts, error mapping, and security basics.
 
 ## Reporting
-- Summarize edits by file path.
-- Provide a verification checklist with commands and expected success criteria.
+- Use the `PULL_REQUEST_TEMPLATE.md` to structure your pull request.
+- Summarize your edits in the "Changes" section.
+- Provide a verification checklist in the "Verification" section.
