@@ -88,6 +88,7 @@ fun startServer(
   val scheduleEntries = java.util.concurrent.CopyOnWriteArrayList<ScheduleEntry>()
   val scanProgress = AtomicReference(ScanProgress())
   val scanCancel = AtomicBoolean(false)
+  val scanJob = AtomicReference<Job?>(null)
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
@@ -128,6 +129,25 @@ fun startServer(
         updatedAt = System.currentTimeMillis()
       )
     )
+
+    if (ips.isEmpty()) {
+      scanProgress.set(
+        ScanProgress(
+          progress = 0,
+          phase = "NO_NETWORK",
+          networks = 0,
+          devices = 0,
+          rssiDbm = null,
+          ssid = netInfo["name"]?.toString(),
+          bssid = null,
+          subnet = subnet.ifBlank { netInfo["cidr"]?.toString() },
+          gateway = netInfo["gateway"]?.toString(),
+          linkUp = false,
+          updatedAt = System.currentTimeMillis()
+        )
+      )
+      return emptyList()
+    }
 
     coroutineScope {
       ips.map { ip ->
@@ -237,6 +257,10 @@ fun startServer(
     return found
   }
 
+  fun currentResults(): List<Device> {
+    return if (deviceCache.isNotEmpty()) deviceCache.values.toList() else devices.all()
+  }
+
   fun scheduleScan(subnet: String, freq: String): Boolean {
     val freqMs = scheduleFrequencyMs(freq) ?: return false
     val entry = ScheduleEntry(subnet = subnet, freqMs = freqMs, nextRunAt = System.currentTimeMillis() + freqMs)
@@ -270,6 +294,7 @@ fun startServer(
     install(CORS) {
       anyHost()
       allowHeader(HttpHeaders.ContentType)
+      allowHeader(HttpHeaders.Authorization)
       allowMethod(HttpMethod.Get)
       allowMethod(HttpMethod.Post)
       allowMethod(HttpMethod.Put)
@@ -286,6 +311,34 @@ fun startServer(
           "arch" to System.getProperty("os.arch"),
           "time" to System.currentTimeMillis()
         ))
+      }
+
+      get("/api/v1/system/permissions") {
+        val ifaceUp = runCatching {
+          java.util.Collections.list(NetworkInterface.getNetworkInterfaces()).any { it.isUp && !it.isLoopback }
+        }.getOrDefault(false)
+        call.respond(
+          mapOf(
+            "nearbyWifi" to null,
+            "fineLocation" to null,
+            "coarseLocation" to null,
+            "wifiState" to ifaceUp,
+            "networkState" to ifaceUp
+          )
+        )
+      }
+
+      get("/api/v1/system/state") {
+        call.respond(
+          mapOf(
+            "scanProgress" to scanProgress.get(),
+            "deviceCount" to currentResults().size,
+            "lastScanAt" to lastScanAt.get(),
+            "rules" to rules.toList(),
+            "schedules" to schedules.toList(),
+            "logQueueSize" to logQueue.size
+          )
+        )
       }
 
       get("/api/v1/network/info") {
@@ -309,13 +362,22 @@ fun startServer(
         val subnet = req.subnet?.trim().orEmpty()
         log("scan requested subnet=$subnet")
         val timeout = req.timeoutMs ?: 300
-        val found = performScan(subnet, timeout)
-        call.respond(found)
+        val existing = scanJob.get()
+        if (existing != null && existing.isActive) {
+          call.respond(currentResults())
+          return@post
+        }
+        scanJob.set(
+          schedulerScope.launch {
+            runCatching { performScan(subnet, timeout) }
+              .onFailure { err -> log("scan failed subnet=$subnet error=${err.message}") }
+          }
+        )
+        call.respond(currentResults())
       }
 
       get("/api/v1/discovery/results") {
-        val out = if (deviceCache.isNotEmpty()) deviceCache.values.toList() else devices.all()
-        call.respond(out)
+        call.respond(currentResults())
       }
 
       get("/api/v1/discovery/progress") {
@@ -324,6 +386,7 @@ fun startServer(
 
       post("/api/v1/discovery/stop") {
         scanCancel.set(true)
+        scanJob.getAndSet(null)?.cancel()
         call.respond(mapOf("ok" to true))
       }
 
@@ -387,8 +450,7 @@ fun startServer(
       }
 
       get("/api/v1/export/devices") {
-        val out = if (deviceCache.isNotEmpty()) deviceCache.values.toList() else devices.all()
-        call.respond(out)
+        call.respond(currentResults())
       }
 
       get("/api/v1/schedules") {
@@ -454,7 +516,7 @@ fun startServer(
       }
 
       post("/api/v1/actions/security") {
-        val all = if (deviceCache.isNotEmpty()) deviceCache.values.toList() else devices.all()
+        val all = currentResults()
         val unknown = all.count { it.trust == null || it.trust == "Unknown" }
         val blocked = all.count { it.status == "Blocked" }
         val openPorts = all.sumOf { it.openPorts.size }

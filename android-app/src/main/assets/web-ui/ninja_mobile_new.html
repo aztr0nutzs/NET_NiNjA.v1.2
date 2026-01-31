@@ -1809,10 +1809,12 @@
       if(token){
         headers["Authorization"] = `Bearer ${token}`;
       }
+      const { timeoutMs, ...fetchOptions } = options || {};
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      const res = await fetch(url, { ...options, headers, signal: controller.signal });
-      clearTimeout(timeout);
+      const timeoutBudget = Number.isFinite(timeoutMs) ? timeoutMs : 8000;
+      const timeout = timeoutBudget > 0 ? setTimeout(() => controller.abort(), timeoutBudget) : null;
+      const res = await fetch(url, { ...fetchOptions, headers, signal: controller.signal });
+      if(timeout) clearTimeout(timeout);
       if(res.status === 401){
         window.location.href = "/ui/new_assets/ninja_login.html";
         throw new Error("Unauthorized");
@@ -1923,7 +1925,10 @@
         renderDevices();
         renderNetworks();
         window.nnUpdateDiscoveryMap?.();
-      } catch (_) {}
+        return data;
+      } catch (_) {
+        return null;
+      }
     }
 
     function formatPerm(value){
@@ -2902,13 +2907,14 @@
         await refreshNetworkInfo();
         const subnet = cachedNetworkInfo?.cidr || "";
         const payload = { subnet };
-        const found = await fetchJson("/api/v1/discovery/scan", {
+        await fetchJson("/api/v1/discovery/scan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          timeoutMs: 30_000
         });
 
-        applyDevicesFromBackend(found);
+        await refreshDiscoveryResults();
         state.lastChangeCount = devices.filter(d => !prevIds.has(d.id)).length;
         renderDashboard();
         renderDevices();
@@ -3222,7 +3228,11 @@
       refreshDebugState();
 
       // live scan progress + periodic refresh
-      window.startPolling?.("/api/v1/discovery/progress", 600);
+      window.__nnScanPollConfig = { url: "/api/v1/discovery/progress", intervalMs: 600 };
+      if(window.startPolling && !window.__nnScanPollStarted){
+        window.startPolling(window.__nnScanPollConfig.url, window.__nnScanPollConfig.intervalMs);
+        window.__nnScanPollStarted = true;
+      }
       setInterval(() => {
         refreshNetworkInfo();
         refreshDiscoveryResults();
@@ -3337,6 +3347,11 @@
         } catch (_) {}
       }, Math.max(200, intervalMs));
     };
+
+    if(window.__nnScanPollConfig && !window.__nnScanPollStarted){
+      window.startPolling(window.__nnScanPollConfig.url, window.__nnScanPollConfig.intervalMs);
+      window.__nnScanPollStarted = true;
+    }
 
     // Real wiring option B: WebSocket
     window.connectWebSocket = function connectWebSocket(wsUrl){
