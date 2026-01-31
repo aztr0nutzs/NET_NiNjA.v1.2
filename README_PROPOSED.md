@@ -1,24 +1,47 @@
-# NET_NiNjA.v1.2 — Quick Start (proposed improvements)
+# NET NiNjA v1.2 — Quick Start (proposed)
 
-Overview
-- Local network dashboard + Android local-server packaged UI.
-- Server: Ktor (Kotlin). Web UI: static HTML/JS in /web-ui.
+![NET NiNjA header](web-ui/new_assets/ninja_header_readme.png)
 
-Quick dev run
-- With Java/Gradle:
-  ./gradlew :server:run
-  Open http://localhost:8787/ui/ninja_mobile_new.html
+## Overview
+NET NiNjA is a local-first network dashboard that bundles a Ktor-based server, a web UI, and an Android WebView shell. The Android app boots the local server, serves the bundled web assets, and drives the login → dashboard flow in WebView so the same UI works on-device and in a desktop browser during development.
 
-- With Docker:
-  docker-compose up --build
-  Open http://localhost:8787/ui/ninja_mobile_new.html
+## Highlights
+- **Local Web UI**: Serve the login and dashboard UI from the local server at `http://127.0.0.1:8787/ui/new_assets/ninja_login.html` and `http://127.0.0.1:8787/ui/new_assets/ninja_mobile.html`.
+- **Android WebView shell**: Launches the bundled login HTML while the server warms up, then switches to the local server for the full dashboard.
+- **Local-first architecture**: Assets are synced into internal storage so WebView and desktop dev serve the same UI bundle.
 
-Development notes
-- API base defaults to http://127.0.0.1:8787
-- DB default: SQLite file netninja.db in server working directory
+## Ninja CAM (IP camera viewer tab)
+![Ninja CAM header](ninja_cam_header.png)
 
-Contributing
-- See CONTRIBUTING.md for details.
+The Ninja CAM experience is a dedicated **Cameras** tab inside the dashboard. It loads the `net_ninja_cam.html` viewer inside the tab so IP camera monitoring stays part of the main UI surface while remaining isolated from the rest of the dashboard UI.
 
-Security
-- See SECURITY.md.
+### What it supports
+- **Stream inputs**: Add cameras by name and stream URL. HLS/MJPEG/HTTP are supported directly; RTSP is supported via a gateway (MediaMTX → HLS/WebRTC).
+- **Bulk import**: Paste a multi-line list using the `Name | URL` format to onboard cameras quickly.
+- **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts for live monitoring, with load/reconnect controls for the grid.
+
+## Quick start
+### Run the server (Gradle)
+```bash
+./gradlew :server:run
+```
+Then open: `http://localhost:8787/ui/ninja_mobile_new.html`
+
+### Run with Docker
+```bash
+docker-compose up --build
+```
+Then open: `http://localhost:8787/ui/ninja_mobile_new.html`
+
+## Development notes
+- API base defaults to `http://127.0.0.1:8787`.
+- DB default: SQLite file `netninja.db` in the server working directory.
+
+## Repo layout (high level)
+- `android-app/`: Android WebView app and local server bootstrapping.
+- `server/`: Ktor server module.
+- `web-ui/`: Static web assets (HTML/CSS/JS).
+- `docs/`: Implementation notes and WebView hardening details.
+
+## Contributing & security
+- See `CONTRIBUTING.md` and `SECURITY.md`.
