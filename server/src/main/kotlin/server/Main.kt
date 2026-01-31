@@ -17,5 +17,11 @@ fun main(args: Array<String>) {
   }
 
   val config = resolveServerConfig()
-  startServer(uiDir, host = config.host, port = config.port, dbPath = config.dbPath)
+  startServer(
+    uiDir,
+    host = config.host,
+    port = config.port,
+    dbPath = config.dbPath,
+    allowedOrigins = config.allowedOrigins
+  )
 }

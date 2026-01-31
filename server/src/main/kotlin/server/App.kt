@@ -69,14 +69,21 @@ data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Lo
 
 fun main() {
   val config = resolveServerConfig()
-  startServer(File("web-ui"), host = config.host, port = config.port, dbPath = config.dbPath)
+  startServer(
+    File("web-ui"),
+    host = config.host,
+    port = config.port,
+    dbPath = config.dbPath,
+    allowedOrigins = config.allowedOrigins
+  )
 }
 
 fun startServer(
   webUiDir: File,
   host: String = "127.0.0.1",
   port: Int = 8787,
-  dbPath: String = "netninja.db"
+  dbPath: String = "netninja.db",
+  allowedOrigins: List<String> = listOf("http://127.0.0.1:8787", "http://localhost:8787")
 ) {
   val conn = Db.open(dbPath)
   val devices = DeviceDao(conn)
@@ -292,7 +299,13 @@ fun startServer(
   embeddedServer(Netty, port = port, host = host) {
     install(ContentNegotiation) { json() }
     install(CORS) {
-      anyHost()
+      allowedOrigins
+        .mapNotNull { origin -> runCatching { java.net.URI(origin) }.getOrNull() }
+        .filter { it.scheme != null && !it.host.isNullOrBlank() }
+        .forEach { uri ->
+          val hostPort = if (uri.port == -1) uri.host else "${uri.host}:${uri.port}"
+          allowHost(hostPort, schemes = listOf(uri.scheme))
+        }
       allowHeader(HttpHeaders.ContentType)
       allowHeader(HttpHeaders.Authorization)
       allowMethod(HttpMethod.Get)
