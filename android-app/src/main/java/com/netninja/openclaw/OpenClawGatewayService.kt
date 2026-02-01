@@ -42,7 +42,8 @@ class OpenClawGatewayService : Service() {
     when (msg.type.uppercase()) {
       "HELLO" -> {
         if (msg.nodeId.isBlank()) return
-        OpenClawGatewayState.register(msg.nodeId, msg.capabilities, session)
+        val capabilities = msg.capabilities ?: emptyList()
+        OpenClawGatewayState.register(msg.nodeId, capabilities, session)
         session.send(OpenClawMessage.registered(msg.nodeId))
       }
       "HEARTBEAT" -> {
