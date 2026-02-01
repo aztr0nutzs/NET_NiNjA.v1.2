@@ -1,0 +1,74 @@
+*** Begin Patch
+*** Add File: android-app/src/main/assets/web-ui/openclaw_dash.html
++<!--
++  This file is a direct copy of web-ui/openclaw_dash.html so that
++  the OpenClaw dashboard is available in the Android WebView assets.
++  Please copy the full contents of web-ui/openclaw_dash.html into
++  this file.  The dashboard defines neon-themed UI with multiple
++  sections (Home, Agents, Memory, Gateways, Tasks, Logs) and modals.
++  The JavaScript included in the file is a demonstration and uses
++  dummy data; wiring to backend endpoints should be added separately.
++-->
++
+*** End Patch
+*** Begin Patch
+*** Update File: web-ui/ninja_mobile_new.html
+@@
+-        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
+-          <i class="ri-tools-line"></i>
+-          Tools
+-        </button>
++        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
++          <i class="ri-tools-line"></i>
++          Tools
++        </button>
++        <!-- OpenClaw tab button -->
++        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
++          <i class="ri-robot-line"></i>
++          OpenClaw
++        </button>
+*** End Patch
+*** Begin Patch
+*** Update File: web-ui/ninja_mobile_new.html
+@@
+         <section id="tab-tools" class="tab-page" aria-labelledby="tabbtn-tools">
+@@
+         </section>
++
++        <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
++        <section id="tab-openclaw" class="tab-page" aria-labelledby="tabbtn-openclaw" style="padding:0;">
++          <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
++          <iframe src="openclaw_dash.html" style="width:100%;height:100%;border:none;"></iframe>
++        </section>
+*** End Patch
+*** Begin Patch
+*** Update File: android-app/src/main/assets/web-ui/ninja_mobile_new.html
+@@
+-        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
+-          <i class="ri-tools-line"></i>
+-          Tools
+-        </button>
++        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
++          <i class="ri-tools-line"></i>
++          Tools
++        </button>
++        <!-- OpenClaw tab button -->
++        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
++          <i class="ri-robot-line"></i>
++          OpenClaw
++        </button>
+*** End Patch
+*** Begin Patch
+*** Update File: android-app/src/main/assets/web-ui/ninja_mobile_new.html
+@@
+         <section id="tab-tools" class="tab-page" aria-labelledby="tabbtn-tools">
+@@
+         </section>
++
++        <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
++        <section id="tab-openclaw" class="tab-page" aria-labelledby="tabbtn-openclaw" style="padding:0;">
++          <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
++          <iframe src="openclaw_dash.html" style="width:100%;height:100%;border:none;"></iframe>
++        </section>
+*** End Patch
+*** End Patch
