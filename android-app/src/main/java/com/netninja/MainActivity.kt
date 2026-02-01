@@ -5,10 +5,12 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Log
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
@@ -17,9 +19,11 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.netninja.openclaw.OpenClawGatewayService
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
@@ -27,13 +31,16 @@ import kotlin.concurrent.thread
 class MainActivity : AppCompatActivity() {
   private val logTag = "NetNinjaWebView"
   private val permissionRequestCode = 1201
+  private var locationPrompted = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     // Start engine service (foreground) so localhost server is up.
     startForegroundService(Intent(this, EngineService::class.java))
+    startOpenClawGateway()
     ensureRuntimePermissions()
+    ensureLocationServicesEnabled()
 
     val web = WebView(this)
     web.settings.javaScriptEnabled = true
@@ -95,6 +102,11 @@ class MainActivity : AppCompatActivity() {
     setContentView(web)
   }
 
+  override fun onResume() {
+    super.onResume()
+    ensureLocationServicesEnabled()
+  }
+
   private fun ensureRuntimePermissions() {
     val needed = mutableListOf<String>()
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -102,10 +114,12 @@ class MainActivity : AppCompatActivity() {
     ) {
       needed.add(Manifest.permission.ACCESS_FINE_LOCATION)
     }
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-      != PackageManager.PERMISSION_GRANTED
-    ) {
-      needed.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+      if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        != PackageManager.PERMISSION_GRANTED
+      ) {
+        needed.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+      }
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
       ContextCompat.checkSelfPermission(this, Manifest.permission.NEARBY_WIFI_DEVICES)
@@ -115,6 +129,37 @@ class MainActivity : AppCompatActivity() {
     }
     if (needed.isNotEmpty()) {
       ActivityCompat.requestPermissions(this, needed.toTypedArray(), permissionRequestCode)
+    }
+  }
+
+  private fun ensureLocationServicesEnabled() {
+    if (locationPrompted) return
+    val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+    val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      locationManager.isLocationEnabled
+    } else {
+      locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+        locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+    if (!enabled) {
+      locationPrompted = true
+      AlertDialog.Builder(this)
+        .setTitle("Enable location services")
+        .setMessage("Wi‑Fi scanning requires location services to be enabled. Turn on Location to discover devices.")
+        .setPositiveButton("Open Settings") { _, _ ->
+          startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+        }
+        .setNegativeButton("Cancel", null)
+        .show()
+    }
+  }
+
+  private fun startOpenClawGateway() {
+    val intent = Intent(this, OpenClawGatewayService::class.java)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      startForegroundService(intent)
+    } else {
+      startService(intent)
     }
   }
 

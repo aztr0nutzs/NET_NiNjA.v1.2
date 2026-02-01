@@ -27,5 +27,8 @@
       </intent-filter>
     </activity>
     <service android:name=".EngineService" android:exported="false" />
+    <service
+      android:name="com.netninja.openclaw.OpenClawGatewayService"
+      android:exported="false" />
   </application>
 </manifest>
