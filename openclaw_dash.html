@@ -598,12 +598,12 @@ input, .mono{
 <main class="nn-main">
   <section class="glass-panel" style="position:relative; width:auto; margin:0 0 14px; max-width:none;">
     <div class="neon-title" style="font-size:2.0rem" id="titleText">OPENCLAW</div>
-    <p class="subtitle" id="subText">Gateway dashboard shell. The sidebar tabs are wired. The backend is still your problem (as usual).</p>
+    <p class="subtitle" id="subText">Gateway dashboard. Live data is sourced from the OpenClaw API when available.</p>
 
     <div class="badges">
-      <div class="badge" id="badgeAgent"><span class="dot"></span><span>AGENT: <b>none</b></span></div>
-      <div class="badge" id="badgeMemory"><span class="dot"></span><span>MEMORY: <b>unknown</b></span></div>
-      <div class="badge" id="badgeGateways"><span class="dot"></span><span>GATEWAYS: <b>unknown</b></span></div>
+      <div class="badge" id="badgeAgent"><span class="dot"></span><span>NODES: <b>0</b></span></div>
+      <div class="badge" id="badgeMemory"><span class="dot"></span><span>UPTIME: <b>-</b></span></div>
+      <div class="badge" id="badgeGateways"><span class="dot"></span><span>ONLINE: <b>0</b></span></div>
     </div>
   </section>
 
@@ -612,7 +612,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Chat</h2>
-        <p class="subtitle" style="margin-top:-6px;">Message composition + routing UI placeholder (wire to your gateway).</p>
+        <p class="subtitle" style="margin-top:-6px;">Message composition for connected nodes (requires a gateway API).</p>
 
         <div class="controls">
           <div class="row">
@@ -647,7 +647,7 @@ input, .mono{
 
       <div class="card">
         <h2>Chat history</h2>
-        <p class="subtitle" style="margin-top:-6px;">This is a shell. You can stream messages here later.</p>
+        <p class="subtitle" style="margin-top:-6px;">Messages will appear here when the gateway provides them.</p>
         <div class="output-glass" style="margin-top:12px;">
           <h2>Messages</h2>
           <div class="output-text mono" id="chatStream" style="white-space:pre-wrap; min-height: 240px;">(no messages)</div>
@@ -665,6 +665,8 @@ input, .mono{
           <div>Host</div><div class="mono" id="stHost">not set</div>
           <div>Profile</div><div class="mono" id="stProfile">default</div>
           <div>Workspace</div><div class="mono" id="stWorkspace">~/.openclaw/workspace</div>
+          <div>Nodes</div><div class="mono" id="stNodes">0</div>
+          <div>Uptime</div><div class="mono" id="stUptime">-</div>
           <div>Last sync</div><div class="mono" id="stSync">never</div>
         </div>
 
@@ -709,11 +711,11 @@ input, .mono{
   <section class="view" id="view-channels">
     <div class="card">
       <h2>Channels</h2>
-      <p class="subtitle" style="margin-top:-6px;">Gateway channels live here. (This is your “Channels” tab from the screenshot.)</p>
+      <p class="subtitle" style="margin-top:-6px;">Nodes reported by the OpenClaw gateway.</p>
 
       <table class="table" aria-label="Channels table">
         <thead>
-          <tr><th>Gateway</th><th>Status</th><th>Sessions</th><th>Actions</th></tr>
+          <tr><th>Node</th><th>Status</th><th>Last seen</th><th>Actions</th></tr>
         </thead>
         <tbody id="gwRows"></tbody>
       </table>
@@ -727,7 +729,7 @@ input, .mono{
         <h2>Instances</h2>
         <table class="table" aria-label="Instances table">
           <thead>
-            <tr><th>Name</th><th>Profile</th><th>Workspace</th><th>Actions</th></tr>
+            <tr><th>Node</th><th>Capabilities</th><th>Last seen</th><th>Actions</th></tr>
           </thead>
           <tbody id="agentRows"></tbody>
         </table>
@@ -742,10 +744,10 @@ input, .mono{
       <div class="card">
         <h2>Selected instance</h2>
         <div class="kv" id="agentDetail">
-          <div>Name</div><div class="mono" id="agName">none</div>
-          <div>Workspace</div><div class="mono" id="agWs">-</div>
-          <div>Sandbox</div><div class="mono" id="agSandbox">disabled</div>
-          <div>Workspace access</div><div class="mono" id="agAccess">rw</div>
+          <div>ID</div><div class="mono" id="agName">none</div>
+          <div>Capabilities</div><div class="mono" id="agCaps">-</div>
+          <div>Last seen</div><div class="mono" id="agSeen">-</div>
+          <div>Last result</div><div class="mono" id="agResult">-</div>
         </div>
         <div class="row" style="margin-top:12px; justify-content:flex-end;">
           <button class="cybr-btn" type="button" id="btnAgentActivate">
@@ -795,7 +797,7 @@ input, .mono{
   <section class="view" id="view-cron">
     <div class="card">
       <h2>Cron Jobs</h2>
-      <p class="subtitle" style="margin-top:-6px;">Job schedule + execution log placeholder. Wire it later.</p>
+      <p class="subtitle" style="margin-top:-6px;">Job schedule + execution log (not yet wired).</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="cybr-btn" type="button" id="btnClearLogs">
           Clear
@@ -814,10 +816,10 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Skills</h2>
-        <p class="subtitle" style="margin-top:-6px;">Agent capabilities list placeholder.</p>
+        <p class="subtitle" style="margin-top:-6px;">Agent capabilities will appear here when available.</p>
         <div class="output-glass">
           <h2>Registered skills</h2>
-          <div class="output-text mono" id="skillsOut">No skills loaded. (Wire backend)</div>
+          <div class="output-text mono" id="skillsOut">No skills loaded.</div>
         </div>
       </div>
 
@@ -846,7 +848,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Modes</h2>
-        <p class="subtitle" style="margin-top:-6px;">Mode selector placeholder.</p>
+        <p class="subtitle" style="margin-top:-6px;">Mode selector (requires backend enforcement).</p>
         <div class="row">
           <button class="cybr-btn" type="button" id="btnModeSafe" style="flex:1;">
             Safe
@@ -878,7 +880,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Config</h2>
-        <p class="subtitle" style="margin-top:-6px;">Configuration view placeholder (separate tab like screenshot).</p>
+        <p class="subtitle" style="margin-top:-6px;">Configuration view (requires backend support).</p>
 
         <div class="row">
           <button class="cybr-btn" type="button" id="btnConfigFetch" style="flex:1;">
@@ -912,7 +914,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Debug</h2>
-        <p class="subtitle" style="margin-top:-6px;">Debug view placeholder (separate tab like screenshot).</p>
+        <p class="subtitle" style="margin-top:-6px;">Debug view (requires backend support).</p>
 
         <div class="row">
           <button class="cybr-btn" type="button" id="btnDebugFetch" style="flex:1;">
@@ -946,7 +948,7 @@ input, .mono{
 <div class="nn-modal" id="modalCommand" aria-hidden="true">
   <section class="glass-panel">
     <div class="neon-title" style="font-size:1.6rem">RUN COMMAND</div>
-    <p class="subtitle">UI shell. Wire it to your Android companion service.</p>
+    <p class="subtitle">Command runner (requires a gateway API).</p>
 
     <div class="controls">
       <input id="cmdText" class="mono" placeholder="openclaw status"/>
@@ -1153,92 +1155,88 @@ input, .mono{
   window.__ocui = { showView, openModal, closeModal, closeSide };
 })();
 
-/* ===== Demo data + wiring hooks ===== */
+/* ===== Live data wiring ===== */
 (function(){
   const state = {
     connected: false,
-    host: '',
-    profile: 'default',
-    workspace: '~/.openclaw/workspace',
-    agent: null,
-    memory: { indexed: false, items: 0 },
-    gateways: [
-      { key:'whatsapp', name:'WhatsApp', status:'down', sessions:0 },
-      { key:'telegram', name:'Telegram', status:'down', sessions:0 },
-      { key:'discord', name:'Discord', status:'down', sessions:0 },
-      { key:'imessage', name:'iMessage', status:'down', sessions:0 },
-    ],
-    agents: [
-      { name:'default', profile:'default', workspace:'~/.openclaw/workspace', sandbox:false, access:'rw' },
-      { name:'work', profile:'work', workspace:'~/.openclaw/workspace-work', sandbox:true, access:'ro' },
-    ],
-    tasks: [
-      { id:'S-1024', type:'session', target:'default', state:'idle' },
-      { id:'S-1025', type:'message', target:'whatsapp:family', state:'queued' },
-    ],
-    logs: [],
+    host: window.location.origin || '',
+    profile: '',
+    workspace: '',
+    nodes: [],
+    selectedNodeId: null,
+    uptimeMs: null,
+    lastSync: null,
     mode: 'safe'
+  };
+
+  const features = {
+    sessions: false,
+    cron: false
   };
 
   const el = (id)=>document.getElementById(id);
 
   const log = (msg)=>{
     const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    state.logs.push(line);
-
-    const ls = el('logStream');
-    if(ls) ls.textContent = state.logs.slice(-200).join('\n');
-
-    const c = el('consoleOut');
-    if(c) c.textContent = line;
-
-    const oc = el('overviewConsole');
-    if(oc) oc.textContent = line;
-
-    const cc = el('configConsole');
-    if(cc) cc.textContent = line;
-
-    const dc = el('debugConsole');
-    if(dc) dc.textContent = line;
-
-    const mc = el('modeConsole');
-    if(mc) mc.textContent = line;
-
-    const sc = el('skillsConsole');
-    if(sc) sc.textContent = line;
+    const consoles = ['logStream','consoleOut','overviewConsole','configConsole','debugConsole','modeConsole','skillsConsole'];
+    consoles.forEach((id)=>{
+      const target = el(id);
+      if(target) target.textContent = line;
+    });
   };
 
+  function formatUptime(ms){
+    if(ms == null) return '-';
+    const total = Math.floor(ms / 1000);
+    const hrs = Math.floor(total / 3600);
+    const mins = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    return `${hrs}h ${mins}m ${secs}s`;
+  }
+
+  function formatLastSeen(ts){
+    if(!ts) return '-';
+    const delta = Math.max(0, Date.now() - ts);
+    if(delta < 60_000) return `${Math.floor(delta / 1000)}s ago`;
+    if(delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
+    return new Date(ts).toLocaleString();
+  }
+
+  function isOnline(node){
+    return node.lastSeen && (Date.now() - node.lastSeen) < 120_000;
+  }
+
   function renderBadges(){
-    const a = el('badgeAgent');
-    const m = el('badgeMemory');
-    const g = el('badgeGateways');
-
-    a.querySelector('b').textContent = state.agent ? state.agent.name : 'none';
-    m.querySelector('b').textContent = state.memory.indexed ? `${state.memory.items} items` : 'not indexed';
-
-    const up = state.gateways.filter(x=>x.status==='up').length;
-    g.querySelector('b').textContent = `${up}/${state.gateways.length} up`;
+    const nodeCount = state.nodes.length;
+    const online = state.nodes.filter(isOnline).length;
+    el('badgeAgent').querySelector('b').textContent = String(nodeCount);
+    el('badgeMemory').querySelector('b').textContent = formatUptime(state.uptimeMs);
+    el('badgeGateways').querySelector('b').textContent = `${online}/${nodeCount}`;
   }
 
   function renderTop(){
     el('quickStatus').textContent = state.connected ? 'CONNECTED' : 'DISCONNECTED';
     el('stHost').textContent = state.host || 'not set';
-    el('stProfile').textContent = state.profile || 'default';
-    el('stWorkspace').textContent = state.workspace || '~/.openclaw/workspace';
+    el('stProfile').textContent = state.profile || '-';
+    el('stWorkspace').textContent = state.workspace || '-';
+    el('stNodes').textContent = String(state.nodes.length);
+    el('stUptime').textContent = formatUptime(state.uptimeMs);
+    el('stSync').textContent = state.lastSync ? state.lastSync.toLocaleString() : 'never';
   }
 
   function renderAgents(){
     const tb = el('agentRows');
     tb.innerHTML = '';
-    state.agents.forEach((a,i)=>{
+    state.nodes.forEach((node)=>{
       const tr = document.createElement('tr');
       tr.className = 'row-glass';
+      const caps = node.capabilities && node.capabilities.length ? node.capabilities.join(', ') : '-';
       tr.innerHTML = `
-        <td>${a.name}</td>
-        <td>${a.profile}</td>
-        <td class="mono">${a.workspace}</td>
+        <td class="mono">${node.id}</td>
+        <td>${caps}</td>
+        <td class="mono">${formatLastSeen(node.lastSeen)}</td>
         <td>
-          <button class="cybr-btn" type="button" data-act="selectAgent" data-i="${i}">
+          <button class="cybr-btn" type="button" data-act="selectNode" data-id="${node.id}">
             Select <span aria-hidden class="cybr-btn__glitch">Select</span>
           </button>
         </td>`;
@@ -1249,20 +1247,18 @@ input, .mono{
   function renderGateways(){
     const tb = el('gwRows');
     tb.innerHTML = '';
-    state.gateways.forEach((gw)=>{
+    state.nodes.forEach((node)=>{
       const tr = document.createElement('tr');
       tr.className = 'row-glass';
-      const dotClass = gw.status === 'up' ? 'badge' : 'badge warn';
-      const dot = gw.status === 'up' ? 'UP' : 'DOWN';
+      const online = isOnline(node);
+      const dotClass = online ? 'badge' : 'badge warn';
+      const dot = online ? 'UP' : 'DOWN';
       tr.innerHTML = `
-        <td><b style="color:var(--neon-blue)">${gw.name}</b></td>
+        <td class="mono"><b style="color:var(--neon-blue)">${node.id}</b></td>
         <td><span class="${dotClass}"><span class="dot"></span>${dot}</span></td>
-        <td class="mono">${gw.sessions}</td>
+        <td class="mono">${formatLastSeen(node.lastSeen)}</td>
         <td class="row">
-          <button class="cybr-btn" type="button" data-act="gwRestart" data-key="${gw.key}">
-            Restart <span aria-hidden class="cybr-btn__glitch">Restart</span>
-          </button>
-          <button class="cybr-btn" type="button" data-act="gwPing" data-key="${gw.key}">
+          <button class="cybr-btn" type="button" data-act="nodePing" data-id="${node.id}">
             Ping <span aria-hidden class="cybr-btn__glitch">Ping</span>
           </button>
         </td>`;
@@ -1270,31 +1266,12 @@ input, .mono{
     });
   }
 
-  function renderTasks(){
-    const tb = el('taskRows');
-    tb.innerHTML = '';
-    state.tasks.forEach((t, i)=>{
-      const tr = document.createElement('tr');
-      tr.className = 'row-glass';
-      tr.innerHTML = `
-        <td class="mono">${t.id}</td>
-        <td>${t.type}</td>
-        <td class="mono">${t.target}</td>
-        <td>${t.state}</td>
-        <td>
-          <button class="cybr-btn" type="button" data-act="taskCancel" data-i="${i}">
-            Cancel <span aria-hidden class="cybr-btn__glitch">Cancel</span>
-          </button>
-        </td>`;
-      tb.appendChild(tr);
-    });
-  }
-
-  function renderSelectedAgent(){
-    el('agName').textContent = state.agent ? state.agent.name : 'none';
-    el('agWs').textContent = state.agent ? state.agent.workspace : '-';
-    el('agSandbox').textContent = state.agent ? (state.agent.sandbox ? 'enabled' : 'disabled') : 'disabled';
-    el('agAccess').textContent = state.agent ? state.agent.access : 'rw';
+  function renderSelectedNode(){
+    const node = state.nodes.find(n => n.id === state.selectedNodeId);
+    el('agName').textContent = node ? node.id : 'none';
+    el('agCaps').textContent = node && node.capabilities?.length ? node.capabilities.join(', ') : '-';
+    el('agSeen').textContent = node ? formatLastSeen(node.lastSeen) : '-';
+    el('agResult').textContent = node && node.lastResult ? node.lastResult : '-';
   }
 
   function rerender(){
@@ -1302,180 +1279,131 @@ input, .mono{
     renderBadges();
     renderAgents();
     renderGateways();
-    renderTasks();
-    renderSelectedAgent();
+    renderSelectedNode();
     el('modeOut').textContent = state.mode;
   }
 
+  async function fetchJson(path, timeoutMs = 5000){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const base = state.host && state.host.startsWith('http') ? state.host : window.location.origin;
+      const url = new URL(path, base);
+      const res = await fetch(url.toString(), { signal: controller.signal, cache: 'no-store' });
+      if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function refresh(){
+    try {
+      const [status, nodes] = await Promise.all([
+        fetchJson('/openclaw/status'),
+        fetchJson('/openclaw/nodes')
+      ]);
+      state.connected = true;
+      state.nodes = Array.isArray(nodes) ? nodes : [];
+      state.uptimeMs = status?.uptimeMs ?? null;
+      state.lastSync = new Date();
+      if(!state.selectedNodeId && state.nodes.length){
+        state.selectedNodeId = state.nodes[0].id;
+      }
+      rerender();
+    } catch (err) {
+      state.connected = false;
+      state.nodes = [];
+      state.uptimeMs = null;
+      state.lastSync = new Date();
+      rerender();
+      log(`OpenClaw API error: ${err.message || err}`);
+    }
+  }
+
+  function disableView(name){
+    const btn = document.querySelector(`[data-nav="${name}"]`);
+    const view = document.getElementById(`view-${name}`);
+    if(btn) btn.style.display = 'none';
+    if(view) view.style.display = 'none';
+  }
+
+  if(!features.sessions) disableView('sessions');
+  if(!features.cron) disableView('cron');
+
   // Topbar
   el('btnConnect').addEventListener('click', ()=>{
-    state.connected = !state.connected;
-    state.host = state.connected ? (state.host || 'http://192.168.1.12:8080') : state.host;
-    el('stSync').textContent = new Date().toLocaleString();
-    log(state.connected ? 'Connected (demo).' : 'Disconnected (demo).');
-    rerender();
+    refresh();
   });
 
   el('btnRefresh').addEventListener('click', ()=>{
-    el('stSync').textContent = new Date().toLocaleString();
-    log('Refresh requested.');
-    rerender();
+    refresh();
   });
 
   el('btnPanic').addEventListener('click', ()=>{
-    log('PANIC: stop all running sessions + disconnect gateways (demo).');
-    state.tasks.forEach(t=>t.state='canceled');
-    state.gateways.forEach(g=>{g.status='down'; g.sessions=0;});
-    rerender();
+    log('Panic requested (not implemented).');
   });
 
   // Overview quick commands
-  el('btnStatus').addEventListener('click', ()=> log('Slash command: /status'));
-  el('btnConfigCmd').addEventListener('click', ()=> { log('Slash command: /config'); window.__ocui.showView('config'); });
-  el('btnDebugCmd').addEventListener('click', ()=> { log('Slash command: /debug'); window.__ocui.showView('debug'); });
+  el('btnStatus').addEventListener('click', ()=> refresh());
+  el('btnConfigCmd').addEventListener('click', ()=> { log('Config view opened.'); window.__ocui.showView('config'); });
+  el('btnDebugCmd').addEventListener('click', ()=> { log('Debug view opened.'); window.__ocui.showView('debug'); });
 
-  // Chat
+  // Chat placeholder
   el('btnMsgSend').addEventListener('click', ()=>{
-    const gw = el('msgGateway').value;
-    const ch = el('msgChannel').value.trim();
-    const body = el('msgBody').value.trim();
-    if(!ch || !body){ log('Message rejected: missing channel/body.'); return; }
-    const line = `SEND: ${gw}:${ch} -> ${body.slice(0,140)}${body.length>140?'…':''}`;
-    log(line);
-    const stream = el('chatStream');
-    if(stream){
-      const prev = stream.textContent === '(no messages)' ? '' : (stream.textContent + '\n');
-      stream.textContent = (prev + line).slice(-6000);
-    }
-    el('msgBody').value = '';
+    log('Message send not implemented.');
   });
 
-  // Sessions create
-  el('btnCreateTask').addEventListener('click', ()=>{
-    const t = {
-      id: 'S-' + Math.floor(Math.random()*9000+1000),
-      type: el('taskType').value.trim() || 'session',
-      target: el('taskTarget').value.trim() || 'default',
-      state: 'queued'
-    };
-    state.tasks.unshift(t);
-    log(`Enqueued session ${t.id} (${t.type})`);
-    renderTasks();
+  // Add instance
+  el('btnAddAgent').addEventListener('click', ()=>{
+    log('Instance creation not implemented.');
   });
 
-  // Skills / Modes
-  el('btnSkillRefresh').addEventListener('click', ()=>{
-    el('skillsOut').textContent = `- scan_network\n- onvif_discovery\n- rtsp_probe\n(wire backend)`;
-    log('Skills refreshed (demo).');
-  });
-  el('btnSkillInvoke').addEventListener('click', ()=>{
-    log('Invoke skill (demo).');
+  // Instance actions
+  el('btnAgentActivate').addEventListener('click', ()=> log('Activate instance not implemented.'));
+  el('btnAgentStop').addEventListener('click', ()=> log('Stop instance not implemented.'));
+
+  // Modes
+  document.querySelectorAll('[data-mode]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.mode = btn.getAttribute('data-mode');
+      log(`Mode set: ${state.mode}`);
+      el('modeOut').textContent = state.mode;
+    });
   });
 
-  el('btnModeSafe').addEventListener('click', ()=>{
-    state.mode = 'safe';
-    log('Mode set: safe (demo).');
-    rerender();
-  });
-  el('btnModePower').addEventListener('click', ()=>{
-    state.mode = 'power';
-    log('Mode set: power (demo).');
-    rerender();
-  });
-
-  // Config / Debug views
-  el('btnConfigFetch').addEventListener('click', ()=>{
-    log('FETCH: /config (demo)');
-    el('configOut').textContent = JSON.stringify({ host: state.host || null, profile: state.profile, workspace: state.workspace }, null, 2);
-  });
-
-  el('btnDebugFetch').addEventListener('click', ()=>{
-    log('FETCH: /debug (demo)');
-    el('debugOut').textContent = '(demo) debug endpoint response would render here.';
-  });
-  el('btnDebugDump').addEventListener('click', ()=>{
-    log('Dumping local UI state (demo).');
-    el('debugOut').textContent = JSON.stringify(state, null, 2).slice(0, 9000);
-  });
-
-  // Settings modal
-  const modals = {
-    settings: document.getElementById('modalSettings'),
-    command: document.getElementById('modalCommand')
-  };
-
-  // modal wiring
-  document.querySelectorAll('[data-open="command"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.openModal('command'));
-  });
-
-  document.querySelectorAll('[data-open="settings"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.openModal('settings'));
-  });
-
-  document.querySelectorAll('[data-close="settings"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.closeModal('settings'));
-  });
-  document.querySelectorAll('[data-close="command"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.closeModal('command'));
-  });
-
+  // Save settings modal
   el('btnSaveSettings').addEventListener('click', ()=>{
-    state.host = el('setHost').value.trim();
-    state.profile = el('setProfile').value.trim() || 'default';
-    log(`Settings saved: host=${state.host||'(none)'} profile=${state.profile}`);
+    state.host = el('setHost').value.trim() || window.location.origin;
+    state.profile = el('setProfile').value.trim();
+    log(`Settings saved. Using ${state.host}`);
     rerender();
     window.__ocui.closeModal('settings');
+    refresh();
   });
 
   el('btnCmdRun').addEventListener('click', ()=>{
     const cmd = el('cmdText').value.trim();
     if(!cmd){ el('cmdOut').textContent='Enter a command.'; return; }
-    log(`RUN: ${cmd}`);
-    el('cmdOut').textContent = `(demo) executed: ${cmd}`;
+    el('cmdOut').textContent = 'Command execution not implemented.';
   });
 
-  // Cron clear
-  el('btnClearLogs').addEventListener('click', ()=>{
-    state.logs = [];
-    el('logStream').textContent = '(no events)';
-    el('consoleOut').textContent = 'Awaiting connection.';
-    el('overviewConsole').textContent = 'Ready.';
-    el('configConsole').textContent = '(idle)';
-    el('debugConsole').textContent = '(idle)';
-    el('modeConsole').textContent = '(idle)';
-    el('skillsConsole').textContent = '(idle)';
-  });
-
-  // Table action wiring (instances/channels/sessions)
   document.body.addEventListener('click', (e)=>{
     const btn = e.target.closest('[data-act]');
     if(!btn) return;
     const act = btn.getAttribute('data-act');
-    if(act === 'selectAgent'){
-      const i = Number(btn.getAttribute('data-i'));
-      state.agent = state.agents[i] || null;
-      log(`Selected instance: ${state.agent ? state.agent.name : 'none'}`);
-      rerender();
-    } else if(act === 'gwRestart'){
-      const key = btn.getAttribute('data-key');
-      const gw = state.gateways.find(x=>x.key===key);
-      if(gw){ gw.status='up'; gw.sessions=Math.floor(Math.random()*4); }
-      log(`Channel restart: ${key}`);
-      rerender();
-    } else if(act === 'gwPing'){
-      const key = btn.getAttribute('data-key');
-      log(`Channel ping: ${key}`);
-    } else if(act === 'taskCancel'){
-      const i = Number(btn.getAttribute('data-i'));
-      if(state.tasks[i]) state.tasks[i].state='canceled';
-      log(`Session canceled: ${state.tasks[i] ? state.tasks[i].id : '(missing)'}`);
-      renderTasks();
+    if(act === 'selectNode'){
+      const id = btn.getAttribute('data-id');
+      state.selectedNodeId = id;
+      renderSelectedNode();
+    } else if(act === 'nodePing'){
+      const id = btn.getAttribute('data-id');
+      log(`Ping requested for ${id} (not implemented).`);
     }
   });
 
   rerender();
-  log('UI booted (demo).');
+  refresh();
 })();
 </script>
 </body>

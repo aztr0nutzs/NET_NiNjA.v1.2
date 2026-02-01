@@ -11,6 +11,8 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.text.format.Formatter
 import androidx.core.content.ContextCompat
+import com.netninja.cam.OnvifDiscoveryService
+import com.netninja.openclaw.OpenClawGatewayState
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -97,6 +99,7 @@ import android.database.sqlite.SQLiteDatabase
   val updatedAt: Long = System.currentTimeMillis()
 )
 @Serializable data class PermissionsActionRequest(val action: String? = null)
+@Serializable data class OpenClawStatus(val nodes: Int, val uptimeMs: Long)
 
 class AndroidLocalServer(private val ctx: Context) {
 
@@ -215,6 +218,20 @@ class AndroidLocalServer(private val ctx: Context) {
 
       get("/api/v1/discovery/results") {
         call.respond(cachedResults())
+      }
+
+      get("/api/v1/onvif/discover") {
+        val service = OnvifDiscoveryService()
+        val devices = withContext(Dispatchers.IO) { service.discover() }
+        call.respond(devices)
+      }
+
+      get("/openclaw/status") {
+        call.respond(OpenClawStatus(OpenClawGatewayState.nodeCount(), OpenClawGatewayState.uptimeMs()))
+      }
+
+      get("/openclaw/nodes") {
+        call.respond(OpenClawGatewayState.listNodes())
       }
 
       get("/api/v1/discovery/progress") {

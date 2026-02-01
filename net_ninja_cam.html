@@ -326,6 +326,26 @@ body{
 }
 
 /* ===== Mobile: stop absolute overlays and stack panels ===== */
+/* Added: header video styling for cam UI */
+.nn-topbar {
+  position: relative;
+  overflow: hidden;
+  height: 200px;
+}
+.nn-topbar .nn-header-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 0;
+}
+.nn-topbar > .left,
+.nn-topbar > .right {
+  position: relative;
+  z-index: 1;
+}
 @media (max-width: 780px){
   body{
     overflow:auto !important;
@@ -403,6 +423,8 @@ body{
 </nav>
 
 <header class="nn-topbar">
+  <!-- Header video: loops continuously without sound -->
+  <video class="nn-header-video" src="ninja_cam_header.mp4" autoplay loop muted playsinline></video>
   <div class="left">
     <button class="nn-hamburger" id="nnHamburger" type="button" aria-label="Open menu">
       <div class="bars">
@@ -555,8 +577,8 @@ body{
         </button>
 
         <button class="cybr-btn" id="btnDiscover" type="button">
-          ONVIF hint
-          <span aria-hidden class="cybr-btn__glitch">ONVIF hint</span>
+          Discover ONVIF
+          <span aria-hidden class="cybr-btn__glitch">Discover ONVIF</span>
         </button>
       </div>
     </div>
@@ -1220,8 +1242,34 @@ document.getElementById('btnReconnectAll').addEventListener('click', () => {
   setStatus('Reconnect all triggered.');
 });
 
+async function discoverOnvif() {
+  setStatus('Scanning for ONVIF devices...', false);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch('/api/v1/onvif/discover', { signal: controller.signal, cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const urls = (Array.isArray(data) ? data : []).map((item) => item.rtsp || item.xaddr || item.url).filter(Boolean);
+    if (!urls.length) {
+      setStatus('No ONVIF devices found.', true);
+      return;
+    }
+    const ta = document.getElementById('inputText');
+    ta.value = urls.join('\\n');
+    document.getElementById('translateBtn').click();
+    setStatus(`Discovered ${urls.length} ONVIF device(s).`, false);
+  } catch (err) {
+    setStatus(`ONVIF discovery failed: ${err.message || err}`, true);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 document.getElementById('btnDiscover').addEventListener('click', () => {
-  setStatus('ONVIF discovery is a hook. Feed discovered stream URLs into the list.', true);
+  discoverOnvif();
 });
 
 setGridClass('grid-4');
