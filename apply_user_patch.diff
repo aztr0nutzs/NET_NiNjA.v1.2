@@ -1,0 +1,102 @@
+diff --git a/README.md b/README.md
+index eb8bcbff441a080575d1949b06dd62686c48f870..d8bb2e91cc4b9b7851c9c7da9d9835281244d863 100644
+--- a/README.md
++++ b/README.md
+@@ -10,49 +10,61 @@ NET NiNjA is a local-first network dashboard that combines a Ktor-based server,
+@@
+ ## Ninja CAM (IP camera viewer tab)
+@@
+-## Ninja CAM (IP camera viewer tab)
+-![Ninja CAM header](ninja_cam_header.png)
+-
+-The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that loads the IP camera viewer via `net_ninja_cam.html` and keeps it isolated from the rest of the dashboard UI. The tab is wired into the primary bottom navigation and rendered as an embedded view so it feels native to the app shell.
+-
+-### What it supports
+-- **Flexible stream inputs**: Add a camera by name and URL, including HLS, MJPEG, or HTTP streams. RTSP streams are supported via a gateway such as MediaMTX that converts RTSP to HLS/WebRTC for browser playback.
+-- **Bulk import**: Paste a multi-line list of cameras using the `Name | URL` format for quick onboarding.
+-- **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
++## Ninja CAM (IP camera viewer tab)
++![Ninja CAM header](ninja_cam_header.png)
++
++The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that loads the IP camera viewer via `net_ninja_cam.html` and keeps it isolated from the rest of the dashboard UI. The tab is wired into the primary bottom navigation and rendered as an embedded view so it feels native to the app shell.
++
++### What it supports
++- **Flexible stream inputs**: Add a camera by name and URL, including HLS, MJPEG, or HTTP streams. RTSP streams are supported via a gateway such as MediaMTX that converts RTSP to HLS/WebRTC for browser playback.
++- **Bulk import**: Paste a multi-line list of cameras using the `Name | URL` format for quick onboarding.
++- **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
++
++## OpenClaw Android Companion integration
++![OpenClaw Companion header](ninja_claw.png)
++
++The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
++
++### What it supports
++- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
++- **Channel visibility**: A dedicated channels table lists gateway names, status, and active session counts.
++- **Agent/instance control surface**: A table of agent instances with profile/workspace metadata, plus quick actions and a detail panel for sandbox and access mode.
++- **Sessions tracking**: A sessions table for monitoring active task/session entries.
++- **Command runner modal**: A command dialog is available to run OpenClaw commands (e.g., `openclaw status`) from within the dashboard shell.
+
+ diff --git a/ninja_claw.mp4 b/android-app/src/main/assets/web-ui/ninja_claw.mp4
+ similarity index 100%
+ rename from ninja_claw.mp4
+ rename to android-app/src/main/assets/web-ui/ninja_claw.mp4
+
+ diff --git a/android-app/src/main/assets/web-ui/ninja_mobile_new.html b/android-app/src/main/assets/web-ui/ninja_mobile_new.html
+ index f7957efe9efd5437ff81d636833c92b360e6ef1d..e1e514ce884ccdc2b4dc5f9384296c97e43564c5 100644
+ --- a/android-app/src/main/assets/web-ui/ninja_mobile_new.html
+ +++ b/android-app/src/main/assets/web-ui/ninja_mobile_new.html
+@@ -1097,7 +1097,7 @@
+            <video id="headerVideo" autoplay muted loop playsinline>
+-            <source src="ninja_header.mp4" type="video/mp4" />
++            <source src="ninja_claw.mp4" type="video/mp4" />
+            </video>
+@@
+ diff --git a/web-ui/ninja_mobile_new.html b/web-ui/ninja_mobile_new.html
+ index f7957efe9efd5437ff81d636833c92b360e6ef1d..e1e514ce884ccdc2b4dc5f9384296c97e43564c5 100644
+ --- a/web-ui/ninja_mobile_new.html
+ +++ b/web-ui/ninja_mobile_new.html
+@@ -1097,7 +1097,7 @@
+            <video id="headerVideo" autoplay muted loop playsinline>
+-            <source src="ninja_header.mp4" type="video/mp4" />
++            <source src="ninja_claw.mp4" type="video/mp4" />
+            </video>
+@@
+ diff --git a/README_PROPOSED.md b/README_PROPOSED.md
+ index fb29a366748527110fe464dda9128aa6a6ab9f1a..b496307819fd492ba5d51c577b531661749a2a56 100644
+ --- a/README_PROPOSED.md
+ +++ b/README_PROPOSED.md
+@@ -1,47 +1,59 @@
+@@
+ ## Ninja CAM (IP camera viewer tab)
+@@
+-## Ninja CAM (IP camera viewer tab)
+-![Ninja CAM header](ninja_cam_header.png)
+-
+-The Ninja CAM experience is a dedicated **Cameras** tab inside the dashboard. It loads the `net_ninja_cam.html` viewer inside the tab so IP camera monitoring stays part of the main UI surface while remaining isolated from the rest of the dashboard UI.
+-
+-### What it supports
+-- **Stream inputs**: Add cameras by name and stream URL. HLS/MJPEG/HTTP are supported directly; RTSP is supported via a gateway (MediaMTX → HLS/WebRTC).
+-- **Bulk import**: Paste a multi-line list using the `Name | URL` format to onboard cameras quickly.
+-- **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts for live monitoring, with load/reconnect controls for the grid.
++## Ninja CAM (IP camera viewer tab)
++![Ninja CAM header](ninja_cam_header.png)
++
++The Ninja CAM experience is a dedicated **Cameras** tab inside the dashboard. It loads the `net_ninja_cam.html` viewer inside the tab so IP camera monitoring stays part of the main UI surface while remaining isolated from the rest of the dashboard UI.
++
++### What it supports
++- **Stream inputs**: Add cameras by name and stream URL. HLS/MJPEG/HTTP are supported directly; RTSP is supported via a gateway (MediaMTX → HLS/WebRTC).
++- **Bulk import**: Paste a multi-line list using the `Name | URL` format to onboard cameras quickly.
++- **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts for live monitoring, with load/reconnect controls for the grid.
++
++## OpenClaw Android Companion integration
++![OpenClaw Companion header](ninja_claw.png)
++
++The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
++
++### What it supports
++- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
++- **Channel visibility**: A dedicated channels table lists gateway names, status, and active session counts.
++- **Agent/instance control surface**: A table of agent instances with profile/workspace metadata, plus quick actions and a detail panel for sandbox and access mode.
++- **Sessions tracking**: A sessions table for monitoring active task/session entries.
++- **Command runner modal**: A command dialog is available to run OpenClaw commands (e.g., `openclaw status`) from within the dashboard shell.
