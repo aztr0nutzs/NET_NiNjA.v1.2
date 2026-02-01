@@ -1,6 +1,7 @@
 
 package server
 
+import com.netninja.cam.OnvifDiscoveryService
 import core.alerts.ChangeDetector
 import core.discovery.*
 import core.metrics.Uptime
@@ -31,6 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import server.openclaw.OpenClawGatewayRegistry
+import server.openclaw.openClawRoutes
 
 data class ScanRequest(val subnet: String? = null, val timeoutMs: Int? = 250)
 data class ActionRequest(val ip: String? = null, val mac: String? = null, val url: String? = null, val command: String? = null)
@@ -95,6 +98,7 @@ fun startServer(
   val scanProgress = AtomicReference(ScanProgress())
   val scanCancel = AtomicBoolean(false)
   val scanJob = AtomicReference<Job?>(null)
+  val openClawGateway = OpenClawGatewayRegistry()
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
@@ -380,6 +384,12 @@ fun startServer(
         call.respond(currentResults())
       }
 
+      get("/api/v1/onvif/discover") {
+        val service = OnvifDiscoveryService()
+        val devices = withContext(Dispatchers.IO) { service.discover() }
+        call.respond(devices)
+      }
+
       get("/api/v1/discovery/progress") {
         call.respond(scanProgress.get())
       }
@@ -578,6 +588,8 @@ fun startServer(
           "lastScanAt" to lastScanAt.get()
         ))
       }
+
+      openClawRoutes(openClawGateway)
 
       // SSE stream for logs
       get("/api/v1/logs/stream") {

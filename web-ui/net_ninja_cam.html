@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NET_NiNjA :: CAM VIEWER</title>
+
+<!-- Attached theme CSS (verbatim) -->
+<style>
+/* Created by: Justin Linwood Ross */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+:root{
+  --bg1:#050012;
+  --neon-pink:#ff00ff;
+  --neon-blue:#00f0ff;
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+body{
+  background: radial-gradient(circle at 30% 20%, #120023 0%, #04000a 60%, #000 100%);
+  color:#e8e6ff;
+  overflow:hidden;
+  position:relative;
+}
+
+#bg { position:fixed; inset:0; z-index:0; display:block; }
+
+.glass-panel{
+  position:absolute; z-index:2;
+  width:440px; padding:22px; border-radius:16px;
+  background: var(--glass-bg);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow:
+    0 8px 40px rgba(0,0,0,0.6),
+    0 0 35px rgba(255,0,255,0.08),
+    0 0 18px rgba(0,255,255,0.05);
+}
+.panel-left{ left:30px; top:30px; }
+.panel-right{ right:30px; top:30px; height:80%; overflow:hidden; display:flex; flex-direction:column; }
+.panel-footer{ left:30px; bottom:24px; width: calc(100% - 60px); display:flex; justify-content:space-between; align-items:center; }
+
+.title{ font-size:22px; letter-spacing:1px; font-weight:900; color:var(--neon-blue); margin-bottom:10px; }
+.sub{ font-size:12px; color:#aaa; margin-bottom:14px; }
+
+.cam-grid{
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:12px;
+  flex:1;
+  overflow:auto;
+  padding-right:6px;
+}
+.cam-card{
+  background: rgba(0,0,0,0.35);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:10px;
+  padding:12px;
+  min-height:120px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.cam-title{
+  font-size:12px; color:#88f9ff;
+}
+.cam-url{
+  font-size:10px; color:#fff; opacity:0.7; word-break:break-all;
+}
+.btn{
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(90deg, rgba(0,240,255,0.12), rgba(255,0,255,0.12));
+  color: #fff;
+  font-size:12px;
+  cursor:pointer;
+}
+.btn:hover{ filter:brightness(1.2); }
+
+.stat{
+  font-size:11px; color:#7a7; letter-spacing:0.6px;
+}
+
+.hud{
+  display:flex; gap:12px; align-items:center; font-size:11px; color:#0ff;
+}
+.hud span{ opacity:0.7; }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="glass-panel panel-left">
+  <div class="title">NINJA CAM</div>
+  <div class="sub">Real-time camera discovery</div>
+
+  <div class="hud">
+    <span>NETWORK: ONLINE</span>
+    <span>|</span>
+    <span>STATUS: ACTIVE</span>
+  </div>
+</div>
+
+<div class="glass-panel panel-right">
+  <div class="title">CAMERA GRID</div>
+  <div class="sub">Auto-discovered endpoints</div>
+  <div class="cam-grid" id="camGrid">
+    <!-- Cards injected here -->
+  </div>
+</div>
+
+<div class="glass-panel panel-footer">
+  <div class="stat" id="statusText">Awaiting scan...</div>
+  <button class="btn" id="scanBtn">DISCOVER ONVIF</button>
+</div>
+
+<script>
+// Background animation (v2)
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let t=0;
+function loop(){
+  t += 0.01;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=0;i<80;i++){
+    const x = (Math.sin(t+i) +1) * 0.5 * canvas.width;
+    const y = (Math.cos(t*1.2+i) +1) * 0.5 * canvas.height;
+    ctx.fillStyle = `rgba(0,240,255,${0.08})`;
+    ctx.beginPath();
+    ctx.arc(x,y, 1.4, 0, Math.PI*2);
+    ctx.fill();
+  }
+  requestAnimationFrame(loop);
+}
+loop();
+
+const statusText = document.getElementById('statusText');
+const camGrid = document.getElementById('camGrid');
+const scanBtn = document.getElementById('scanBtn');
+
+function addCard(name, url){
+  const div = document.createElement('div');
+  div.className = 'cam-card';
+  div.innerHTML = `
+    <div class="cam-title">${name}</div>
+    <div class="cam-url">${url}</div>
+  `;
+  camGrid.appendChild(div);
+}
+
+scanBtn.addEventListener('click', async () => {
+  camGrid.innerHTML = '';
+  statusText.textContent = 'Scanning for ONVIF devices...';
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch('/api/v1/onvif/discover', { signal: controller.signal, cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const urls = (Array.isArray(data) ? data : []).map((item) => item.rtsp || item.xaddr || item.url).filter(Boolean);
+    if (!urls.length) {
+      statusText.textContent = 'No ONVIF devices found.';
+      return;
+    }
+    urls.forEach((url, idx) => addCard(`CAM-${String(idx + 1).padStart(3, '0')}`, url));
+    statusText.textContent = `Scan complete. ${urls.length} camera(s) found.`;
+  } catch (err) {
+    statusText.textContent = `Discovery failed: ${err.message || err}`;
+  } finally {
+    clearTimeout(timer);
+  }
+});
+</script>
+</body>
+</html>
