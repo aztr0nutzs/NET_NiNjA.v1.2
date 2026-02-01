@@ -7,7 +7,7 @@ private val gson = Gson()
 data class OpenClawMessage(
   val type: String = "",
   val nodeId: String = "",
-  val capabilities: List<String> = emptyList(),
+  val capabilities: List<String>? = emptyList(),
   val payload: String? = null
 ) {
   companion object {
