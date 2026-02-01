@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpenClaw :: Gateway Dashboard</title>
+
+<style>
+/* Created by: Justin Linwood Ross */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+:root{
+  --bg1:#050012;
+  --neon-pink:#ff00ff;
+  --neon-blue:#00f0ff;
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+
+  --side-w: 300px;
+  --top-h: 64px;
+
+  /* Sidebar look closer to screenshot */
+  --side-bg: linear-gradient(180deg, rgba(0,0,0,0.86), rgba(0,0,0,0.58));
+  --side-border: rgba(255,255,255,0.06);
+  --side-text: #e8e6ff;
+  --side-muted: rgba(232,230,255,0.70);
+
+  --active-bg: rgba(210, 118, 94, 0.85); /* orange-ish highlight like screenshot */
+  --active-bg2: rgba(210, 118, 94, 0.55);
+  --active-text: #ffffff;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+body{
+  background: radial-gradient(circle at 30% 20%, #120023 0%, #04000a 60%, #000 100%);
+  color:#e8e6ff;
+  overflow:hidden;
+  position:relative;
+}
+
+#bg { position:fixed; inset:0; z-index:0; display:block; }
+
+.glass-panel{
+  position:absolute; z-index:2;
+  width:440px; padding:22px; border-radius:16px;
+  background: var(--glass-bg);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow:
+    0 8px 40px rgba(0,0,0,0.6),
+    0 0 35px rgba(255,0,255,0.08),
+    0 0 80px rgba(0,240,255,0.06);
+  backdrop-filter: blur(10px) saturate(140%);
+  color:#fff;
+  overflow:visible;
+}
+
+.visually-hidden{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+
+.neon-title{
+  font-size:2.6rem; color:var(--neon-pink); margin:4px 0 6px;
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 40px var(--neon-blue), 0 0 90px var(--neon-pink);
+  letter-spacing:2px;
+  animation: neonFlicker 2.5s infinite alternate;
+}
+@keyframes neonFlicker {
+  0%,100%{ text-shadow:0 0 10px #ff00ff,0 0 40px #00f0ff,0 0 90px #ff00ff; }
+  25%{ text-shadow:0 0 15px #ff00ff,0 0 50px #00f0ff,0 0 100px #ff00ff; }
+  50%{ text-shadow:0 0 12px #ff00ff,0 0 45px #00f0ff,0 0 95px #ff00ff; }
+  75%{ text-shadow:0 0 18px #ff00ff,0 0 55px #00f0ff,0 0 105px #ff00ff; }
+}
+
+.subtitle{ color:#bcb7df; margin:0 0 12px; font-size:0.95rem; }
+
+.controls{ display:flex; flex-direction:column; gap:12px; }
+textarea{
+  width:100%; min-height:110px; resize:vertical; border-radius:10px; padding:12px; font-size:14px;
+  background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.04); color:#fff; outline:none;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+}
+.actions{ display:flex; gap:8px; align-items:center; }
+
+select, button{
+  padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.45); color:#fff; font-weight:700;
+}
+button{
+  background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
+  background-size:200% 200%;
+  color:#000; cursor:pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,0,255,0.06);
+  animation: buttonGlow 4s ease infinite;
+}
+button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,0,255,0.12); }
+@keyframes buttonGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.output-glass{
+  margin-top:12px;
+  background: rgba(0,0,0,0.35);
+  border-radius:10px;
+  padding:10px;
+  border:1px solid rgba(255,255,255,0.03);
+  color:#dfefff;
+  line-height:1.45;
+  box-shadow: 0 0 8px #00f0ff, 0 0 24px #ff00ff, 0 0 48px #00f0ff;
+  animation: panelPulse 3s infinite alternate;
+}
+@keyframes panelPulse {
+  0%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
+  50%{box-shadow:0 0 12px #00f0ff,0 0 30px #ff00ff,0 0 60px #00f0ff;}
+  100%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
+}
+.output-glass h2{ margin:0 0 8px; color:var(--neon-blue); font-size:1rem; }
+.output-text{ color:#dfefff; font-size:0.98rem; min-height:36px; }
+
+.arc { position: fixed; width:6px; height:6px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 24px var(--neon-blue); pointer-events:none; animation: arcfade 280ms ease-out forwards; }
+@keyframes arcfade { to { transform: scale(2); opacity:0; } }
+
+@media (max-width:1100px) { }
+
+/* ===== NET_NiNjA cyber button skin (kept) ===== */
+.cybr-btn{
+  --btn-bg: rgba(0,0,0,0.55);
+  --btn-border: rgba(255,255,255,0.10);
+  --btn-text: #e8e6ff;
+  --btn-glow1: var(--neon-blue);
+  --btn-glow2: var(--neon-pink);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 12px 16px;
+  min-height: 44px;
+
+  border-radius: 12px;
+  border: 1px solid var(--btn-border);
+  background: linear-gradient(90deg, rgba(255,0,255,0.22), rgba(0,240,255,0.18)) , var(--btn-bg);
+  color: var(--btn-text);
+  font-family: inherit;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+
+  cursor: pointer;
+  user-select: none;
+
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.55),
+    0 0 18px rgba(0,240,255,0.16),
+    0 0 18px rgba(255,0,255,0.14);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+.cybr-btn:active{ transform: translateY(1px); }
+.cybr-btn:hover{
+  box-shadow:
+    0 16px 34px rgba(0,0,0,0.62),
+    0 0 26px rgba(0,240,255,0.22),
+    0 0 26px rgba(255,0,255,0.18);
+}
+.cybr-btn__glitch{
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.0;
+  pointer-events: none;
+}
+.cybr-btn:hover .cybr-btn__glitch{
+  display:flex;
+  opacity: 0.12;
+  filter: blur(0.4px);
+  text-shadow: 0 0 10px var(--neon-blue), 0 0 14px var(--neon-pink);
+  animation: cybrFlicker 420ms steps(2,end) 1;
+}
+@keyframes cybrFlicker{
+  0%{ transform: translate(0,0); opacity: 0.0; }
+  25%{ transform: translate(1px,-1px); opacity: 0.12; }
+  55%{ transform: translate(-1px,1px); opacity: 0.08; }
+  100%{ transform: translate(0,0); opacity: 0.10; }
+}
+
+/* ===== Layout system ===== */
+.nn-overlay{
+  position:fixed; inset:0;
+  background: rgba(0,0,0,0.65);
+  z-index: 20;
+  opacity:0; pointer-events:none;
+  transition: opacity .18s ease;
+}
+.nn-overlay.show{ opacity:1; pointer-events:auto; }
+
+.nn-side{
+  position:fixed; top:0; left:0; height:100%;
+  width: var(--side-w);
+  padding: 14px 14px 18px;
+  z-index: 25;
+  transform: translateX(-104%);
+  transition: transform .22s ease;
+  background: var(--side-bg);
+  border-right: 1px solid var(--side-border);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.70),
+              0 0 32px rgba(0,240,255,0.10),
+              0 0 32px rgba(255,0,255,0.10);
+  backdrop-filter: blur(12px) saturate(140%);
+  overflow:auto;
+}
+.nn-side.open{ transform: translateX(0); }
+
+.nn-side-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 6px 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 10px;
+}
+.nn-logo{
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(0,240,255,0.95), rgba(255,0,255,0.85));
+  box-shadow: 0 0 18px rgba(0,240,255,0.18), 0 0 18px rgba(255,0,255,0.18);
+}
+.nn-side-title{
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #ffffff;
+}
+
+.nn-section{
+  margin: 10px 4px 14px;
+}
+.nn-section-label{
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--side-muted);
+  margin: 12px 6px 8px;
+  letter-spacing: 0.8px;
+  text-transform:none;
+}
+
+.nn-nav{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+/* Sidebar item styled like the screenshot list */
+.nn-item{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.20);
+  color: var(--side-text);
+  cursor:pointer;
+  font-weight: 900;
+  text-align:left;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.35);
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+.nn-item:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.10);
+}
+.nn-item.active{
+  background: linear-gradient(90deg, var(--active-bg), var(--active-bg2));
+  border-color: rgba(255,255,255,0.10);
+  color: var(--active-text);
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.55),
+    0 0 18px rgba(255, 150, 90, 0.15);
+}
+.nn-ico{
+  width: 22px;
+  height: 22px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  opacity: 0.95;
+}
+.nn-ico svg{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+.nn-topbar{
+  position:fixed; top:0; left:0; right:0;
+  height: var(--top-h);
+  z-index: 15;
+  display:flex; align-items:center; justify-content:space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.74), rgba(0,0,0,0.40));
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+.nn-topbar .left, .nn-topbar .right{ display:flex; align-items:center; gap:10px; }
+.nn-brand{ font-weight: 900; letter-spacing: 1px; color:#dfefff; }
+.nn-chip{
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  font-weight: 900;
+  color:#fff;
+}
+
+.nn-hamburger{
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.45);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.55),
+              0 0 18px rgba(0,240,255,0.10),
+              0 0 18px rgba(255,0,255,0.10);
+}
+.nn-hamburger:hover{ transform: translateY(-1px); }
+.nn-hamburger .bars{ display:flex; flex-direction:column; gap:6px; }
+.nn-hamburger .bar{
+  width: 18px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue));
+  box-shadow: 0 0 12px rgba(0,240,255,0.18), 0 0 12px rgba(255,0,255,0.18);
+}
+
+.nn-main{
+  position:relative;
+  z-index: 5;
+  padding-top: calc(var(--top-h) + 18px);
+  padding-left: 18px;
+  padding-right: 18px;
+  padding-bottom: 18px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.nn-grid{
+  display:grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 14px;
+}
+@media (max-width: 980px){
+  .nn-grid{ grid-template-columns: 1fr; }
+}
+
+.card{
+  border-radius: 16px;
+  background: var(--glass-bg);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6),
+              0 0 35px rgba(255,0,255,0.08),
+              0 0 80px rgba(0,240,255,0.06);
+  backdrop-filter: blur(10px) saturate(140%);
+  padding: 16px;
+  overflow:hidden;
+}
+.card h2{
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: var(--neon-blue);
+}
+.kv{
+  display:grid;
+  grid-template-columns: 160px 1fr;
+  gap: 8px 12px;
+  font-size: 12.5px;
+  color:#dfefff;
+}
+.kv b{ color: var(--neon-pink); }
+
+.badges{ display:flex; gap:10px; flex-wrap:wrap; }
+.badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  font-weight: 900;
+}
+.badge .dot{ width:8px; height:8px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 16px rgba(0,240,255,.55); }
+.badge.warn .dot{ background: var(--neon-pink); box-shadow: 0 0 16px rgba(255,0,255,.55); }
+
+.table{
+  width:100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  font-size: 12.5px;
+}
+.table td, .table th{ text-align:left; padding: 10px 10px; }
+.table th{ color:#bcb7df; font-weight: 900; font-size: 12px; }
+.row-glass{
+  background: rgba(0,0,0,0.42);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 14px;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.65);
+}
+.table .row-glass td:first-child{ border-top-left-radius: 14px; border-bottom-left-radius: 14px; }
+.table .row-glass td:last-child{ border-top-right-radius: 14px; border-bottom-right-radius: 14px; }
+
+.nn-modal{
+  position:fixed; inset:0;
+  z-index: 40;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
+.nn-modal.show{ display:flex; }
+.nn-modal .glass-panel{
+  position:relative;
+  width: min(720px, 96vw);
+  max-height: 86vh;
+  overflow:auto;
+}
+
+input, .mono{
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.50);
+  color:#fff;
+  outline:none;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+  font-family: inherit;
+}
+.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+
+.view{ display:none; }
+.view.show{ display:block; }
+
+/* Mobile: sidebar is overlay-only */
+@media (max-width: 900px){
+  .nn-side{ width:min(86vw, 340px); }
+}
+</style>
+</head>
+
+<body>
+<canvas id="bg"></canvas>
+
+<div class="nn-overlay" id="nnOverlay"></div>
+
+<nav class="nn-side" id="nnSide" aria-label="Sidebar navigation">
+  <div class="nn-side-header">
+    <div class="nn-logo" aria-hidden="true"></div>
+    <div class="nn-side-title">OPENCLAW</div>
+  </div>
+
+  <!-- EXACT sections + labels from your screenshot -->
+  <div class="nn-section">
+    <div class="nn-section-label">Chat</div>
+    <div class="nn-nav">
+      <button class="nn-item active" type="button" data-nav="chat" aria-current="page">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- chat bubble icon -->
+          <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+        </span>
+        <span>Chat</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="nn-section">
+    <div class="nn-section-label">Control</div>
+    <div class="nn-nav">
+      <button class="nn-item" type="button" data-nav="overview">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- bar chart -->
+          <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 17v-6"/><path d="M12 17V9"/><path d="M16 17v-3"/></svg>
+        </span>
+        <span>Overview</span>
+      </button>
+
+      <button class="nn-item" type="button" data-nav="channels">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- refresh/sync -->
+          <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9 9"/><path d="M3 12a9 9 0 0 1 9-9"/><path d="M21 12a9 9 0 0 0-9-9"/><path d="M3 12a9 9 0 0 0 9 9"/></svg>
+        </span>
+        <span>Channels</span>
+      </button>
+
+      <button class="nn-item" type="button" data-nav="instances">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- radio dot / instance -->
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.48"/><path d="M7.76 16.24a6 6 0 0 1 0-8.48"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>
+        </span>
+        <span>Instances</span>
+      </button>
+
+      <button class="nn-item" type="button" data-nav="sessions">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- clipboard -->
+          <svg viewBox="0 0 24 24"><path d="M9 3h6v4H9z"/><path d="M7 7h10v14H7z"/></svg>
+        </span>
+        <span>Sessions</span>
+      </button>
+
+      <button class="nn-item" type="button" data-nav="cron">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- spark/asterisk-ish -->
+          <svg viewBox="0 0 24 24"><path d="M12 2v6"/><path d="M12 16v6"/><path d="M4.93 4.93l4.24 4.24"/><path d="M14.83 14.83l4.24 4.24"/><path d="M2 12h6"/><path d="M16 12h6"/><path d="M4.93 19.07l4.24-4.24"/><path d="M14.83 9.17l4.24-4.24"/></svg>
+        </span>
+        <span>Cron Jobs</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="nn-section">
+    <div class="nn-section-label">Agent</div>
+    <div class="nn-nav">
+      <button class="nn-item" type="button" data-nav="skills">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- bolt -->
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
+        </span>
+        <span>Skills</span>
+      </button>
+
+      <button class="nn-item" type="button" data-nav="modes">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- rectangle/screen -->
+          <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M9 18v2"/><path d="M15 18v2"/></svg>
+        </span>
+        <span>Modes</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="nn-section">
+    <div class="nn-section-label">Settings</div>
+    <div class="nn-nav">
+      <button class="nn-item" type="button" data-nav="config">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- gear -->
+          <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1l2-1.5-2-3.5-2.4.5a8 8 0 0 0-1.7-1L15 4h-6l-.4 3.5a8 8 0 0 0-1.7 1L4.5 8 2.5 11.5 4.5 13a7.8 7.8 0 0 0 .1 1L2.5 15.5 4.5 19l2.4-.5a8 8 0 0 0 1.7 1L9 22h6l.4-3.5a8 8 0 0 0 1.7-1l2.4.5 2-3.5z"/></svg>
+        </span>
+        <span>Config</span>
+      </button>
+
+      <button class="nn-item" type="button" data-nav="debug">
+        <span class="nn-ico" aria-hidden="true">
+          <!-- bug -->
+          <svg viewBox="0 0 24 24"><path d="M9 9h6"/><path d="M10 13h4"/><path d="M12 7v14"/><path d="M8 7l-2-2"/><path d="M16 7l2-2"/><path d="M7 12H3"/><path d="M21 12h-4"/><path d="M7 16H4"/><path d="M20 16h-3"/><path d="M9 21h6"/><path d="M9 5a3 3 0 0 1 6 0"/></svg>
+        </span>
+        <span>Debug</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<header class="nn-topbar">
+  <div class="left">
+    <button class="nn-hamburger" id="nnHamburger" type="button" aria-label="Open menu">
+      <div class="bars">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+    </button>
+
+    <div class="nn-brand">OPENCLAW GATEWAY DASHBOARD</div>
+
+    <div class="nn-chip" title="Quick status">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-blue);box-shadow:0 0 16px rgba(0,240,255,.55)"></span>
+      <span id="quickStatus">DISCONNECTED</span>
+    </div>
+  </div>
+
+  <div class="right">
+    <button class="cybr-btn" type="button" id="btnConnect">
+      Connect
+      <span aria-hidden class="cybr-btn__glitch">Connect</span>
+    </button>
+
+    <button class="cybr-btn" type="button" id="btnRefresh">
+      Refresh
+      <span aria-hidden class="cybr-btn__glitch">Refresh</span>
+    </button>
+
+    <button class="cybr-btn" type="button" id="btnPanic">
+      Panic
+      <span aria-hidden class="cybr-btn__glitch">Panic</span>
+    </button>
+  </div>
+</header>
+
+<main class="nn-main">
+  <section class="glass-panel" style="position:relative; width:auto; margin:0 0 14px; max-width:none;">
+    <div class="neon-title" style="font-size:2.0rem" id="titleText">OPENCLAW</div>
+    <p class="subtitle" id="subText">Gateway dashboard shell. The sidebar tabs are wired. The backend is still your problem (as usual).</p>
+
+    <div class="badges">
+      <div class="badge" id="badgeAgent"><span class="dot"></span><span>AGENT: <b>none</b></span></div>
+      <div class="badge" id="badgeMemory"><span class="dot"></span><span>MEMORY: <b>unknown</b></span></div>
+      <div class="badge" id="badgeGateways"><span class="dot"></span><span>GATEWAYS: <b>unknown</b></span></div>
+    </div>
+  </section>
+
+  <!-- Chat (repurposed from Memory view shell, now labeled Chat) -->
+  <section class="view show" id="view-chat">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Chat</h2>
+        <p class="subtitle" style="margin-top:-6px;">Message composition + routing UI placeholder (wire to your gateway).</p>
+
+        <div class="controls">
+          <div class="row">
+            <div style="flex:1; min-width:220px;">
+              <select id="msgGateway">
+                <option value="whatsapp" selected>WhatsApp</option>
+                <option value="telegram">Telegram</option>
+                <option value="discord">Discord</option>
+                <option value="imessage">iMessage</option>
+              </select>
+            </div>
+            <div style="flex:2; min-width:240px;">
+              <input id="msgChannel" class="mono" placeholder="Channel / chat id" />
+            </div>
+          </div>
+
+          <textarea id="msgBody" placeholder="Message text"></textarea>
+
+          <div class="row" style="justify-content:flex-end;">
+            <button class="cybr-btn" type="button" id="btnMsgSend">
+              Send
+              <span aria-hidden class="cybr-btn__glitch">Send</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Console</h2>
+          <div class="output-text mono" id="consoleOut">Awaiting connection.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Chat history</h2>
+        <p class="subtitle" style="margin-top:-6px;">This is a shell. You can stream messages here later.</p>
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Messages</h2>
+          <div class="output-text mono" id="chatStream" style="white-space:pre-wrap; min-height: 240px;">(no messages)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Overview (was Home) -->
+  <section class="view" id="view-overview">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Runtime status</h2>
+        <div class="kv" id="kvStatus">
+          <div>Host</div><div class="mono" id="stHost">not set</div>
+          <div>Profile</div><div class="mono" id="stProfile">default</div>
+          <div>Workspace</div><div class="mono" id="stWorkspace">~/.openclaw/workspace</div>
+          <div>Last sync</div><div class="mono" id="stSync">never</div>
+        </div>
+
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="cybr-btn" type="button" id="btnStatus">
+            /status
+            <span aria-hidden class="cybr-btn__glitch">/status</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnConfigCmd">
+            /config
+            <span aria-hidden class="cybr-btn__glitch">/config</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnDebugCmd">
+            /debug
+            <span aria-hidden class="cybr-btn__glitch">/debug</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Quick actions</h2>
+        <div class="row">
+          <button class="cybr-btn" type="button" data-open="command" style="flex:1;">
+            Run openclaw command
+            <span aria-hidden class="cybr-btn__glitch">Run</span>
+          </button>
+          <button class="cybr-btn" type="button" data-open="settings" style="flex:1;">
+            Settings
+            <span aria-hidden class="cybr-btn__glitch">Settings</span>
+          </button>
+        </div>
+
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Console</h2>
+          <div class="output-text mono" id="overviewConsole">Ready.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Channels (was Gateways) -->
+  <section class="view" id="view-channels">
+    <div class="card">
+      <h2>Channels</h2>
+      <p class="subtitle" style="margin-top:-6px;">Gateway channels live here. (This is your “Channels” tab from the screenshot.)</p>
+
+      <table class="table" aria-label="Channels table">
+        <thead>
+          <tr><th>Gateway</th><th>Status</th><th>Sessions</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="gwRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Instances (was Agents) -->
+  <section class="view" id="view-instances">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Instances</h2>
+        <table class="table" aria-label="Instances table">
+          <thead>
+            <tr><th>Name</th><th>Profile</th><th>Workspace</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="agentRows"></tbody>
+        </table>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="cybr-btn" type="button" id="btnAddAgent">
+            Add instance
+            <span aria-hidden class="cybr-btn__glitch">Add instance</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Selected instance</h2>
+        <div class="kv" id="agentDetail">
+          <div>Name</div><div class="mono" id="agName">none</div>
+          <div>Workspace</div><div class="mono" id="agWs">-</div>
+          <div>Sandbox</div><div class="mono" id="agSandbox">disabled</div>
+          <div>Workspace access</div><div class="mono" id="agAccess">rw</div>
+        </div>
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="cybr-btn" type="button" id="btnAgentActivate">
+            Activate
+            <span aria-hidden class="cybr-btn__glitch">Activate</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnAgentStop">
+            Stop
+            <span aria-hidden class="cybr-btn__glitch">Stop</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sessions (was Tasks) -->
+  <section class="view" id="view-sessions">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Sessions</h2>
+        <table class="table" aria-label="Sessions table">
+          <thead>
+            <tr><th>ID</th><th>Type</th><th>Target</th><th>State</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="taskRows"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Create session</h2>
+        <div class="controls">
+          <input id="taskType" placeholder="Type (e.g., run, message, memorySearch)"/>
+          <input id="taskTarget" placeholder="Target (agent, gateway, channel)"/>
+          <textarea id="taskPayload" placeholder="Payload (JSON or text)"></textarea>
+          <div class="row" style="justify-content:flex-end;">
+            <button class="cybr-btn" type="button" id="btnCreateTask">
+              Enqueue
+              <span aria-hidden class="cybr-btn__glitch">Enqueue</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cron Jobs (was Logs) -->
+  <section class="view" id="view-cron">
+    <div class="card">
+      <h2>Cron Jobs</h2>
+      <p class="subtitle" style="margin-top:-6px;">Job schedule + execution log placeholder. Wire it later.</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="cybr-btn" type="button" id="btnClearLogs">
+          Clear
+          <span aria-hidden class="cybr-btn__glitch">Clear</span>
+        </button>
+      </div>
+      <div class="output-glass" style="margin-top:12px;">
+        <h2>Event stream</h2>
+        <div class="output-text mono" id="logStream" style="white-space:pre-wrap; min-height: 240px;">(no events)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Skills -->
+  <section class="view" id="view-skills">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Skills</h2>
+        <p class="subtitle" style="margin-top:-6px;">Agent capabilities list placeholder.</p>
+        <div class="output-glass">
+          <h2>Registered skills</h2>
+          <div class="output-text mono" id="skillsOut">No skills loaded. (Wire backend)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Skill actions</h2>
+        <div class="row">
+          <button class="cybr-btn" type="button" id="btnSkillRefresh" style="flex:1;">
+            Refresh
+            <span aria-hidden class="cybr-btn__glitch">Refresh</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnSkillInvoke" style="flex:1;">
+            Invoke
+            <span aria-hidden class="cybr-btn__glitch">Invoke</span>
+          </button>
+        </div>
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Output</h2>
+          <div class="output-text mono" id="skillsConsole">(idle)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modes -->
+  <section class="view" id="view-modes">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Modes</h2>
+        <p class="subtitle" style="margin-top:-6px;">Mode selector placeholder.</p>
+        <div class="row">
+          <button class="cybr-btn" type="button" id="btnModeSafe" style="flex:1;">
+            Safe
+            <span aria-hidden class="cybr-btn__glitch">Safe</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnModePower" style="flex:1;">
+            Power
+            <span aria-hidden class="cybr-btn__glitch">Power</span>
+          </button>
+        </div>
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Active mode</h2>
+          <div class="output-text mono" id="modeOut">safe</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Notes</h2>
+        <div class="output-glass">
+          <h2>Status</h2>
+          <div class="output-text mono" id="modeConsole">(idle)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Config -->
+  <section class="view" id="view-config">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Config</h2>
+        <p class="subtitle" style="margin-top:-6px;">Configuration view placeholder (separate tab like screenshot).</p>
+
+        <div class="row">
+          <button class="cybr-btn" type="button" id="btnConfigFetch" style="flex:1;">
+            Fetch /config
+            <span aria-hidden class="cybr-btn__glitch">Fetch</span>
+          </button>
+          <button class="cybr-btn" type="button" data-open="settings" style="flex:1;">
+            Edit settings
+            <span aria-hidden class="cybr-btn__glitch">Edit</span>
+          </button>
+        </div>
+
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Config output</h2>
+          <div class="output-text mono" id="configOut">{}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Console</h2>
+        <div class="output-glass">
+          <h2>Events</h2>
+          <div class="output-text mono" id="configConsole">(idle)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Debug -->
+  <section class="view" id="view-debug">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Debug</h2>
+        <p class="subtitle" style="margin-top:-6px;">Debug view placeholder (separate tab like screenshot).</p>
+
+        <div class="row">
+          <button class="cybr-btn" type="button" id="btnDebugFetch" style="flex:1;">
+            Fetch /debug
+            <span aria-hidden class="cybr-btn__glitch">Fetch</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnDebugDump" style="flex:1;">
+            Dump state
+            <span aria-hidden class="cybr-btn__glitch">Dump</span>
+          </button>
+        </div>
+
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Debug output</h2>
+          <div class="output-text mono" id="debugOut">(empty)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Console</h2>
+        <div class="output-glass">
+          <h2>Events</h2>
+          <div class="output-text mono" id="debugConsole">(idle)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Modals kept -->
+<div class="nn-modal" id="modalCommand" aria-hidden="true">
+  <section class="glass-panel">
+    <div class="neon-title" style="font-size:1.6rem">RUN COMMAND</div>
+    <p class="subtitle">UI shell. Wire it to your Android companion service.</p>
+
+    <div class="controls">
+      <input id="cmdText" class="mono" placeholder="openclaw status"/>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="cybr-btn" type="button" data-close="command">Cancel<span aria-hidden class="cybr-btn__glitch">Cancel</span></button>
+        <button class="cybr-btn" type="button" id="btnCmdRun">Run<span aria-hidden class="cybr-btn__glitch">Run</span></button>
+      </div>
+
+      <div class="output-glass">
+        <h2>Output</h2>
+        <div class="output-text mono" id="cmdOut">No output.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="nn-modal" id="modalSettings" aria-hidden="true">
+  <section class="glass-panel">
+    <div class="neon-title" style="font-size:1.6rem">SETTINGS</div>
+    <p class="subtitle">Connection + appearance knobs.</p>
+
+    <div class="controls">
+      <div class="row">
+        <div style="flex:1; min-width:240px;">
+          <div class="subtitle" style="margin-bottom:6px;">API host</div>
+          <input id="setHost" class="mono" placeholder="http://192.168.1.12:8080" />
+        </div>
+        <div style="flex:1; min-width:240px;">
+          <div class="subtitle" style="margin-bottom:6px;">Profile</div>
+          <input id="setProfile" class="mono" placeholder="default" />
+        </div>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button class="cybr-btn" type="button" data-close="settings">Close<span aria-hidden class="cybr-btn__glitch">Close</span></button>
+        <button class="cybr-btn" type="button" id="btnSaveSettings">Save<span aria-hidden class="cybr-btn__glitch">Save</span></button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ===== Background: dependency-free neon particle canvas ===== */
+(function(){
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+  let w=0,h=0, dpr=1;
+  const dots = [];
+  const DOTS = 140;
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = Math.floor(window.innerWidth * dpr);
+    h = Math.floor(window.innerHeight * dpr);
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+  }
+  window.addEventListener('resize', resize, {passive:true});
+  resize();
+
+  function rand(a,b){ return Math.random()*(b-a)+a; }
+  function init(){
+    dots.length=0;
+    for(let i=0;i<DOTS;i++){
+      dots.push({
+        x: rand(0,w), y: rand(0,h),
+        z: rand(0.2, 1.0),
+        vx: rand(-0.08,0.08), vy: rand(-0.05,0.05),
+      });
+    }
+  }
+  init();
+
+  let mx = 0.5, my = 0.5;
+  window.addEventListener('mousemove', (e)=>{
+    mx = e.clientX / Math.max(1, window.innerWidth);
+    my = e.clientY / Math.max(1, window.innerHeight);
+  }, {passive:true});
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+
+    const g = ctx.createRadialGradient(w*0.35, h*0.2, 0, w*0.5, h*0.5, Math.max(w,h)*0.7);
+    g.addColorStop(0, 'rgba(18,0,35,0.55)');
+    g.addColorStop(0.6, 'rgba(4,0,10,0.82)');
+    g.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+
+    const driftX = (mx - 0.5) * 28 * dpr;
+    const driftY = (0.5 - my) * 18 * dpr;
+
+    for(const p of dots){
+      p.x += p.vx * (1.3 / p.z) + driftX * 0.0008;
+      p.y += p.vy * (1.2 / p.z) + driftY * 0.0008;
+      if(p.x < -40) p.x = w + 40;
+      if(p.x > w + 40) p.x = -40;
+      if(p.y < -40) p.y = h + 40;
+      if(p.y > h + 40) p.y = -40;
+
+      const r = 1.2 * dpr * (1.2 / p.z);
+      const a = 0.45;
+      const isPink = (p.z > 0.82 && Math.random() < 0.02);
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+      ctx.fillStyle = isPink ? `rgba(255,0,255,${a})` : `rgba(0,240,255,${a})`;
+      ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    for(let y=0;y<h;y+=6*dpr){
+      ctx.fillRect(0,y,w,1);
+    }
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ===== Sidebar + modal system ===== */
+(function(){
+  const side = document.getElementById('nnSide');
+  const overlay = document.getElementById('nnOverlay');
+  const burger = document.getElementById('nnHamburger');
+
+  function openSide(){
+    side.classList.add('open');
+    overlay.classList.add('show');
+  }
+  function closeSide(){
+    side.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  burger.addEventListener('click', openSide);
+  overlay.addEventListener('click', closeSide);
+
+  const views = {
+    chat: document.getElementById('view-chat'),
+    overview: document.getElementById('view-overview'),
+    channels: document.getElementById('view-channels'),
+    instances: document.getElementById('view-instances'),
+    sessions: document.getElementById('view-sessions'),
+    cron: document.getElementById('view-cron'),
+    skills: document.getElementById('view-skills'),
+    modes: document.getElementById('view-modes'),
+    config: document.getElementById('view-config'),
+    debug: document.getElementById('view-debug'),
+  };
+
+  function setActiveNav(key){
+    side.querySelectorAll('.nn-item[data-nav]').forEach(btn=>{
+      const isActive = btn.getAttribute('data-nav') === key;
+      btn.classList.toggle('active', isActive);
+      if(isActive){
+        btn.setAttribute('aria-current','page');
+      } else {
+        btn.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  function showView(key){
+    Object.values(views).forEach(v => v && v.classList.remove('show'));
+    (views[key] || views.chat).classList.add('show');
+    setActiveNav(key);
+    closeSide();
+  }
+
+  side.querySelectorAll('[data-nav]').forEach(btn=>{
+    btn.addEventListener('click', ()=> showView(btn.getAttribute('data-nav')));
+  });
+
+  const modals = {
+    command: document.getElementById('modalCommand'),
+    settings: document.getElementById('modalSettings'),
+  };
+
+  function openModal(k){
+    const m = modals[k];
+    if(!m) return;
+    m.classList.add('show');
+    overlay.classList.add('show');
+    overlay.onclick = () => { closeModal(k); };
+  }
+  function closeModal(k){
+    const m = modals[k];
+    if(!m) return;
+    m.classList.remove('show');
+    overlay.classList.remove('show');
+    overlay.onclick = closeSide;
+  }
+
+  document.querySelectorAll('[data-open]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openModal(btn.getAttribute('data-open')));
+  });
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=> closeModal(btn.getAttribute('data-close')));
+  });
+
+  window.__ocui = { showView, openModal, closeModal, closeSide };
+})();
+
+/* ===== Demo data + wiring hooks ===== */
+(function(){
+  const state = {
+    connected: false,
+    host: '',
+    profile: 'default',
+    workspace: '~/.openclaw/workspace',
+    agent: null,
+    memory: { indexed: false, items: 0 },
+    gateways: [
+      { key:'whatsapp', name:'WhatsApp', status:'down', sessions:0 },
+      { key:'telegram', name:'Telegram', status:'down', sessions:0 },
+      { key:'discord', name:'Discord', status:'down', sessions:0 },
+      { key:'imessage', name:'iMessage', status:'down', sessions:0 },
+    ],
+    agents: [
+      { name:'default', profile:'default', workspace:'~/.openclaw/workspace', sandbox:false, access:'rw' },
+      { name:'work', profile:'work', workspace:'~/.openclaw/workspace-work', sandbox:true, access:'ro' },
+    ],
+    tasks: [
+      { id:'S-1024', type:'session', target:'default', state:'idle' },
+      { id:'S-1025', type:'message', target:'whatsapp:family', state:'queued' },
+    ],
+    logs: [],
+    mode: 'safe'
+  };
+
+  const el = (id)=>document.getElementById(id);
+
+  const log = (msg)=>{
+    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    state.logs.push(line);
+
+    const ls = el('logStream');
+    if(ls) ls.textContent = state.logs.slice(-200).join('\n');
+
+    const c = el('consoleOut');
+    if(c) c.textContent = line;
+
+    const oc = el('overviewConsole');
+    if(oc) oc.textContent = line;
+
+    const cc = el('configConsole');
+    if(cc) cc.textContent = line;
+
+    const dc = el('debugConsole');
+    if(dc) dc.textContent = line;
+
+    const mc = el('modeConsole');
+    if(mc) mc.textContent = line;
+
+    const sc = el('skillsConsole');
+    if(sc) sc.textContent = line;
+  };
+
+  function renderBadges(){
+    const a = el('badgeAgent');
+    const m = el('badgeMemory');
+    const g = el('badgeGateways');
+
+    a.querySelector('b').textContent = state.agent ? state.agent.name : 'none';
+    m.querySelector('b').textContent = state.memory.indexed ? `${state.memory.items} items` : 'not indexed';
+
+    const up = state.gateways.filter(x=>x.status==='up').length;
+    g.querySelector('b').textContent = `${up}/${state.gateways.length} up`;
+  }
+
+  function renderTop(){
+    el('quickStatus').textContent = state.connected ? 'CONNECTED' : 'DISCONNECTED';
+    el('stHost').textContent = state.host || 'not set';
+    el('stProfile').textContent = state.profile || 'default';
+    el('stWorkspace').textContent = state.workspace || '~/.openclaw/workspace';
+  }
+
+  function renderAgents(){
+    const tb = el('agentRows');
+    tb.innerHTML = '';
+    state.agents.forEach((a,i)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      tr.innerHTML = `
+        <td>${a.name}</td>
+        <td>${a.profile}</td>
+        <td class="mono">${a.workspace}</td>
+        <td>
+          <button class="cybr-btn" type="button" data-act="selectAgent" data-i="${i}">
+            Select <span aria-hidden class="cybr-btn__glitch">Select</span>
+          </button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderGateways(){
+    const tb = el('gwRows');
+    tb.innerHTML = '';
+    state.gateways.forEach((gw)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      const dotClass = gw.status === 'up' ? 'badge' : 'badge warn';
+      const dot = gw.status === 'up' ? 'UP' : 'DOWN';
+      tr.innerHTML = `
+        <td><b style="color:var(--neon-blue)">${gw.name}</b></td>
+        <td><span class="${dotClass}"><span class="dot"></span>${dot}</span></td>
+        <td class="mono">${gw.sessions}</td>
+        <td class="row">
+          <button class="cybr-btn" type="button" data-act="gwRestart" data-key="${gw.key}">
+            Restart <span aria-hidden class="cybr-btn__glitch">Restart</span>
+          </button>
+          <button class="cybr-btn" type="button" data-act="gwPing" data-key="${gw.key}">
+            Ping <span aria-hidden class="cybr-btn__glitch">Ping</span>
+          </button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderTasks(){
+    const tb = el('taskRows');
+    tb.innerHTML = '';
+    state.tasks.forEach((t, i)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      tr.innerHTML = `
+        <td class="mono">${t.id}</td>
+        <td>${t.type}</td>
+        <td class="mono">${t.target}</td>
+        <td>${t.state}</td>
+        <td>
+          <button class="cybr-btn" type="button" data-act="taskCancel" data-i="${i}">
+            Cancel <span aria-hidden class="cybr-btn__glitch">Cancel</span>
+          </button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderSelectedAgent(){
+    el('agName').textContent = state.agent ? state.agent.name : 'none';
+    el('agWs').textContent = state.agent ? state.agent.workspace : '-';
+    el('agSandbox').textContent = state.agent ? (state.agent.sandbox ? 'enabled' : 'disabled') : 'disabled';
+    el('agAccess').textContent = state.agent ? state.agent.access : 'rw';
+  }
+
+  function rerender(){
+    renderTop();
+    renderBadges();
+    renderAgents();
+    renderGateways();
+    renderTasks();
+    renderSelectedAgent();
+    el('modeOut').textContent = state.mode;
+  }
+
+  // Topbar
+  el('btnConnect').addEventListener('click', ()=>{
+    state.connected = !state.connected;
+    state.host = state.connected ? (state.host || 'http://192.168.1.12:8080') : state.host;
+    el('stSync').textContent = new Date().toLocaleString();
+    log(state.connected ? 'Connected (demo).' : 'Disconnected (demo).');
+    rerender();
+  });
+
+  el('btnRefresh').addEventListener('click', ()=>{
+    el('stSync').textContent = new Date().toLocaleString();
+    log('Refresh requested.');
+    rerender();
+  });
+
+  el('btnPanic').addEventListener('click', ()=>{
+    log('PANIC: stop all running sessions + disconnect gateways (demo).');
+    state.tasks.forEach(t=>t.state='canceled');
+    state.gateways.forEach(g=>{g.status='down'; g.sessions=0;});
+    rerender();
+  });
+
+  // Overview quick commands
+  el('btnStatus').addEventListener('click', ()=> log('Slash command: /status'));
+  el('btnConfigCmd').addEventListener('click', ()=> { log('Slash command: /config'); window.__ocui.showView('config'); });
+  el('btnDebugCmd').addEventListener('click', ()=> { log('Slash command: /debug'); window.__ocui.showView('debug'); });
+
+  // Chat
+  el('btnMsgSend').addEventListener('click', ()=>{
+    const gw = el('msgGateway').value;
+    const ch = el('msgChannel').value.trim();
+    const body = el('msgBody').value.trim();
+    if(!ch || !body){ log('Message rejected: missing channel/body.'); return; }
+    const line = `SEND: ${gw}:${ch} -> ${body.slice(0,140)}${body.length>140?'…':''}`;
+    log(line);
+    const stream = el('chatStream');
+    if(stream){
+      const prev = stream.textContent === '(no messages)' ? '' : (stream.textContent + '\n');
+      stream.textContent = (prev + line).slice(-6000);
+    }
+    el('msgBody').value = '';
+  });
+
+  // Sessions create
+  el('btnCreateTask').addEventListener('click', ()=>{
+    const t = {
+      id: 'S-' + Math.floor(Math.random()*9000+1000),
+      type: el('taskType').value.trim() || 'session',
+      target: el('taskTarget').value.trim() || 'default',
+      state: 'queued'
+    };
+    state.tasks.unshift(t);
+    log(`Enqueued session ${t.id} (${t.type})`);
+    renderTasks();
+  });
+
+  // Skills / Modes
+  el('btnSkillRefresh').addEventListener('click', ()=>{
+    el('skillsOut').textContent = `- scan_network\n- onvif_discovery\n- rtsp_probe\n(wire backend)`;
+    log('Skills refreshed (demo).');
+  });
+  el('btnSkillInvoke').addEventListener('click', ()=>{
+    log('Invoke skill (demo).');
+  });
+
+  el('btnModeSafe').addEventListener('click', ()=>{
+    state.mode = 'safe';
+    log('Mode set: safe (demo).');
+    rerender();
+  });
+  el('btnModePower').addEventListener('click', ()=>{
+    state.mode = 'power';
+    log('Mode set: power (demo).');
+    rerender();
+  });
+
+  // Config / Debug views
+  el('btnConfigFetch').addEventListener('click', ()=>{
+    log('FETCH: /config (demo)');
+    el('configOut').textContent = JSON.stringify({ host: state.host || null, profile: state.profile, workspace: state.workspace }, null, 2);
+  });
+
+  el('btnDebugFetch').addEventListener('click', ()=>{
+    log('FETCH: /debug (demo)');
+    el('debugOut').textContent = '(demo) debug endpoint response would render here.';
+  });
+  el('btnDebugDump').addEventListener('click', ()=>{
+    log('Dumping local UI state (demo).');
+    el('debugOut').textContent = JSON.stringify(state, null, 2).slice(0, 9000);
+  });
+
+  // Settings modal
+  const modals = {
+    settings: document.getElementById('modalSettings'),
+    command: document.getElementById('modalCommand')
+  };
+
+  // modal wiring
+  document.querySelectorAll('[data-open="command"]').forEach(btn=>{
+    btn.addEventListener('click', ()=> window.__ocui.openModal('command'));
+  });
+
+  document.querySelectorAll('[data-open="settings"]').forEach(btn=>{
+    btn.addEventListener('click', ()=> window.__ocui.openModal('settings'));
+  });
+
+  document.querySelectorAll('[data-close="settings"]').forEach(btn=>{
+    btn.addEventListener('click', ()=> window.__ocui.closeModal('settings'));
+  });
+  document.querySelectorAll('[data-close="command"]').forEach(btn=>{
+    btn.addEventListener('click', ()=> window.__ocui.closeModal('command'));
+  });
+
+  el('btnSaveSettings').addEventListener('click', ()=>{
+    state.host = el('setHost').value.trim();
+    state.profile = el('setProfile').value.trim() || 'default';
+    log(`Settings saved: host=${state.host||'(none)'} profile=${state.profile}`);
+    rerender();
+    window.__ocui.closeModal('settings');
+  });
+
+  el('btnCmdRun').addEventListener('click', ()=>{
+    const cmd = el('cmdText').value.trim();
+    if(!cmd){ el('cmdOut').textContent='Enter a command.'; return; }
+    log(`RUN: ${cmd}`);
+    el('cmdOut').textContent = `(demo) executed: ${cmd}`;
+  });
+
+  // Cron clear
+  el('btnClearLogs').addEventListener('click', ()=>{
+    state.logs = [];
+    el('logStream').textContent = '(no events)';
+    el('consoleOut').textContent = 'Awaiting connection.';
+    el('overviewConsole').textContent = 'Ready.';
+    el('configConsole').textContent = '(idle)';
+    el('debugConsole').textContent = '(idle)';
+    el('modeConsole').textContent = '(idle)';
+    el('skillsConsole').textContent = '(idle)';
+  });
+
+  // Table action wiring (instances/channels/sessions)
+  document.body.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-act]');
+    if(!btn) return;
+    const act = btn.getAttribute('data-act');
+    if(act === 'selectAgent'){
+      const i = Number(btn.getAttribute('data-i'));
+      state.agent = state.agents[i] || null;
+      log(`Selected instance: ${state.agent ? state.agent.name : 'none'}`);
+      rerender();
+    } else if(act === 'gwRestart'){
+      const key = btn.getAttribute('data-key');
+      const gw = state.gateways.find(x=>x.key===key);
+      if(gw){ gw.status='up'; gw.sessions=Math.floor(Math.random()*4); }
+      log(`Channel restart: ${key}`);
+      rerender();
+    } else if(act === 'gwPing'){
+      const key = btn.getAttribute('data-key');
+      log(`Channel ping: ${key}`);
+    } else if(act === 'taskCancel'){
+      const i = Number(btn.getAttribute('data-i'));
+      if(state.tasks[i]) state.tasks[i].state='canceled';
+      log(`Session canceled: ${state.tasks[i] ? state.tasks[i].id : '(missing)'}`);
+      renderTasks();
+    }
+  });
+
+  rerender();
+  log('UI booted (demo).');
+})();
+</script>
+</body>
+</html>
