@@ -961,7 +961,9 @@ input, .mono{
 
   const el = (id)=>document.getElementById(id);
   const log = (msg)=>{
-    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    const ts = new Date();
+    const time = `${String(ts.getHours()).padStart(2, '0')}:${String(ts.getMinutes()).padStart(2, '0')}:${String(ts.getSeconds()).padStart(2, '0')}`;
+    const line = `[${time}] ${msg}`;
     state.logs.push(line);
     const ls = el('logStream');
     if(ls) ls.textContent = state.logs.slice(-200).join('\n');
