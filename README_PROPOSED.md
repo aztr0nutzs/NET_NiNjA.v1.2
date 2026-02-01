@@ -3,11 +3,11 @@
 ![NET NiNjA header](web-ui/new_assets/ninja_header_readme.png)
 
 ## Overview
-NET NiNjA is a local-first network dashboard that bundles a Ktor-based server, a web UI, and an Android WebView shell. The Android app boots the local server, serves the bundled web assets, and drives the login → dashboard flow in WebView so the same UI works on-device and in a desktop browser during development.
+NET NiNjA is a local-first network dashboard that bundles a Ktor-based server, a web UI, and an Android WebView shell. The Android app boots the local server, serves the bundled web assets, and drives the dashboard flow in WebView so the same UI works on-device and in a desktop browser during development.
 
 ## Highlights
-- **Local Web UI**: Serve the login and dashboard UI from the local server at `http://127.0.0.1:8787/ui/new_assets/ninja_login.html` and `http://127.0.0.1:8787/ui/new_assets/ninja_mobile.html`.
-- **Android WebView shell**: Launches the bundled login HTML while the server warms up, then switches to the local server for the full dashboard.
+- **Local Web UI**: Serve the dashboard UI from the local server at `http://127.0.0.1:8787/ui/ninja_mobile_new.html`.
+- **Android WebView shell**: Launches the bundled dashboard HTML while the server warms up, then switches to the local server for the full dashboard.
 - **Local-first architecture**: Assets are synced into internal storage so WebView and desktop dev serve the same UI bundle.
 
 ## Ninja CAM (IP camera viewer tab)

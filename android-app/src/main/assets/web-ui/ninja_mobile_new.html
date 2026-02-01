@@ -1669,19 +1669,6 @@
         <div class="sheet-body">
           <div class="card" style="cursor:default;">
             <div class="card-head">
-              <div class="card-title">Session</div>
-              <div class="pill">Access</div>
-            </div>
-            <div class="muted">Return to the secure login screen.</div>
-            <div class="card-actions" style="margin-top: 10px;">
-              <button class="btn btn-danger" id="logoutBtn">Log out</button>
-            </div>
-          </div>
-
-          <div style="height:12px;"></div>
-
-          <div class="card" style="cursor:default;">
-            <div class="card-head">
               <div class="card-title">General</div>
               <div class="pill">Theme</div>
             </div>
@@ -1812,10 +1799,6 @@
       };
     }
 
-    function getAuthToken(){
-      return localStorage.getItem("nn_token");
-    }
-
     const API_BASE = (() => {
       try {
         if (location && location.origin && location.origin !== "null") {
@@ -1833,14 +1816,10 @@
     }
 
     async function fetchJson(url, options = {}){
-      const token = getAuthToken();
       const headers = {
         "Accept": "application/json",
         ...(options.headers || {})
       };
-      if(token){
-        headers["Authorization"] = `Bearer ${token}`;
-      }
       const { timeoutMs, ...fetchOptions } = options || {};
       const controller = new AbortController();
       const timeoutBudget = Number.isFinite(timeoutMs) ? timeoutMs : 8000;
@@ -1848,7 +1827,7 @@
       const res = await fetch(resolveApiUrl(url), { ...fetchOptions, headers, signal: controller.signal });
       if(timeout) clearTimeout(timeout);
       if(res.status === 401){
-        window.location.href = "/ui/new_assets/ninja_login.html";
+        showToast("Unauthorized", "Access rejected by the local engine.");
         throw new Error("Unauthorized");
       }
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -3174,10 +3153,6 @@
     $("#historyBtn").addEventListener("click", () => openOverlay("historyOverlay"));
     $("#notifBtn").addEventListener("click", () => openOverlay("notifOverlay"));
     $("#settingsBtn").addEventListener("click", () => openOverlay("settingsOverlay"));
-    $("#logoutBtn").addEventListener("click", () => {
-      localStorage.removeItem("nn_token");
-      window.location.href = "/ui/new_assets/ninja_login.html";
-    });
 
     // close buttons
     $$("[data-close]").forEach(b => b.addEventListener("click", () => closeOverlay(b.dataset.close)));

@@ -13,12 +13,8 @@
 - Switched SCAN to live-only mode and surfaced data state via a badge.
 - Synced APK web assets on every launch and removed stale files to avoid old dashboards.
 - Added WebView cache hardening and server readiness probing to reduce blank startup windows.
-- Loaded the login screen from `new_assets` before entering the dashboard.
-- Restyled the login page to a blacked-out theme and removed the extra init overlay.
-- Added an asset-based login bootstrap to avoid black screens while the local server starts.
-- Separated login auth failures from engine-offline conditions to avoid false invalid-credential errors.
-- Shifted login visuals to a black background with purple matrix rain.
-- Fixed API base resolution for file:// WebView loads so auth hits localhost instead of file:///api.
+- Boot the dashboard from bundled assets while the local server warms up.
+- Fixed API base resolution for file:// WebView loads so API calls hit localhost instead of file:///api.
 - Corrected dashboard header video path and API base resolution for file-scheme loads.
 - Added header video diagnostics/fallback and scan click logging to confirm wiring.
-- Redirected the dashboard to the server URL after login to avoid file-scheme media and API issues.
+- Redirected the dashboard to the server URL once the engine is ready to avoid file-scheme media and API issues.

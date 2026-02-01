@@ -87,10 +87,10 @@ class MainActivity : AppCompatActivity() {
       }
     }
 
-    val serverLoginUrl = "http://127.0.0.1:8787/ui/new_assets/ninja_login.html"
-    val assetLoginUrl = "file:///android_asset/web-ui/new_assets/ninja_login.html?bootstrap=1"
-    web.loadUrl(assetLoginUrl)
-    waitForServerAndLoad(web, serverLoginUrl)
+    val serverDashboardUrl = "http://127.0.0.1:8787/ui/ninja_mobile_new.html"
+    val assetDashboardUrl = "file:///android_asset/web-ui/ninja_mobile_new.html?bootstrap=1"
+    web.loadUrl(assetDashboardUrl)
+    waitForServerAndLoad(web, serverDashboardUrl)
 
     setContentView(web)
   }

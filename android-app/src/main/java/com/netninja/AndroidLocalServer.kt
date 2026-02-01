@@ -33,7 +33,6 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
@@ -66,7 +65,6 @@ import android.database.sqlite.SQLiteDatabase
 
 @Serializable data class DeviceEvent(val deviceId: String, val ts: Long, val event: String)
 @Serializable data class ScanRequest(val subnet: String? = null, val timeoutMs: Int? = 300)
-@Serializable data class LoginRequest(val username: String? = null, val password: String? = null)
 @Serializable data class ActionRequest(val ip: String? = null, val mac: String? = null, val url: String? = null)
 @Serializable data class ScheduleRequest(val subnet: String? = null, val freq: String? = null)
 @Serializable data class RuleRequest(val match: String? = null, val action: String? = null)
@@ -121,10 +119,6 @@ class AndroidLocalServer(private val ctx: Context) {
   private val scanScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private var scanJob: Job? = null
 
-  // Auth sessions
-  private val sessions = ConcurrentHashMap<String, Long>()
-  private val sessionTtlMs = 60 * 60 * 1000L
-
   // Automation + resilience
   private val schedulerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
   private var schedulerJob: Job? = null
@@ -159,7 +153,6 @@ class AndroidLocalServer(private val ctx: Context) {
               allowMethod(HttpMethod.Get)
               allowMethod(HttpMethod.Post)
               allowHeader(HttpHeaders.ContentType)
-              allowHeader(HttpHeaders.Authorization)
               allowOrigins { origin ->
                 origin == "null" ||
                   origin.startsWith("file://") ||
@@ -200,59 +193,12 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(mapOf("platform" to "android", "time" to System.currentTimeMillis()))
       }
 
-      // Login (public)
-      post("/api/v1/auth/login") {
-        val req = runCatching { call.receive<LoginRequest>() }.getOrNull() ?: LoginRequest()
-        val user = req.username?.trim().orEmpty()
-        val pass = req.password?.trim().orEmpty()
-
-        // TODO: real credential store (keystore + PBKDF2).
-        val ok = (user == "ninja" && pass == "neon")
-        if (!ok) {
-          call.respond(HttpStatusCode.Unauthorized, mapOf("ok" to false))
-          return@post
-        }
-
-        val token = UUID.randomUUID().toString()
-        sessions[token] = System.currentTimeMillis() + sessionTtlMs
-        call.respond(mapOf("ok" to true, "token" to token, "expiresInMs" to sessionTtlMs))
-      }
-
-      fun ApplicationCall.extractToken(): String? {
-        val auth = request.headers[HttpHeaders.Authorization]?.trim().orEmpty()
-        if (auth.startsWith("Bearer ", ignoreCase = true)) {
-          val tok = auth.substringAfter("Bearer ").trim()
-          if (tok.isNotBlank()) return tok
-        }
-        // SSE can pass ?token=
-        return request.queryParameters["token"]?.trim()?.takeIf { it.isNotBlank() }
-      }
-
-      fun ApplicationCall.isAuthorized(): Boolean {
-        val token = extractToken() ?: return false
-        val exp = sessions[token] ?: return false
-        if (exp <= System.currentTimeMillis()) {
-          sessions.remove(token)
-          return false
-        }
-        return true
-      }
-
-      suspend fun ApplicationCall.requireAuth(): Boolean {
-        if (isAuthorized()) return true
-        respond(HttpStatusCode.Unauthorized, mapOf("ok" to false, "error" to "unauthorized"))
-        return false
-      }
-
-      // --- AUTH REQUIRED BEYOND THIS POINT ---
-
+      // --- AUTH REMOVED (LOCAL-ONLY UI) ---
       get("/api/v1/network/info") {
-        if (!call.requireAuth()) return@get
         call.respond(localNetworkInfo())
       }
 
       post("/api/v1/discovery/scan") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ScanRequest>() }.getOrNull() ?: ScanRequest()
         val subnet = req.subnet?.trim().takeUnless { it.isNullOrBlank() } ?: deriveSubnetCidr()
         if (subnet == null) {
@@ -268,17 +214,14 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/discovery/results") {
-        if (!call.requireAuth()) return@get
         call.respond(cachedResults())
       }
 
       get("/api/v1/discovery/progress") {
-        if (!call.requireAuth()) return@get
         call.respond(scanProgress.get())
       }
 
       post("/api/v1/discovery/stop") {
-        if (!call.requireAuth()) return@post
         scanCancel.set(true)
         scanJob?.cancel()
         logEvent("scan_cancelled", mapOf("reason" to "user_stop"))
@@ -286,14 +229,12 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/devices/{id}") {
-        if (!call.requireAuth()) return@get
         val id = call.parameters["id"]?.lowercase() ?: return@get call.respond(HttpStatusCode.BadRequest)
         val d = devices[id] ?: return@get call.respond(HttpStatusCode.NotFound)
         call.respond(d)
       }
 
       get("/api/v1/devices/{id}/meta") {
-        if (!call.requireAuth()) return@get
         val id = call.parameters["id"]?.lowercase() ?: return@get call.respond(HttpStatusCode.BadRequest)
         val d = devices[id] ?: return@get call.respond(HttpStatusCode.NotFound)
         call.respond(
@@ -314,7 +255,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       put("/api/v1/devices/{id}/meta") {
-        if (!call.requireAuth()) return@put
         val id = call.parameters["id"]?.lowercase() ?: return@put call.respond(HttpStatusCode.BadRequest)
         val patch = runCatching { call.receive<DeviceMetaUpdate>() }.getOrNull() ?: DeviceMetaUpdate()
         val d = devices[id] ?: return@put call.respond(HttpStatusCode.NotFound)
@@ -337,30 +277,25 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/devices/{id}/history") {
-        if (!call.requireAuth()) return@get
         val id = call.parameters["id"]?.lowercase() ?: return@get call.respond(HttpStatusCode.BadRequest)
         call.respond(deviceEvents[id].orEmpty())
       }
 
       get("/api/v1/devices/{id}/uptime") {
-        if (!call.requireAuth()) return@get
         val id = call.parameters["id"]?.lowercase() ?: return@get call.respond(HttpStatusCode.BadRequest)
         val hist = deviceEvents[id].orEmpty()
         call.respond(mapOf("uptimePct24h" to uptimePct(hist, 86_400_000L)))
       }
 
       get("/api/v1/export/devices") {
-        if (!call.requireAuth()) return@get
         call.respond(devices.values.toList())
       }
 
       // Schedules
       get("/api/v1/schedules") {
-        if (!call.requireAuth()) return@get
         call.respond(schedules.toList())
       }
       post("/api/v1/schedules") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ScheduleRequest>() }.getOrNull() ?: ScheduleRequest()
         val subnet = req.subnet?.trim().orEmpty()
         val freq = req.freq?.trim().orEmpty()
@@ -375,18 +310,15 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(mapOf("ok" to true))
       }
       post("/api/v1/schedules/pause") {
-        if (!call.requireAuth()) return@post
         schedulerPaused = !schedulerPaused
         call.respond(mapOf("ok" to true, "paused" to schedulerPaused))
       }
 
       // Rules
       get("/api/v1/rules") {
-        if (!call.requireAuth()) return@get
         call.respond(rules.toList())
       }
       post("/api/v1/rules") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<RuleRequest>() }.getOrNull() ?: RuleRequest()
         val match = req.match?.trim().orEmpty()
         val action = req.action?.trim().orEmpty()
@@ -403,7 +335,6 @@ class AndroidLocalServer(private val ctx: Context) {
 
       // Actions
       post("/api/v1/actions/ping") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
@@ -414,7 +345,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/http") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
         val urlStr = req.url?.trim().orEmpty()
         if (urlStr.isBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing url"))
@@ -443,7 +373,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/portscan") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<PortScanRequest>() }.getOrNull() ?: PortScanRequest()
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
@@ -453,7 +382,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/wol") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
         val mac = req.mac?.trim()
         if (mac.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing mac"))
@@ -462,7 +390,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/snmp") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
@@ -471,7 +398,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/ssh") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
@@ -480,7 +406,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/security") {
-        if (!call.requireAuth()) return@post
         val all = devices.values.toList()
         val unknown = all.count { it.trust == null || it.trust == "Unknown" }
         val blocked = all.count { it.status == "Blocked" }
@@ -500,7 +425,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/metrics") {
-        if (!call.requireAuth()) return@get
         val memTotal = Runtime.getRuntime().totalMemory()
         val memFree = Runtime.getRuntime().freeMemory()
         val memUsed = memTotal - memFree
@@ -518,19 +442,16 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/system/permissions") {
-        if (!call.requireAuth()) return@get
         call.respond(permissionSummary())
       }
 
       post("/api/v1/system/permissions/action") {
-        if (!call.requireAuth()) return@post
         val req = runCatching { call.receive<PermissionsActionRequest>() }.getOrNull()
         val ok = runCatching { handlePermissionAction(req?.action) }.getOrDefault(false)
         call.respond(mapOf("ok" to ok))
       }
 
       get("/api/v1/system/state") {
-        if (!call.requireAuth()) return@get
         call.respond(
           mapOf(
             "scanInProgress" to (scanJob?.isActive == true),
@@ -545,7 +466,6 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/logs/stream") {
-        if (!call.requireAuth()) return@get
         call.response.cacheControl(CacheControl.NoCache(null))
         call.respondTextWriter(contentType = ContentType.Text.EventStream) {
           while (coroutineContext.isActive) {

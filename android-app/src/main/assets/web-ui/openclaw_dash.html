@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpenClaw :: Android Companion</title>
+
+<style>
+
+/* Created by: Justin Linwood Ross */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+:root{
+  --bg1:#050012;
+  --neon-pink:#ff00ff;
+  --neon-blue:#00f0ff;
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+body{
+  background: radial-gradient(circle at 30% 20%, #120023 0%, #04000a 60%, #000 100%);
+  color:#e8e6ff;
+  overflow:hidden;
+  position:relative;
+}
+
+#bg { position:fixed; inset:0; z-index:0; display:block; }
+
+.glass-panel{
+  position:absolute; z-index:2;
+  width:440px; padding:22px; border-radius:16px;
+  background: var(--glass-bg);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow:
+    0 8px 40px rgba(0,0,0,0.6),
+    0 0 35px rgba(255,0,255,0.08),
+    0 0 80px rgba(0,240,255,0.06);
+  backdrop-filter: blur(10px) saturate(140%);
+  color:#fff;
+  overflow:visible;
+}
+
+#translator-panel{ left:6%; top:50%; transform:translateY(-50%); width:520px; }
+#country-panel{ right:6%; top:12%; width:360px; max-height:76vh; overflow:auto; }
+
+.visually-hidden{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+
+.neon-title{
+  font-size:2.6rem; color:var(--neon-pink); margin:4px 0 6px;
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 40px var(--neon-blue), 0 0 90px var(--neon-pink);
+  letter-spacing:2px;
+  animation: neonFlicker 2.5s infinite alternate;
+}
+@keyframes neonFlicker {
+  0%,100%{ text-shadow:0 0 10px #ff00ff,0 0 40px #00f0ff,0 0 90px #ff00ff; }
+  25%{ text-shadow:0 0 15px #ff00ff,0 0 50px #00f0ff,0 0 100px #ff00ff; }
+  50%{ text-shadow:0 0 12px #ff00ff,0 0 45px #00f0ff,0 0 95px #ff00ff; }
+  75%{ text-shadow:0 0 18px #ff00ff,0 0 55px #00f0ff,0 0 105px #ff00ff; }
+}
+
+.subtitle{ color:#bcb7df; margin:0 0 12px; font-size:0.95rem; }
+
+.controls{ display:flex; flex-direction:column; gap:12px; }
+textarea{
+  width:100%; min-height:110px; resize:vertical; border-radius:10px; padding:12px; font-size:14px;
+  background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.04); color:#fff; outline:none;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+}
+.controls-row{ display:flex; gap:12px; align-items:center; }
+.select-wrap{ flex:1; }
+.actions{ display:flex; gap:8px; align-items:center; }
+
+select, button{
+  padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.45); color:#fff; font-weight:700;
+}
+button{
+  background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
+  background-size:200% 200%;
+  color:#000; cursor:pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,0,255,0.06);
+  animation: buttonGlow 4s ease infinite;
+}
+button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,0,255,0.12); }
+@keyframes buttonGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.output-glass{ margin-top:12px; background: rgba(0,0,0,0.35); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.03); color:#dfefff; line-height:1.45; 
+box-shadow: 0 0 8px #00f0ff, 0 0 24px #ff00ff, 0 0 48px #00f0ff;
+animation: panelPulse 3s infinite alternate;}
+@keyframes panelPulse {
+  0%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
+  50%{box-shadow:0 0 12px #00f0ff,0 0 30px #ff00ff,0 0 60px #00f0ff;}
+  100%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
+}
+.output-glass h2{ margin:0 0 8px; color:var(--neon-blue); font-size:1rem; }
+.output-text{ color:#dfefff; font-size:0.98rem; min-height:36px; }
+
+#country-meta{ font-size:0.95rem; color:#d9eaff; }
+#country-meta strong{ color:var(--neon-pink); font-size:1.05rem; }
+#country-desc-text{ margin-top:8px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); color:#bfefff; line-height:1.45; }
+
+#country-panel::-webkit-scrollbar{ width:8px; }
+#country-panel::-webkit-scrollbar-thumb{ background: linear-gradient(45deg,var(--neon-pink),var(--neon-blue)); border-radius:8px; }
+
+.ripple { position: absolute; left: 50%; transform: translateX(-50%); border-radius:50%; border: 2px solid rgba(0,240,255,0.12); pointer-events:none; animation:ripple 2s ease-out forwards; top: 6px; filter: blur(1.8px);}
+.ripple.small { width:80px; height:80px; }
+.ripple.medium { width:120px; height:120px; }
+.ripple.large { width:160px; height:160px; }
+@keyframes ripple { to { transform: translateX(-50%) scale(6); opacity:0; } }
+
+.arc { position: fixed; width:6px; height:6px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 24px var(--neon-blue); pointer-events:none; animation: arcfade 280ms ease-out forwards; }
+@keyframes arcfade { to { transform: scale(2); opacity:0; } }
+
+.flicker { animation: flicker 200ms linear 0s 3; }
+@keyframes flicker { 0%{opacity:1} 50%{opacity:0.85; transform:translateY(-2px);} 100%{opacity:1} }
+
+@media (max-width:1100px) {
+  #translator-panel{ left:4%; width:86vw; }
+  #country-panel{ display:none; }
+}
+
+</style>
+
+<style>
+
+
+/* NET_NiNjA cyber button skin (since only markup was provided).
+   Keeps the glitch span from rendering as plain text when styles are missing. */
+.cybr-btn{
+  --btn-bg: rgba(0,0,0,0.55);
+  --btn-border: rgba(255,255,255,0.10);
+  --btn-text: #e8e6ff;
+  --btn-glow1: var(--neon-blue);
+  --btn-glow2: var(--neon-pink);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 12px 16px;
+  min-height: 44px;
+
+  border-radius: 12px;
+  border: 1px solid var(--btn-border);
+  background: linear-gradient(90deg, rgba(255,0,255,0.22), rgba(0,240,255,0.18)) , var(--btn-bg);
+  color: var(--btn-text);
+  font-family: inherit;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+
+  cursor: pointer;
+  user-select: none;
+
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.55),
+    0 0 18px rgba(0,240,255,0.16),
+    0 0 18px rgba(255,0,255,0.14);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+.cybr-btn:active{ transform: translateY(1px); }
+.cybr-btn:hover{
+  box-shadow:
+    0 16px 34px rgba(0,0,0,0.62),
+    0 0 26px rgba(0,240,255,0.22),
+    0 0 26px rgba(255,0,255,0.18);
+}
+
+/* The glitch span exists in your markup; keep it hidden unless you want it. */
+.cybr-btn__glitch{
+  position: absolute;
+  inset: 0;
+  display: none; /* Prevent duplicate text */
+  align-items: center;
+  justify-content: center;
+  opacity: 0.0;
+  pointer-events: none;
+}
+
+/* Optional: quick “glitch flicker” on hover without duplicating text */
+.cybr-btn:hover .cybr-btn__glitch{
+  display:flex;
+  opacity: 0.12;
+  filter: blur(0.4px);
+  text-shadow: 0 0 10px var(--btn-glow1), 0 0 14px var(--btn-glow2);
+  animation: cybrFlicker 420ms steps(2,end) 1;
+}
+@keyframes cybrFlicker{
+  0%{ transform: translate(0,0); opacity: 0.0; }
+  25%{ transform: translate(1px,-1px); opacity: 0.12; }
+  55%{ transform: translate(-1px,1px); opacity: 0.08; }
+  100%{ transform: translate(0,0); opacity: 0.10; }
+}
+
+
+</style>
+
+<style>
+/* ===== NET_NiNjA layout system (missing in the uploaded file) ===== */
+:root{
+  --side-w: 300px;
+  --top-h: 64px;
+}
+
+.nn-overlay{
+  position:fixed; inset:0;
+  background: rgba(0,0,0,0.65);
+  z-index: 20;
+  opacity:0; pointer-events:none;
+  transition: opacity .18s ease;
+}
+.nn-overlay.show{ opacity:1; pointer-events:auto; }
+
+.nn-side{
+  position:fixed; top:0; left:0; height:100%;
+  width: var(--side-w);
+  padding: 16px 14px 18px;
+  z-index: 25;
+  transform: translateX(-104%);
+  transition: transform .22s ease;
+  background: linear-gradient(180deg, rgba(0,0,0,0.80), rgba(0,0,0,0.55));
+  border-right: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.70),
+              0 0 32px rgba(0,240,255,0.10),
+              0 0 32px rgba(255,0,255,0.10);
+  backdrop-filter: blur(12px) saturate(140%);
+  overflow:auto;
+}
+.nn-side.open{ transform: translateX(0); }
+
+.panel-title{
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px rgba(255,0,255,0.35), 0 0 22px rgba(0,240,255,0.20);
+  margin: 6px 6px 12px;
+}
+
+.nn-side .menu{ display:flex; flex-direction:column; gap:10px; }
+.nn-side .cybr-btn{ width:100%; justify-content:space-between; }
+.nn-side .hint{ font-size: 11px; opacity:0.75; font-weight:800; }
+
+.nn-topbar{
+  position:fixed; top:0; left:0; right:0;
+  height: var(--top-h);
+  z-index: 15;
+  display:flex; align-items:center; justify-content:space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.74), rgba(0,0,0,0.40));
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+.nn-topbar .left, .nn-topbar .right{ display:flex; align-items:center; gap:10px; }
+.nn-brand{ font-weight: 900; letter-spacing: 1px; color:#dfefff; }
+.nn-chip{
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  font-weight: 900;
+  color:#fff;
+}
+
+.nn-hamburger{
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.45);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.55),
+              0 0 18px rgba(0,240,255,0.10),
+              0 0 18px rgba(255,0,255,0.10);
+}
+.nn-hamburger:hover{ transform: translateY(-1px); }
+.nn-hamburger .bars{ display:flex; flex-direction:column; gap:6px; }
+.nn-hamburger .bar{
+  width: 18px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue));
+  box-shadow: 0 0 12px rgba(0,240,255,0.18), 0 0 12px rgba(255,0,255,0.18);
+}
+
+.nn-main{
+  position:relative;
+  z-index: 5;
+  padding-top: calc(var(--top-h) + 18px);
+  padding-left: 18px;
+  padding-right: 18px;
+  padding-bottom: 18px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.nn-grid{
+  display:grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 14px;
+}
+@media (max-width: 980px){
+  .nn-grid{ grid-template-columns: 1fr; }
+}
+
+.card{
+  border-radius: 16px;
+  background: var(--glass-bg);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6),
+              0 0 35px rgba(255,0,255,0.08),
+              0 0 80px rgba(0,240,255,0.06);
+  backdrop-filter: blur(10px) saturate(140%);
+  padding: 16px;
+  overflow:hidden;
+}
+.card h2{
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: var(--neon-blue);
+}
+.kv{
+  display:grid;
+  grid-template-columns: 160px 1fr;
+  gap: 8px 12px;
+  font-size: 12.5px;
+  color:#dfefff;
+}
+.kv b{ color: var(--neon-pink); }
+
+.badges{ display:flex; gap:10px; flex-wrap:wrap; }
+.badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  font-weight: 900;
+}
+.badge .dot{ width:8px; height:8px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 16px rgba(0,240,255,.55); }
+.badge.warn .dot{ background: var(--neon-pink); box-shadow: 0 0 16px rgba(255,0,255,.55); }
+
+.table{
+  width:100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  font-size: 12.5px;
+}
+.table td, .table th{ text-align:left; padding: 10px 10px; }
+.table th{ color:#bcb7df; font-weight: 900; font-size: 12px; }
+.row-glass{
+  background: rgba(0,0,0,0.42);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 14px;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.65);
+}
+.table .row-glass td:first-child{ border-top-left-radius: 14px; border-bottom-left-radius: 14px; }
+.table .row-glass td:last-child{ border-top-right-radius: 14px; border-bottom-right-radius: 14px; }
+
+.nn-modal{
+  position:fixed; inset:0;
+  z-index: 40;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
+.nn-modal.show{ display:flex; }
+.nn-modal .glass-panel{
+  position:relative;
+  width: min(720px, 96vw);
+  max-height: 86vh;
+  overflow:auto;
+}
+
+input, .mono{
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.50);
+  color:#fff;
+  outline:none;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+  font-family: inherit;
+}
+.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+
+.view{ display:none; }
+.view.show{ display:block; }
+
+/* Mobile: sidebar is overlay-only */
+@media (max-width: 900px){
+  .nn-side{ width:min(86vw, 340px); }
+}
+
+</style>
+</head>
+
+<body>
+<canvas id="bg"></canvas>
+
+<div class="nn-overlay" id="nnOverlay"></div>
+
+<nav class="nn-side" id="nnSide">
+  <div class="panel-title">OPENCLAW MENU</div>
+
+  <div class="menu">
+    <button class="cybr-btn" type="button" data-nav="home">
+      Home <span class="hint">status</span>
+      <span aria-hidden class="cybr-btn__glitch">Home</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-nav="agents">
+      Agents <span class="hint">workspaces</span>
+      <span aria-hidden class="cybr-btn__glitch">Agents</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-nav="memory">
+      Memory <span class="hint">index + search</span>
+      <span aria-hidden class="cybr-btn__glitch">Memory</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-nav="gateways">
+      Gateways <span class="hint">chat bridges</span>
+      <span aria-hidden class="cybr-btn__glitch">Gateways</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-nav="tasks">
+      Tasks <span class="hint">runs + queue</span>
+      <span aria-hidden class="cybr-btn__glitch">Tasks</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-nav="logs">
+      Logs <span class="hint">events</span>
+      <span aria-hidden class="cybr-btn__glitch">Logs</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-open="command">
+      Run command <span class="hint">openclaw ...</span>
+      <span aria-hidden class="cybr-btn__glitch">Run command</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-open="message">
+      Send message <span class="hint">channel</span>
+      <span aria-hidden class="cybr-btn__glitch">Send message</span>
+    </button>
+
+    <button class="cybr-btn" type="button" data-open="settings">
+      Settings <span class="hint">config</span>
+      <span aria-hidden class="cybr-btn__glitch">Settings</span>
+    </button>
+  </div>
+</nav>
+
+<header class="nn-topbar">
+  <div class="left">
+    <button class="nn-hamburger" id="nnHamburger" type="button" aria-label="Open menu">
+      <div class="bars">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+    </button>
+
+    <div class="nn-brand">OPENCLAW :: ANDROID COMPANION</div>
+
+    <div class="nn-chip" title="Quick status">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-blue);box-shadow:0 0 16px rgba(0,240,255,.55)"></span>
+      <span id="quickStatus">DISCONNECTED</span>
+    </div>
+  </div>
+
+  <div class="right">
+    <button class="cybr-btn" type="button" id="btnConnect">
+      Connect
+      <span aria-hidden class="cybr-btn__glitch">Connect</span>
+    </button>
+
+    <button class="cybr-btn" type="button" id="btnRefresh">
+      Refresh
+      <span aria-hidden class="cybr-btn__glitch">Refresh</span>
+    </button>
+
+    <button class="cybr-btn" type="button" id="btnPanic">
+      Panic
+      <span aria-hidden class="cybr-btn__glitch">Panic</span>
+    </button>
+  </div>
+</header>
+
+<main class="nn-main">
+  <section class="glass-panel" style="position:relative; width:auto; margin:0 0 14px; max-width:none;">
+    <div class="neon-title" style="font-size:2.0rem" id="titleText">OPENCLAW CONTROL DECK</div>
+    <p class="subtitle" id="subText">Companion UI shell. Wire the buttons to your Android app backend (REST/WebSocket/ADB). No fake magic included.</p>
+
+    <div class="badges">
+      <div class="badge" id="badgeAgent"><span class="dot"></span><span>AGENT: <b>none</b></span></div>
+      <div class="badge" id="badgeMemory"><span class="dot"></span><span>MEMORY: <b>unknown</b></span></div>
+      <div class="badge" id="badgeGateways"><span class="dot"></span><span>GATEWAYS: <b>unknown</b></span></div>
+    </div>
+  </section>
+
+  <section class="view show" id="view-home">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Runtime status</h2>
+        <div class="kv" id="kvStatus">
+          <div>Host</div><div class="mono" id="stHost">not set</div>
+          <div>Profile</div><div class="mono" id="stProfile">default</div>
+          <div>Workspace</div><div class="mono" id="stWorkspace">~/.openclaw/workspace</div>
+          <div>Last sync</div><div class="mono" id="stSync">never</div>
+        </div>
+
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="cybr-btn" type="button" id="btnStatus">
+            /status
+            <span aria-hidden class="cybr-btn__glitch">/status</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnConfig">
+            /config
+            <span aria-hidden class="cybr-btn__glitch">/config</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnDebug">
+            /debug
+            <span aria-hidden class="cybr-btn__glitch">/debug</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Quick actions</h2>
+        <div class="row">
+          <button class="cybr-btn" type="button" data-open="command" style="flex:1;">
+            Run openclaw command
+            <span aria-hidden class="cybr-btn__glitch">Run</span>
+          </button>
+          <button class="cybr-btn" type="button" data-open="message" style="flex:1;">
+            Send chat message
+            <span aria-hidden class="cybr-btn__glitch">Send</span>
+          </button>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <button class="cybr-btn" type="button" id="btnMemoryIndex" style="flex:1;">
+            Memory index
+            <span aria-hidden class="cybr-btn__glitch">Index</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnMemorySearch" style="flex:1;">
+            Memory search
+            <span aria-hidden class="cybr-btn__glitch">Search</span>
+          </button>
+        </div>
+
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Console</h2>
+          <div class="output-text mono" id="consoleOut">Awaiting connection.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-agents">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Agents</h2>
+        <table class="table" aria-label="Agents table">
+          <thead>
+            <tr><th>Name</th><th>Profile</th><th>Workspace</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="agentRows"></tbody>
+        </table>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="cybr-btn" type="button" id="btnAddAgent">
+            Add agent
+            <span aria-hidden class="cybr-btn__glitch">Add agent</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Selected agent</h2>
+        <div class="kv" id="agentDetail">
+          <div>Name</div><div class="mono" id="agName">none</div>
+          <div>Workspace</div><div class="mono" id="agWs">-</div>
+          <div>Sandbox</div><div class="mono" id="agSandbox">disabled</div>
+          <div>Workspace access</div><div class="mono" id="agAccess">rw</div>
+        </div>
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="cybr-btn" type="button" id="btnAgentActivate">
+            Activate
+            <span aria-hidden class="cybr-btn__glitch">Activate</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnAgentStop">
+            Stop
+            <span aria-hidden class="cybr-btn__glitch">Stop</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-memory">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Memory index</h2>
+        <p class="subtitle" style="margin-top:-6px;">Vector search over <span class="mono">MEMORY.md</span> + <span class="mono">memory/*.md</span> (wire this to your backend).</p>
+        <div class="row">
+          <button class="cybr-btn" type="button" id="btnMemStatus" style="flex:1;">
+            openclaw memory status
+            <span aria-hidden class="cybr-btn__glitch">status</span>
+          </button>
+          <button class="cybr-btn" type="button" id="btnMemReindex" style="flex:1;">
+            openclaw memory index
+            <span aria-hidden class="cybr-btn__glitch">index</span>
+          </button>
+        </div>
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Index output</h2>
+          <div class="output-text mono" id="memOut">No results.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Memory search</h2>
+        <div class="controls">
+          <input id="memQuery" placeholder="Search memory… (semantic query)"/>
+          <div class="row" style="justify-content:flex-end;">
+            <button class="cybr-btn" type="button" id="btnMemSearch">
+              Search
+              <span aria-hidden class="cybr-btn__glitch">Search</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="output-glass" style="margin-top:12px;">
+          <h2>Search results</h2>
+          <div class="output-text mono" id="memResults">No results.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-gateways">
+    <div class="card">
+      <h2>Gateways</h2>
+      <p class="subtitle" style="margin-top:-6px;">Chat bridges (WhatsApp/Telegram/Discord/iMessage etc.) live here. Track sessions and health.</p>
+
+      <table class="table" aria-label="Gateways table">
+        <thead>
+          <tr><th>Gateway</th><th>Status</th><th>Sessions</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="gwRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="view" id="view-tasks">
+    <div class="nn-grid">
+      <div class="card">
+        <h2>Queue</h2>
+        <table class="table" aria-label="Task queue table">
+          <thead>
+            <tr><th>ID</th><th>Type</th><th>Target</th><th>State</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="taskRows"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Create task</h2>
+        <div class="controls">
+          <input id="taskType" placeholder="Type (e.g., run, message, memorySearch)"/>
+          <input id="taskTarget" placeholder="Target (agent, gateway, channel)"/>
+          <textarea id="taskPayload" placeholder="Payload (JSON or text)"></textarea>
+          <div class="row" style="justify-content:flex-end;">
+            <button class="cybr-btn" type="button" id="btnCreateTask">
+              Enqueue
+              <span aria-hidden class="cybr-btn__glitch">Enqueue</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-logs">
+    <div class="card">
+      <h2>Logs</h2>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="cybr-btn" type="button" id="btnClearLogs">
+          Clear
+          <span aria-hidden class="cybr-btn__glitch">Clear</span>
+        </button>
+      </div>
+      <div class="output-glass" style="margin-top:12px;">
+        <h2>Event stream</h2>
+        <div class="output-text mono" id="logStream" style="white-space:pre-wrap; min-height: 240px;">(no events)</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="nn-modal" id="modalCommand" aria-hidden="true">
+  <section class="glass-panel">
+    <div class="neon-title" style="font-size:1.6rem">RUN COMMAND</div>
+    <p class="subtitle">This is a UI shell. Wire it to your Android companion service.</p>
+
+    <div class="controls">
+      <input id="cmdText" class="mono" placeholder="openclaw memory status"/>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="cybr-btn" type="button" data-close="command">Cancel<span aria-hidden class="cybr-btn__glitch">Cancel</span></button>
+        <button class="cybr-btn" type="button" id="btnCmdRun">Run<span aria-hidden class="cybr-btn__glitch">Run</span></button>
+      </div>
+
+      <div class="output-glass">
+        <h2>Output</h2>
+        <div class="output-text mono" id="cmdOut">No output.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="nn-modal" id="modalMessage" aria-hidden="true">
+  <section class="glass-panel">
+    <div class="neon-title" style="font-size:1.6rem">SEND MESSAGE</div>
+    <p class="subtitle">Pick a gateway + channel and push a message.</p>
+
+    <div class="controls">
+      <div class="row">
+        <div style="flex:1; min-width:220px;">
+          <select id="msgGateway">
+            <option value="whatsapp" selected>WhatsApp</option>
+            <option value="telegram">Telegram</option>
+            <option value="discord">Discord</option>
+            <option value="imessage">iMessage</option>
+          </select>
+        </div>
+        <div style="flex:2; min-width:240px;">
+          <input id="msgChannel" class="mono" placeholder="Channel / chat id" />
+        </div>
+      </div>
+
+      <textarea id="msgBody" placeholder="Message text"></textarea>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button class="cybr-btn" type="button" data-close="message">Cancel<span aria-hidden class="cybr-btn__glitch">Cancel</span></button>
+        <button class="cybr-btn" type="button" id="btnMsgSend">Send<span aria-hidden class="cybr-btn__glitch">Send</span></button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="nn-modal" id="modalSettings" aria-hidden="true">
+  <section class="glass-panel">
+    <div class="neon-title" style="font-size:1.6rem">SETTINGS</div>
+    <p class="subtitle">Connection + appearance knobs.</p>
+
+    <div class="controls">
+      <div class="row">
+        <div style="flex:1; min-width:240px;">
+          <div class="subtitle" style="margin-bottom:6px;">API host</div>
+          <input id="setHost" class="mono" placeholder="http://192.168.1.12:8080" />
+        </div>
+        <div style="flex:1; min-width:240px;">
+          <div class="subtitle" style="margin-bottom:6px;">Profile</div>
+          <input id="setProfile" class="mono" placeholder="default" />
+        </div>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button class="cybr-btn" type="button" data-close="settings">Close<span aria-hidden class="cybr-btn__glitch">Close</span></button>
+        <button class="cybr-btn" type="button" id="btnSaveSettings">Save<span aria-hidden class="cybr-btn__glitch">Save</span></button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ===== Background: dependency-free neon particle canvas (because modules + WebView CORS are a circus) ===== */
+(function(){
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+  let w=0,h=0, dpr=1;
+  const dots = [];
+  const DOTS = 140;
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = Math.floor(window.innerWidth * dpr);
+    h = Math.floor(window.innerHeight * dpr);
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+  }
+  window.addEventListener('resize', resize, {passive:true});
+  resize();
+
+  function rand(a,b){ return Math.random()*(b-a)+a; }
+  function init(){
+    dots.length=0;
+    for(let i=0;i<DOTS;i++){
+      dots.push({
+        x: rand(0,w), y: rand(0,h),
+        z: rand(0.2, 1.0),
+        vx: rand(-0.08,0.08), vy: rand(-0.05,0.05),
+      });
+    }
+  }
+  init();
+
+  let mx = 0.5, my = 0.5;
+  window.addEventListener('mousemove', (e)=>{
+    mx = e.clientX / Math.max(1, window.innerWidth);
+    my = e.clientY / Math.max(1, window.innerHeight);
+  }, {passive:true});
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+
+    const g = ctx.createRadialGradient(w*0.35, h*0.2, 0, w*0.5, h*0.5, Math.max(w,h)*0.7);
+    g.addColorStop(0, 'rgba(18,0,35,0.55)');
+    g.addColorStop(0.6, 'rgba(4,0,10,0.82)');
+    g.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+
+    const driftX = (mx - 0.5) * 28 * dpr;
+    const driftY = (0.5 - my) * 18 * dpr;
+
+    for(const p of dots){
+      p.x += p.vx * (1.3 / p.z) + driftX * 0.0008;
+      p.y += p.vy * (1.2 / p.z) + driftY * 0.0008;
+      if(p.x < -40) p.x = w + 40;
+      if(p.x > w + 40) p.x = -40;
+      if(p.y < -40) p.y = h + 40;
+      if(p.y > h + 40) p.y = -40;
+
+      const r = 1.2 * dpr * (1.2 / p.z);
+      const a = 0.45;
+      const isPink = (p.z > 0.82 && Math.random() < 0.02);
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+      ctx.fillStyle = isPink ? `rgba(255,0,255,${a})` : `rgba(0,240,255,${a})`;
+      ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    for(let y=0;y<h;y+=6*dpr){
+      ctx.fillRect(0,y,w,1);
+    }
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ===== Sidebar + modal system ===== */
+(function(){
+  const side = document.getElementById('nnSide');
+  const overlay = document.getElementById('nnOverlay');
+  const burger = document.getElementById('nnHamburger');
+
+  function openSide(){
+    side.classList.add('open');
+    overlay.classList.add('show');
+  }
+  function closeSide(){
+    side.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  burger.addEventListener('click', openSide);
+  overlay.addEventListener('click', closeSide);
+
+  const views = {
+    home: document.getElementById('view-home'),
+    agents: document.getElementById('view-agents'),
+    memory: document.getElementById('view-memory'),
+    gateways: document.getElementById('view-gateways'),
+    tasks: document.getElementById('view-tasks'),
+    logs: document.getElementById('view-logs'),
+  };
+
+  function showView(key){
+    Object.values(views).forEach(v => v.classList.remove('show'));
+    (views[key] || views.home).classList.add('show');
+    closeSide();
+  }
+
+  side.querySelectorAll('[data-nav]').forEach(btn=>{
+    btn.addEventListener('click', ()=> showView(btn.getAttribute('data-nav')));
+  });
+
+  const modals = {
+    command: document.getElementById('modalCommand'),
+    message: document.getElementById('modalMessage'),
+    settings: document.getElementById('modalSettings'),
+  };
+
+  function openModal(k){
+    const m = modals[k];
+    if(!m) return;
+    m.classList.add('show');
+    overlay.classList.add('show');
+    overlay.onclick = () => { closeModal(k); };
+  }
+  function closeModal(k){
+    const m = modals[k];
+    if(!m) return;
+    m.classList.remove('show');
+    overlay.classList.remove('show');
+    overlay.onclick = closeSide;
+  }
+
+  document.querySelectorAll('[data-open]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openModal(btn.getAttribute('data-open')));
+  });
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=> closeModal(btn.getAttribute('data-close')));
+  });
+
+  window.__ocui = { showView, openModal, closeModal, closeSide };
+})();
+
+/* ===== Demo data + wiring hooks ===== */
+(function(){
+  const state = {
+    connected: false,
+    host: '',
+    profile: 'default',
+    workspace: '~/.openclaw/workspace',
+    agent: null,
+    memory: { indexed: false, items: 0 },
+    gateways: [
+      { key:'whatsapp', name:'WhatsApp', status:'down', sessions:0 },
+      { key:'telegram', name:'Telegram', status:'down', sessions:0 },
+      { key:'discord', name:'Discord', status:'down', sessions:0 },
+      { key:'imessage', name:'iMessage', status:'down', sessions:0 },
+    ],
+    agents: [
+      { name:'default', profile:'default', workspace:'~/.openclaw/workspace', sandbox:false, access:'rw' },
+      { name:'work', profile:'work', workspace:'~/.openclaw/workspace-work', sandbox:true, access:'ro' },
+    ],
+    tasks: [
+      { id:'T-1024', type:'memoryIndex', target:'default', state:'idle' },
+      { id:'T-1025', type:'message', target:'whatsapp:family', state:'queued' },
+    ],
+    logs: []
+  };
+
+  const el = (id)=>document.getElementById(id);
+  const log = (msg)=>{
+    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    state.logs.push(line);
+    const ls = el('logStream');
+    if(ls) ls.textContent = state.logs.slice(-200).join('\n');
+    const c = el('consoleOut');
+    if(c) c.textContent = line;
+  };
+
+  function renderBadges(){
+    const a = el('badgeAgent');
+    const m = el('badgeMemory');
+    const g = el('badgeGateways');
+
+    a.querySelector('b').textContent = state.agent ? state.agent.name : 'none';
+    m.querySelector('b').textContent = state.memory.indexed ? `${state.memory.items} items` : 'not indexed';
+
+    const up = state.gateways.filter(x=>x.status==='up').length;
+    g.querySelector('b').textContent = `${up}/${state.gateways.length} up`;
+  }
+
+  function renderTop(){
+    el('quickStatus').textContent = state.connected ? 'CONNECTED' : 'DISCONNECTED';
+    el('stHost').textContent = state.host || 'not set';
+    el('stProfile').textContent = state.profile || 'default';
+    el('stWorkspace').textContent = state.workspace || '~/.openclaw/workspace';
+  }
+
+  function renderAgents(){
+    const tb = el('agentRows');
+    tb.innerHTML = '';
+    state.agents.forEach((a,i)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      tr.innerHTML = `
+        <td>${a.name}</td>
+        <td>${a.profile}</td>
+        <td class="mono">${a.workspace}</td>
+        <td>
+          <button class="cybr-btn" type="button" data-act="selectAgent" data-i="${i}">
+            Select <span aria-hidden class="cybr-btn__glitch">Select</span>
+          </button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderGateways(){
+    const tb = el('gwRows');
+    tb.innerHTML = '';
+    state.gateways.forEach((gw)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      const dotClass = gw.status === 'up' ? 'badge' : 'badge warn';
+      const dot = gw.status === 'up' ? 'UP' : 'DOWN';
+      tr.innerHTML = `
+        <td><b style="color:var(--neon-blue)">${gw.name}</b></td>
+        <td><span class="${dotClass}"><span class="dot"></span>${dot}</span></td>
+        <td class="mono">${gw.sessions}</td>
+        <td class="row">
+          <button class="cybr-btn" type="button" data-act="gwRestart" data-key="${gw.key}">
+            Restart <span aria-hidden class="cybr-btn__glitch">Restart</span>
+          </button>
+          <button class="cybr-btn" type="button" data-act="gwPing" data-key="${gw.key}">
+            Ping <span aria-hidden class="cybr-btn__glitch">Ping</span>
+          </button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderTasks(){
+    const tb = el('taskRows');
+    tb.innerHTML = '';
+    state.tasks.forEach((t, i)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      tr.innerHTML = `
+        <td class="mono">${t.id}</td>
+        <td>${t.type}</td>
+        <td class="mono">${t.target}</td>
+        <td>${t.state}</td>
+        <td>
+          <button class="cybr-btn" type="button" data-act="taskCancel" data-i="${i}">
+            Cancel <span aria-hidden class="cybr-btn__glitch">Cancel</span>
+          </button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderSelectedAgent(){
+    el('agName').textContent = state.agent ? state.agent.name : 'none';
+    el('agWs').textContent = state.agent ? state.agent.workspace : '-';
+    el('agSandbox').textContent = state.agent ? (state.agent.sandbox ? 'enabled' : 'disabled') : 'disabled';
+    el('agAccess').textContent = state.agent ? state.agent.access : 'rw';
+  }
+
+  function rerender(){
+    renderTop();
+    renderBadges();
+    renderAgents();
+    renderGateways();
+    renderTasks();
+    renderSelectedAgent();
+  }
+
+  el('btnConnect').addEventListener('click', ()=>{
+    state.connected = !state.connected;
+    state.host = state.connected ? (state.host || 'http://192.168.1.12:8080') : state.host;
+    el('stSync').textContent = new Date().toLocaleString();
+    log(state.connected ? 'Connected (demo).' : 'Disconnected (demo).');
+    rerender();
+  });
+
+  el('btnRefresh').addEventListener('click', ()=>{
+    el('stSync').textContent = new Date().toLocaleString();
+    log('Refresh requested.');
+    rerender();
+  });
+
+  el('btnPanic').addEventListener('click', ()=>{
+    log('PANIC: stop all running tasks + disconnect gateways (demo).');
+    state.tasks.forEach(t=>t.state='canceled');
+    state.gateways.forEach(g=>{g.status='down'; g.sessions=0;});
+    rerender();
+  });
+
+  el('btnStatus').addEventListener('click', ()=> log('Slash command: /status'));
+  el('btnConfig').addEventListener('click', ()=> log('Slash command: /config'));
+  el('btnDebug').addEventListener('click', ()=> log('Slash command: /debug'));
+
+  el('btnMemoryIndex').addEventListener('click', ()=> { window.__ocui.openModal('command'); el('cmdText').value='openclaw memory index'; });
+  el('btnMemorySearch').addEventListener('click', ()=> { window.__ocui.openModal('command'); el('cmdText').value='openclaw memory search "..."'; });
+
+  el('btnMemStatus').addEventListener('click', ()=> { log('openclaw memory status'); el('memOut').textContent='(wire backend)'; });
+  el('btnMemReindex').addEventListener('click', ()=> { state.memory.indexed=true; state.memory.items=128; log('openclaw memory index'); el('memOut').textContent='Indexed 128 items (demo).'; rerender(); });
+  el('btnMemSearch').addEventListener('click', ()=>{
+    const q = el('memQuery').value.trim() || '(empty)';
+    log(`openclaw memory search "${q}"`);
+    el('memResults').textContent = `Result 1: ...\nResult 2: ...\n(wire backend)`;
+  });
+
+  el('btnCmdRun').addEventListener('click', ()=>{
+    const cmd = el('cmdText').value.trim();
+    if(!cmd){ el('cmdOut').textContent='Enter a command.'; return; }
+    log(`RUN: ${cmd}`);
+    el('cmdOut').textContent = `(demo) executed: ${cmd}`;
+  });
+
+  el('btnMsgSend').addEventListener('click', ()=>{
+    const gw = el('msgGateway').value;
+    const ch = el('msgChannel').value.trim();
+    const body = el('msgBody').value.trim();
+    if(!ch || !body){ log('Message rejected: missing channel/body.'); return; }
+    log(`SEND: ${gw}:${ch} -> ${body.slice(0,140)}${body.length>140?'…':''}`);
+  });
+
+  el('btnSaveSettings').addEventListener('click', ()=>{
+    state.host = el('setHost').value.trim();
+    state.profile = el('setProfile').value.trim() || 'default';
+    log(`Settings saved: host=${state.host||'(none)'} profile=${state.profile}`);
+    rerender();
+    window.__ocui.closeModal('settings');
+  });
+
+  el('btnCreateTask').addEventListener('click', ()=>{
+    const t = {
+      id: 'T-' + Math.floor(Math.random()*9000+1000),
+      type: el('taskType').value.trim() || 'run',
+      target: el('taskTarget').value.trim() || 'default',
+      state: 'queued'
+    };
+    state.tasks.unshift(t);
+    log(`Enqueued task ${t.id} (${t.type})`);
+    renderTasks();
+  });
+
+  el('btnClearLogs').addEventListener('click', ()=>{
+    state.logs = [];
+    el('logStream').textContent = '(no events)';
+    el('consoleOut').textContent = 'Awaiting connection.';
+  });
+
+  document.body.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-act]');
+    if(!btn) return;
+    const act = btn.getAttribute('data-act');
+    if(act === 'selectAgent'){
+      const i = Number(btn.getAttribute('data-i'));
+      state.agent = state.agents[i] || null;
+      log(`Selected agent: ${state.agent ? state.agent.name : 'none'}`);
+      rerender();
+    } else if(act === 'gwRestart'){
+      const key = btn.getAttribute('data-key');
+      const gw = state.gateways.find(x=>x.key===key);
+      if(gw){ gw.status='up'; gw.sessions=Math.floor(Math.random()*4); }
+      log(`Gateway restart: ${key}`);
+      rerender();
+    } else if(act === 'gwPing'){
+      const key = btn.getAttribute('data-key');
+      log(`Gateway ping: ${key}`);
+    } else if(act === 'taskCancel'){
+      const i = Number(btn.getAttribute('data-i'));
+      if(state.tasks[i]) state.tasks[i].state='canceled';
+      log(`Task canceled: ${state.tasks[i] ? state.tasks[i].id : '(missing)'}`);
+      renderTasks();
+    }
+  });
+
+  rerender();
+  log('UI booted (demo).');
+})();
+</script>
+</body>
+</html>

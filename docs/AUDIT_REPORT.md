@@ -6,7 +6,6 @@
 - **Android manifest** (`android-app/src/main/AndroidManifest.xml`): OK
 - **MainActivity** (`android-app/src/main/java/com/netninja/MainActivity.kt`): OK
 - **Web UI HTML** (`web-ui/ninja_mobile_new.html`): OK
-- **Login UI HTML** (`web-ui/new_assets/ninja_login.html`): OK
 - **Legacy mobile UI HTML** (`web-ui/ninja_mobile.html`): OK
 - **Neon CSS** (`web-ui/neon_dash.css`): OK
 - **Neon buttons CSS** (`web-ui/neon_btns.css`): OK
