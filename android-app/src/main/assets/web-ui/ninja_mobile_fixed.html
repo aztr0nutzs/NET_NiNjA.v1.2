@@ -462,7 +462,6 @@
 
   <script>
     // Global state
-    let authToken = localStorage.getItem('authToken');
     let devices = [];
     let metrics = {};
     let logStream = null;
@@ -491,10 +490,6 @@
           ...options.headers
         };
         
-        if (authToken) {
-          headers['Authorization'] = `Bearer ${authToken}`;
-        }
-
         const response = await fetch(`${API_BASE}${endpoint}`, {
           ...options,
           headers
@@ -504,46 +499,13 @@
         let data = null;
         try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
 
-        if (!response.ok) {
-          if (response.status === 401 && endpoint !== '/api/v1/auth/login') {
-            // Token expired, try to re-authenticate
-            authToken = null;
-            localStorage.removeItem('authToken');
-            await authenticate();
-            return apiCall(endpoint, options);
-          }
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
         return data;
       } catch (error) {
         showError(`API Error: ${error.message}`);
         throw error;
       }
-    }
-
-    // Authentication
-    async function authenticate() {
-      if (authToken) return true;
-      
-      try {
-        const response = await apiCall('/api/v1/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({
-            username: 'ninja',
-            password: 'neon'
-          })
-        });
-
-        if (response && response.token) {
-          authToken = response.token;
-          localStorage.setItem('authToken', authToken);
-          return true;
-        }
-      } catch (error) {
-        showError('Authentication failed');
-      }
-      return false;
     }
 
     // Network scanning
@@ -703,10 +665,7 @@
       logsContent.innerHTML = '<div class="muted">Connecting to log stream...</div>';
 
       try {
-        const url = authToken
-          ? `${API_BASE}/api/v1/logs/stream?token=${encodeURIComponent(authToken)}`
-          : `${API_BASE}/api/v1/logs/stream`;
-        logStream = new EventSource(url);
+        logStream = new EventSource(`${API_BASE}/api/v1/logs/stream`);
         
         const logs = [];
         
@@ -756,9 +715,6 @@
 
     // Event listeners
     document.addEventListener('DOMContentLoaded', async function() {
-      // Authenticate on load
-      await authenticate();
-
       // Scan button
       document.getElementById('scanBtn').addEventListener('click', scanNetwork);
 

@@ -33,7 +33,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 data class ScanRequest(val subnet: String? = null, val timeoutMs: Int? = 250)
-data class LoginRequest(val username: String? = null, val password: String? = null)
 data class ActionRequest(val ip: String? = null, val mac: String? = null, val url: String? = null, val command: String? = null)
 data class ScheduleRequest(val subnet: String? = null, val freq: String? = null)
 data class RuleRequest(val match: String? = null, val action: String? = null)
@@ -356,18 +355,6 @@ fun startServer(
 
       get("/api/v1/network/info") {
         call.respond(localNetworkInfo())
-      }
-
-      post("/api/v1/auth/login") {
-        val req = runCatching { call.receive<LoginRequest>() }.getOrNull() ?: LoginRequest()
-        val user = req.username?.trim().orEmpty()
-        val pass = req.password?.trim().orEmpty()
-        val ok = user == "ninja" && pass == "neon"
-        if (!ok) {
-          call.respond(HttpStatusCode.Unauthorized, mapOf("ok" to false))
-          return@post
-        }
-        call.respond(mapOf("ok" to true, "token" to "local-${System.currentTimeMillis()}"))
       }
 
       post("/api/v1/discovery/scan") {
