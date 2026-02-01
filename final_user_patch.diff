@@ -1,0 +1,56 @@
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@
+- - **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
++ - **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
++
++## OpenClaw Android Companion integration
++![OpenClaw Companion header](ninja_claw.png)
++
++The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
++
++### What it supports
++- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
++- **Channel visibility**: A dedicated channels table lists gateway names, status, and active session counts.
++- **Agent/instance control surface**: A table of agent instances with profile/workspace metadata, plus quick actions and a detail panel for sandbox and access mode.
++- **Sessions tracking**: A sessions table for monitoring active task/session entries.
++- **Command runner modal**: A command dialog is available to run OpenClaw commands (e.g., `openclaw status`) from within the dashboard shell.
+
+diff --git a/README_PROPOSED.md b/README_PROPOSED.md
+--- a/README_PROPOSED.md
++++ b/README_PROPOSED.md
+@@
+- - **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts for live monitoring, with load/reconnect controls for the grid.
++ - **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts for live monitoring, with load/reconnect controls for the grid.
++
++## OpenClaw Android Companion integration
++![OpenClaw Companion header](ninja_claw.png)
++
++The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
++
++### What it supports
++- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
++- **Channel visibility**: A dedicated channels table lists gateway names, status, and active session counts.
++- **Agent/instance control surface**: A table of agent instances with profile/workspace metadata, plus quick actions and a detail panel for sandbox and access mode.
++- **Sessions tracking**: A sessions table for monitoring active task/session entries.
++- **Command runner modal**: A command dialog is available to run OpenClaw commands (e.g., `openclaw status`) from within the dashboard shell.
+
+diff --git a/android-app/src/main/assets/web-ui/ninja_mobile_new.html b/android-app/src/main/assets/web-ui/ninja_mobile_new.html
+--- a/android-app/src/main/assets/web-ui/ninja_mobile_new.html
++++ b/android-app/src/main/assets/web-ui/ninja_mobile_new.html
+@@
+-            <source src="ninja_header.mp4" type="video/mp4" />
++            <source src="ninja_claw.mp4" type="video/mp4" />
+
+diff --git a/web-ui/ninja_mobile_new.html b/web-ui/ninja_mobile_new.html
+--- a/web-ui/ninja_mobile_new.html
++++ b/web-ui/ninja_mobile_new.html
+@@
+-            <source src="ninja_header.mp4" type="video/mp4" />
++            <source src="ninja_claw.mp4" type="video/mp4" />
+
+diff --git a/ninja_claw.mp4 b/android-app/src/main/assets/web-ui/ninja_claw.mp4
+similarity index 100%
+rename from ninja_claw.mp4
+rename to android-app/src/main/assets/web-ui/ninja_claw.mp4
