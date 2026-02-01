@@ -32,6 +32,18 @@ The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that lo
 - **Bulk import**: Paste a multi-line list of cameras using the `Name | URL` format for quick onboarding.
 - **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
 
+## OpenClaw Android Companion integration
+![OpenClaw Companion header](ninja_claw.png)
+
+The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
+
+### What it supports
+- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
+- **Channel visibility**: A dedicated channels table lists gateway names, status, and active session counts.
+- **Agent/instance control surface**: A table of agent instances with profile/workspace metadata, plus quick actions and a detail panel for sandbox and access mode.
+- **Sessions tracking**: A sessions table for monitoring active task/session entries.
+- **Command runner modal**: A command dialog is available to run OpenClaw commands (e.g., `openclaw status`) from within the dashboard shell.
+
 ## Quick start
 ### Run the server (Gradle)
 ```bash
