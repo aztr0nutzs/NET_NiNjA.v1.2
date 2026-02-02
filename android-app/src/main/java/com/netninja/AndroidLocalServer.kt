@@ -33,6 +33,8 @@ import kotlinx.serialization.Serializable
 import java.io.File
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import java.net.Socket
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
@@ -221,7 +223,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/onvif/discover") {
-        val service = OnvifDiscoveryService()
+        val service = OnvifDiscoveryService(ctx)
         val devices = withContext(Dispatchers.IO) { service.discover() }
         call.respond(devices)
       }
@@ -543,7 +545,6 @@ class AndroidLocalServer(private val ctx: Context) {
       scanCancel.set(false)
       lastScanError.set(null)
       val timeout = 300
-      val arp = readArpTable()
       val ips = cidrToIps(subnet).take(4096)
       val sem = Semaphore(48)
       val total = ips.size.coerceAtLeast(1)
@@ -551,21 +552,24 @@ class AndroidLocalServer(private val ctx: Context) {
       val foundCount = java.util.concurrent.atomic.AtomicInteger(0)
 
       val netInfo = localNetworkInfo()
-      scanProgress.set(
-        ScanProgress(
-          progress = 0,
-          phase = "DISCOVERY",
-          networks = 1,
-          devices = 0,
-          rssiDbm = null,
-          ssid = netInfo["name"]?.toString(),
-          bssid = null,
-          subnet = subnet,
-          gateway = netInfo["gateway"]?.toString(),
-          linkUp = netInfo["linkUp"] as? Boolean ?: true,
-          updatedAt = System.currentTimeMillis()
+      fun setProgress(progress: Int, phase: String, devices: Int) {
+        scanProgress.set(
+          ScanProgress(
+            progress = progress.coerceIn(0, 100),
+            phase = phase,
+            networks = 1,
+            devices = devices,
+            rssiDbm = null,
+            ssid = netInfo["name"]?.toString(),
+            bssid = null,
+            subnet = subnet,
+            gateway = netInfo["gateway"]?.toString(),
+            linkUp = netInfo["linkUp"] as? Boolean ?: true,
+            updatedAt = System.currentTimeMillis()
+          )
         )
-      )
+      }
+      setProgress(0, "DISCOVERY", 0)
       logEvent(
         "scan_start",
         mapOf(
@@ -575,6 +579,9 @@ class AndroidLocalServer(private val ctx: Context) {
         )
       )
 
+      warmUpArp(ips, timeout, netInfo, subnet)
+      val arp = readArpTable()
+
       coroutineScope {
         ips.map { ip ->
           async(Dispatchers.IO) {
@@ -582,7 +589,7 @@ class AndroidLocalServer(private val ctx: Context) {
               if (scanCancel.get()) return@withPermit
               val arpDev = arp.firstOrNull { it.ip == ip }
               val mac = arpDev?.mac
-              val reachable = isLikelyReachable(ip, timeout, retries = 2)
+              val reachable = isLikelyReachable(ip, timeout, retries = 2) || mac != null
 
               if (!reachable && mac == null) return@withPermit
 
@@ -626,22 +633,8 @@ class AndroidLocalServer(private val ctx: Context) {
               }
 
               val done = completed.incrementAndGet()
-              val pct = ((done.toDouble() / total.toDouble()) * 100.0).toInt().coerceIn(0, 100)
-              scanProgress.set(
-                ScanProgress(
-                  progress = pct,
-                  phase = if (pct >= 100) "COMPLETE" else "SCANNING",
-                  networks = 1,
-                  devices = foundCount.get(),
-                  rssiDbm = null,
-                  ssid = netInfo["name"]?.toString(),
-                  bssid = null,
-                  subnet = subnet,
-                  gateway = netInfo["gateway"]?.toString(),
-                  linkUp = true,
-                  updatedAt = System.currentTimeMillis()
-                )
-              )
+              val pct = ((done.toDouble() / total.toDouble()) * 90.0).toInt().coerceIn(0, 90)
+              setProgress(pct + 10, if (pct >= 90) "COMPLETE" else "SCANNING", foundCount.get())
             }
           }
         }.awaitAll()
@@ -933,32 +926,49 @@ class AndroidLocalServer(private val ctx: Context) {
   // ----------------- Network helpers -----------------
 
   private fun deriveSubnetCidr(): String? {
-    if (!canAccessWifiDetails()) return null
-    val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-    val dhcp = runCatching { wm.dhcpInfo }.getOrNull() ?: return null
-    val ip = Formatter.formatIpAddress(dhcp.ipAddress)
-    val mask = Formatter.formatIpAddress(dhcp.netmask)
-    if (ip == "0.0.0.0" || mask == "0.0.0.0") return null
-    val prefix = maskToPrefix(mask)
-    return "${ip.substringBeforeLast(".")}.0/$prefix"
+    if (canAccessWifiDetails()) {
+      val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+      val dhcp = runCatching { wm.dhcpInfo }.getOrNull() ?: return null
+      val ip = Formatter.formatIpAddress(dhcp.ipAddress)
+      val mask = Formatter.formatIpAddress(dhcp.netmask)
+      if (ip == "0.0.0.0" || mask == "0.0.0.0") return null
+      val prefix = maskToPrefix(mask)
+      val base = ipToInt(ip) and if (prefix == 0) 0 else -1 shl (32 - prefix)
+      return "${intToIp(base)}/$prefix"
+    }
+    return deriveSubnetFromInterfaces()
   }
 
   private fun localNetworkInfo(): Map<String, Any?> {
-    if (!canAccessWifiDetails()) {
+    if (canAccessWifiDetails()) {
+      val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+      val dhcp = runCatching { wm.dhcpInfo }.getOrNull()
+      val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
+      val gw = dhcp?.let { Formatter.formatIpAddress(it.gateway) }
+      val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
+      val cidr = if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0") {
+        val prefix = maskToPrefix(mask)
+        val base = ipToInt(ip) and if (prefix == 0) 0 else -1 shl (32 - prefix)
+        "${intToIp(base)}/$prefix"
+      } else {
+        null
+      }
+      val linkUp = ip != null && ip != "0.0.0.0"
+      return mapOf("name" to "Wi-Fi", "ip" to ip, "cidr" to cidr, "gateway" to gw, "linkUp" to linkUp)
+    }
+
+    val iface = selectInterfaceInfo()
+    if (iface == null) {
       return mapOf("name" to "Wi-Fi", "ip" to null, "cidr" to null, "gateway" to null, "linkUp" to false)
     }
-    val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-    val dhcp = runCatching { wm.dhcpInfo }.getOrNull()
-    val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
-    val gw = dhcp?.let { Formatter.formatIpAddress(it.gateway) }
-    val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
-    val cidr = if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0") {
-      "${ip.substringBeforeLast(".")}.0/${maskToPrefix(mask)}"
-    } else {
-      null
-    }
-    val linkUp = ip != null && ip != "0.0.0.0"
-    return mapOf("name" to "Wi-Fi", "ip" to ip, "cidr" to cidr, "gateway" to gw, "linkUp" to linkUp)
+    val base = ipToInt(iface.ip) and if (iface.prefix == 0) 0 else -1 shl (32 - iface.prefix)
+    return mapOf(
+      "name" to iface.name,
+      "ip" to iface.ip,
+      "cidr" to "${intToIp(base)}/${iface.prefix}",
+      "gateway" to null,
+      "linkUp" to true
+    )
   }
 
   private fun readArpTable(): List<Device> {
@@ -1048,6 +1058,8 @@ class AndroidLocalServer(private val ctx: Context) {
     val timeout = timeoutMs.coerceIn(80, 1_000)
     val probePorts = intArrayOf(80, 443, 22)
     repeat(retries.coerceAtLeast(1)) { attempt ->
+      val pingOk = runCatching { InetAddress.getByName(ip).isReachable(timeout) }.getOrDefault(false)
+      if (pingOk) return true
       for (p in probePorts) {
         try {
           Socket().use { s ->
@@ -1124,7 +1136,7 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun scheduleScan(subnet: String, reason: String) {
-    if (!canAccessWifiDetails()) {
+    if (!canAccessWifiDetails() && selectInterfaceInfo() == null) {
       val msg = "scan blocked: wifi permissions missing"
       logEvent("scan_blocked", mapOf("reason" to "permissions", "subnet" to subnet))
       updateScanProgress("PERMISSION_BLOCKED", message = msg)
@@ -1192,6 +1204,71 @@ class AndroidLocalServer(private val ctx: Context) {
     java.net.DatagramSocket().use { s ->
       s.broadcast = true
       s.send(dp)
+    }
+  }
+
+  private data class InterfaceInfo(val name: String, val ip: String, val prefix: Int)
+
+  private fun selectInterfaceInfo(): InterfaceInfo? {
+    return runCatching {
+      NetworkInterface.getNetworkInterfaces().toList()
+        .asSequence()
+        .filter { it.isUp && !it.isLoopback }
+        .flatMap { iface ->
+          iface.interfaceAddresses.asSequence()
+            .filter { it.address is Inet4Address }
+            .map { addr ->
+              InterfaceInfo(
+                name = iface.displayName ?: iface.name,
+                ip = addr.address.hostAddress ?: return@map null,
+                prefix = addr.networkPrefixLength.toInt()
+              )
+            }
+            .filterNotNull()
+        }
+        .firstOrNull()
+    }.getOrNull()
+  }
+
+  private fun deriveSubnetFromInterfaces(): String? {
+    val iface = selectInterfaceInfo() ?: return null
+    val base = ipToInt(iface.ip) and if (iface.prefix == 0) 0 else -1 shl (32 - iface.prefix)
+    return "${intToIp(base)}/${iface.prefix}"
+  }
+
+  private suspend fun warmUpArp(ips: List<String>, timeoutMs: Int, netInfo: Map<String, Any?>, subnet: String) {
+    if (ips.isEmpty()) return
+    val payload = byteArrayOf(0x1)
+    val total = ips.size
+    val socket = runCatching { java.net.DatagramSocket() }.getOrNull() ?: return
+    socket.use { s ->
+      s.broadcast = true
+      s.soTimeout = timeoutMs.coerceIn(80, 800)
+      ips.forEachIndexed { idx, ip ->
+        if (scanCancel.get()) return
+        runCatching {
+          val packet = java.net.DatagramPacket(payload, payload.size, InetAddress.getByName(ip), 9)
+          s.send(packet)
+        }
+        if (idx % 64 == 0 || idx == total - 1) {
+          val pct = ((idx + 1).toDouble() / total.toDouble() * 10.0).toInt().coerceIn(0, 10)
+          scanProgress.set(
+            ScanProgress(
+              progress = pct,
+              phase = "ARP_WARMUP",
+              networks = 1,
+              devices = 0,
+              rssiDbm = null,
+              ssid = netInfo["name"]?.toString(),
+              bssid = null,
+              subnet = subnet,
+              gateway = netInfo["gateway"]?.toString(),
+              linkUp = netInfo["linkUp"] as? Boolean ?: true,
+              updatedAt = System.currentTimeMillis()
+            )
+          )
+        }
+      }
     }
   }
 }
