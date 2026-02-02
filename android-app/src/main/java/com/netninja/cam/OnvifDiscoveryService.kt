@@ -1,5 +1,7 @@
 package com.netninja.cam
 
+import android.content.Context
+import android.net.wifi.WifiManager
 import kotlinx.serialization.Serializable
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -15,6 +17,7 @@ data class OnvifDevice(
 )
 
 class OnvifDiscoveryService(
+  private val ctx: Context? = null,
   private val timeoutMs: Int = 2000,
   private val maxResponses: Int = 32
 ) {
@@ -23,22 +26,30 @@ class OnvifDiscoveryService(
     val address = InetAddress.getByName(MULTICAST_ADDRESS)
     val results = mutableListOf<OnvifDevice>()
 
-    DatagramSocket().use { socket ->
-      socket.soTimeout = timeoutMs
-      socket.send(DatagramPacket(message, message.size, address, MULTICAST_PORT))
+    val wifiManager = ctx?.applicationContext?.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+    val lock = wifiManager?.createMulticastLock("netninja-onvif")
+    lock?.setReferenceCounted(true)
+    lock?.acquire()
+    try {
+      DatagramSocket().use { socket ->
+        socket.soTimeout = timeoutMs
+        socket.send(DatagramPacket(message, message.size, address, MULTICAST_PORT))
 
-      val buffer = ByteArray(8192)
-      val deadline = System.currentTimeMillis() + timeoutMs
-      while (System.currentTimeMillis() < deadline && results.size < maxResponses) {
-        try {
-          val packet = DatagramPacket(buffer, buffer.size)
-          socket.receive(packet)
-          val payload = String(packet.data, 0, packet.length, StandardCharsets.UTF_8)
-          results.addAll(parseResponse(payload))
-        } catch (_: SocketTimeoutException) {
-          break
+        val buffer = ByteArray(8192)
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline && results.size < maxResponses) {
+          try {
+            val packet = DatagramPacket(buffer, buffer.size)
+            socket.receive(packet)
+            val payload = String(packet.data, 0, packet.length, StandardCharsets.UTF_8)
+            results.addAll(parseResponse(payload))
+          } catch (_: SocketTimeoutException) {
+            break
+          }
         }
       }
+    } finally {
+      runCatching { lock?.release() }
     }
 
     return results.distinctBy { it.xaddr }
