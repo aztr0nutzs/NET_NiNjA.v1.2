@@ -43,8 +43,8 @@ class OpenClawGatewayService : Service() {
       "HELLO" -> {
         if (msg.nodeId.isBlank()) return
         val capabilities = msg.capabilities
-          ?.filter { it.isNotBlank() }
-          ?: emptyList()
+          .orEmpty()
+          .filter { it.isNotBlank() }
         OpenClawGatewayState.register(msg.nodeId, capabilities, session)
         session.send(OpenClawMessage.registered(msg.nodeId))
       }
