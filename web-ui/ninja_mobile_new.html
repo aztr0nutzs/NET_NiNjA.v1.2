@@ -44,12 +44,13 @@
     }
 
     *{ box-sizing:border-box; margin:0; padding:0; }
-    html, body{ height:100%; }
+    html, body{ height:100%; width:100%; }
     body{
       background: var(--bg0);
       color: rgba(255,255,255,0.92);
       font-family: "Share Tech Mono", monospace;
       overflow-x:hidden;
+      min-height: 100dvh;
     }
 
     /* subtle neon grid + scanlines */
@@ -83,6 +84,8 @@
 
     .app{
       min-height:100dvh;
+      display:flex;
+      flex-direction:column;
       padding-top: calc(var(--safe-top));
       padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
     }
@@ -115,8 +118,10 @@
     .header-media video{
       width:100%;
       height:100%;
-      object-fit:cover;
+      object-fit:contain;
+      object-position:center;
       display:block;
+      background: #020205;
     }
     .header-overlay{
       position:absolute;
@@ -223,13 +228,28 @@
     main{
       padding: 12px;
       padding-top: 14px;
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     .tab-page{
       display:none;
       animation: fadeIn .14s ease;
+      min-height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 26px);
     }
     .tab-page.active{ display:block; }
+    .tab-page.media{
+      padding: 0;
+      display:flex;
+      flex-direction:column;
+    }
+    .tab-page.media iframe{
+      flex:1 1 auto;
+      width:100%;
+      height:100%;
+      border:none;
+      display:block;
+    }
     @keyframes fadeIn{ from{ opacity:.35; transform: translateY(4px);} to{ opacity:1; transform:none; } }
 
     h2{
@@ -1577,14 +1597,14 @@
         </div>
       </section>
       <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
-      <section id="tab-openclaw" class="tab-page" aria-labelledby="tabbtn-openclaw" style="padding:0;">
+      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw">
         <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
-        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard" style="width:100%;height:100%;border:none;"></iframe>
+        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard"></iframe>
       </section>
       <!-- Cameras tab page -->
-      <section id="tab-cameras" class="tab-page" aria-labelledby="tabbtn-cameras">
+      <section id="tab-cameras" class="tab-page media" aria-labelledby="tabbtn-cameras">
         <!-- Load the camera viewer via iframe -->
-        <iframe src="net_ninja_cam.html" style="border:none;width:100%;height:100%;"></iframe>
+        <iframe src="net_ninja_cam.html" title="Cameras"></iframe>
       </section>
     </main>
 
