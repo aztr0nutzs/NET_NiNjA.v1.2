@@ -27,9 +27,14 @@ class OnvifDiscoveryService(
     val results = mutableListOf<OnvifDevice>()
 
     val wifiManager = ctx?.applicationContext?.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-    val lock = wifiManager?.createMulticastLock("netninja-onvif")
-    lock?.setReferenceCounted(true)
-    lock?.acquire()
+    var lock = wifiManager?.createMulticastLock("netninja-onvif")?.apply {
+      setReferenceCounted(true)
+    }
+    try {
+      lock?.acquire()
+    } catch (_: SecurityException) {
+      lock = null
+    }
     try {
       DatagramSocket().use { socket ->
         socket.soTimeout = timeoutMs
