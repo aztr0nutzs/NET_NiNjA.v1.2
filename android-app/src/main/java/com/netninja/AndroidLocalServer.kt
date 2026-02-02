@@ -135,6 +135,29 @@ class AndroidLocalServer(private val ctx: Context) {
 
   private val scanMutex = Mutex()
 
+  // Test hooks (override network/environment behavior).
+  internal var canAccessWifiDetailsOverride: (() -> Boolean)? = null
+  internal var interfaceInfoOverride: (() -> InterfaceInfo?)? = null
+  internal var arpTableOverride: (() -> List<Device>)? = null
+  internal var reachabilityOverride: ((String, Int) -> Boolean)? = null
+  internal var hostnameOverride: ((String) -> String?)? = null
+  internal var ipListOverride: ((String) -> List<String>)? = null
+  internal var vendorLookupOverride: ((String?) -> String?)? = null
+  internal var portScanOverride: ((String, Int) -> List<Int>)? = null
+  internal var localNetworkInfoOverride: (() -> Map<String, Any?>)? = null
+
+  internal fun scheduleScanForTest(subnet: String) {
+    scheduleScan(subnet, reason = "test")
+  }
+
+  internal suspend fun runScanForTest(subnet: String) {
+    performScan(subnet)
+  }
+
+  internal fun scanProgressForTest(): ScanProgress = scanProgress.get()
+
+  internal fun devicesForTest(): List<Device> = devices.values.toList()
+
   fun start(host: String = "127.0.0.1", port: Int = 8787) {
     // UI assets -> internal storage (atomic copy)
     val uiDir = File(ctx.filesDir, "web-ui").apply { mkdirs() }
@@ -940,6 +963,7 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun localNetworkInfo(): Map<String, Any?> {
+    localNetworkInfoOverride?.let { return it() }
     if (canAccessWifiDetails()) {
       val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
       val dhcp = runCatching { wm.dhcpInfo }.getOrNull()
@@ -972,6 +996,7 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun readArpTable(): List<Device> {
+    arpTableOverride?.let { return it() }
     val arpFile = File("/proc/net/arp")
     if (!arpFile.exists() || !arpFile.canRead()) return emptyList()
     val lines = runCatching { arpFile.readLines() }.getOrDefault(emptyList())
@@ -999,6 +1024,7 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun cidrToIps(cidr: String): List<String> {
+    ipListOverride?.let { return it(cidr) }
     val parts = cidr.split("/")
     if (parts.size != 2) return emptyList()
     val baseIp = parts[0]
@@ -1035,6 +1061,7 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun scanPorts(ip: String, timeoutMs: Int): List<Int> {
+    portScanOverride?.let { return it(ip, timeoutMs) }
     val ports = listOf(22, 80, 443, 445, 3389, 5555, 161)
     val open = ArrayList<Int>(4)
     val timeout = timeoutMs.coerceIn(80, 2_000)
@@ -1055,6 +1082,7 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun isLikelyReachable(ip: String, timeoutMs: Int, retries: Int = 1): Boolean {
+    reachabilityOverride?.let { return it(ip, timeoutMs) }
     val timeout = timeoutMs.coerceIn(80, 1_000)
     val probePorts = intArrayOf(80, 443, 22)
     repeat(retries.coerceAtLeast(1)) { attempt ->
@@ -1079,6 +1107,7 @@ class AndroidLocalServer(private val ctx: Context) {
     ContextCompat.checkSelfPermission(ctx, permission) == PackageManager.PERMISSION_GRANTED
 
   private fun canAccessWifiDetails(): Boolean {
+    canAccessWifiDetailsOverride?.let { return it() }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       return hasPermission("android.permission.NEARBY_WIFI_DEVICES")
     }
@@ -1161,12 +1190,13 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun resolveHostname(ip: String): String? =
-    runCatching {
+    hostnameOverride?.invoke(ip) ?: runCatching {
       val host = InetAddress.getByName(ip).canonicalHostName
       if (host == ip) null else host
     }.getOrNull()
 
   private fun lookupVendor(mac: String?): String? {
+    vendorLookupOverride?.let { return it(mac) }
     if (mac.isNullOrBlank() || mac.length < 8) return null
     val key = mac.uppercase().replace("-", ":").substring(0, 8)
     val vendors = mapOf(
@@ -1207,9 +1237,10 @@ class AndroidLocalServer(private val ctx: Context) {
     }
   }
 
-  private data class InterfaceInfo(val name: String, val ip: String, val prefix: Int)
+  internal data class InterfaceInfo(val name: String, val ip: String, val prefix: Int)
 
   private fun selectInterfaceInfo(): InterfaceInfo? {
+    interfaceInfoOverride?.let { return it() }
     return runCatching {
       NetworkInterface.getNetworkInterfaces().toList()
         .asSequence()

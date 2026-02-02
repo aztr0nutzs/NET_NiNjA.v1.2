@@ -43,6 +43,10 @@ android {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
   }
+
+  testOptions {
+    unitTests.isIncludeAndroidResources = true
+  }
 }
 
 dependencies {
@@ -62,6 +66,11 @@ dependencies {
 
   implementation("com.google.code.gson:gson:2.10")
   implementation("fi.iki.elonen:nanohttpd-websocket:2.3.1")
+
+  testImplementation("junit:junit:4.13.2")
+  testImplementation("org.robolectric:robolectric:4.12.1")
+  testImplementation("androidx.test:core-ktx:1.5.0")
+  testImplementation(libs.kotlinx.coroutines.core)
 }
 
 tasks.register<Copy>("copyWebUiIntoAssets") {
