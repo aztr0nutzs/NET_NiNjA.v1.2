@@ -35,7 +35,8 @@
       linear-gradient(180deg, #05060a, #03040a 65%, #05060a);
     color:var(--text);
     font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    overflow:hidden;
+    overflow-x:hidden;
+    overflow-y:auto;
   }
 
   /* subtle scanlines + grain */
@@ -63,9 +64,9 @@
 
   /* layout */
   .app{
-    height:100%;
+    min-height:100vh;
     display:grid;
-    grid-template-rows: 64px 1fr;
+    grid-template-rows: auto 1fr;
     grid-template-columns: 1fr;
   }
 
@@ -74,6 +75,7 @@
     display:flex;
     align-items:center;
     gap:14px;
+    flex-wrap:wrap;
     padding:12px 14px;
     border-bottom:1px solid rgba(176,0,255,.22);
     background: linear-gradient(180deg, rgba(10,14,24,.9), rgba(7,10,18,.55));
@@ -84,7 +86,8 @@
     display:flex;
     align-items:center;
     gap:10px;
-    min-width: 260px;
+    flex:1 1 220px;
+    min-width: 0;
   }
   .logo{
     width:34px; height:34px; border-radius: 12px;
@@ -146,6 +149,7 @@
 
   .actions{
     display:flex; gap:8px; align-items:center;
+    flex-wrap:wrap;
   }
   .btn{
     display:inline-flex;
@@ -178,7 +182,7 @@
     grid-template-columns: 360px 1fr;
     gap:12px;
     padding:12px;
-    height:calc(100vh - 64px);
+    min-height:0;
   }
 
   /* left drawer panel */
