@@ -951,13 +951,14 @@ class AndroidLocalServer(private val ctx: Context) {
   private fun deriveSubnetCidr(): String? {
     if (canAccessWifiDetails()) {
       val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-      val dhcp = runCatching { wm.dhcpInfo }.getOrNull() ?: return null
-      val ip = Formatter.formatIpAddress(dhcp.ipAddress)
-      val mask = Formatter.formatIpAddress(dhcp.netmask)
-      if (ip == "0.0.0.0" || mask == "0.0.0.0") return null
-      val prefix = maskToPrefix(mask)
-      val base = ipToInt(ip) and if (prefix == 0) 0 else -1 shl (32 - prefix)
-      return "${intToIp(base)}/$prefix"
+      val dhcp = runCatching { wm.dhcpInfo }.getOrNull()
+      val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
+      val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
+      if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0" && mask != "0.0.0.0") {
+        val prefix = maskToPrefix(mask)
+        val base = ipToInt(ip) and if (prefix == 0) 0 else -1 shl (32 - prefix)
+        return "${intToIp(base)}/$prefix"
+      }
     }
     return deriveSubnetFromInterfaces()
   }
@@ -970,15 +971,17 @@ class AndroidLocalServer(private val ctx: Context) {
       val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
       val gw = dhcp?.let { Formatter.formatIpAddress(it.gateway) }
       val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
-      val cidr = if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0") {
+      val cidr = if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0" && mask != "0.0.0.0") {
         val prefix = maskToPrefix(mask)
         val base = ipToInt(ip) and if (prefix == 0) 0 else -1 shl (32 - prefix)
         "${intToIp(base)}/$prefix"
       } else {
         null
       }
-      val linkUp = ip != null && ip != "0.0.0.0"
-      return mapOf("name" to "Wi-Fi", "ip" to ip, "cidr" to cidr, "gateway" to gw, "linkUp" to linkUp)
+      val linkUp = ip != null && ip != "0.0.0.0" && cidr != null
+      if (linkUp) {
+        return mapOf("name" to "Wi-Fi", "ip" to ip, "cidr" to cidr, "gateway" to gw, "linkUp" to true)
+      }
     }
 
     val iface = selectInterfaceInfo()
@@ -1242,7 +1245,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private fun selectInterfaceInfo(): InterfaceInfo? {
     interfaceInfoOverride?.let { return it() }
     return runCatching {
-      NetworkInterface.getNetworkInterfaces().toList()
+      val candidates = NetworkInterface.getNetworkInterfaces().toList()
         .asSequence()
         .filter { it.isUp && !it.isLoopback }
         .flatMap { iface ->
@@ -1257,7 +1260,13 @@ class AndroidLocalServer(private val ctx: Context) {
             }
             .filterNotNull()
         }
-        .firstOrNull()
+        .toList()
+
+      val preferred = candidates.firstOrNull { info ->
+        val name = info.name.lowercase()
+        name.contains("wlan") || name.contains("wifi") || name.contains("wl") || name.contains("ap")
+      }
+      preferred ?: candidates.firstOrNull()
     }.getOrNull()
   }
 
