@@ -16,6 +16,7 @@ android {
     targetSdk = 34
     versionCode = 1
     versionName = "1.0.0"
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   buildTypes {
@@ -71,6 +72,8 @@ dependencies {
   testImplementation("org.robolectric:robolectric:4.12.1")
   testImplementation("androidx.test:core-ktx:1.5.0")
   testImplementation(libs.kotlinx.coroutines.core)
+  androidTestImplementation("androidx.test.ext:junit:1.1.5")
+  androidTestImplementation("androidx.test:runner:1.5.2")
 }
 
 tasks.register<Copy>("copyWebUiIntoAssets") {

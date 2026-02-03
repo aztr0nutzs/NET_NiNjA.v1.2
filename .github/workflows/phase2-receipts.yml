@@ -1,0 +1,79 @@
+name: phase2-receipts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  phase2-receipts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug
+        run: ./gradlew :app:assembleDebug
+
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest
+
+      - name: Run instrumentation tests (emulator)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          script: |
+            set -euo pipefail
+            adb logcat -c
+            mkdir -p android-app/build/outputs/logs
+            adb logcat -v time > android-app/build/outputs/logs/logcat-instrumentation.txt &
+            LOGCAT_PID=$!
+            trap 'adb logcat -d >> android-app/build/outputs/logs/logcat-instrumentation.txt; kill $LOGCAT_PID || true' EXIT
+            ./gradlew :app:connectedDebugAndroidTest
+
+      - name: Upload unit test reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: |
+            android-app/build/reports/tests/testDebugUnitTest
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            android-app/build/test-results/testDebugUnitTest
+
+      - name: Upload instrumentation test reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-reports
+          path: |
+            android-app/build/reports/androidTests/connected
+
+      - name: Upload instrumentation test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-results
+          path: |
+            android-app/build/outputs/androidTest-results/connected
+
+      - name: Upload instrumentation logcat
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumentation-logcat
+          path: android-app/build/outputs/logs/logcat-instrumentation.txt
