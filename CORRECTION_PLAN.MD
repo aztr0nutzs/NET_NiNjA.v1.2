@@ -22,30 +22,11 @@ Main-thread UI updates only
 
 If it changes UI state, it happens on Main.
 
-Proof required
+R1: Test output (or a documented reason why test is not possible)
 
-Each phase ends with:
+R2: Code reference (file path(s) + key method names)
 
-video proof (screen recording)
-
-log proof (structured logs)
-
-test proof (instrumented/unit where applicable)
-
-acceptance checklist checked off
-
-Required “Receipts” Format
-For each milestone, you must produce:
-
-R1: Screenshot/recording showing the behavior
-
-R2: Log excerpt with correlation ID
-
-R3: Test output (or a documented reason why test is not possible)
-
-R4: Code reference (file path(s) + key method names)
-
-R5: Completion mark ✅ in the checklist
+R3: Completion mark ✅ in the checklist
 
 Phase 1 — Permission + Lifecycle Gating (stop the “scan does nothing” problem)
 Goal
@@ -99,14 +80,7 @@ Acceptance checklist
 
 ✅ Rotation preserves scan state (Idle/Blocked/Running/Complete/Error).
 
-Receipts required
-R1: Screen recording of: deny → blocked UI → grant → scan starts
-
-R2: Logs show SCAN_START_BLOCKED with reason + Android version
-
-R3: Instrumented test: permission denied path triggers blocked state
-
-R4: Code refs: ScanPreconditions, PermissionCoordinator, ScanViewModel
+R1: Code refs: ScanPreconditions, PermissionCoordinator, ScanViewModel
 
 Phase 2 — Background Execution Survival (stop the OS from murdering scans)
 Goal
@@ -153,13 +127,10 @@ Acceptance checklist
 ✅ Scan job cancels cleanly without leaking threads/coroutines.
 
 Receipts required
-R1: Screen recording: start scan → background → completion notification/state
 
-R2: Log: SCAN_FOREGROUND_SERVICE_STARTED, SCAN_COMPLETED, SCAN_CANCELLED
+R1: Instrumented test: cancel action stops scan
 
-R3: Instrumented test: cancel action stops scan
-
-R4: Code refs: ScanForegroundService, NotificationController
+R2: Code refs: ScanForegroundService, NotificationController
 
 Phase 3 — Network Discovery That Actually Works (stop “zero devices found” lies)
 Goal
@@ -221,13 +192,9 @@ Acceptance checklist
 ✅ Logs show which tiers were attempted and what succeeded.
 
 Receipts required
-R1: Recording: scan on a normal Wi-Fi network shows discovered devices
+R1: Log excerpt with per-tier timings and outcomes
 
-R2: Recording: scan on a network that blocks multicast still finds devices (fallback)
-
-R3: Log excerpt with per-tier timings and outcomes
-
-R4: Code refs: DiscoveryEngine, MulticastCoordinator, ScanTierRunner
+R2: Code refs: DiscoveryEngine, MulticastCoordinator, ScanTierRunner
 
 Phase 4 — Threading + Execution Path Integrity (stop “it never runs” and “UI never updates”)
 Goal
@@ -266,13 +233,10 @@ Acceptance checklist
 ✅ Background thread never touches UI directly (no “works on my phone” nonsense).
 
 Receipts required
-R1: Recording: rotate during scan and results still populate
 
-R2: Logs show SCAN_CANCEL_PREVIOUS when new scan starts
+R1: Unit test: scan coordinator emits ordered states
 
-R3: Unit test: scan coordinator emits ordered states
-
-R4: Code refs: ScanCoordinator, ScanViewModel, ScanStateFlow
+R2: Code refs: ScanCoordinator, ScanViewModel, ScanStateFlow
 
 Phase 5 — UI Wiring to Real State (kill the “cosmetic UI” disease)
 Goal
@@ -321,13 +285,11 @@ Acceptance checklist
 ✅ No button is “cosmetic only.”
 
 Receipts required
-R1: Screen recording pressing each major button showing state change
+R1: Log: UI_INTENT_RECEIVED for each control
 
-R2: Log: UI_INTENT_RECEIVED for each control
+R2: UI test: scan button triggers Running state
 
-R3: UI test: scan button triggers Running state
-
-R4: Control inventory table stored in repo (docs)
+R3: Control inventory table stored in repo (docs)
 
 Phase 6 — Backend Contracts + Reliability (stop “endpoint assumed to exist” fantasy)
 Goal
@@ -368,13 +330,11 @@ Acceptance checklist
 ✅ Contract violations are detected and logged with payload snippet.
 
 Receipts required
-R1: Recording: simulate server down → UI shows error + retry
+R1: Logs: API_CALL_FAILED with status/timeout category
 
-R2: Logs: API_CALL_FAILED with status/timeout category
+R2: Contract tests (mock server) validate parsing + errors
 
-R3: Contract tests (mock server) validate parsing + errors
-
-R4: Code refs: ApiClient, ContractModels, ErrorMapper
+R3: Code refs: ApiClient, ContractModels, ErrorMapper
 
 Phase 7 — AI/Agent Integration That Isn’t Theater
 Goal
@@ -437,13 +397,11 @@ Acceptance checklist
 ✅ Full audit trail exists.
 
 Receipts required
-R1: Recording: AI produces action suggestion → user accepts → action executes
+R1: Logs: AI_OUTPUT_VALIDATED, AI_ACTION_EXECUTED
 
-R2: Logs: AI_OUTPUT_VALIDATED, AI_ACTION_EXECUTED
+R2: Unit tests: schema validation pass/fail cases
 
-R3: Unit tests: schema validation pass/fail cases
-
-R4: Code refs: AiSchema, AiValidator, AiActionRouter
+R3: Code refs: AiSchema, AiValidator, AiActionRouter
 
 Phase 8 — Final Verification: “Proof of Life” Test Matrix
 Goal
