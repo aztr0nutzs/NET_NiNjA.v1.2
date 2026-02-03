@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import java.util.UUID
 import kotlin.coroutines.coroutineContext
 import android.database.sqlite.SQLiteDatabase
 
@@ -121,6 +122,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private val lastScanError = AtomicReference<String?>(null)
   private val scanProgress = AtomicReference(ScanProgress())
   private val scanCancel = AtomicBoolean(false)
+  private val activeScanId = AtomicReference<String?>(null)
   private val scanScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private var scanJob: Job? = null
 
@@ -236,7 +238,6 @@ class AndroidLocalServer(private val ctx: Context) {
           call.respond(cachedResults())
           return@post
         }
-        logEvent("scan_request", mapOf("subnet" to subnet))
         scheduleScan(subnet, reason = "manual")
         call.respond(cachedResults())
       }
@@ -266,7 +267,9 @@ class AndroidLocalServer(private val ctx: Context) {
       post("/api/v1/discovery/stop") {
         scanCancel.set(true)
         scanJob?.cancel()
-        logEvent("scan_cancelled", mapOf("reason" to "user_stop"))
+        val scanId = activeScanId.get()
+        emitScanCancelled("user_stop")
+        logEvent("scan_cancelled", mapOf("reason" to "user_stop", "scanId" to scanId))
         call.respond(mapOf("ok" to true))
       }
 
@@ -565,6 +568,7 @@ class AndroidLocalServer(private val ctx: Context) {
       return
     }
     try {
+      val scanId = ensureActiveScanId()
       scanCancel.set(false)
       lastScanError.set(null)
       val timeout = 300
@@ -594,8 +598,16 @@ class AndroidLocalServer(private val ctx: Context) {
       }
       setProgress(0, "DISCOVERY", 0)
       logEvent(
+        "SCAN_FOREGROUND_SERVICE_STARTED",
+        mapOf(
+          "scanId" to scanId,
+          "service" to "EngineService"
+        )
+      )
+      logEvent(
         "scan_start",
         mapOf(
+          "scanId" to scanId,
           "subnet" to subnet,
           "targets" to ips.size,
           "timeoutMs" to timeout
@@ -671,6 +683,7 @@ class AndroidLocalServer(private val ctx: Context) {
             updatedAt = System.currentTimeMillis()
           )
         )
+        emitScanCancelled("cancel_flag", mapOf("subnet" to subnet))
         return
       }
       scanProgress.set(
@@ -682,7 +695,8 @@ class AndroidLocalServer(private val ctx: Context) {
         )
       )
       lastScanResults.set(devices.values.toList())
-      logEvent("scan_complete", mapOf("devices" to devices.size, "subnet" to subnet))
+      logEvent("scan_complete", mapOf("devices" to devices.size, "subnet" to subnet, "scanId" to scanId))
+      emitScanCompleted(mapOf("devices" to devices.size, "subnet" to subnet))
     } catch (t: Throwable) {
       lastScanError.set(t.message)
       logEvent("scan_failed", mapOf("error" to t.message, "subnet" to subnet))
@@ -931,6 +945,30 @@ class AndroidLocalServer(private val ctx: Context) {
       append("}")
     }
     log(payload)
+  }
+
+  private fun generateScanId(): String {
+    return "scan-${System.currentTimeMillis()}-${UUID.randomUUID()}"
+  }
+
+  private fun ensureActiveScanId(): String {
+    val existing = activeScanId.get()
+    if (!existing.isNullOrBlank()) return existing
+    val newId = generateScanId()
+    activeScanId.set(newId)
+    return newId
+  }
+
+  private fun emitScanCancelled(reason: String, extra: Map<String, Any?> = emptyMap()) {
+    val scanId = activeScanId.get() ?: return
+    logEvent("SCAN_CANCELLED", mapOf("scanId" to scanId, "reason" to reason) + extra)
+    activeScanId.set(null)
+  }
+
+  private fun emitScanCompleted(extra: Map<String, Any?> = emptyMap()) {
+    val scanId = activeScanId.get() ?: return
+    logEvent("SCAN_COMPLETED", mapOf("scanId" to scanId) + extra)
+    activeScanId.set(null)
   }
 
   private fun saveLog(msg: String) {
@@ -1183,10 +1221,23 @@ class AndroidLocalServer(private val ctx: Context) {
     }
     lastScanRequestedAt.set(now)
     if (scanJob?.isActive == true) {
+      val previousScanId = activeScanId.get()
       scanCancel.set(true)
       scanJob?.cancel()
-      logEvent("scan_cancelled", mapOf("reason" to "stale_job", "subnet" to subnet, "source" to reason))
+      emitScanCancelled("stale_job", mapOf("subnet" to subnet, "source" to reason))
+      logEvent(
+        "scan_cancelled",
+        mapOf(
+          "reason" to "stale_job",
+          "subnet" to subnet,
+          "source" to reason,
+          "scanId" to previousScanId
+        )
+      )
     }
+    val scanId = generateScanId()
+    activeScanId.set(scanId)
+    logEvent("scan_request", mapOf("subnet" to subnet, "scanId" to scanId, "source" to reason))
     scanJob = scanScope.launch {
       performScan(subnet)
     }
