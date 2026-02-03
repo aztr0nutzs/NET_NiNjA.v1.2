@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
   private val logTag = "NetNinjaWebView"
   private val permissionRequestCode = 1201
   private var locationPrompted = false
+  private val permissionPrefsName = "netninja_permissions"
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -108,6 +109,7 @@ class MainActivity : AppCompatActivity() {
   override fun onResume() {
     super.onResume()
     ensureLocationServicesEnabled()
+    ensureRuntimePermissions()
   }
 
   private fun ensureRuntimePermissions() {
@@ -115,24 +117,56 @@ class MainActivity : AppCompatActivity() {
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
       != PackageManager.PERMISSION_GRANTED
     ) {
-      needed.add(Manifest.permission.ACCESS_FINE_LOCATION)
+      if (!isPermanentlyDenied(Manifest.permission.ACCESS_FINE_LOCATION)) {
+        needed.add(Manifest.permission.ACCESS_FINE_LOCATION)
+      }
     }
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
       if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
         != PackageManager.PERMISSION_GRANTED
       ) {
-        needed.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (!isPermanentlyDenied(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+          needed.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
       }
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
       ContextCompat.checkSelfPermission(this, Manifest.permission.NEARBY_WIFI_DEVICES)
       != PackageManager.PERMISSION_GRANTED
     ) {
-      needed.add(Manifest.permission.NEARBY_WIFI_DEVICES)
+      if (!isPermanentlyDenied(Manifest.permission.NEARBY_WIFI_DEVICES)) {
+        needed.add(Manifest.permission.NEARBY_WIFI_DEVICES)
+      }
     }
     if (needed.isNotEmpty()) {
       ActivityCompat.requestPermissions(this, needed.toTypedArray(), permissionRequestCode)
     }
+  }
+
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    if (requestCode != permissionRequestCode) return
+    permissions.forEachIndexed { index, permission ->
+      val granted = grantResults.getOrNull(index) == PackageManager.PERMISSION_GRANTED
+      val permanentlyDenied = !granted && !ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
+      updatePermanentDenial(permission, permanentlyDenied)
+    }
+  }
+
+  private fun updatePermanentDenial(permission: String, permanentlyDenied: Boolean) {
+    val prefs = getSharedPreferences(permissionPrefsName, MODE_PRIVATE)
+    prefs.edit()
+      .putBoolean("${permission}_permanent_denied", permanentlyDenied)
+      .apply()
+  }
+
+  private fun isPermanentlyDenied(permission: String): Boolean {
+    val prefs = getSharedPreferences(permissionPrefsName, MODE_PRIVATE)
+    return prefs.getBoolean("${permission}_permanent_denied", false)
   }
 
   private fun ensureLocationServicesEnabled() {

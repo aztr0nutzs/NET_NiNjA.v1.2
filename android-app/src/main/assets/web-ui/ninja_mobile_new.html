@@ -2029,6 +2029,14 @@
       } catch (_) {}
     }
 
+    async function fetchScanPreconditions(){
+      try{
+        return await fetchJson("/api/v1/discovery/preconditions");
+      } catch (_){
+        return null;
+      }
+    }
+
     async function sendPermissionAction(action){
       try{
         const res = await fetchJson("/api/v1/system/permissions/action", {
@@ -2989,14 +2997,20 @@
         return;
       }
 
+      const pre = await fetchScanPreconditions();
+      if(pre && pre.ready === false){
+        const reason = pre.reason || "Scan blocked by device prerequisites.";
+        const actions = [];
+        if(pre.fixAction){
+          actions.push({ label: "Open settings", onClick: () => sendPermissionAction(pre.fixAction) });
+        }
+        showToast("Scan blocked", reason, actions);
+        $("#changeText").textContent = reason;
+        return;
+      }
+
       scanInFlight = true;
       const prevIds = new Set(devices.map(d => d.id));
-
-      state.lastScanAt = nowLabel();
-      $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
-      $("#changeText").textContent = "Scan requested. Live progress will update below.";
-      showToast("Scan started", "Scan queued. Live progress will update below.");
-      pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
 
       try{
         await refreshNetworkInfo();
@@ -3008,6 +3022,12 @@
           body: JSON.stringify(payload),
           timeoutMs: 30_000
         });
+
+        state.lastScanAt = nowLabel();
+        $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
+        $("#changeText").textContent = "Scan requested. Live progress will update below.";
+        showToast("Scan started", "Scan queued. Live progress will update below.");
+        pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
 
         await refreshDiscoveryResults();
         state.lastChangeCount = devices.filter(d => !prevIds.has(d.id)).length;
@@ -3346,6 +3366,17 @@
         refreshPermissionStatus();
         refreshDebugState();
       }, 20_000);
+
+      window.addEventListener("focus", () => {
+        refreshPermissionStatus();
+        refreshNetworkInfo();
+      });
+      document.addEventListener("visibilitychange", () => {
+        if(document.visibilityState === "visible"){
+          refreshPermissionStatus();
+          refreshNetworkInfo();
+        }
+      });
     }
 
     init();

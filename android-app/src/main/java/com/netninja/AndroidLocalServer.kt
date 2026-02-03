@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.wifi.WifiManager
 import android.net.Uri
 import android.os.Build
@@ -87,6 +88,25 @@ import android.database.sqlite.SQLiteDatabase
   val traffic: String? = null
 )
 @Serializable data class PortScanRequest(val ip: String? = null, val timeoutMs: Int? = null)
+@Serializable data class PermissionSnapshot(
+  val nearbyWifi: Boolean? = null,
+  val fineLocation: Boolean = false,
+  val coarseLocation: Boolean = false,
+  val networkState: Boolean = false,
+  val wifiState: Boolean = false,
+  val permissionPermanentlyDenied: Boolean = false
+)
+@Serializable data class ScanPreconditions(
+  val ready: Boolean,
+  val blocker: String? = null,
+  val reason: String? = null,
+  val fixAction: String? = null,
+  val androidVersion: Int = Build.VERSION.SDK_INT,
+  val wifiEnabled: Boolean,
+  val locationEnabled: Boolean,
+  val permissions: PermissionSnapshot,
+  val subnet: String? = null
+)
 @Serializable data class ScanProgress(
   val progress: Int = 0,
   val phase: String = "IDLE",
@@ -145,6 +165,9 @@ class AndroidLocalServer(private val ctx: Context) {
   internal var vendorLookupOverride: ((String?) -> String?)? = null
   internal var portScanOverride: ((String, Int) -> List<Int>)? = null
   internal var localNetworkInfoOverride: (() -> Map<String, Any?>)? = null
+  internal var wifiEnabledOverride: (() -> Boolean)? = null
+  internal var locationEnabledOverride: (() -> Boolean)? = null
+  internal var permissionSnapshotOverride: (() -> PermissionSnapshot)? = null
 
   internal fun scheduleScanForTest(subnet: String) {
     scheduleScan(subnet, reason = "test")
@@ -157,6 +180,9 @@ class AndroidLocalServer(private val ctx: Context) {
   internal fun scanProgressForTest(): ScanProgress = scanProgress.get()
 
   internal fun devicesForTest(): List<Device> = devices.values.toList()
+
+  internal fun scanPreconditionsForTest(subnet: String? = null): ScanPreconditions =
+    scanPreconditions(subnet)
 
   fun start(host: String = "127.0.0.1", port: Int = 8787) {
     // UI assets -> internal storage (atomic copy)
@@ -226,12 +252,34 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(localNetworkInfo())
       }
 
+      get("/api/v1/discovery/preconditions") {
+        call.respond(scanPreconditions())
+      }
+
       post("/api/v1/discovery/scan") {
         val req = runCatching { call.receive<ScanRequest>() }.getOrNull() ?: ScanRequest()
         val subnet = req.subnet?.trim().takeUnless { it.isNullOrBlank() } ?: deriveSubnetCidr()
+        val preconditions = scanPreconditions(subnet)
+        if (!preconditions.ready) {
+          val msg = preconditions.reason ?: "scan blocked: prerequisites not met"
+          logEvent(
+            "SCAN_START_BLOCKED",
+            mapOf(
+              "reason" to preconditions.blocker,
+              "androidVersion" to Build.VERSION.SDK_INT,
+              "subnet" to subnet
+            )
+          )
+          updateScanProgress("PRECONDITION_BLOCKED", message = msg)
+          call.respond(cachedResults())
+          return@post
+        }
         if (subnet == null) {
           val msg = "scan blocked: missing subnet (permission or network unavailable)"
-          logEvent("scan_blocked", mapOf("reason" to "missing_subnet"))
+          logEvent(
+            "SCAN_START_BLOCKED",
+            mapOf("reason" to "missing_subnet", "androidVersion" to Build.VERSION.SDK_INT)
+          )
           updateScanProgress("PERMISSION_BLOCKED", message = msg)
           call.respond(cachedResults())
           return@post
@@ -1117,18 +1165,131 @@ class AndroidLocalServer(private val ctx: Context) {
     return hasPermission("android.permission.ACCESS_FINE_LOCATION") || hasPermission("android.permission.ACCESS_COARSE_LOCATION")
   }
 
-  private fun permissionSummary(): Map<String, Any?> {
+  private fun permissionSnapshot(): PermissionSnapshot {
+    permissionSnapshotOverride?.let { return it() }
     val nearbyWifi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       hasPermission("android.permission.NEARBY_WIFI_DEVICES")
     } else {
       null
     }
+    return PermissionSnapshot(
+      nearbyWifi = nearbyWifi,
+      fineLocation = hasPermission("android.permission.ACCESS_FINE_LOCATION"),
+      coarseLocation = hasPermission("android.permission.ACCESS_COARSE_LOCATION"),
+      networkState = hasPermission("android.permission.ACCESS_NETWORK_STATE"),
+      wifiState = hasPermission("android.permission.ACCESS_WIFI_STATE"),
+      permissionPermanentlyDenied = isPermissionPermanentlyDenied()
+    )
+  }
+
+  private fun permissionSummary(): Map<String, Any?> {
+    val snapshot = permissionSnapshot()
     return mapOf(
-      "nearbyWifi" to nearbyWifi,
-      "fineLocation" to hasPermission("android.permission.ACCESS_FINE_LOCATION"),
-      "coarseLocation" to hasPermission("android.permission.ACCESS_COARSE_LOCATION"),
-      "networkState" to hasPermission("android.permission.ACCESS_NETWORK_STATE"),
-      "wifiState" to hasPermission("android.permission.ACCESS_WIFI_STATE")
+      "nearbyWifi" to snapshot.nearbyWifi,
+      "fineLocation" to snapshot.fineLocation,
+      "coarseLocation" to snapshot.coarseLocation,
+      "networkState" to snapshot.networkState,
+      "wifiState" to snapshot.wifiState,
+      "permissionPermanentlyDenied" to snapshot.permissionPermanentlyDenied
+    )
+  }
+
+  private fun isPermissionPermanentlyDenied(): Boolean {
+    val prefs = ctx.getSharedPreferences("netninja_permissions", Context.MODE_PRIVATE)
+    val keys = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      listOf("android.permission.NEARBY_WIFI_DEVICES")
+    } else {
+      listOf("android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION")
+    }
+    return keys.any { key -> prefs.getBoolean("${key}_permanent_denied", false) }
+  }
+
+  private fun wifiEnabled(): Boolean {
+    wifiEnabledOverride?.let { return it() }
+    return runCatching {
+      val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+      wm.isWifiEnabled
+    }.getOrDefault(false)
+  }
+
+  private fun locationServicesEnabled(): Boolean {
+    locationEnabledOverride?.let { return it() }
+    val locationManager = ctx.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      locationManager.isLocationEnabled
+    } else {
+      locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+        locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+  }
+
+  private fun scanPreconditions(subnet: String? = null): ScanPreconditions {
+    val permissions = permissionSnapshot()
+    val permissionOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      permissions.nearbyWifi == true
+    } else {
+      permissions.fineLocation || permissions.coarseLocation
+    }
+    if (!permissionOk) {
+      val blocker = if (permissions.permissionPermanentlyDenied) "permission_permanently_denied" else "permission_missing"
+      val reason = if (permissions.permissionPermanentlyDenied) {
+        "Scan blocked: permission permanently denied. Open app settings to grant access."
+      } else {
+        "Scan blocked: Wi‑Fi scan permission missing."
+      }
+      return ScanPreconditions(
+        ready = false,
+        blocker = blocker,
+        reason = reason,
+        fixAction = "app_settings",
+        wifiEnabled = wifiEnabled(),
+        locationEnabled = locationServicesEnabled(),
+        permissions = permissions,
+        subnet = subnet
+      )
+    }
+    if (!locationServicesEnabled()) {
+      return ScanPreconditions(
+        ready = false,
+        blocker = "location_disabled",
+        reason = "Scan blocked: Location services are disabled.",
+        fixAction = "location_settings",
+        wifiEnabled = wifiEnabled(),
+        locationEnabled = false,
+        permissions = permissions,
+        subnet = subnet
+      )
+    }
+    if (!wifiEnabled()) {
+      return ScanPreconditions(
+        ready = false,
+        blocker = "wifi_disabled",
+        reason = "Scan blocked: Wi‑Fi is disabled.",
+        fixAction = "wifi_settings",
+        wifiEnabled = false,
+        locationEnabled = true,
+        permissions = permissions,
+        subnet = subnet
+      )
+    }
+    if (subnet == null && selectInterfaceInfo() == null) {
+      return ScanPreconditions(
+        ready = false,
+        blocker = "missing_subnet",
+        reason = "Scan blocked: network unavailable.",
+        fixAction = "wifi_settings",
+        wifiEnabled = true,
+        locationEnabled = true,
+        permissions = permissions,
+        subnet = null
+      )
+    }
+    return ScanPreconditions(
+      ready = true,
+      wifiEnabled = wifiEnabled(),
+      locationEnabled = locationServicesEnabled(),
+      permissions = permissions,
+      subnet = subnet
     )
   }
 
@@ -1168,10 +1329,19 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private fun scheduleScan(subnet: String, reason: String) {
-    if (!canAccessWifiDetails() && selectInterfaceInfo() == null) {
-      val msg = "scan blocked: wifi permissions missing"
-      logEvent("scan_blocked", mapOf("reason" to "permissions", "subnet" to subnet))
-      updateScanProgress("PERMISSION_BLOCKED", message = msg)
+    val preconditions = scanPreconditions(subnet)
+    if (!preconditions.ready) {
+      val msg = preconditions.reason ?: "scan blocked: prerequisites not met"
+      logEvent(
+        "SCAN_START_BLOCKED",
+        mapOf(
+          "reason" to preconditions.blocker,
+          "androidVersion" to Build.VERSION.SDK_INT,
+          "subnet" to subnet,
+          "source" to reason
+        )
+      )
+      updateScanProgress("PRECONDITION_BLOCKED", message = msg)
       return
     }
     val now = System.currentTimeMillis()
