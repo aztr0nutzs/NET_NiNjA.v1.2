@@ -19,6 +19,18 @@ class AndroidLocalServerTest {
       localNetworkInfoOverride = {
         mapOf("name" to "Wi-Fi", "gateway" to "192.168.1.1", "linkUp" to true)
       }
+      wifiEnabledOverride = { true }
+      locationEnabledOverride = { true }
+      permissionSnapshotOverride = {
+        PermissionSnapshot(
+          nearbyWifi = true,
+          fineLocation = true,
+          coarseLocation = true,
+          networkState = true,
+          wifiState = true,
+          permissionPermanentlyDenied = false
+        )
+      }
     }
 
     server.runScanForTest("192.168.1.0/24")
@@ -37,11 +49,47 @@ class AndroidLocalServerTest {
     val server = AndroidLocalServer(context).apply {
       canAccessWifiDetailsOverride = { false }
       interfaceInfoOverride = { null }
+      wifiEnabledOverride = { true }
+      locationEnabledOverride = { true }
+      permissionSnapshotOverride = {
+        PermissionSnapshot(
+          nearbyWifi = false,
+          fineLocation = false,
+          coarseLocation = false,
+          networkState = true,
+          wifiState = true,
+          permissionPermanentlyDenied = false
+        )
+      }
     }
 
     server.scheduleScanForTest("192.168.1.0/24")
 
     val progress = server.scanProgressForTest()
-    assertEquals("PERMISSION_BLOCKED", progress.phase)
+    assertEquals("PRECONDITION_BLOCKED", progress.phase)
+  }
+
+  @Test
+  fun scanPreconditionsBlockedWhenWifiDisabled() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val server = AndroidLocalServer(context).apply {
+      wifiEnabledOverride = { false }
+      locationEnabledOverride = { true }
+      permissionSnapshotOverride = {
+        PermissionSnapshot(
+          nearbyWifi = true,
+          fineLocation = true,
+          coarseLocation = true,
+          networkState = true,
+          wifiState = true,
+          permissionPermanentlyDenied = false
+        )
+      }
+    }
+
+    val preconditions = server.scanPreconditionsForTest("192.168.1.0/24")
+
+    assertEquals(false, preconditions.ready)
+    assertEquals("wifi_disabled", preconditions.blocker)
   }
 }
