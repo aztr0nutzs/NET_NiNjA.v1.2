@@ -6,13 +6,11 @@ What changed:
 
 Receipts:
 
-R1 (video):
+R1 (logs):
 
-R2 (logs):
+R2 (tests):
 
-R3 (tests):
-
-R4 (code refs):
+R3 (code refs):
 
 Risks remaining:
 
