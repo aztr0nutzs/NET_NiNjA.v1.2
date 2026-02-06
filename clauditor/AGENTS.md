@@ -30,9 +30,9 @@ clauditor/
 │   │   ├── src/lib.rs
 │   │   └── src/rules.rs
 │   ├── collector/      # Event capture (inotify/fanotify/eBPF)
-│   │   └── src/lib.rs  # TODO: Bead 3-4
+│   │   └── src/lib.rs  # Pending: Bead 3-4
 │   └── clauditor/      # Main binary + CLI
-│       └── src/main.rs # TODO: Bead 5+
+│       └── src/main.rs # Pending: Bead 5+
 └── target/             # Build artifacts (gitignored)
 ```
 

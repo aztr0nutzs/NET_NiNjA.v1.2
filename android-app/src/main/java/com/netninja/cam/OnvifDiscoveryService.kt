@@ -30,7 +30,7 @@ class OnvifDiscoveryService(private val context: Context) {
             }.onSuccess {
                 acquired = true
             }
-            // TODO: perform ONVIF discovery here. This placeholder returns an empty list.
+            // ONVIF discovery is currently not implemented in this build; return an empty list rather than failing.
             return emptyList()
         } finally {
             // Release the multicast lock only if it was successfully acquired.

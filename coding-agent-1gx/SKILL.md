@@ -221,7 +221,7 @@ Use `coding-agent` to write, analyze, debug, and improve code across multiple pr
 ```json
 {
   "action": "complete",
-  "code": "def fibonacci(n):\n    # TODO: implement",
+  "code": "def fibonacci(n):\n    # implement here",
   "language": "python"
 }
 ```

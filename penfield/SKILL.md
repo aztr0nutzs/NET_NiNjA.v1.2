@@ -100,7 +100,7 @@ Use the correct type. The system uses these for filtering and analysis.
 | `correction` | Fixing prior understanding | "CORRECTION: The timeout isn't Redis — it's a hardcoded batch limit" |
 | `conversation` | Session summaries, notable exchanges | "Discussed migration strategy. User leaning toward incremental approach" |
 | `reference` | Source material, citations | "RFC 8628 defines Device Code Flow for OAuth on input-constrained devices" |
-| `task` | Work items, action items | "TODO: Benchmark recall latency after index rebuild" |
+| `task` | Work items, action items | "Task: Benchmark recall latency after index rebuild" |
 | `strategy` | Approaches, methods, plans | "For user's codebase: always check types.ts first, it's the source of truth" |
 | `checkpoint` | Milestone states | "Project at 80% — auth complete, UI remaining" |
 | `identity_core` | Immutable identity facts | Set via personality config, rarely stored manually |

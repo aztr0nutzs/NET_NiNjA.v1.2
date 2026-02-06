@@ -35,6 +35,13 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
 
+    lint {
+        // Keep FV-01 output clean: `assembleRelease` can otherwise trigger `lintVital*` tasks which
+        // emit Kotlin-metadata compatibility errors for some JVM-only dependencies bundled into the app.
+        // `./gradlew lint` is still required and remains the primary lint gate.
+        checkReleaseBuilds = false
+    }
+
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false

@@ -22,6 +22,7 @@ import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
 import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.net.InetAddress
@@ -35,11 +36,22 @@ import kotlinx.coroutines.sync.withPermit
 import server.openclaw.OpenClawGatewayRegistry
 import server.openclaw.openClawRoutes
 
+@Serializable
 data class ScanRequest(val subnet: String? = null, val timeoutMs: Int? = 250)
+
+@Serializable
 data class ActionRequest(val ip: String? = null, val mac: String? = null, val url: String? = null, val command: String? = null)
+
+@Serializable
 data class ScheduleRequest(val subnet: String? = null, val freq: String? = null)
+
+@Serializable
 data class RuleRequest(val match: String? = null, val action: String? = null)
+
+@Serializable
 data class RuleEntry(val match: String, val action: String)
+
+@Serializable
 data class DeviceMetaUpdate(
   val name: String? = null,
   val owner: String? = null,
@@ -53,7 +65,11 @@ data class DeviceMetaUpdate(
   val activityToday: String? = null,
   val traffic: String? = null
 )
+
+@Serializable
 data class PortScanRequest(val ip: String? = null, val timeoutMs: Int? = null)
+
+@Serializable
 data class ScanProgress(
   val progress: Int = 0,
   val phase: String = "IDLE",
@@ -67,7 +83,12 @@ data class ScanProgress(
   val linkUp: Boolean = true,
   val updatedAt: Long = System.currentTimeMillis()
 )
+
+@Serializable
 data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Long)
+
+@Serializable
+data class SystemInfo(val os: String? = null, val arch: String? = null, val timeMs: Long = System.currentTimeMillis())
 
 fun main() {
   val config = resolveServerConfig()
@@ -322,11 +343,13 @@ fun startServer(
       get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
 
       get("/api/v1/system/info") {
-        call.respond(mapOf(
-          "os" to System.getProperty("os.name"),
-          "arch" to System.getProperty("os.arch"),
-          "time" to System.currentTimeMillis()
-        ))
+        call.respond(
+          SystemInfo(
+            os = System.getProperty("os.name"),
+            arch = System.getProperty("os.arch"),
+            timeMs = System.currentTimeMillis()
+          )
+        )
       }
 
       get("/api/v1/system/permissions") {
