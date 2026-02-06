@@ -1,6 +1,9 @@
 [versions]
 appcompat = "1.7.1"
-coreKtx = "1.17.0"
+coreKtx = "1.12.0"
+junit4 = "4.13.2"
+androidxTestCore = "1.5.0"
+robolectric = "4.12.2"
 jmdns = "3.6.3"
 kotlinx = "1.10.2"
 kotlinxSerializationJson = "1.10.0"
@@ -12,7 +15,9 @@ webkit = "1.15.0"
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 jmdns = { group = "org.jmdns", name = "jmdns", version.ref = "jmdns" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx" }
@@ -24,4 +29,5 @@ ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref =
 ktor-server-cors = { group = "io.ktor", name = "ktor-server-cors", version.ref = "ktor" }
 ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logbackClassic" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqliteJdbc" }

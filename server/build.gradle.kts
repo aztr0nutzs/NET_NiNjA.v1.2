@@ -21,5 +21,7 @@ dependencies {
 }
 
 kotlin {
-  jvmToolchain(17)
+  // Align with the JDK shipped with Android Studio (JBR 21) on this machine.
+  // If you need JDK 17 for CI, pin it via toolchain downloads in settings.gradle(.kts).
+  jvmToolchain(21)
 }
