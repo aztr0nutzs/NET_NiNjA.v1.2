@@ -11,7 +11,9 @@ Date: 2026-02-06
 - BUILD_INSTRUCTIONS.md present and current
 
 ## Build/Validation (Required)
-- `./gradlew clean assembleDebug assembleRelease test lint` passes with exit code 0
+- Gradle gate passes with exit code 0:
+  - Windows PowerShell: `.\gradlew clean assembleDebug assembleRelease test lint`
+  - macOS/Linux (or Git Bash): `./gradlew clean assembleDebug assembleRelease test lint`
 - No failing tests
 - No lint failures
 - No repository `TODO`/`FIXME` markers
@@ -24,4 +26,3 @@ Date: 2026-02-06
 - Install debug APK to emulator/device
 - Launch app successfully
 - Localhost API probe to `http://127.0.0.1:8787/api/v1/system/info` returns HTTP 200
-

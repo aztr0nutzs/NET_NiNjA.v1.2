@@ -10,6 +10,12 @@ Project: NET_NiNjA.v1.2
 Run from repo root:
 
 ```powershell
+.\gradlew clean assembleDebug assembleRelease test lint
+```
+
+On macOS/Linux (or Git Bash), the equivalent is:
+
+```bash
 ./gradlew clean assembleDebug assembleRelease test lint
 ```
 
@@ -20,4 +26,3 @@ Run from repo root:
 
 ## Notes
 - Android cleartext to localhost is allowed via `android-app/src/main/res/xml/network_security_config.xml` and manifest `android:networkSecurityConfig`.
-

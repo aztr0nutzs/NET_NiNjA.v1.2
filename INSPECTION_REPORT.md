@@ -10,7 +10,9 @@ Date: 2026-02-06
 - TODO/FIXME scan.
 
 ## Findings (High Level)
-- Build pipeline `./gradlew clean assembleDebug assembleRelease test lint` completes successfully (exit code 0).
+- Build pipeline completes successfully (exit code 0):
+  - Windows PowerShell: `.\gradlew clean assembleDebug assembleRelease test lint`
+  - macOS/Linux (or Git Bash): `./gradlew clean assembleDebug assembleRelease test lint`
 - Android emulator smoke test completed: app installed and launched; localhost probe `/api/v1/system/info` returns HTTP 200.
 - No `TODO`/`FIXME` tokens found in repository after remediation (`rg` returns no matches).
 
@@ -22,4 +24,3 @@ Date: 2026-02-06
 - Gradle exit code: `docs/gates/FV-01_gradle_clean_assemble_test_lint.exit.txt`
 - Java/Gradle version logs: `docs/gates/FV-01_java_version.log`, `docs/gates/FV-01_gradle_version.log`
 - Emulator smoke-test log: `docs/gates/FV-01_smoke_test_emulator.log`
-

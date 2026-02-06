@@ -1,0 +1,9 @@
+java.exe : openjdk version "21.0.10" 2026-01-20 LTS
+At line:2 char:313
++ ... P-01_timestamp.txt; & "$env:JAVA_HOME\bin\java" -version 2>&1 | Out-F ...
++                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (openjdk version "21.0.10" 2026-01-20 LTS:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+OpenJDK Runtime Environment Temurin-21.0.10+7 (build 21.0.10+7-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.10+7 (build 21.0.10+7-LTS, mixed mode, sharing)

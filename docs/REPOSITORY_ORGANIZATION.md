@@ -37,6 +37,13 @@ This document summarizes the repository organization completed on 2026-02-06.
 - PULL_REQUEST_TEMPLATE.md (GitHub standard)
 - README.md (main readme)
 - SECURITY.md (GitHub standard)
+- Delivery verification artifacts (reports/gates):
+  - BUILD_INSTRUCTIONS.md
+  - INSPECTION_REPORT.md
+  - ISSUES_CATALOG.md
+  - CORRECTIONS_APPLIED.md
+  - REMAINING_WORK.md
+  - FINAL_DELIVERABLE_CHECKLIST.md
 
 ### 2. Kotlin Source Files Organization
 **Moved to android-app/src/main/java/com/netninja/openclaw/:**
@@ -100,7 +107,7 @@ This document summarizes the repository organization completed on 2026-02-06.
 ## Current Structure
 
 ### Root Directory
-Contains only essential project files:
+Contains essential project files plus delivery verification artifacts:
 - Build configuration (gradle files, docker files)
 - Project documentation (README, CONTRIBUTING, etc.)
 - Skill source directories (41 skills)
@@ -130,26 +137,26 @@ Properly organized by module:
 ## Verification
 
 ### Root Cleanup
-✓ Only 6 essential .md files remain at root
-✓ No .kt, .html, .patch, or .diff files at root
-✓ No duplicate media files
+OK: Root contains essential GitHub/project docs plus delivery verification artifacts.
+OK: No .kt, .html, .patch, or .diff files at repository root.
+OK: No duplicate media files.
 
 ### Documentation Organization
-✓ 20 markdown files in docs/
-✓ 8 patch/diff files in docs/patches/
-✓ All development documentation centralized
+OK: Project documentation lives in docs/ (with delivery artifacts at root).
+OK: Patch/diff files live in docs/patches/.
+OK: Development documentation is centralized.
 
 ### Skills Organization
-✓ 41 skill directories at root
-✓ 41 reference files in skills/
-✓ No missing references
-✓ No orphaned references
+OK: Skill directories remain at repository root.
+OK: Skill references live in skills/.
+OK: No missing references.
+OK: No orphaned references.
 
 ### Source Code Organization
-✓ Android code in android-app module
-✓ Server code in server module
-✓ Tests in appropriate test directories
-✓ No source files at repository root
+OK: Android code in android-app module.
+OK: Server code in server module.
+OK: Tests in appropriate test directories.
+OK: No source files at repository root.
 
 ## Notes
 

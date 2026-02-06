@@ -2,7 +2,9 @@
 
 ## Gate 0: Bootstrap sanity
 - Wrapper bootstrap scripts work
-- `./gradlew tasks` runs
+- Gradle wrapper runs:
+  - Windows PowerShell: `.\gradlew tasks`
+  - macOS/Linux (or Git Bash): `./gradlew tasks`
 
 ## Gate 1: Build matrix
 - Desktop runs: `:app-ui:run`
