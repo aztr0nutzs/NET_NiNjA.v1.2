@@ -246,7 +246,9 @@ class AndroidLocalServer(private val ctx: Context) {
 
       // Public probe
       get("/api/v1/system/info") {
-        call.respond(mapOf("platform" to "android", "time" to System.currentTimeMillis()))
+        @Serializable
+        data class SystemInfo(val platform: String, val timeMs: Long)
+        call.respond(SystemInfo(platform = "android", timeMs = System.currentTimeMillis()))
       }
 
       // --- AUTH REMOVED (LOCAL-ONLY UI) ---

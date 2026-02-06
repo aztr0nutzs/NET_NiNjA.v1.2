@@ -1,0 +1,185 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.7/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:clean
+> Task :core:clean
+> Task :server:clean
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:mergeDebugResources
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:javaPreCompileDebug
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:compressDebugAssets
+> Task :app:mergeDebugStartupProfile UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:checkDebugDuplicateClasses
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:mergeLibDexDebug
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseNativeLibs NO-SOURCE
+> Task :app:stripReleaseDebugSymbols NO-SOURCE
+> Task :app:extractReleaseNativeSymbolTables NO-SOURCE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:buildKotlinToolingMetadata
+> Task :app:generateReleaseResValues
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:processDebugResources
+> Task :app:packageReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:parseReleaseLocalResources
+> Task :app:extractDeepLinksRelease
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:javaPreCompileRelease
+> Task :app:desugarReleaseFileDependencies
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseArtProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:preReleaseUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileReleaseUnitTest
+> Task :core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugUnitTestConfig
+> Task :core:processResources NO-SOURCE
+> Task :core:processTestResources NO-SOURCE
+> Task :server:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :server:processResources NO-SOURCE
+> Task :server:processTestResources NO-SOURCE
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:generateDebugAndroidTestResValues
+> Task :app:extractProguardFiles
+> Task :app:mergeExtDexRelease
+> Task :app:mergeExtDexDebug
+> Task :app:mergeReleaseResources
+> Task :app:processReleaseResources
+> Task :app:packageReleaseUnitTestForUnitTest
+> Task :app:generateReleaseUnitTestConfig
+> Task :app:optimizeReleaseResources
+> Task :core:compileKotlin
+> Task :core:compileJava NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar
+> Task :core:compileTestKotlin NO-SOURCE
+> Task :core:compileTestJava NO-SOURCE
+> Task :core:testClasses UP-TO-DATE
+> Task :core:test NO-SOURCE
+
+> Task :app:compileDebugKotlin
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:679:33 Condition is always 'true'.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1042:35 'val dhcpInfo: DhcpInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1043:38 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1044:40 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1058:35 'val dhcpInfo: DhcpInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1059:38 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1060:38 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1061:40 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/MainActivity.kt:54:18 'var allowFileAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/MainActivity.kt:55:18 'var allowUniversalAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+
+> Task :app:compileReleaseKotlin
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:679:33 Condition is always 'true'.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1042:35 'val dhcpInfo: DhcpInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1043:38 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1044:40 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1058:35 'val dhcpInfo: DhcpInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1059:38 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1060:38 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/AndroidLocalServer.kt:1061:40 '@Deprecated(...) static fun formatIpAddress(p0: Int): String!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/MainActivity.kt:54:18 'var allowFileAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/src/main/java/com/netninja/MainActivity.kt:55:18 'var allowUniversalAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:dexBuilderDebug
+> Task :app:processDebugJavaRes
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:compileReleaseJavaWithJavac NO-SOURCE
+> Task :app:mergeProjectDexDebug
+> Task :app:dexBuilderRelease
+> Task :app:processReleaseJavaRes
+> Task :app:mergeReleaseGlobalSynthetics
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleReleaseClassesToCompileJar
+> Task :app:mergeDebugJavaResource
+> Task :app:generateDebugLintReportModel
+> Task :app:mergeReleaseJavaResource
+
+> Task :server:compileKotlin
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/server/src/main/kotlin/server/App.kt:535:20 '@Deprecated(...) constructor(p0: String!): URL' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/server/src/main/kotlin/server/App.kt:598:75 'val systemCpuLoad: Double' is deprecated. Deprecated in Java.
+
+> Task :app:generateDebugAndroidTestLintModel
+> Task :app:generateDebugUnitTestLintModel
+> Task :server:compileJava NO-SOURCE
+> Task :server:classes UP-TO-DATE
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:compileReleaseUnitTestKotlin
+> Task :server:compileTestKotlin
+> Task :app:mergeDexRelease
+> Task :app:testDebugUnitTest
+> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processReleaseUnitTestJavaRes
+> Task :app:compileReleaseArtProfile
+> Task :app:testReleaseUnitTest
+> Task :app:test
+> Task :server:compileTestJava NO-SOURCE
+> Task :server:testClasses UP-TO-DATE
+17:21:17.620 [eventLoopGroupProxy-3-1] DEBUG io.netty.buffer.PoolThreadCache -- Freed 2 thread-local buffer(s) from thread: eventLoopGroupProxy-3-1
+> Task :server:test
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:assembleRelease
+> Task :app:lintAnalyzeDebugAndroidTest
+> Task :app:lintAnalyzeDebugUnitTest
+> Task :app:lintAnalyzeDebug
+
+> Task :app:lintReportDebug
+Wrote HTML report to file:///C:/Users/Aztr0nutZs/Documents/Android_Projects/NET_NiNjA.v1.2/android-app/build/reports/lint-results-debug.html
+
+> Task :app:lintDebug
+> Task :app:lint
+
+BUILD SUCCESSFUL in 1m 23s
+107 actionable tasks: 105 executed, 2 up-to-date
