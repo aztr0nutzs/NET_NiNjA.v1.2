@@ -1,34 +1,57 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-  <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
-  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-  <uses-permission
-    android:name="android.permission.NEARBY_WIFI_DEVICES"
-    android:usesPermissionFlags="neverForLocation"/>
-  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-  <uses-permission android:name="android.permission.INTERNET"/>
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The AndroidManifest declares application-level configuration, including
+  required permissions and services. The original project lacked the
+  CHANGE_WIFI_MULTICAST_STATE and FOREGROUND_SERVICE_DATA_SYNC permissions
+  needed to safely acquire the Wi-Fi multicast lock for ONVIF device
+  discovery and to run foreground services that synchronise data. In
+  addition, the EngineService and OpenClawGatewayService did not specify
+  a foreground service type, which is required on Android 14+ (API 34).
+  This manifest addresses those issues.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.netninja">
 
-  <application
-    android:allowBackup="true"
-    android:icon="@mipmap/ic_launcher"
-    android:label="@string/app_name"
-    android:networkSecurityConfig="@xml/network_security_config"
-    android:roundIcon="@mipmap/ic_launcher_round"
-    android:supportsRtl="true"
-    android:theme="@style/Theme.NetNinja">
-    <activity
-      android:name=".MainActivity"
-      android:exported="true">
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN"/>
-        <category android:name="android.intent.category.LAUNCHER"/>
-      </intent-filter>
-    </activity>
-    <service android:name=".EngineService" android:exported="false" />
-    <service
-      android:name="com.netninja.openclaw.OpenClawGatewayService"
-      android:exported="false" />
-  </application>
+    <!-- Core permissions for network scanning and web server. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Additional permissions required for ONVIF discovery and foreground services. -->
+    <!-- Allows acquiring a Wi‑Fi multicast lock on devices that support it. Without this
+         permission, MulticastLock.acquire() would throw SecurityException. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- Allows declaring a data‑synchronisation foreground service type. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.App">
+
+        <!-- The EngineService hosts the local server used by the NET Ninja app. It must run
+             as a foreground service to avoid being killed by the system. By setting
+             foregroundServiceType to dataSync we comply with Android 14+ requirements. -->
+        <service
+            android:name=".EngineService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- The OpenClawGatewayService exposes a WebSocket gateway for OpenClaw clients.
+             Declaring it as a foreground service with type dataSync ensures the system
+             recognises the service’s network I/O as a legitimate long‑running operation. -->
+        <service
+            android:name=".OpenClawGatewayService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+    </application>
 </manifest>

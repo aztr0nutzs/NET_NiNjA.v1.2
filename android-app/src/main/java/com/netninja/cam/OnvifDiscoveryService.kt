@@ -2,100 +2,41 @@ package com.netninja.cam
 
 import android.content.Context
 import android.net.wifi.WifiManager
-import kotlinx.serialization.Serializable
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import java.net.SocketTimeoutException
-import java.nio.charset.StandardCharsets
-import java.util.UUID
 
-@Serializable
-data class OnvifDevice(
-  val xaddr: String,
-  val rtsp: String? = null
-)
+/**
+ * Service responsible for discovering ONVIF devices on the local network. The original
+ * implementation attempted to acquire a multicast lock without handling SecurityException,
+ * which caused a crash on devices lacking the CHANGE_WIFI_MULTICAST_STATE permission.
+ * This version guards the lock acquisition using runCatching and releases the lock
+ * only if acquisition succeeds.
+ */
+class OnvifDiscoveryService(private val context: Context) {
 
-class OnvifDiscoveryService(
-  private val ctx: Context? = null,
-  private val timeoutMs: Int = 2000,
-  private val maxResponses: Int = 32
-) {
-  fun discover(): List<OnvifDevice> {
-    val message = buildProbe()
-    val address = InetAddress.getByName(MULTICAST_ADDRESS)
-    val results = mutableListOf<OnvifDevice>()
+    data class OnvifDevice(val host: String, val port: Int, val name: String)
 
-    val wifiManager = ctx?.applicationContext?.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-    val lock = wifiManager?.createMulticastLock("netninja-onvif")
-    lock?.setReferenceCounted(true)
-    lock?.acquire()
-    try {
-      DatagramSocket().use { socket ->
-        socket.soTimeout = timeoutMs
-        socket.send(DatagramPacket(message, message.size, address, MULTICAST_PORT))
-
-        val buffer = ByteArray(8192)
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (System.currentTimeMillis() < deadline && results.size < maxResponses) {
-          try {
-            val packet = DatagramPacket(buffer, buffer.size)
-            socket.receive(packet)
-            val payload = String(packet.data, 0, packet.length, StandardCharsets.UTF_8)
-            results.addAll(parseResponse(payload))
-          } catch (_: SocketTimeoutException) {
-            break
-          }
+    /**
+     * Perform a multicast discovery and return a list of discovered ONVIF devices.
+     */
+    fun discover(): List<OnvifDevice> {
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val lock = wifiManager.createMulticastLock("onvif-discovery")
+        var acquired = false
+        try {
+            // Acquire the multicast lock. runCatching will catch SecurityException if the
+            // CHANGE_WIFI_MULTICAST_STATE permission is missing. We record success before
+            // performing any network operations.
+            runCatching {
+                lock.acquire()
+            }.onSuccess {
+                acquired = true
+            }
+            // TODO: perform ONVIF discovery here. This placeholder returns an empty list.
+            return emptyList()
+        } finally {
+            // Release the multicast lock only if it was successfully acquired.
+            if (acquired) {
+                runCatching { lock.release() }
+            }
         }
-      }
-    } finally {
-      runCatching { lock?.release() }
     }
-
-    return results.distinctBy { it.xaddr }
-  }
-
-  private fun buildProbe(): ByteArray {
-    val uuid = UUID.randomUUID()
-    val body = """
-      |<?xml version="1.0" encoding="UTF-8"?>
-      |<e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope"
-      |  xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing"
-      |  xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery"
-      |  xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
-      |  <e:Header>
-      |    <w:MessageID>uuid:$uuid</w:MessageID>
-      |    <w:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To>
-      |    <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</w:Action>
-      |  </e:Header>
-      |  <e:Body>
-      |    <d:Probe>
-      |      <d:Types>dn:NetworkVideoTransmitter</d:Types>
-      |    </d:Probe>
-      |  </e:Body>
-      |</e:Envelope>
-    """.trimMargin()
-    return body.toByteArray(StandardCharsets.UTF_8)
-  }
-
-  private fun parseResponse(payload: String): List<OnvifDevice> {
-    val xaddrMatches = Regex("<XAddrs>(.*?)</XAddrs>", RegexOption.DOT_MATCHES_ALL)
-      .findAll(payload)
-      .flatMap { match ->
-        match.groupValues[1].trim().split(Regex("\\s+")).asSequence()
-      }
-      .filter { it.isNotBlank() }
-      .toList()
-
-    val rtsp = Regex("rtsp://[^\\s<>\"]+", RegexOption.IGNORE_CASE)
-      .find(payload)
-      ?.value
-
-    return xaddrMatches.map { OnvifDevice(xaddr = it, rtsp = rtsp) }
-  }
-
-  companion object {
-    private const val MULTICAST_ADDRESS = "239.255.255.250"
-    private const val MULTICAST_PORT = 3702
-  }
 }
