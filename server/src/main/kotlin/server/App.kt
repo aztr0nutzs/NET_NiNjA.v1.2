@@ -56,7 +56,7 @@ data class RuleRequest(val match: String? = null, val action: String? = null)
 data class RuleEntry(val match: String, val action: String)
 
 @Serializable
-data class PermissionActionRequest(val action: String? = null)
+data class PermissionActionRequest(val action: String? = null, val context: String? = null)
 
 @Serializable
 data class DeviceMetaUpdate(
@@ -387,14 +387,20 @@ fun startServer(
       post("/api/v1/system/permissions/action") {
         val req = runCatching { call.receive<PermissionActionRequest>() }.getOrNull() ?: PermissionActionRequest()
         val action = req.action?.trim().orEmpty()
-        if (action.isBlank()) return@post call.respond(HttpStatusCode.BadRequest)
-        call.respond(
-          mapOf(
-            "ok" to false,
-            "action" to action,
-            "message" to "Permission control is not supported on this host."
+        if (action.isBlank()) {
+          call.respond(
+            HttpStatusCode.BadRequest,
+            PermissionActionResponse(
+              ok = false,
+              message = "Missing 'action'.",
+              platform = detectHostPlatform().apiName,
+              details = PermissionActionDetails(action = null, context = req.context?.trim())
+            )
           )
-        )
+          return@post
+        }
+
+        call.respond(performPermissionAction(action = action, context = req.context?.trim()))
       }
 
       get("/api/v1/system/state") {
