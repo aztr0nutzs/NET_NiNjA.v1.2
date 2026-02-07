@@ -97,7 +97,7 @@ data class SystemInfo(val os: String? = null, val arch: String? = null, val time
 private fun settingsCommandFor(osName: String, action: String): List<String>? {
   val os = osName.lowercase()
   return when {
-    os.contains("win") -> when (action) {
+    os.startsWith("windows") -> when (action) {
       "app_settings" -> listOf("cmd", "/c", "start", "", "ms-settings:")
       "location_settings" -> listOf("cmd", "/c", "start", "", "ms-settings:privacy-location")
       "wifi_settings" -> listOf("cmd", "/c", "start", "", "ms-settings:network-wifi")
