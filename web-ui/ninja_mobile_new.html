@@ -1880,8 +1880,12 @@
       const controller = new AbortController();
       const timeoutBudget = Number.isFinite(timeoutMs) ? timeoutMs : 8000;
       const timeout = timeoutBudget > 0 ? setTimeout(() => controller.abort(), timeoutBudget) : null;
-      const res = await fetch(resolveApiUrl(url), { ...fetchOptions, headers, signal: controller.signal });
-      if(timeout) clearTimeout(timeout);
+      let res;
+      try {
+        res = await fetch(resolveApiUrl(url), { ...fetchOptions, headers, signal: controller.signal });
+      } finally {
+        if (timeout) clearTimeout(timeout);
+      }
       if(res.status === 401){
         showToast("Unauthorized", "Access rejected by the local engine.");
         throw new Error("Unauthorized");
