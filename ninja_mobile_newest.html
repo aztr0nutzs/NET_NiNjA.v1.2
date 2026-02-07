@@ -1,0 +1,3673 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Network Control</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg0:#000;
+      --panel: rgba(10, 11, 16, 0.72);
+      --panel2: rgba(0,0,0,0.55);
+
+      --neon-cyan:#00f0ff;
+      --neon-purple:#b967ff;
+            --neon-mint:#78ffdc;
+--neon-pink: var(--neon-mint);
+      --neon-yellow: var(--neon-cyan);
+      --ok: var(--neon-mint);
+      --warn: var(--neon-cyan);
+      --bad: var(--neon-purple);
+
+      --border-cyan: rgba(0, 240, 255, 0.42);
+      --border-purple: rgba(185, 103, 255, 0.42);
+      --border-pink: rgba(120, 255, 220, 0.38);
+
+      --shadow-cyan: 0 0 22px rgba(0,240,255,0.28);
+      --shadow-purple: 0 0 22px rgba(185,103,255,0.28);
+      --shadow-mix: 0 0 26px rgba(185,103,255,0.22), 0 0 22px rgba(0,240,255,0.18);
+
+      --radius: 16px;
+      --radius-sm: 12px;
+
+      --gap: 12px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+      --tabbar-h: 74px;
+      --topbar-h: 96px;
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html, body{ height:100%; width:100%; }
+    body{
+      background: var(--bg0);
+      color: rgba(255,255,255,0.92);
+      font-family: "Share Tech Mono", monospace;
+      overflow-x:hidden;
+      min-height: 100dvh;
+    }
+
+    /* subtle neon grid + scanlines */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(185,103,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,240,255,0.06) 1px, transparent 1px);
+      background-size: 22px 22px;
+      opacity: 0.35;
+      z-index:-2;
+    }
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+        linear-gradient(90deg, rgba(120,255,220,0.08), rgba(0,240,255,0.06), rgba(185,103,255,0.08));
+      background-size: 100% 2px, 3px 100%;
+      opacity: .52;
+      z-index:-1;
+      animation: flicker .15s infinite;
+    }
+    @keyframes flicker{
+      0% { opacity: 0.25; } 20% { opacity: 0.85; } 40% { opacity: 0.35; }
+      60% { opacity: 0.95; } 80% { opacity: 0.30; } 100% { opacity: 0.55; }
+    }
+
+    .app{
+      min-height:100dvh;
+      display:flex;
+      flex-direction:column;
+      padding-top: calc(var(--safe-top));
+      padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+    }
+
+    /* Top chrome */
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:1000;
+      height: calc(var(--topbar-h) + var(--safe-top));
+      padding: 0 12px;
+      background: #020205;
+      border-bottom: 1px solid var(--border-purple);
+      box-shadow: var(--shadow-purple);
+      overflow:hidden;
+    }
+    .topbar-inner{
+      position:relative;
+      height:100%;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding-top: var(--safe-top);
+    }
+    .header-media{
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+    }
+    .header-media video{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      object-position:center;
+      display:block;
+      background: #020205;
+    }
+    .header-overlay{
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, rgba(2,2,5,0.65), rgba(2,2,5,0.25) 45%, rgba(2,2,5,0.65));
+    }
+    .brand,
+    .topbar-actions{
+      position:relative;
+      z-index:1;
+    }
+    .topbar-actions{
+      margin-left:auto;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width: 0;
+      flex:1;
+    }
+    .brand-badge{
+      width:38px; height:38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      box-shadow: 0 0 14px rgba(0,240,255,0.35);
+      display:grid; place-items:center;
+      color:#000; font-weight:900;
+      font-family:"Orbitron", sans-serif;
+      letter-spacing:0.5px;
+    }
+    .brand-title{
+      font-family:"Orbitron", sans-serif;
+      font-weight:700;
+      letter-spacing:1.5px;
+      font-size: 14px;
+      line-height:1.1;
+      color: rgba(255,255,255,0.95);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .brand-sub{
+      font-size: 11px;
+      color: rgba(255,255,255,0.65);
+      margin-top: 2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn{
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.25);
+      color: rgba(255,255,255,0.9);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font: inherit;
+      transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+      display:inline-flex; align-items:center; gap:8px;
+      user-select:none;
+    }
+    .btn:active{ transform: scale(0.97); }
+
+    .btn-primary{
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      color:#000;
+      border-color: rgba(0,0,0,0.1);
+      box-shadow: var(--shadow-mix);
+      font-weight:800;
+      letter-spacing:0.8px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .btn-primary .kbd{
+      font-size: 11px;
+      background: rgba(0,0,0,0.15);
+      padding: 2px 6px;
+      border-radius: 10px;
+      letter-spacing: 0;
+    }
+
+    .icon-btn{
+      width:40px; height:40px;
+      padding:0;
+      justify-content:center;
+      border-radius: 12px;
+      border-color: rgba(185,103,255,0.22);
+      box-shadow: 0 0 14px rgba(185,103,255,0.18);
+    }
+    .icon{
+      width:18px; height:18px;
+      display:block;
+      fill:none;
+      stroke: rgba(255,255,255,0.92);
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+
+    /* Content */
+    main{
+      padding: 12px;
+      padding-top: 14px;
+      flex: 1 1 auto;
+      min-height: 0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .tab-page{
+      display:none;
+      animation: fadeIn .14s ease;
+      min-height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 26px);
+      flex: 1 1 auto;
+    }
+    .tab-page.active{ display:block; }
+    .tab-page.media{
+      padding: 0;
+      display:flex;
+      flex-direction:column;
+      height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 26px);
+      min-height: 0;
+    }
+    .tab-page.media iframe{
+      flex:1 1 auto;
+      width:100%;
+      height:100%;
+      border:none;
+      display:block;
+    }
+    @keyframes fadeIn{ from{ opacity:.35; transform: translateY(4px);} to{ opacity:1; transform:none; } }
+
+    h2{
+      font-family:"Orbitron", sans-serif;
+      font-weight:700;
+      letter-spacing:1.6px;
+      text-transform: uppercase;
+      font-size: 14px;
+      color: rgba(255,255,255,0.92);
+      margin: 6px 0 10px 2px;
+      text-shadow: 0 0 12px rgba(185,103,255,0.22);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: var(--gap);
+    }
+    @media (min-width: 560px){
+      .grid-2{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .card{
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow-purple);
+      position: relative;
+      overflow:hidden;
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .card:active{ transform: translateY(-2px); box-shadow: 0 0 28px rgba(185,103,255,0.34); border-color: rgba(0,240,255,0.35); }
+    .card::before{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(135deg, transparent 35%, rgba(0,240,255,0.08) 55%, transparent 75%);
+      opacity:.35;
+      pointer-events:none;
+    }
+    .card-head{
+      position:relative;
+      z-index:1;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      margin-bottom:10px;
+    }
+    .card-title{
+      font-family:"Orbitron", sans-serif;
+      font-size: 12px;
+      letter-spacing:1.2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.88);
+    }
+    .pill{
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25);
+      color: rgba(255,255,255,0.82);
+      white-space: nowrap;
+    }
+    .pill.ok{ border-color: rgba(12,250,119,0.45); color: var(--ok); box-shadow: 0 0 10px rgba(12,250,119,0.22); }
+    .pill.bad{ border-color: rgba(229,98,192,0.45); color: var(--bad); box-shadow: 0 0 10px rgba(229,98,192,0.22); }
+    .pill.warn{ border-color: rgba(255,243,92,0.45); color: var(--warn); box-shadow: 0 0 10px rgba(255,243,92,0.18); }
+
+    .big{
+      position:relative;
+      z-index:1;
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 16px rgba(0,240,255,0.32);
+      margin: 6px 0 10px 0;
+    }
+    .muted{
+      position:relative;
+      z-index:1;
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.35;
+    }
+
+    .card-actions{
+      position:relative;
+      z-index:1;
+      margin-top: 12px;
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+    .btn-ghost{
+      background: rgba(0,0,0,0.22);
+      border-color: rgba(0,240,255,0.18);
+      box-shadow: 0 0 12px rgba(0,240,255,0.14);
+      color: rgba(255,255,255,0.92);
+      text-transform: uppercase;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 10px 12px;
+      letter-spacing: 0.8px;
+    }
+    .btn-ghost.purple{
+      border-color: rgba(185,103,255,0.20);
+      box-shadow: 0 0 12px rgba(185,103,255,0.18);
+    }
+    .btn-danger{
+      background: rgba(229,98,192,0.14);
+      border-color: rgba(229,98,192,0.35);
+      box-shadow: 0 0 14px rgba(229,98,192,0.16);
+      color: rgba(255,255,255,0.92);
+      text-transform: uppercase;
+      font-weight: 900;
+      font-size: 12px;
+      padding: 10px 12px;
+      letter-spacing: 0.8px;
+    }
+
+    /* Devices top controls */
+    .toolbar{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .row{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .search{
+      flex: 1;
+      min-width: 200px;
+      display:flex; align-items:center; gap:8px;
+      background: var(--panel2);
+      border: 1px solid rgba(185,103,255,0.24);
+      box-shadow: 0 0 16px rgba(185,103,255,0.14);
+      padding: 10px 12px;
+      border-radius: 14px;
+    }
+    .search input{
+      width:100%;
+      background: transparent;
+      border: none;
+      outline:none;
+      color: rgba(255,255,255,0.92);
+      font: inherit;
+      font-size: 13px;
+    }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{
+      border: 1px solid rgba(185,103,255,0.26);
+      background: rgba(0,0,0,0.22);
+      color: rgba(255,255,255,0.86);
+      padding: 8px 10px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      box-shadow: 0 0 10px rgba(185,103,255,0.14);
+      user-select:none;
+    }
+    .chip.active{
+      background: linear-gradient(135deg, rgba(0,240,255,0.24), rgba(185,103,255,0.24));
+      border-color: rgba(0,240,255,0.28);
+      box-shadow: 0 0 14px rgba(0,240,255,0.16);
+    }
+
+    /* Tables (scrollable on mobile) */
+    .table-wrap{
+      background: var(--panel);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-purple);
+      overflow:hidden;
+    }
+    .table-scroll{
+      overflow:auto;
+      max-height: 54vh;
+      -webkit-overflow-scrolling: touch;
+    }
+    table{
+      width:100%;
+      border-collapse: collapse;
+      min-width: 980px;
+      font-size: 12px;
+    }
+    thead th{
+      position: sticky;
+      top:0;
+      z-index: 1;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      text-align:left;
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.72);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      font-family:"Orbitron", sans-serif;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tbody td{
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.86);
+      white-space: nowrap;
+    }
+    tbody tr{
+      cursor:pointer;
+    }
+    tbody tr:hover{
+      background: rgba(185,103,255,0.08);
+    }
+    tbody tr.selected{
+      background: rgba(0,240,255,0.10);
+    }
+
+    .status{
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+    }
+    .dot{
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      box-shadow: 0 0 8px rgba(255,255,255,0.10);
+    }
+    .status.online{ border-color: rgba(12,250,119,0.45); color: var(--ok); }
+    .status.online .dot{ background: var(--ok); box-shadow: 0 0 10px rgba(12,250,119,0.35); }
+    .status.offline{ border-color: rgba(185,103,255,0.35); color: var(--neon-purple); }
+    .status.offline .dot{ background: var(--neon-purple); box-shadow: 0 0 10px rgba(185,103,255,0.28); }
+    .status.blocked{ border-color: rgba(229,98,192,0.45); color: var(--bad); }
+    .status.blocked .dot{ background: var(--bad); box-shadow: 0 0 10px rgba(229,98,192,0.28); }
+
+    .kebab{
+      border:none;
+      background: transparent;
+      color: rgba(255,255,255,0.82);
+      font: inherit;
+      cursor:pointer;
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
+    .kebab:hover{ background: rgba(255,255,255,0.06); }
+
+    /* Right-side details panel on wider screens */
+    .split{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: var(--gap);
+    }
+    @media (min-width: 980px){
+      .split{ grid-template-columns: 1fr 380px; align-items:start; }
+      .table-scroll{ max-height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - 170px); }
+    }
+    .sidepanel{
+      display:none;
+      background: var(--panel);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-purple);
+      padding: 14px;
+      position: sticky;
+      top: calc(var(--topbar-h) + var(--safe-top) + 12px);
+      max-height: calc(100dvh - var(--topbar-h) - var(--safe-top) - var(--tabbar-h) - 26px);
+      overflow:auto;
+    }
+    @media (min-width: 980px){
+      .sidepanel{ display:block; }
+    }
+    .side-head{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      margin-bottom: 10px;
+    }
+    .side-title{
+      font-family:"Orbitron", sans-serif;
+      font-weight:700;
+      letter-spacing:1px;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    .side-sub{ font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 4px; }
+    .tabs2{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin: 10px 0 8px 0;
+    }
+    .tab2{
+      font-size: 11px;
+      letter-spacing:0.6px;
+      text-transform: uppercase;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,240,255,0.14);
+      background: rgba(0,0,0,0.25);
+      cursor:pointer;
+      color: rgba(255,255,255,0.85);
+      user-select:none;
+    }
+    .tab2.active{
+      border-color: rgba(0,240,255,0.25);
+      background: rgba(0,240,255,0.12);
+      box-shadow: 0 0 10px rgba(0,240,255,0.14);
+    }
+    .kv{
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-top: 10px;
+      padding-top: 10px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .kv .line{
+      display:flex; justify-content:space-between; gap: 10px;
+    }
+    .kv .k{ color: rgba(255,255,255,0.65); }
+    .kv .v{ color: rgba(255,255,255,0.92); text-align:right; }
+
+    .notes{
+      margin-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+    }
+    .field{
+      display:flex; flex-direction:column; gap:6px;
+      margin-bottom: 10px;
+    }
+    .field label{
+      font-size: 11px;
+      color: rgba(255,255,255,0.65);
+      text-transform: uppercase;
+      letter-spacing:0.6px;
+    }
+    .field input, .field select, .field textarea{
+      background: rgba(0,0,0,0.30);
+      border: 1px solid rgba(185,103,255,0.22);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: rgba(255,255,255,0.92);
+      font: inherit;
+      font-size: 13px;
+      outline:none;
+      box-shadow: 0 0 12px rgba(185,103,255,0.10);
+    }
+    .field textarea{ min-height: 72px; resize: vertical; }
+
+    /* Bottom nav (tabs) */
+    .tabbar{
+      position: fixed;
+      left:0; right:0; bottom:0;
+      z-index:1000;
+      padding: 8px 10px calc(8px + var(--safe-bottom)) 10px;
+      background: linear-gradient(135deg, rgba(0,240,255,0.12) 0%, rgba(185,103,255,0.12) 50%, rgba(229,98,192,0.10) 100%);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--border-purple);
+      box-shadow: 0 -10px 24px rgba(185,103,255,0.16);
+    }
+    /*
+     * Adjust the bottom navigation to support horizontal scrolling when many
+     * tabs are present. Instead of wrapping to a new line or overflowing,
+     * the tab bar will scroll horizontally on small screens. Scrollbars
+     * are hidden for a clean appearance.
+     */
+    .tabbar-inner{
+      display:flex;
+      gap: 6px;
+      align-items:stretch;
+      justify-content:space-between;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      white-space: nowrap;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+
+    /* Hide the horizontal scrollbar on WebKit browsers */
+    .tabbar-inner::-webkit-scrollbar{
+      display: none;
+    }
+    /*
+     * Let each tab button size to its content instead of stretching equally.
+     * Combined with the scrollable bar above, this keeps all buttons visible
+     * without overlapping or wrapping.
+     */
+    .tabbtn{
+      flex:0 0 auto;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.18);
+      border-radius: 14px;
+      padding: 10px 8px;
+      cursor:pointer;
+      color: rgba(255,255,255,0.70);
+      font: inherit;
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      transition: background .2s ease, border-color .2s ease, transform .08s ease;
+    }
+    .tabbtn:active{ transform: scale(0.98); }
+    .tabbtn.active{
+      color: rgba(255,255,255,0.95);
+      border-color: rgba(0,240,255,0.22);
+      background: rgba(0,240,255,0.10);
+      box-shadow: 0 0 16px rgba(0,240,255,0.12);
+    }
+    .tabbtn .ticon{ font-size: 18px; line-height: 1; }
+    .tabbtn .tlabel{
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-family:"Orbitron", sans-serif;
+      font-weight: 700;
+    }
+
+    /* Modals (history, notifications, device actions, dialogs) */
+    .overlay{
+      position: fixed;
+      inset:0;
+      background: rgba(0,0,0,0.86);
+      backdrop-filter: blur(10px);
+      z-index:2000;
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding: 0 0 calc(var(--safe-bottom)) 0;
+    }
+    .overlay.show{ display:flex; }
+
+    .sheet{
+      width: 100%;
+      max-width: 720px;
+      border-top-left-radius: 22px;
+      border-top-right-radius: 22px;
+      background: linear-gradient(135deg, rgba(0,240,255,0.18), rgba(185,103,255,0.18));
+      border: 1px solid rgba(185,103,255,0.35);
+      border-bottom:none;
+      box-shadow: 0 -16px 40px rgba(185,103,255,0.22);
+      padding: 14px 14px 12px 14px;
+      animation: sheetUp .18s ease;
+      max-height: 86vh;
+      overflow:hidden;
+    }
+    @keyframes sheetUp{ from{ transform: translateY(18px); opacity: .7; } to{ transform:none; opacity:1; } }
+
+    .sheet-head{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .sheet-title{
+      font-family:"Orbitron", sans-serif;
+      font-weight:700;
+      letter-spacing:1.5px;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+    .sheet-body{
+      padding-top: 12px;
+      overflow:auto;
+      max-height: calc(86vh - 60px);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .list-item{
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .list-item .line1{
+      display:flex; justify-content:space-between; gap: 10px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.9);
+    }
+    .list-item .line2{
+      margin-top: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.65);
+    }
+    .list-item .action{
+      margin-top: 10px;
+      display:flex; justify-content:flex-end;
+    }
+
+    /* Tiny toast */
+    .toast{
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 10px);
+      z-index: 3000;
+      display:none;
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(185,103,255,0.28);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 0 22px rgba(185,103,255,0.22);
+      backdrop-filter: blur(10px);
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .toast.show{ display:block; animation: toastIn .12s ease; }
+    @keyframes toastIn{ from{ transform: translateY(8px); opacity:.65; } to{ transform:none; opacity:1; } }
+    .toast .t1{ font-size: 12px; color: rgba(255,255,255,0.92); }
+    .toast .t2{ margin-top: 4px; font-size: 11px; color: rgba(255,255,255,0.65); }
+    .toast .tact{ margin-top: 10px; display:flex; justify-content:flex-end; gap: 10px; }
+
+    .divider{ height:1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
+
+    /* Accessibility */
+    .sr-only{
+      position:absolute; width:1px; height:1px;
+      padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0);
+      white-space:nowrap; border:0;
+    }
+  
+    /* ========= Integrated Scan Progress + Discovery Map ========= */
+
+    /* Make the main scan button impossible to miss (humans are great at missing buttons). */
+    #scanNowBtn,
+    #btnScanMyNetwork,
+    #btnNetworksScanMy{
+      min-height: 46px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      box-shadow: 0 0 18px rgba(0,240,255,0.35), 0 0 24px rgba(185,103,255,0.22);
+    }
+    #scanNowBtn{ font-size: 0.95rem; }
+
+    /* Replace “danger” red/pink with purple (requirement: cyan/purple/mint only) */
+    .btn-danger{
+      background: rgba(0,0,0,0.45) !important;
+      border: 1px solid rgba(185,103,255,0.55) !important;
+      color: var(--neon-purple) !important;
+      box-shadow: inset 0 0 18px rgba(185,103,255,0.18), 0 0 16px rgba(185,103,255,0.18) !important;
+    }
+    .btn-danger:hover{ filter: brightness(1.08); }
+
+    /* Scan Progress widget */
+    .nn-scanGrid{
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+      margin: 14px 0 0;
+    }
+    @media (max-width: 860px){
+      .nn-scanGrid{ grid-template-columns: 1fr; }
+    }
+
+    .nn-prog{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      margin-top: 10px;
+    }
+    .nn-prog .kvRow{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.08);
+    }
+    .nn-prog .kvRow:last-child{ border-bottom:none; }
+    .nn-prog .k{
+      font-size: 0.74rem;
+      color: rgba(255,255,255,0.68);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      white-space:nowrap;
+    }
+    .nn-prog .v{
+      font-size: 0.92rem;
+      color: rgba(255,255,255,0.92);
+      text-shadow: 0 0 14px rgba(0,240,255,0.20);
+      white-space:nowrap;
+    }
+    @media (max-width: 520px){
+      .nn-prog{ grid-template-columns: 1fr; }
+    }
+
+    .nn-bar{
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(0,240,255,0.22);
+      overflow:hidden;
+      box-shadow: inset 0 0 18px rgba(0,240,255,0.08);
+      margin-top: 8px;
+    }
+    .nn-bar > i{
+      display:block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(0,240,255,0.95), rgba(120,255,220,0.95), rgba(185,103,255,0.90));
+      box-shadow: 0 0 18px rgba(0,240,255,0.28), 0 0 18px rgba(185,103,255,0.18);
+      transition: width 160ms linear;
+    }
+
+    .nn-activity{
+      display:flex;
+      align-items:flex-end;
+      gap: 6px;
+      height: 52px;
+      margin-top: 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(185,103,255,0.22);
+      background: rgba(0,0,0,0.25);
+      box-shadow: inset 0 0 30px rgba(0,240,255,0.08);
+      overflow:hidden;
+    }
+    .nn-activity span{
+      flex:1;
+      border-radius: 8px 8px 4px 4px;
+      background: linear-gradient(180deg, rgba(0,240,255,0.7), rgba(120,255,220,0.55), rgba(185,103,255,0.45));
+      box-shadow: 0 0 18px rgba(0,240,255,0.14);
+      transform-origin: bottom;
+      animation: nnBar 1.35s infinite ease-in-out;
+      opacity: 0.9;
+    }
+    .nn-activity span:nth-child(2){ animation-delay: -0.25s; }
+    .nn-activity span:nth-child(3){ animation-delay: -0.55s; }
+    .nn-activity span:nth-child(4){ animation-delay: -0.15s; }
+    .nn-activity span:nth-child(5){ animation-delay: -0.85s; }
+    .nn-activity span:nth-child(6){ animation-delay: -0.45s; }
+    .nn-activity span:nth-child(7){ animation-delay: -0.70s; }
+    @keyframes nnBar{
+      0%,100%{ transform: scaleY(0.35); filter: saturate(1.1); }
+      50%{ transform: scaleY(1.0); filter: saturate(1.55); }
+    }
+
+    /* Embedded Discovery Map (scoped so it doesn't hijack the whole app) */
+    .nn-mapHost{
+      position: relative;
+      height: 420px;
+      border-radius: 16px;
+      overflow:hidden;
+      border: 1px solid rgba(0,240,255,0.22);
+      box-shadow: inset 0 0 40px rgba(0,240,255,0.10), 0 0 28px rgba(185,103,255,0.16);
+      background: rgba(0,0,0,0.25);
+      margin-top: 10px;
+    }
+
+    .nn-mapCard{
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      position: relative;
+      background: linear-gradient(180deg, rgba(0,0,0,0.78), rgba(0,0,0,0.45));
+      border: 1px solid rgba(120,255,220,0.28);
+      box-shadow:
+        inset 0 0 40px rgba(120,255,220,0.12),
+        inset 0 0 70px rgba(185,103,255,0.10);
+      overflow:hidden;
+      touch-action:none;
+    }
+    .nn-mapCard::before, .nn-mapCard::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      border-radius:16px;
+    }
+    .nn-mapCard::before{
+      background:
+        linear-gradient(90deg, rgba(120,255,220,0.22), transparent 35%),
+        linear-gradient(270deg, rgba(185,103,255,0.20), transparent 35%);
+      opacity: 0.55;
+      mix-blend-mode: screen;
+    }
+    .nn-mapCard::after{
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 6px);
+      opacity: 0.07;
+    }
+
+    .nn-hudTop{
+      position:absolute;
+      inset: 10px 10px auto 10px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      z-index:5;
+      pointer-events:none;
+    }
+    .nn-title{
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 16px rgba(0,240,255,0.45);
+    }
+    .nn-sub{
+      font-size: 10px;
+      color: rgba(210,255,245,0.85);
+      text-shadow: 0 0 14px rgba(185,103,255,0.42);
+    }
+    .nn-viewport{
+      position:absolute;
+      inset: 42px 10px 10px 10px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(120,255,220,0.22);
+      box-shadow:
+        inset 0 0 60px rgba(120,255,220,0.10),
+        inset 0 0 70px rgba(185,103,255,0.10);
+      overflow:hidden;
+    }
+    .nn-scene{
+      width:100%;
+      height:100%;
+      perspective: 1200px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .nn-stage{
+      width: min(940px, 140vw);
+      height: min(580px, 70vh);
+      position: relative;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+    .nn-grid{
+      position:absolute;
+      inset:0;
+      background:
+        repeating-linear-gradient(0deg, rgba(120,255,220,0.18) 0 1px, transparent 1px 30px),
+        repeating-linear-gradient(90deg, rgba(185,103,255,0.16) 0 1px, transparent 1px 30px);
+      box-shadow:
+        inset 0 0 160px rgba(120,255,220,0.16),
+        inset 0 0 160px rgba(185,103,255,0.12);
+      border: 1px solid rgba(185,103,255,0.22);
+      filter: saturate(1.4) contrast(1.15);
+    }
+    .nn-neonFog{
+      position:absolute;
+      inset:-10%;
+      background:
+        radial-gradient(circle at 20% 25%, rgba(120,255,220,0.18), transparent 55%),
+        radial-gradient(circle at 85% 35%, rgba(185,103,255,0.16), transparent 60%),
+        radial-gradient(circle at 55% 85%, rgba(120,255,220,0.10), transparent 65%);
+      mix-blend-mode: screen;
+      filter: blur(18px) saturate(1.5);
+      opacity: 0.95;
+      pointer-events:none;
+    }
+    .nn-radar{
+      position:absolute;
+      width: 260px;
+      height: 260px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%,-50%);
+      border-radius:50%;
+      border: 1px solid rgba(185,103,255,0.75);
+      box-shadow: 0 0 50px rgba(0,240,255,0.35);
+      animation: nnPulse 2.2s infinite ease-out;
+      pointer-events:none;
+    }
+    @keyframes nnPulse{
+      from { transform: translate(-50%,-50%) scale(0.25); opacity: 1; }
+      to   { transform: translate(-50%,-50%) scale(2.6); opacity: 0; }
+    }
+    .nn-link{
+      position:absolute;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(0,240,255,0.92), rgba(120,255,220,0.88), rgba(185,103,255,0.92));
+      box-shadow: 0 0 18px rgba(0,240,255,0.35), 0 0 22px rgba(185,103,255,0.28);
+      transform-origin: left center;
+      opacity: 0.95;
+    }
+    .nn-node{
+      position:absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.98), rgba(0,240,255,0.92) 42%, rgba(185,103,255,0.88) 78%);
+      box-shadow: 0 0 22px rgba(0,240,255,0.55), 0 0 46px rgba(185,103,255,0.30);
+      animation: nnFloat 3.0s infinite ease-in-out;
+      filter: saturate(1.5) contrast(1.2);
+    }
+    .nn-node.threat{
+      /* threat gets "hot" via purple intensity, not red/pink */
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.98), rgba(185,103,255,0.95) 55%, rgba(0,240,255,0.75) 90%);
+      box-shadow: 0 0 34px rgba(185,103,255,0.65), 0 0 52px rgba(0,240,255,0.20);
+    }
+    @keyframes nnFloat{
+      0%,100% { transform: translateZ(0px); }
+      50%     { transform: translateZ(48px); }
+    }
+    .nn-label{
+      position:absolute;
+      top: -24px;
+      left: -60px;
+      width: 140px;
+      font-size: 11px;
+      color: rgba(210,255,245,0.98);
+      text-shadow: 0 0 16px rgba(0,240,255,0.45);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      pointer-events:none;
+    }
+    .nn-packet{
+      position:absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(120,255,220,1);
+      box-shadow: 0 0 16px rgba(120,255,220,1);
+      pointer-events:none;
+    }
+    .nn-help{
+      position:absolute;
+      right:10px;
+      bottom:10px;
+      font-size: 10px;
+      color: rgba(210,255,245,0.7);
+      text-shadow: 0 0 12px rgba(185,103,255,0.35);
+      pointer-events:none;
+    }
+    .nn-permList{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px 12px;
+      margin: 12px 0 0 0;
+      font-size: 13px;
+    }
+    .nn-permList span:last-child{
+      font-weight:600;
+    }
+    .nn-debugPanel{
+      display:none;
+      margin-top: 16px;
+      padding: 12px;
+      border: 1px dashed rgba(115,255,230,0.45);
+      border-radius: 12px;
+      background: rgba(5,14,24,0.7);
+    }
+    .nn-debugPanel.visible{
+      display:block;
+    }
+    .nn-debugPanel pre{
+      font-size: 11px;
+      white-space: pre-wrap;
+      margin: 0;
+      color: rgba(210,255,245,0.92);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- GLOBAL CHROME -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="header-media" aria-hidden="true">
+          <video id="headerVideo" autoplay muted loop playsinline>
+            <source src="ninja_header.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <div class="header-overlay" aria-hidden="true"></div>
+
+        <div class="brand">
+          <div class="brand-badge" id="brandBadge">MN</div>
+          <div style="min-width:0;">
+            <div class="brand-title">My Network Control</div>
+            <div class="brand-sub" id="brandSub">Home Wi‑Fi (SSID) • secure</div>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn btn-primary" id="scanNowBtn" title="Scan my network now">
+            <span>Scan</span>
+            <span class="kbd">now</span>
+          </button>
+
+          <button class="btn icon-btn" id="historyBtn" title="Undo / Recent actions">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7"/>
+              <path d="M3 4v6h6"/>
+              <path d="M12 7v5l3 3"/>
+            </svg>
+            <span class="sr-only">Recent actions</span>
+          </button>
+
+          <button class="btn icon-btn" id="notifBtn" title="Notifications">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
+              <path d="M13.7 21a2 2 0 01-3.4 0"/>
+            </svg>
+            <span class="sr-only">Notifications</span>
+          </button>
+
+          <button class="btn icon-btn" id="settingsBtn" title="Settings">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+              <path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.4-2.5H9.1L8.7 7a7.2 7.2 0 0 0-1.7 1L4.6 7l-2 3.5 2 1.5a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.2 7.2 0 0 0 1.7 1l.4 2.5h5.8l.4-2.5a7.2 7.2 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z"/>
+            </svg>
+            <span class="sr-only">Settings</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- DASHBOARD -->
+      <section class="tab-page active" id="tab-dashboard" aria-labelledby="tabbtn-dashboard">
+        <h2>Dashboard</h2>
+
+        <div class="grid grid-2">
+          <div class="card" id="cardMyNetwork" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">My Network</div>
+              <div class="pill ok" id="myNetPill">Secure</div>
+            </div>
+            <div class="muted" id="myNetText">Home Wi‑Fi (SSID) – Secure</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" id="btnScanMyNetwork">Scan my network</button>
+            </div>
+          </div>
+
+          <div class="card" id="cardWhosOnline" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Who’s Online</div>
+              <div class="pill" id="onlineDeltaPill">Changed: 0</div>
+            </div>
+            <div class="big" id="onlineCount">0</div>
+            <div class="muted">devices online</div>
+            <div class="card-actions">
+              <button class="btn btn-ghost" id="btnViewOnlineDevices">View devices</button>
+            </div>
+          </div>
+
+          <div class="card" id="cardUnknown" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">New / Unknown Devices</div>
+              <div class="pill warn" id="unknownPill">Review</div>
+            </div>
+            <div class="muted" id="unknownList">No new devices.</div>
+            <div class="card-actions">
+              <button class="btn btn-ghost" id="btnReviewUnknown">Review unknown devices</button>
+            </div>
+          </div>
+
+          <div class="card" id="cardQuickActions" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Quick Actions</div>
+              <div class="pill">Fast</div>
+            </div>
+            <div class="muted">Keep it simple: no nested menus here.</div>
+            <div class="card-actions">
+              <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
+              <button class="btn btn-danger" id="btnBlockNew">Auto‑block new devices</button>
+              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi‑Fi details</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- LIVE SCAN PROGRESS (integrated from prog.html) -->
+        <div class="nn-scanGrid">
+          <div class="card" id="nnScanProgressCard" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Live Scan Progress</div>
+              <div class="pill" id="nnScanPill">Idle</div>
+            </div>
+            <div class="muted">Live progress is read from <code>/api/v1/discovery/progress</code> while scans run.</div>
+
+            <div class="nn-prog" style="margin-top:10px;">
+              <div class="kvRow"><span class="k">Phase</span><span class="v" id="scanPhase">IDLE</span></div>
+              <div class="kvRow"><span class="k">Progress</span><span class="v" id="scanPct">0%</span></div>
+
+              <div class="kvRow"><span class="k">Networks</span><span class="v" id="networksFound">0</span></div>
+              <div class="kvRow"><span class="k">Devices</span><span class="v" id="devicesFound">0</span></div>
+
+              <div class="kvRow"><span class="k">RSSI</span><span class="v" id="rssiValue">-- dBm</span></div>
+              <div class="kvRow"><span class="k">Link</span><span class="v" id="nnLinkValue">UP</span></div>
+            </div>
+
+            <div class="nn-bar" aria-label="scan progress bar"><i id="scanFill"></i></div>
+
+            <div class="nn-activity" aria-label="scan activity">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+
+            <div class="card-actions" style="margin-top:12px;">
+              <button class="btn btn-primary" id="btnStart">Start</button>
+              <button class="btn btn-ghost purple" id="btnStop">Stop</button>
+            </div>
+          </div>
+
+          <div class="card" id="nnScanTargetCard" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Target</div>
+              <div class="pill">Current</div>
+            </div>
+
+            <div class="kv">
+              <div><b>SSID</b><span id="ssid">--</span></div>
+              <div><b>BSSID</b><span id="bssid">--</span></div>
+              <div><b>Subnet</b><span id="subnet">--</span></div>
+              <div><b>Gateway</b><span id="gateway">--</span></div>
+            </div>
+
+            <div class="muted" style="margin-top:10px;">
+              When your backend has a heartbeat endpoint or WebSocket, call <code>window.startPolling(url)</code> or <code>window.connectWebSocket(wsUrl)</code> and this updates live.
+            </div>
+          </div>
+        </div>
+
+
+        <div class="card" id="nnPermissionsCard" role="button" tabindex="0" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Permissions & Background Scans</div>
+            <div class="pill warn" id="permSummaryPill">Needs review</div>
+          </div>
+          <div class="muted">
+            Android requires Location or Nearby Wi‑Fi access to read SSID/BSSID and scan your network.
+            Background scans are rate‑limited and will pause if Wi‑Fi is disconnected or permissions are denied.
+          </div>
+          <div class="nn-permList" aria-live="polite">
+            <span>Nearby Wi‑Fi</span><span id="permNearbyWifi">Unknown</span>
+            <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
+            <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
+            <span>Network state</span><span id="permNetworkState">Unknown</span>
+          </div>
+          <div class="card-actions" style="margin-top:12px;">
+            <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
+            <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
+            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi‑Fi settings</button>
+            <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            Tip: Tap the MN badge 5 times to open the hidden debug panel.
+          </div>
+          <div class="nn-debugPanel" id="nnDebugPanel" aria-live="polite">
+            <pre id="nnDebugText">Debug panel idle.</pre>
+          </div>
+        </div>
+
+        <div class="card" id="cardStatus" role="button" tabindex="0" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">What changed</div>
+            <div class="pill" id="changePill">Last scan: never</div>
+          </div>
+          <div class="muted" id="changeText">Run a scan to see changes and new devices.</div>
+        </div>
+      </section>
+
+      <!-- DEVICES -->
+      <section class="tab-page" id="tab-devices" aria-labelledby="tabbtn-devices">
+        <h2>Devices</h2>
+
+        <div class="toolbar">
+          <div class="row">
+            <div class="search" role="search">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 21l-4.35-4.35"/>
+                <circle cx="11" cy="11" r="7"/>
+              </svg>
+              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MAC…" autocomplete="off" />
+            </div>
+            <button class="btn btn-ghost" id="btnRescanDevices">Scan devices again</button>
+            <button class="btn btn-ghost purple" id="btnExportDevices">Export list</button>
+          </div>
+
+          <div class="row">
+            <div class="chips" id="trustChips" aria-label="Device filters">
+              <button class="chip active" data-filter="all">All</button>
+              <button class="chip" data-filter="online">Online</button>
+              <button class="chip" data-filter="offline">Offline</button>
+              <button class="chip" data-filter="trusted">Trusted</button>
+              <button class="chip" data-filter="unknown">Unknown</button>
+              <button class="chip" data-filter="blocked">Blocked</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="table-wrap" aria-label="Device list">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Device name</th>
+                    <th>Owner</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>IP</th>
+                    <th>MAC</th>
+                    <th>Vendor</th>
+                    <th>First seen</th>
+                    <th>Last seen</th>
+                    <th>Trust</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="deviceTbody">
+                  <!-- populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="sidepanel" id="deviceSidepanel" aria-label="Device details panel">
+            <div class="side-head">
+              <div>
+                <div class="side-title" id="spTitle">Select a device</div>
+                <div class="side-sub" id="spSub">Pick a row to view details.</div>
+              </div>
+              <div class="pill" id="spStatus">—</div>
+            </div>
+
+            <div class="row" style="margin-bottom: 10px;">
+              <button class="btn btn-ghost" id="spPause">Set status: Paused</button>
+              <button class="btn btn-danger" id="spBlock">Set status: Blocked</button>
+              <button class="btn btn-ghost purple" id="spTrust">Mark as trusted</button>
+              <button class="btn btn-ghost" id="spPortScan">Run port scan</button>
+            </div>
+
+            <div class="tabs2" role="tablist" aria-label="Device details sections">
+              <button class="tab2 active" data-sp-tab="summary">Summary</button>
+              <button class="tab2" data-sp-tab="network">Network info</button>
+              <button class="tab2" data-sp-tab="activity">Activity</button>
+              <button class="tab2" data-sp-tab="notes">Notes & labels</button>
+            </div>
+
+            <div id="spSectionSummary">
+              <div class="kv" id="spSummaryKv"></div>
+            </div>
+            <div id="spSectionNetwork" style="display:none;">
+              <div class="kv" id="spNetworkKv"></div>
+            </div>
+            <div id="spSectionActivity" style="display:none;">
+              <div class="kv" id="spActivityKv"></div>
+            </div>
+            <div id="spSectionNotes" style="display:none;">
+              <div class="notes">
+                <div class="field">
+                  <label for="spNote">Add a note…</label>
+                  <textarea id="spNote" placeholder="Example: Guest device, allow 2 hours."></textarea>
+                </div>
+                <div class="field">
+                  <label for="spRoom">Room</label>
+                  <select id="spRoom">
+                    <option value="">None</option>
+                    <option>Office</option>
+                    <option>Living Room</option>
+                    <option>Bedroom</option>
+                    <option>Kitchen</option>
+                    <option>Garage</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="spOwner">Owner</label>
+                  <select id="spOwner">
+                    <option value="">None</option>
+                    <option>Me</option>
+                    <option>Guest</option>
+                    <option>Child</option>
+                    <option>Work</option>
+                  </select>
+                </div>
+                <button class="btn btn-ghost purple" id="spSaveNotes">Save</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="muted" style="margin-top: 10px;">
+          Tip: double‑click a device row to open the detailed view.
+        </div>
+      </section>
+
+      <!-- NETWORKS -->
+      <section class="tab-page" id="tab-networks" aria-labelledby="tabbtn-networks">
+        <h2>Networks</h2>
+
+        <div class="toolbar">
+          <div class="row">
+            <button class="btn btn-primary" id="btnNetworksScanMy">Scan my network</button>
+            <button class="btn btn-ghost" id="btnNetworksSecurity">Run security check</button>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="table-wrap" aria-label="Networks list">
+            <div class="table-scroll" style="max-height: 48vh;">
+              <table style="min-width: 860px;">
+                <thead>
+                  <tr>
+                    <th>Network name</th>
+                    <th>Type</th>
+                    <th>Security</th>
+                    <th>Signal</th>
+                    <th>Devices</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="netTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" id="netDetailsCard" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Current network details</div>
+              <div class="pill" id="netDetailsPill">Select a network</div>
+            </div>
+            <div class="kv" id="netDetailsKv"></div>
+            <div class="card-actions" id="netDetailsActions" style="display:none;">
+              <button class="btn btn-ghost" id="btnNetViewDevices">View devices on this network</button>
+              <button class="btn btn-ghost purple" id="btnNetScan">Scan this network</button>
+              <button class="btn btn-ghost" id="btnNetSec">Run security check</button>
+            </div>
+          </div>
+        </div>
+      
+
+        <!-- DISCOVERY MAP (integrated from holo_map.html) -->
+        <div class="divider"></div>
+        <div class="card" id="nnMapCardContainer" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Discovery Map</div>
+            <div class="pill" id="nnMapPill">Live</div>
+          </div>
+          <div class="muted">Pinch to zoom. Drag to orbit. Nodes light up based on your device list.</div>
+
+          <div class="nn-mapHost">
+            <div class="nn-mapCard" id="nnMapCard">
+              <div class="nn-hudTop">
+                <div class="nn-title">NET NINJA • DISCOVERY MAP</div>
+                <div class="nn-sub" id="nnHudStatus">0 devices • idle</div>
+              </div>
+
+              <div class="nn-viewport">
+                <div class="nn-scene">
+                  <div class="nn-stage" id="nnStage">
+                    <div class="nn-grid"></div>
+                    <div class="nn-neonFog"></div>
+                    <div class="nn-radar"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="nn-help">Touch: drag • pinch</div>
+            </div>
+          </div>
+
+          <div class="card-actions" style="margin-top:12px;">
+            <button class="btn btn-ghost purple" id="btnMapRefresh">Refresh map</button>
+            <button class="btn btn-ghost" id="btnMapTraffic">Toggle metrics</button>
+          </div>
+        </div>
+
+</section>
+
+      <!-- TOOLS -->
+      <section class="tab-page" id="tab-tools" aria-labelledby="tabbtn-tools">
+        <h2>Tools</h2>
+
+        <div class="grid grid-2">
+          <div class="card" id="toolFullScan" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Full device scan</div>
+              <div class="pill">Preset</div>
+            </div>
+            <div class="muted">Scan all addresses on your network for any device.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="fullScan">Run full scan</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolPortScan" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Port scan</div>
+              <div class="pill">Preset</div>
+            </div>
+            <div class="muted">Check which ports are open on a device.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="portScan">Choose device</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolSecurity" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Security check</div>
+              <div class="pill warn">Careful</div>
+            </div>
+            <div class="muted">Look for weak security on your network.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="security">Run security check</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolReports" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Reports</div>
+              <div class="pill">Export</div>
+            </div>
+            <div class="muted">Export devices, activity, and scan results.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="reports">Open reports</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolAutomation" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Automation / Schedules</div>
+              <div class="pill">Optional</div>
+            </div>
+            <div class="muted">Schedule scans or auto‑block unknown devices.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="schedule">Create schedule</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top: 10px;">
+          Each tool dialog keeps only 2–3 core controls plus an “Advanced options” expander. Because humans love clicking things.
+        </div>
+      </section>
+      <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
+      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw">
+        <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
+        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard"></iframe>
+      </section>
+      <!-- Cameras tab page -->
+      <section id="tab-cameras" class="tab-page media" aria-labelledby="tabbtn-cameras">
+        <!-- Load the camera viewer via iframe -->
+        <iframe src="net_ninja_cam.html" title="Cameras"></iframe>
+      </section>
+    </main>
+
+    <!-- BOTTOM NAV (TABS) -->
+    <nav class="tabbar" aria-label="Primary navigation">
+      <div class="tabbar-inner">
+        <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
+          <div class="ticon">📊</div>
+          <div class="tlabel">Dashboard</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
+          <div class="ticon">📱</div>
+          <div class="tlabel">Devices</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
+          <div class="ticon">📡</div>
+          <div class="tlabel">Networks</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
+          <div class="ticon">🧰</div>
+          <div class="tlabel">Tools</div>
+        </button>
+        <!-- OpenClaw tab button -->
+        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
+          <div class="ticon">🤖</div>
+          <div class="tlabel">OpenClaw</div>
+        </button>
+        <!-- Cameras tab button -->
+        <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
+          <div class="ticon">📷</div>
+          <div class="tlabel">Cameras</div>
+        </button>
+      </div>
+    </nav>
+
+    <!-- RECENT ACTIONS / UNDO -->
+    <div class="overlay" id="historyOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Recent actions">
+        <div class="sheet-head">
+          <div class="sheet-title">Recent actions</div>
+          <button class="btn icon-btn" data-close="historyOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="muted">Last thing you did shows up here. Undo is available when it makes sense.</div>
+          <div class="divider"></div>
+          <div class="list" id="historyList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="overlay" id="notifOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Notifications">
+        <div class="sheet-head">
+          <div class="sheet-title">Notifications</div>
+          <button class="btn icon-btn" data-close="notifOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="list" id="notifList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICE DETAILS (MOBILE SHEET) -->
+    <div class="overlay" id="deviceOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Device details">
+        <div class="sheet-head">
+          <div class="sheet-title" id="devSheetTitle">Device details</div>
+          <button class="btn icon-btn" data-close="deviceOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body" id="devSheetBody"></div>
+      </div>
+    </div>
+
+    <!-- GENERIC TOOL DIALOG -->
+    <div class="overlay" id="toolOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Tool dialog">
+        <div class="sheet-head">
+          <div class="sheet-title" id="toolTitle">Tool</div>
+          <button class="btn icon-btn" data-close="toolOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body" id="toolBody"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS (simple sheet) -->
+    <div class="overlay" id="settingsOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+        <div class="sheet-head">
+          <div class="sheet-title">Settings</div>
+          <button class="btn icon-btn" data-close="settingsOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="card" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">General</div>
+              <div class="pill">Theme</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">App theme</span><span class="v">Neon dark</span></div>
+              <div class="line"><span class="k">Language</span><span class="v">English</span></div>
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+
+          <div class="card" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Network</div>
+              <div class="pill">Interface</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">Active interface</span><span class="v">Auto</span></div>
+              <div class="line"><span class="k">Router control</span><span class="v">Off</span></div>
+            </div>
+            <div class="muted" style="margin-top:10px;">
+              Router-control features require explicit permissions and should never be assumed. Humans hate consent until it matters.
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+
+          <div class="card" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Notifications</div>
+              <div class="pill">Alerts</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">New device alerts</span><span class="v">On</span></div>
+              <div class="line"><span class="k">Device blocked alerts</span><span class="v">On</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+      <div class="t1" id="toastTitle"></div>
+      <div class="t2" id="toastBody"></div>
+      <div class="tact" id="toastActions"></div>
+    </div>
+  </div>
+
+  <script>
+    // ---- State ----
+    const state = {
+      activeTab: "dashboard",
+      deviceFilter: "all",
+      search: "",
+      selectedDeviceId: null,
+      selectedNetworkId: null,
+      lastScanAt: null,
+      lastChangeCount: 0,
+      history: [],
+      notifications: []
+    };
+
+    let scanInFlight = false;
+
+    let devices = [];
+
+    // expose for embedded widgets (discovery map, etc)
+    window.devices = devices;
+
+    // Local UI caches
+    const firstSeenMap = new Map();
+    let cachedNetworkInfo = null;
+
+    function formatSeen(ms){
+      if(!ms) return "—";
+      const now = Date.now();
+      const delta = now - ms;
+      if(delta < 120000) return "Now";
+      if(delta < 3600000) return `${Math.round(delta / 60000)} min ago`;
+      if(delta < 86400000) return `${Math.round(delta / 3600000)}h ago`;
+      if(delta < 172800000) return "Yesterday";
+      return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    function inferType(raw){
+      const host = String(raw?.hostname || "").toLowerCase();
+      const os = String(raw?.os || "").toLowerCase();
+      const vendor = String(raw?.vendor || "").toLowerCase();
+      if(os.includes("android") || os.includes("ios")) return "Phone";
+      if(os.includes("tizen") || os.includes("webos") || os.includes("tv")) return "TV";
+      if(os.includes("windows") || os.includes("linux") || os.includes("mac")) return "PC";
+      if(host.includes("printer") || os.includes("printer")) return "Printer";
+      if(vendor.includes("hikvision") || vendor.includes("tuya")) return "IoT";
+      return "IoT";
+    }
+
+    function mergeDevice(raw){
+      const id = raw?.id || raw?.mac || raw?.ip;
+      if(!id) return null;
+      if(!firstSeenMap.has(id)){
+        firstSeenMap.set(id, raw?.lastSeen || Date.now());
+      }
+      const online = !!raw?.online;
+      const trust = raw?.trust || "Unknown";
+      const status = raw?.status || (trust === "Blocked" ? "Blocked" : (online ? "Online" : "Offline"));
+
+      return {
+        id,
+        name: raw?.name || raw?.hostname || raw?.ip || "Device",
+        owner: raw?.owner || "",
+        type: raw?.type || inferType(raw),
+        status,
+        ip: raw?.ip || "—",
+        mac: raw?.mac || "—",
+        vendor: raw?.vendor || "—",
+        firstSeen: formatSeen(firstSeenMap.get(id)),
+        lastSeen: formatSeen(raw?.lastSeen),
+        trust,
+        os: raw?.os || "—",
+        via: raw?.via || "LAN",
+        signal: raw?.signal || "—",
+        iface: raw?.iface || "—",
+        activityToday: raw?.activityToday || "—",
+        traffic: raw?.traffic || "—",
+        note: raw?.note || "",
+        room: raw?.room || ""
+      };
+    }
+
+    const API_BASE = (() => {
+      try {
+        if (location && location.origin && location.origin !== "null") {
+          const origin = String(location.origin);
+          if (!origin.startsWith("file:")) return origin;
+        }
+      } catch (_) {}
+      return "http://127.0.0.1:8787";
+    })();
+
+    function resolveApiUrl(url){
+      if (typeof url !== "string") return url;
+      if (url.startsWith("/")) return API_BASE + url;
+      return url;
+    }
+
+    async function fetchJson(url, options = {}){
+      const headers = {
+        "Accept": "application/json",
+        ...(options.headers || {})
+      };
+      const { timeoutMs, ...fetchOptions } = options || {};
+      const controller = new AbortController();
+      const timeoutBudget = Number.isFinite(timeoutMs) ? timeoutMs : 8000;
+      const timeout = timeoutBudget > 0 ? setTimeout(() => controller.abort(), timeoutBudget) : null;
+      const res = await fetch(resolveApiUrl(url), { ...fetchOptions, headers, signal: controller.signal });
+      if(timeout) clearTimeout(timeout);
+      if(res.status === 401){
+        showToast("Unauthorized", "Access rejected by the local engine.");
+        throw new Error("Unauthorized");
+      }
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function applyDevicesFromBackend(rawList){
+      if(!Array.isArray(rawList)) return;
+      const next = rawList.map(mergeDevice).filter(Boolean);
+      devices = next;
+      window.devices = devices;
+    }
+
+    function upsertDeviceFromBackend(raw){
+      const next = mergeDevice(raw);
+      if(!next) return;
+      const idx = devices.findIndex(d => d.id === next.id);
+      if(idx >= 0){
+        devices[idx] = next;
+      } else {
+        devices.unshift(next);
+      }
+      window.devices = devices;
+    }
+
+    async function updateDeviceMeta(id, patch){
+      const updated = await fetchJson(`/api/v1/devices/${encodeURIComponent(id)}/meta`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch)
+      });
+      upsertDeviceFromBackend(updated);
+      renderDashboard();
+      renderDevices();
+      renderNetworks();
+      window.nnUpdateDiscoveryMap?.();
+      return updated;
+    }
+
+    function updateNetworkUi(info){
+      if(!info || typeof info !== "object") return;
+      cachedNetworkInfo = info;
+
+      const name = info.name || "Network";
+      const ip = info.ip || "—";
+      const cidr = info.cidr || "—";
+      const gateway = info.gateway || "—";
+
+      $("#myNetText").textContent = `${name} (${cidr})`;
+      $("#brandSub").textContent = `${name} • ${cidr}`;
+
+      const n1 = networks.find(n => n.id === "n1");
+      if(n1){
+        n1.name = name;
+        n1.details.ssid = name;
+        n1.details.gateway = gateway;
+        n1.details.yourIp = ip;
+        n1.details.dns = "—";
+        n1.details.security = n1.details.security || "—";
+        n1.details.openPorts = "—";
+        n1.devices = devices.length;
+      }
+
+      // keep scan target fields aligned
+      window.applyScanData?.({
+        ssid: name,
+        subnet: cidr,
+        gateway: gateway
+      });
+
+      renderNetworks();
+
+      if(gateway && gateway !== "—"){
+        fetchJson("/api/v1/actions/portscan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ip: gateway, timeoutMs: 250 })
+        }).then((res) => {
+          const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "—";
+          if(n1){
+            n1.details.openPorts = ports || "—";
+            renderNetworks();
+          }
+        }).catch(() => {
+          if(n1){
+            n1.details.openPorts = "—";
+          }
+        });
+      }
+    }
+
+    async function refreshNetworkInfo(){
+      try{
+        const info = await fetchJson("/api/v1/network/info");
+        updateNetworkUi(info);
+      } catch (_){}
+    }
+
+    async function refreshDiscoveryResults(){
+      try{
+        const data = await fetchJson("/api/v1/discovery/results");
+        applyDevicesFromBackend(data);
+        const n1 = networks.find(n => n.id === "n1");
+        if(n1){ n1.devices = devices.length; }
+        renderDashboard();
+        renderDevices();
+        renderNetworks();
+        window.nnUpdateDiscoveryMap?.();
+        return data;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function formatPerm(value){
+      if(value === true) return "Granted";
+      if(value === false) return "Denied";
+      return "Unknown";
+    }
+
+    async function refreshPermissionStatus(){
+      try{
+        const perms = await fetchJson("/api/v1/system/permissions");
+        const nearbyWifi = perms?.nearbyWifi;
+        const fine = perms?.fineLocation === true;
+        const coarse = perms?.coarseLocation === true;
+        const locationGranted = fine || coarse;
+
+        $("#permNearbyWifi").textContent = formatPerm(nearbyWifi);
+        $("#permLocation").textContent = formatPerm(locationGranted);
+        $("#permWifiState").textContent = formatPerm(perms?.wifiState);
+        $("#permNetworkState").textContent = formatPerm(perms?.networkState);
+
+        const summaryOk = (nearbyWifi === true) || (nearbyWifi === null && locationGranted);
+        const pill = $("#permSummaryPill");
+        if(summaryOk){
+          pill.textContent = "OK";
+          pill.className = "pill ok";
+        } else {
+          pill.textContent = "Needs review";
+          pill.className = "pill warn";
+        }
+      } catch (_) {}
+    }
+
+    async function sendPermissionAction(action){
+      try{
+        const res = await fetchJson("/api/v1/system/permissions/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action })
+        });
+        if(res?.ok){
+          showToast("Opening settings", "Use the system screen to grant permissions.");
+        } else {
+          showToast("Permission control unavailable", "This action is not supported on this device.");
+        }
+      } catch (_){
+        showToast("Permission control unavailable", "Unable to reach the local service.");
+      }
+    }
+
+    function setupPermissionControls(){
+      const appBtn = $("#btnOpenAppSettings");
+      const locBtn = $("#btnOpenLocationSettings");
+      const wifiBtn = $("#btnOpenWifiSettings");
+      const refreshBtn = $("#btnRefreshPermissions");
+      appBtn?.addEventListener("click", () => sendPermissionAction("app_settings"));
+      locBtn?.addEventListener("click", () => sendPermissionAction("location_settings"));
+      wifiBtn?.addEventListener("click", () => sendPermissionAction("wifi_settings"));
+      refreshBtn?.addEventListener("click", () => refreshPermissionStatus());
+    }
+
+    async function refreshDebugState(){
+      const panel = $("#nnDebugPanel");
+      if(!panel || !panel.classList.contains("visible")) return;
+      try{
+        const state = await fetchJson("/api/v1/system/state");
+        const text = JSON.stringify(state, null, 2);
+        $("#nnDebugText").textContent = text;
+      } catch (_) {
+        $("#nnDebugText").textContent = "Debug panel unavailable.";
+      }
+    }
+
+    function setupDebugPanel(){
+      const badge = $("#brandBadge");
+      const panel = $("#nnDebugPanel");
+      if(!badge || !panel) return;
+      let tapCount = 0;
+      let tapTimer = null;
+      badge.addEventListener("click", () => {
+        tapCount += 1;
+        if(tapTimer) clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
+        if(tapCount >= 5){
+          tapCount = 0;
+          panel.classList.toggle("visible");
+          refreshDebugState();
+        }
+      });
+    }
+
+
+    const networks = [
+      {
+        id: "n1",
+        name: "Network",
+        type: "LAN",
+        security: "—",
+        signal: "—",
+        devices: 0,
+        status: "My network",
+        details: {
+          ssid: "Network",
+          gateway: "—",
+          yourIp: "—",
+          dns: "—",
+          security: "—",
+          openPorts: "—"
+        }
+      }
+    ];
+
+    // ---- Helpers ----
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    function nowLabel(){
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mm = String(d.getMinutes()).padStart(2,"0");
+      return `${hh}:${mm}`;
+    }
+
+    function showToast(title, body, actions = []){
+      const toast = $("#toast");
+      $("#toastTitle").textContent = title;
+      $("#toastBody").textContent = body || "";
+      const act = $("#toastActions");
+      act.innerHTML = "";
+      actions.forEach(a => {
+        const b = document.createElement("button");
+        b.className = "btn btn-ghost purple";
+        b.textContent = a.label;
+        b.addEventListener("click", () => { a.onClick?.(); hideToast(); });
+        act.appendChild(b);
+      });
+      toast.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(hideToast, 3800);
+    }
+    function hideToast(){ $("#toast").classList.remove("show"); }
+
+    function openOverlay(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.classList.add("show");
+      el.setAttribute("aria-hidden", "false");
+    }
+    function closeOverlay(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.classList.remove("show");
+      el.setAttribute("aria-hidden", "true");
+    }
+
+    function pushHistory(entry){
+      state.history.unshift(entry);
+      state.history = state.history.slice(0, 20);
+      renderHistory();
+    }
+    function pushNotification(n){
+      state.notifications.unshift(n);
+      state.notifications = state.notifications.slice(0, 30);
+      renderNotifications();
+    }
+
+    // ---- Navigation ----
+    function setTab(tab){
+      state.activeTab = tab;
+      $$(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+      $$(".tab-page").forEach(p => p.classList.toggle("active", p.id === `tab-${tab}`));
+      if(tab === "devices"){ renderDevices(); }
+      if(tab === "networks"){ renderNetworks(); }
+      if(tab === "dashboard"){ renderDashboard(); }
+    }
+
+    $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
+
+    // ---- Dashboard ----
+    function renderDashboard(){
+      const onlineCount = devices.filter(d => d.status === "Online").length;
+      $("#onlineCount").textContent = String(onlineCount);
+
+      const unknown = devices.filter(d => d.trust === "Unknown").slice(0, 5);
+      if(unknown.length === 0){
+        $("#unknownList").textContent = "No new devices.";
+        $("#unknownPill").textContent = "All clear";
+        $("#unknownPill").className = "pill ok";
+      } else {
+        $("#unknownPill").textContent = `${unknown.length} to review`;
+        $("#unknownPill").className = "pill warn";
+        $("#unknownList").innerHTML = unknown.map(d => `• ${escapeHtml(d.name)} <span style="color:rgba(255,255,255,0.65)">(${escapeHtml(d.trust)})</span>`).join("<br>");
+      }
+
+      const last = state.lastScanAt ? `Last scan: ${state.lastScanAt}` : "Last scan: never";
+      $("#changePill").textContent = last;
+      $("#changeText").textContent = state.lastScanAt
+        ? "Scan results updated. Review unknown devices."
+        : "Run a scan to see changes and new devices.";
+
+      // naive "changed" indicator
+      $("#onlineDeltaPill").textContent = state.lastScanAt ? `Changed: ${state.lastChangeCount}` : "Changed: 0";
+    }
+
+    // ---- Devices ----
+    function statusClass(s){
+      if(s === "Online") return "online";
+      if(s === "Paused") return "offline";
+      if(s === "Offline") return "offline";
+      if(s === "Blocked") return "blocked";
+      return "offline";
+    }
+    function trustPill(trust){
+      if(trust === "Trusted") return `<span class="pill ok">Trusted</span>`;
+      if(trust === "Blocked") return `<span class="pill bad">Blocked</span>`;
+      return `<span class="pill warn">Unknown</span>`;
+    }
+
+    function deviceMatchesFilter(d){
+      const f = state.deviceFilter;
+      if(f === "all") return true;
+      if(f === "online") return d.status === "Online";
+      if(f === "offline") return d.status === "Offline";
+      if(f === "trusted") return d.trust === "Trusted";
+      if(f === "unknown") return d.trust === "Unknown";
+      if(f === "blocked") return d.trust === "Blocked" || d.status === "Blocked";
+      return true;
+    }
+
+    function deviceMatchesSearch(d){
+      const q = state.search.trim().toLowerCase();
+      if(!q) return true;
+      const hay = [
+        d.name, d.owner, d.type, d.status, d.ip, d.mac, d.vendor, d.trust, d.os
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    }
+
+    function renderDevices(){
+      const tbody = $("#deviceTbody");
+      const rows = devices
+        .filter(deviceMatchesFilter)
+        .filter(deviceMatchesSearch);
+
+      tbody.innerHTML = rows.map(d => {
+        const isSel = d.id === state.selectedDeviceId;
+        return `
+          <tr data-id="${d.id}" class="${isSel ? "selected" : ""}">
+            <td title="Double‑click to open">${escapeHtml(d.name)}</td>
+            <td>${escapeHtml(d.owner || "—")}</td>
+            <td>${typeIcon(d.type)} ${escapeHtml(d.type)}</td>
+            <td><span class="status ${statusClass(d.status)}"><span class="dot"></span>${escapeHtml(d.status)}</span></td>
+            <td>${escapeHtml(d.ip)}</td>
+            <td>${escapeHtml(d.mac)}</td>
+            <td>${escapeHtml(d.vendor || "—")}</td>
+            <td>${escapeHtml(d.firstSeen || "—")}</td>
+            <td>${escapeHtml(d.lastSeen || "—")}</td>
+            <td>${escapeHtml(d.trust)}</td>
+            <td><button class="kebab" data-menu="${d.id}" title="Actions">⋮</button></td>
+          </tr>
+        `;
+      }).join("");
+
+      // attach row listeners
+      $$("#deviceTbody tr").forEach(tr => {
+        tr.addEventListener("click", () => selectDevice(tr.dataset.id, false));
+        tr.addEventListener("dblclick", () => selectDevice(tr.dataset.id, true));
+      });
+
+      // kebab menus (simple sheet per device)
+      $$("#deviceTbody .kebab").forEach(b => {
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = b.dataset.menu;
+          openDeviceActions(id);
+        });
+      });
+
+      // refresh side panel
+      renderSidePanel();
+    }
+
+    function selectDevice(id, openDetails){
+      state.selectedDeviceId = id;
+      renderDevices(); // re-render selection highlight
+      if(openDetails){
+        openDeviceDetails(id);
+      }
+    }
+
+    function renderSidePanel(){
+      const d = devices.find(x => x.id === state.selectedDeviceId);
+      if(!d){
+        $("#spTitle").textContent = "Select a device";
+        $("#spSub").textContent = "Pick a row to view details.";
+        $("#spStatus").textContent = "—";
+        $("#spSummaryKv").innerHTML = "";
+        $("#spNetworkKv").innerHTML = "";
+        $("#spActivityKv").innerHTML = "";
+        $("#spPause").disabled = true;
+        $("#spBlock").disabled = true;
+        $("#spTrust").disabled = true;
+        $("#spPortScan").disabled = true;
+        return;
+      }
+
+      $("#spTitle").textContent = `${d.name} – ${d.type}`;
+      $("#spSub").textContent = `${d.owner || "No owner"} • ${d.vendor || "Unknown vendor"}`;
+      $("#spStatus").textContent = d.status.toUpperCase();
+      $("#spStatus").className = "pill " + (d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : ""));
+      $("#spPause").disabled = false;
+      $("#spBlock").disabled = false;
+      $("#spTrust").disabled = false;
+      $("#spPortScan").disabled = false;
+
+      $("#spSummaryKv").innerHTML = kvLines([
+        ["Status", d.status],
+        ["Trust", d.trust],
+        ["Type", d.type],
+        ["Owner", d.owner || "—"]
+      ]);
+
+      $("#spNetworkKv").innerHTML = kvLines([
+        ["IP", d.ip],
+        ["MAC", d.mac],
+        ["Vendor", d.vendor || "—"],
+        ["OS (detected)", d.os || "—"],
+        ["Connected via", d.via || "—"],
+        ["Signal", d.signal || "—"],
+        ["Interface", d.iface || "—"]
+      ]);
+
+      $("#spActivityKv").innerHTML = kvLines([
+        ["Last seen", d.lastSeen || "—"],
+        ["Online time today", d.activityToday || "—"],
+        ["Traffic", d.traffic || "—"]
+      ]);
+
+      // keep form fields in sync
+      $("#spOwner").value = d.owner || "";
+      $("#spRoom").value = d.room || "";
+      $("#spNote").value = d.note || "";
+      $("#spTrust").textContent = d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted";
+    }
+
+    function openDeviceDetails(id){
+      const d = devices.find(x => x.id === id);
+      if(!d) return;
+
+      $("#devSheetTitle").textContent = "Device details";
+      const body = $("#devSheetBody");
+
+      body.innerHTML = `
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Summary</div>
+            <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
+          </div>
+          <div class="muted" style="margin-top:4px;"><strong style="color:rgba(255,255,255,0.95);">${escapeHtml(d.name)}</strong> – ${escapeHtml(d.type)}</div>
+          <div class="kv" style="margin-top:10px;">
+            ${kvLines([
+              ["Trust state", d.trust],
+              ["Owner", d.owner || "—"],
+              ["Vendor", d.vendor || "—"]
+            ])}
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-ghost" id="mPause">Set status: Paused</button>
+            <button class="btn btn-danger" id="mBlock">Set status: Blocked</button>
+            <button class="btn btn-ghost purple" id="mTrust">${d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted"}</button>
+            <button class="btn btn-ghost" id="mPort">Run port scan</button>
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Network info</div>
+            <div class="pill">Details</div>
+          </div>
+          <div class="kv">
+            ${kvLines([
+              ["IP", d.ip],
+              ["MAC", d.mac],
+              ["OS (detected)", d.os || "—"],
+              ["Connected via", d.via || "—"],
+              ["Signal strength", d.signal || "—"]
+            ])}
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Activity</div>
+            <div class="pill">Today</div>
+          </div>
+          <div class="kv">
+            ${kvLines([
+              ["Last seen", d.lastSeen || "—"],
+              ["Total online time today", d.activityToday || "—"],
+              ["Traffic", d.traffic || "—"]
+            ])}
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Notes & labels</div>
+            <div class="pill">Optional</div>
+          </div>
+          <div class="field">
+            <label for="mNote">Add a note…</label>
+            <textarea id="mNote" placeholder="Add a note…">${escapeHtml(d.note || "")}</textarea>
+          </div>
+          <div class="field">
+            <label for="mRoom">Room</label>
+            <select id="mRoom">
+              ${selectOptions(["", "Office", "Living Room", "Bedroom", "Kitchen", "Garage"], d.room || "")}
+            </select>
+          </div>
+          <div class="field">
+            <label for="mOwner">Owner</label>
+            <select id="mOwner">
+              ${selectOptions(["", "Me", "Guest", "Child", "Work"], d.owner || "")}
+            </select>
+          </div>
+          <button class="btn btn-ghost purple" id="mSave">Save</button>
+        </div>
+      `;
+
+      // Wire actions
+      $("#mPause").addEventListener("click", () => pauseDevice(d.id));
+      $("#mBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
+      $("#mTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
+      $("#mPort").addEventListener("click", () => doAction("Run port scan", d, () => openToolDialog("portScan", d.id)));
+
+      $("#mSave").addEventListener("click", async () => {
+        const patch = {
+          note: $("#mNote").value,
+          room: $("#mRoom").value || "",
+          owner: $("#mOwner").value || ""
+        };
+        try{
+          await updateDeviceMeta(d.id, patch);
+          pushHistory({ when: nowLabel(), title: `Saved notes for ${d.name}`, detail: "Notes / labels updated", undo: null });
+          showToast("Saved", "Notes and labels updated.");
+        } catch (_){
+          showToast("Save failed", "Unable to update device notes.");
+        }
+      });
+
+      openOverlay("deviceOverlay");
+    }
+
+    function openDeviceActions(id){
+      const d = devices.find(x => x.id === id);
+      if(!d) return;
+
+      $("#devSheetTitle").textContent = "Device actions";
+      const body = $("#devSheetBody");
+      body.innerHTML = `
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">${escapeHtml(d.name)}</div>
+            <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
+          </div>
+          <div class="muted">${escapeHtml(d.type)} • ${escapeHtml(d.ip)} • ${escapeHtml(d.trust)}</div>
+          <div class="card-actions" style="margin-top: 12px;">
+            <button class="btn btn-ghost" id="aView">View details</button>
+            <button class="btn btn-ghost" id="aPause">Set status: Paused</button>
+            <button class="btn btn-danger" id="aBlock">Set status: Blocked</button>
+            <button class="btn btn-ghost purple" id="aTrust">${d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted"}</button>
+            <button class="btn btn-ghost" id="aRename">Rename device</button>
+            <button class="btn btn-ghost purple" id="aOwner">Assign owner / room</button>
+          </div>
+        </div>
+      `;
+
+      $("#aView").addEventListener("click", () => { closeOverlay("deviceOverlay"); openDeviceDetails(d.id); });
+      $("#aPause").addEventListener("click", () => pauseDevice(d.id));
+      $("#aBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
+      $("#aTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
+      $("#aRename").addEventListener("click", () => {
+        const next = prompt("Rename device:", d.name);
+        if(next && next.trim()){
+          const prev = d.name;
+          const nextName = next.trim();
+          updateDeviceMeta(d.id, { name: nextName }).then(() => {
+            pushHistory({
+              when: nowLabel(),
+              title: `Renamed device`,
+              detail: `${prev} → ${nextName}`,
+              undo: () => {
+                updateDeviceMeta(d.id, { name: prev }).then(() => {
+                  showToast("Undone", "Rename reverted.");
+                }).catch(() => showToast("Undo failed", "Unable to revert rename."));
+              }
+            });
+            showToast("Renamed", nextName);
+          }).catch(() => {
+            showToast("Rename failed", "Unable to rename device.");
+          });
+        }
+      });
+      $("#aOwner").addEventListener("click", () => { closeOverlay("deviceOverlay"); openDeviceDetails(d.id); });
+
+      openOverlay("deviceOverlay");
+    }
+
+    function doAction(label, device, fn){
+      fn?.();
+      pushHistory({
+        when: nowLabel(),
+        title: `${label}: ${device.name}`,
+        detail: `${device.ip} • ${device.trust}`,
+        undo: null
+      });
+    }
+
+    function blockDevice(id){
+      const d = devices.find(x => x.id === id);
+      if(!d) return;
+      const prev = { status: d.status, trust: d.trust };
+      updateDeviceMeta(d.id, { status: "Blocked", trust: "Blocked" }).then(() => {
+        pushHistory({
+          when: nowLabel(),
+          title: `Blocked ${d.name}`,
+          detail: "Device status set to Blocked.",
+          undo: () => {
+            updateDeviceMeta(d.id, { status: prev.status, trust: prev.trust }).then(() => {
+              showToast("Unblocked", `${d.name} restored.`);
+            }).catch(() => showToast("Undo failed", "Unable to restore device."));
+          }
+        });
+        pushNotification({
+          when: nowLabel(),
+          title: `Device blocked: ${d.name}`,
+          detail: "Tap Undo in Recent actions to revert."
+        });
+        showToast("Status updated", `${d.name} marked as Blocked.`, [{ label: "Undo", onClick: () => undoLast() }]);
+      }).catch(() => {
+        showToast("Block failed", "Unable to block device.");
+      });
+    }
+
+    function pauseDevice(id){
+      const d = devices.find(x => x.id === id);
+      if(!d) return;
+      const prev = d.status;
+      updateDeviceMeta(d.id, { status: "Paused" }).then(() => {
+        pushHistory({
+          when: nowLabel(),
+          title: `Paused ${d.name}`,
+          detail: `${d.ip} status set to Paused`,
+          undo: () => {
+            updateDeviceMeta(d.id, { status: prev }).then(() => {
+              showToast("Status updated", `${d.name} restored.`);
+            }).catch(() => showToast("Undo failed", "Unable to restore device."));
+          }
+        });
+        showToast("Status updated", `${d.name} marked as Paused.`);
+      }).catch(() => {
+        showToast("Pause failed", "Unable to pause device.");
+      });
+    }
+
+    function toggleTrust(id){
+      const d = devices.find(x => x.id === id);
+      if(!d) return;
+      const prev = d.trust;
+      const next = (d.trust === "Trusted") ? "Unknown" : "Trusted";
+      updateDeviceMeta(d.id, { trust: next }).then(() => {
+        pushHistory({
+          when: nowLabel(),
+          title: `Trust changed: ${d.name}`,
+          detail: `${prev} → ${next}`,
+          undo: () => {
+            updateDeviceMeta(d.id, { trust: prev }).then(() => {
+              showToast("Undone", "Trust reverted.");
+            }).catch(() => showToast("Undo failed", "Unable to revert trust."));
+          }
+        });
+        showToast("Updated", `${d.name} is now ${next}.`);
+      }).catch(() => {
+        showToast("Update failed", "Unable to change trust.");
+      });
+    }
+
+    // sidepanel actions
+    $("#spPause").addEventListener("click", () => {
+      const d = devices.find(x => x.id === state.selectedDeviceId);
+      if(!d) return;
+      pauseDevice(d.id);
+    });
+    $("#spBlock").addEventListener("click", () => {
+      const d = devices.find(x => x.id === state.selectedDeviceId);
+      if(!d) return;
+      blockDevice(d.id);
+    });
+    $("#spTrust").addEventListener("click", () => {
+      const d = devices.find(x => x.id === state.selectedDeviceId);
+      if(!d) return;
+      toggleTrust(d.id);
+    });
+    $("#spPortScan").addEventListener("click", () => {
+      const d = devices.find(x => x.id === state.selectedDeviceId);
+      if(!d) return;
+      openToolDialog("portScan", d.id);
+    });
+    $("#spSaveNotes").addEventListener("click", () => {
+      const d = devices.find(x => x.id === state.selectedDeviceId);
+      if(!d) return;
+      updateDeviceMeta(d.id, {
+        note: $("#spNote").value,
+        room: $("#spRoom").value || "",
+        owner: $("#spOwner").value || ""
+      }).then(() => {
+        pushHistory({ when: nowLabel(), title: `Saved notes for ${d.name}`, detail: "Notes / labels updated", undo: null });
+        showToast("Saved", "Notes and labels updated.");
+      }).catch(() => {
+        showToast("Save failed", "Unable to update device notes.");
+      });
+    });
+
+    // sidepanel section tabs
+    $$(".tab2").forEach(b => b.addEventListener("click", () => {
+      $$(".tab2").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      const t = b.dataset.spTab;
+      $("#spSectionSummary").style.display = (t === "summary") ? "block" : "none";
+      $("#spSectionNetwork").style.display = (t === "network") ? "block" : "none";
+      $("#spSectionActivity").style.display = (t === "activity") ? "block" : "none";
+      $("#spSectionNotes").style.display = (t === "notes") ? "block" : "none";
+    }));
+
+    // filters
+    $("#deviceSearch").addEventListener("input", (e) => {
+      state.search = e.target.value || "";
+      renderDevices();
+    });
+    $$("#trustChips .chip").forEach(ch => ch.addEventListener("click", () => {
+      $$("#trustChips .chip").forEach(x => x.classList.remove("active"));
+      ch.classList.add("active");
+      state.deviceFilter = ch.dataset.filter;
+      renderDevices();
+    }));
+
+    // export / rescan
+    $("#btnRescanDevices").addEventListener("click", () => {
+      runScan();
+    });
+    $("#btnExportDevices").addEventListener("click", () => {
+      fetchJson("/api/v1/export/devices").then((data) => {
+        const payload = JSON.stringify(data, null, 2);
+        downloadText(payload, "devices.json", "application/json");
+        pushHistory({ when: nowLabel(), title: "Exported device list", detail: "devices.json downloaded", undo: null });
+        showToast("Exported", "Downloaded devices.json");
+      }).catch(() => {
+        showToast("Export failed", "Backend unavailable.");
+      });
+    });
+
+    // ---- Networks ----
+    function renderNetworks(){
+      const tbody = $("#netTbody");
+      tbody.innerHTML = networks.map(n => {
+        const sel = n.id === state.selectedNetworkId;
+        return `
+          <tr data-id="${n.id}" class="${sel ? "selected" : ""}">
+            <td>${escapeHtml(n.name)}</td>
+            <td>${escapeHtml(n.type)}</td>
+            <td>${escapeHtml(n.security)}</td>
+            <td>${escapeHtml(String(n.signal))}</td>
+            <td>${escapeHtml(String(n.devices))}</td>
+            <td>${escapeHtml(n.status)}</td>
+            <td><button class="kebab" data-net="${n.id}" title="Actions">⋮</button></td>
+          </tr>
+        `;
+      }).join("");
+
+      $$("#netTbody tr").forEach(tr => {
+        tr.addEventListener("click", () => selectNetwork(tr.dataset.id));
+      });
+      $$("#netTbody .kebab").forEach(b => {
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openNetworkActions(b.dataset.net);
+        });
+      });
+
+      renderNetworkDetails();
+    }
+
+    function selectNetwork(id){
+      state.selectedNetworkId = id;
+      renderNetworks();
+    }
+
+    function renderNetworkDetails(){
+      const n = networks.find(x => x.id === state.selectedNetworkId);
+      const kv = $("#netDetailsKv");
+      const pill = $("#netDetailsPill");
+      const actions = $("#netDetailsActions");
+      actions.style.display = n ? "flex" : "none";
+
+      if(!n){
+        pill.textContent = "Select a network";
+        kv.innerHTML = "";
+        return;
+      }
+
+      pill.textContent = n.status;
+      kv.innerHTML = kvLines([
+        ["SSID / CIDR", n.details.ssid],
+        ["Gateway IP", n.details.gateway],
+        ["Your IP", n.details.yourIp],
+        ["DNS", n.details.dns],
+        ["Security", n.details.security],
+        ["Open ports on gateway", n.details.openPorts]
+      ]);
+    }
+
+    function openNetworkActions(id){
+      const n = networks.find(x => x.id === id);
+      if(!n) return;
+      $("#toolTitle").textContent = "Network actions";
+      $("#toolBody").innerHTML = `
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">${escapeHtml(n.name)}</div>
+            <div class="pill">${escapeHtml(n.status)}</div>
+          </div>
+          <div class="muted">${escapeHtml(n.type)} • ${escapeHtml(n.security)}</div>
+          <div class="card-actions" style="margin-top: 12px;">
+            <button class="btn btn-ghost" id="naViewDevices">View devices on this network</button>
+            <button class="btn btn-ghost purple" id="naScan">Scan this network</button>
+            <button class="btn btn-ghost" id="naSecurity">Run security check</button>
+          </div>
+        </div>
+      `;
+      $("#naViewDevices").addEventListener("click", () => { closeOverlay("toolOverlay"); setTab("devices"); });
+      $("#naScan").addEventListener("click", () => { closeOverlay("toolOverlay"); runScan(); });
+      $("#naSecurity").addEventListener("click", () => { closeOverlay("toolOverlay"); openToolDialog("security"); });
+      openOverlay("toolOverlay");
+    }
+
+    $("#btnNetworksSecurity").addEventListener("click", () => openToolDialog("security"));
+
+    $("#btnNetViewDevices").addEventListener("click", () => setTab("devices"));
+    $("#btnNetScan").addEventListener("click", () => {
+      const n = networks.find(x => x.id === state.selectedNetworkId);
+      if(!n) return showToast("Select a network", "Pick a network row first.");
+      runScan();
+    });
+    $("#btnNetSec").addEventListener("click", () => openToolDialog("security"));
+
+    // ---- Tools dialog ----
+    function openToolDialog(kind, deviceId){
+      const d = deviceId ? devices.find(x => x.id === deviceId) : null;
+      const titleMap = {
+        fullScan: "Run full scan",
+        portScan: "Port scan",
+        security: "Run security check",
+        reports: "Reports",
+        schedule: "Create schedule"
+      };
+      $("#toolTitle").textContent = titleMap[kind] || "Tool";
+
+      if(kind === "fullScan"){
+        const onPrimary = () => {
+          closeOverlay("toolOverlay");
+          runScan();
+          pushHistory({ when: nowLabel(), title: "Full scan started", detail: "Full device scan.", undo: null });
+        };
+        $("#toolBody").innerHTML = toolTemplate(
+          "Scan all addresses on your network for any device.",
+          [
+            { label: "Scope", type: "select", id: "fsScope", options: ["Local subnet", "All known subnets"], value: "Local subnet" },
+            { label: "Speed", type: "select", id: "fsSpeed", options: ["Fast", "Balanced", "Thorough"], value: "Balanced" }
+          ],
+          "Run full scan",
+          onPrimary
+        );
+        wireToolPrimary(onPrimary);
+      } else if(kind === "portScan"){
+        const onPrimary = async () => {
+          const devName = $("#psDevice")?.value || "device";
+          const profile = $("#psProfile")?.value || "Quick scan";
+          const device = devices.find(x => x.name === devName) || devices[0];
+          if(!device?.ip){
+            showToast("Port scan failed", "Device IP unavailable.");
+            return;
+          }
+          try{
+            const res = await fetchJson("/api/v1/actions/portscan", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ip: device.ip, timeoutMs: profile === "Full scan" ? 600 : 250 })
+            });
+            const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "None";
+            closeOverlay("toolOverlay");
+            showToast("Port scan complete", `${devName} • Open: ${ports || "None"}`);
+            pushHistory({ when: nowLabel(), title: `Port scan: ${devName}`, detail: `Open ports: ${ports || "None"}`, undo: null });
+          } catch (_){
+            showToast("Port scan failed", "Backend unavailable.");
+          }
+        };
+        $("#toolBody").innerHTML = toolTemplate(
+          "Check which ports are open on a device.",
+          [
+            { label: "Device", type: "select", id: "psDevice", options: devices.map(x => x.name), value: d ? d.name : devices[0]?.name },
+            { label: "Profile", type: "select", id: "psProfile", options: ["Quick scan", "Full scan", "Custom"], value: "Quick scan" }
+          ],
+          "Run port scan",
+          onPrimary
+        );
+        wireToolPrimary(onPrimary);
+      } else if(kind === "security"){
+        const onPrimary = async () => {
+          try{
+            const res = await fetchJson("/api/v1/actions/security", { method: "POST" });
+            closeOverlay("toolOverlay");
+            showToast("Security check complete", `Unknown: ${res.unknownDevices ?? 0}, Blocked: ${res.blockedDevices ?? 0}`);
+            pushHistory({ when: nowLabel(), title: "Security check complete", detail: `Unknown: ${res.unknownDevices ?? 0}, Blocked: ${res.blockedDevices ?? 0}`, undo: null });
+          } catch (_){
+            showToast("Security check failed", "Backend unavailable.");
+          }
+        };
+        $("#toolBody").innerHTML = toolTemplate(
+          "Look for weak security on your network.",
+          [
+            { label: "Include router checks", type: "select", id: "scRouter", options: ["Off", "On"], value: "Off" },
+            { label: "Depth", type: "select", id: "scDepth", options: ["Quick", "Balanced", "Thorough"], value: "Quick" }
+          ],
+          "Run security check",
+          onPrimary
+        );
+        wireToolPrimary(onPrimary);
+      } else if(kind === "reports"){
+        const onPrimary = async () => {
+          const fmt = $("#rpFmt")?.value || "CSV";
+          const include = $("#rpInc")?.value || "Devices";
+          try{
+            const data = await fetchJson("/api/v1/export/devices");
+            const normalized = Array.isArray(data) ? data.map(mergeDevice).filter(Boolean) : [];
+            closeOverlay("toolOverlay");
+            const content = fmt === "CSV"
+              ? makeDevicesCsv(normalized, include)
+              : fmt === "HTML"
+                ? makeDevicesHtml(normalized, include)
+                : fmt === "TXT"
+                  ? makeDevicesTxt(normalized, include)
+                  : JSON.stringify({ devices: data }, null, 2);
+            const mime = fmt === "CSV" ? "text/csv" : (fmt === "HTML" ? "text/html" : "text/plain");
+            const name = fmt === "CSV" ? "report.csv" : (fmt === "HTML" ? "report.html" : "report.txt");
+            downloadText(content, name, mime);
+            pushHistory({ when: nowLabel(), title: "Report generated", detail: name + " downloaded", undo: null });
+            showToast("Report generated", name + " downloaded");
+          } catch (_){
+            showToast("Report failed", "Backend unavailable.");
+          }
+        };
+        $("#toolBody").innerHTML = toolTemplate(
+          "Export devices, activity, and scan results.",
+          [
+            { label: "Format", type: "select", id: "rpFmt", options: ["HTML", "CSV", "TXT"], value: "CSV" },
+            { label: "Include", type: "select", id: "rpInc", options: ["Devices", "Devices + activity", "Everything"], value: "Devices" }
+          ],
+          "Generate report",
+          onPrimary
+        );
+        wireToolPrimary(onPrimary);
+      } else if(kind === "schedule"){
+        const onPrimary = async () => {
+          const freq = $("#schFreq")?.value || "Weekly";
+          const act = $("#schAct")?.value || "Scan my network";
+          const subnet = cachedNetworkInfo?.cidr || "";
+          try{
+            if(act === "Auto‑block unknown devices"){
+              await fetchJson("/api/v1/rules", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ match: "new_device", action: "block" })
+              });
+              closeOverlay("toolOverlay");
+              pushHistory({ when: nowLabel(), title: "Rule created", detail: "Auto-block new devices enabled", undo: null });
+              showToast("Rule enabled", "Auto-block new devices enabled.");
+            } else {
+              if(!subnet){
+                showToast("Schedule failed", "Network info unavailable.");
+                return;
+              }
+              await fetchJson("/api/v1/schedules", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ subnet, freq: freq.toLowerCase() })
+              });
+              closeOverlay("toolOverlay");
+              pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} • ${freq}`, undo: null });
+              showToast("Scheduled", `${act} • ${freq}`);
+            }
+          } catch (_){
+            showToast("Schedule failed", "Backend unavailable.");
+          }
+        };
+        $("#toolBody").innerHTML = toolTemplate(
+          "Schedule scans or auto‑block unknown devices.",
+          [
+            { label: "Schedule", type: "select", id: "schFreq", options: ["Daily", "Weekly", "Monthly"], value: "Weekly" },
+            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Auto‑block unknown devices"], value: "Scan my network" }
+          ],
+          "Create schedule",
+          onPrimary
+        );
+        wireToolPrimary(onPrimary);
+      }
+
+      openOverlay("toolOverlay");
+    }
+
+    function wireToolPrimary(onPrimary){
+      const btn = $("#toolPrimaryBtn");
+      if(!btn) return;
+      btn.addEventListener("click", () => onPrimary?.());
+    }
+
+    function toolTemplate(desc, fields, primaryLabel, onPrimary){
+      const fieldsHtml = fields.map(f => {
+        const id = escapeHtml(f.id);
+        if(f.type === "select"){
+          return `
+            <div class="field">
+              <label for="${id}">${escapeHtml(f.label)}</label>
+              <select id="${id}">
+                ${f.options.map(o => `<option ${o === f.value ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}
+              </select>
+            </div>
+          `;
+        }
+        return "";
+      }).join("");
+
+      // Basic "Advanced options" expander
+      return `
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Overview</div>
+            <div class="pill">Simple</div>
+          </div>
+          <div class="muted">${escapeHtml(desc)}</div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Options</div>
+            <div class="pill">2–3 controls</div>
+          </div>
+          ${fieldsHtml}
+
+          <details style="margin-top:10px;">
+            <summary style="cursor:pointer; color: rgba(255,255,255,0.78);">Advanced options</summary>
+            <div class="muted" style="margin-top:8px;">Advanced options apply when supported by the backend.</div>
+          </details>
+
+          <div class="card-actions" style="margin-top: 12px;">
+            <button class="btn btn-primary" id="toolPrimaryBtn">${escapeHtml(primaryLabel)}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // wire tool dialog openers
+    $$("[data-open-dialog]").forEach(b => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openToolDialog(b.dataset.openDialog);
+      });
+    });
+
+    // ---- Global buttons ----
+    async function runScan(){
+      if(scanInFlight){
+        showToast("Scan already running", "Please wait for the current scan to finish.");
+        return;
+      }
+
+      scanInFlight = true;
+      const prevIds = new Set(devices.map(d => d.id));
+
+      state.lastScanAt = nowLabel();
+      $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
+      $("#changeText").textContent = "Scan requested. Live progress will update below.";
+      showToast("Scan started", "Scan queued. Live progress will update below.");
+      pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
+
+      try{
+        await refreshNetworkInfo();
+        const subnet = cachedNetworkInfo?.cidr || "";
+        const payload = { subnet };
+        await fetchJson("/api/v1/discovery/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          timeoutMs: 30_000
+        });
+
+        await refreshDiscoveryResults();
+        state.lastChangeCount = devices.filter(d => !prevIds.has(d.id)).length;
+        renderDashboard();
+        renderDevices();
+        renderNetworks();
+
+        window.applyScanData?.({
+          progress: 5,
+          phase: "SCANNING",
+          networks: 1,
+          devices: devices.length,
+          rssiDbm: NaN,
+          ssid: cachedNetworkInfo?.name || "--",
+          bssid: "--",
+          subnet: cachedNetworkInfo?.cidr || "--",
+          gateway: cachedNetworkInfo?.gateway || "--",
+          linkUp: true
+        });
+
+        const unknown = devices.find(d => d.trust === "Unknown");
+        if(unknown){
+          pushNotification({
+            when: nowLabel(),
+            title: `New device detected: ${unknown.name}`,
+            detail: "Tap Review to inspect and trust/block."
+          });
+        }
+
+        window.nnUpdateDiscoveryMap?.();
+      } catch (err){
+        showToast("Scan failed", "Backend unavailable or scan blocked.");
+      } finally {
+        scanInFlight = false;
+      }
+    }
+
+    window.nnRunScan = runScan;
+
+    async function stopScan(){
+      scanInFlight = false;
+      try{
+        await fetchJson("/api/v1/discovery/stop", { method: "POST" });
+        window.applyScanData?.({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
+        showToast("Scan stopped", "Discovery scan canceled.");
+      } catch (_){
+        showToast("Stop failed", "Unable to stop scan.");
+      } finally {
+        refreshDiscoveryResults();
+      }
+    }
+
+    window.nnStopScan = stopScan;
+
+    $("#scanNowBtn").addEventListener("click", () => runScan());
+    $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan(); });
+    $("#btnNetworksScanMy").addEventListener("click", () => runScan());
+
+    $("#btnViewOnlineDevices").addEventListener("click", (e) => {
+      e.stopPropagation();
+      setTab("devices");
+      setFilter("online");
+    });
+
+    $("#btnReviewUnknown").addEventListener("click", (e) => {
+      e.stopPropagation();
+      setTab("devices");
+      setFilter("unknown");
+    });
+
+    $("#btnPauseInternet").addEventListener("click", (e) => {
+      e.stopPropagation();
+      setTab("devices");
+      showToast("Pick a device", "Select a device to set its status.");
+    });
+
+    $("#btnBlockNew").addEventListener("click", (e) => {
+      e.stopPropagation();
+      fetchJson("/api/v1/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ match: "new_device", action: "block" })
+      }).then(() => {
+        pushHistory({ when: nowLabel(), title: "Auto-block new devices", detail: "Auto-block unknown devices enabled.", undo: null });
+        showToast("Enabled", "Auto-block unknown devices enabled.");
+      }).catch(() => {
+        showToast("Enable failed", "Unable to create auto-block rule.");
+      });
+    });
+
+    $("#btnShareWifi").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} • ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wi‑Fi (SSID) • WPA2";
+      navigator.clipboard?.writeText(text).then(() => {
+        showToast("Copied", "Wi‑Fi details copied to clipboard.");
+        pushHistory({ when: nowLabel(), title: "Shared Wi‑Fi details", detail: "Copied to clipboard", undo: null });
+      }).catch(() => {
+        showToast("Share", "Clipboard not available here.");
+      });
+    });
+
+    function wireCardButton(id, handler){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener("click", handler);
+      el.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault();
+          handler();
+        }
+      });
+    }
+
+    // clickable cards
+    wireCardButton("cardMyNetwork", () => setTab("networks"));
+    wireCardButton("cardWhosOnline", () => { setTab("devices"); setFilter("online"); });
+    wireCardButton("cardUnknown", () => { setTab("devices"); setFilter("unknown"); });
+    wireCardButton("cardQuickActions", () => setTab("tools"));
+    wireCardButton("cardStatus", () => openOverlay("historyOverlay"));
+
+    function setFilter(filter){
+      state.deviceFilter = filter;
+      $$("#trustChips .chip").forEach(x => x.classList.toggle("active", x.dataset.filter === filter));
+      renderDevices();
+    }
+
+    // ---- History & Notifications ----
+    function renderHistory(){
+      const list = $("#historyList");
+      if(state.history.length === 0){
+        list.innerHTML = `<div class="muted">No actions yet. Someone has to click something first.</div>`;
+        return;
+      }
+      list.innerHTML = state.history.map((h, idx) => {
+        const undo = h.undo ? `<button class="btn btn-ghost purple" data-undo="${idx}">Undo</button>` : "";
+        return `
+          <div class="list-item">
+            <div class="line1"><span>${escapeHtml(h.title)}</span><span style="color:rgba(255,255,255,0.62);">${escapeHtml(h.when)}</span></div>
+            <div class="line2">${escapeHtml(h.detail || "")}</div>
+            ${undo ? `<div class="action">${undo}</div>` : ``}
+          </div>
+        `;
+      }).join("");
+
+      $$("[data-undo]").forEach(b => {
+        b.addEventListener("click", () => {
+          const i = Number(b.dataset.undo);
+          const item = state.history[i];
+          if(item?.undo){
+            item.undo();
+            // keep it in history but mark as undone
+            state.history[i] = { ...item, title: "Undone: " + item.title, undo: null };
+            renderHistory();
+          }
+        });
+      });
+    }
+
+    function undoLast(){
+      const item = state.history.find(h => typeof h.undo === "function");
+      if(item?.undo){
+        item.undo();
+        item.undo = null;
+        item.title = "Undone: " + item.title;
+        renderHistory();
+      } else {
+        showToast("Nothing to undo", "No reversible action found.");
+      }
+    }
+
+    function renderNotifications(){
+      const list = $("#notifList");
+      if(state.notifications.length === 0){
+        list.innerHTML = `<div class="muted">No notifications. Enjoy the quiet while it lasts.</div>`;
+        return;
+      }
+      list.innerHTML = state.notifications.map((n, idx) => {
+        const isNewDevice = n.title.startsWith("New device detected:");
+        const action = isNewDevice ? `<button class="btn btn-ghost purple" data-review="${idx}">Review</button>` : "";
+        return `
+          <div class="list-item">
+            <div class="line1"><span>${escapeHtml(n.title)}</span><span style="color:rgba(255,255,255,0.62);">${escapeHtml(n.when)}</span></div>
+            <div class="line2">${escapeHtml(n.detail || "")}</div>
+            ${action ? `<div class="action">${action}</div>` : ``}
+          </div>
+        `;
+      }).join("");
+
+      $$("[data-review]").forEach(b => {
+        b.addEventListener("click", () => {
+          closeOverlay("notifOverlay");
+          setTab("devices");
+          setFilter("unknown");
+        });
+      });
+    }
+
+    // ---- Overlays wiring ----
+    $("#historyBtn").addEventListener("click", () => openOverlay("historyOverlay"));
+    $("#notifBtn").addEventListener("click", () => openOverlay("notifOverlay"));
+    $("#settingsBtn").addEventListener("click", () => openOverlay("settingsOverlay"));
+
+    // close buttons
+    $$("[data-close]").forEach(b => b.addEventListener("click", () => closeOverlay(b.dataset.close)));
+
+    // overlay click-out
+    $$(".overlay").forEach(ov => {
+      ov.addEventListener("click", (e) => {
+        if(e.target === ov) closeOverlay(ov.id);
+      });
+    });
+
+    // ---- Utility renderers ----
+    function kvLines(pairs){
+      return pairs.map(([k,v]) => `
+        <div class="line"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v ?? "—"))}</span></div>
+      `).join("");
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    function typeIcon(type){
+      const map = { Phone:"📱", PC:"💻", TV:"📺", Printer:"🖨️", IoT:"🔌" };
+      return map[type] || "🔸";
+    }
+
+    function selectOptions(options, value){
+      return options.map(o => {
+        const label = o === "" ? "None" : o;
+        return `<option value="${escapeHtml(o)}" ${o === value ? "selected" : ""}>${escapeHtml(label)}</option>`;
+      }).join("");
+    }
+
+    function downloadText(text, filename, mime){
+      const blob = new Blob([text], { type: mime || "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || "download.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    function reportColumns(include){
+      if(include === "Devices + activity"){
+        return ["name","owner","type","status","ip","mac","vendor","lastSeen","activityToday","traffic","trust"];
+      }
+      if(include === "Everything"){
+        return ["name","owner","type","status","ip","mac","vendor","os","lastSeen","activityToday","traffic","trust"];
+      }
+      return ["name","owner","type","status","ip","mac","vendor","lastSeen","trust"];
+    }
+
+    function makeDevicesCsv(list = devices, include = "Devices"){
+      const headers = reportColumns(include);
+      const lines = [headers.join(",")];
+      list.forEach(d => {
+        lines.push(headers.map(h => csvCell(d[h])).join(","));
+      });
+      return lines.join("\n");
+    }
+    function csvCell(v){
+      const s = String(v ?? "");
+      if(/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+      return s;
+    }
+
+    function makeDevicesHtml(list = devices, include = "Devices"){
+      const headers = reportColumns(include);
+      const headerRow = headers.map(h => `<th>${escapeHtml(h)}</th>`).join("");
+      const rows = list.map(d => `
+        <tr>
+          ${headers.map(h => `<td>${escapeHtml(String(d[h] ?? ""))}</td>`).join("")}
+        </tr>
+      `).join("");
+      return `<!doctype html>
+<html><head><meta charset="utf-8"><title>Net Ninja Report</title></head>
+<body><table border="1" cellspacing="0" cellpadding="4">
+<thead><tr>${headerRow}</tr></thead>
+<tbody>${rows}</tbody>
+</table></body></html>`;
+    }
+
+    function makeDevicesTxt(list = devices, include = "Devices"){
+      const headers = reportColumns(include);
+      return list.map(d => {
+        const parts = headers.map(h => `${h}: ${d[h] ?? ""}`);
+        return parts.join(" | ");
+      }).join("\n");
+    }
+
+    // ---- Settings / initial state ----
+    function init(){
+      // initial notification
+      pushNotification({ when: nowLabel(), title: "Welcome", detail: "Scan your network to start discovering devices." });
+
+      // initial dashboard rendering
+      renderDashboard();
+      renderDevices();
+      renderNetworks();
+      renderHistory();
+      renderNotifications();
+
+      // default text while loading
+      $("#myNetText").textContent = "Loading network…";
+      $("#brandSub").textContent = "Loading network…";
+
+      // Devices: sidepanel tabs default (already summary)
+      renderSidePanel();
+
+      // Basic "settings icon instead of a tab" is already top-right.
+
+      // hydrate from backend if available
+      refreshNetworkInfo();
+      refreshDiscoveryResults();
+      refreshPermissionStatus();
+      setupPermissionControls();
+      setupDebugPanel();
+      refreshDebugState();
+
+      // live scan progress + periodic refresh
+      window.__nnScanPollConfig = { url: "/api/v1/discovery/progress", intervalMs: 600 };
+      if(window.startPolling && !window.__nnScanPollStarted){
+        window.startPolling(window.__nnScanPollConfig.url, window.__nnScanPollConfig.intervalMs);
+        window.__nnScanPollStarted = true;
+      }
+      setInterval(() => {
+        refreshNetworkInfo();
+        refreshDiscoveryResults();
+        refreshPermissionStatus();
+        refreshDebugState();
+      }, 20_000);
+    }
+
+    init();
+  </script>
+
+  <script>
+  // =========================
+  // Net Ninja: Integrated UI wiring (prog.html + holo_map.html)
+  // =========================
+  (function(){
+    "use strict";
+
+    // ---------- Scan progress wiring (prog.html behavior, adapted to this dashboard) ----------
+    const elPhase = document.getElementById("scanPhase");
+    const elPct = document.getElementById("scanPct");
+    const elFill = document.getElementById("scanFill");
+    const elNetworks = document.getElementById("networksFound");
+    const elDevices = document.getElementById("devicesFound");
+    const elRssi = document.getElementById("rssiValue");
+    const elSsid = document.getElementById("ssid");
+    const elBssid = document.getElementById("bssid");
+    const elSubnet = document.getElementById("subnet");
+    const elGateway = document.getElementById("gateway");
+    const elPill = document.getElementById("nnScanPill");
+    const elLink = document.getElementById("nnLinkValue");
+
+    const btnStart = document.getElementById("btnStart");
+    const btnStop = document.getElementById("btnStop");
+
+    let pollingTimer = null;
+    let ws = null;
+
+
+    function clampNumber(v, min, max){
+      const n = Number(v);
+      if(!Number.isFinite(n)) return min;
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function setPill(phase, pct){
+      const p = clampNumber(pct, 0, 100);
+      if(p >= 100){
+        elPill.textContent = "Complete";
+        elPill.className = "pill ok";
+        return;
+      }
+      if(phase && phase !== "IDLE"){
+        elPill.textContent = "Scanning";
+        elPill.className = "pill warn";
+      } else {
+        elPill.textContent = "Idle";
+        elPill.className = "pill";
+      }
+    }
+
+    // Public API: call with real scan data payload.
+    // { progress, phase, networks, devices, rssiDbm, ssid, bssid, subnet, gateway, linkUp }
+    window.applyScanData = function applyScanData(data){
+      if(!data || typeof data !== "object") return;
+
+      const p = clampNumber(data.progress, 0, 100);
+      elFill.style.width = p + "%";
+      elPct.textContent = Math.round(p) + "%";
+
+      if(typeof data.phase === "string" && data.phase.trim()){
+        elPhase.textContent = data.phase.trim().toUpperCase();
+      }
+
+      if(Number.isFinite(data.networks)) elNetworks.textContent = String(Math.max(0, Math.floor(data.networks)));
+      if(Number.isFinite(data.devices)) elDevices.textContent = String(Math.max(0, Math.floor(data.devices)));
+
+      if(Number.isFinite(data.rssiDbm)){
+        elRssi.textContent = Math.round(data.rssiDbm) + " dBm";
+      } else if (Number.isNaN(Number(data.rssiDbm))){
+        elRssi.textContent = "-- dBm";
+      }
+
+      if(typeof data.ssid === "string") elSsid.textContent = data.ssid || "--";
+      if(typeof data.bssid === "string") elBssid.textContent = data.bssid || "--";
+      if(typeof data.subnet === "string") elSubnet.textContent = data.subnet || "--";
+      if(typeof data.gateway === "string") elGateway.textContent = data.gateway || "--";
+
+      if(typeof data.linkUp === "boolean"){
+        elLink.textContent = data.linkUp ? "UP" : "DOWN";
+        elLink.style.color = data.linkUp ? "var(--neon-mint)" : "var(--neon-purple)";
+      }
+
+      if(p >= 100){
+        elPhase.textContent = "COMPLETE";
+      }
+      setPill(elPhase.textContent, p);
+    };
+
+    function stopAll(){
+      if(pollingTimer){ clearInterval(pollingTimer); pollingTimer = null; }
+      if(ws){ try{ ws.close(); } catch(_){} ws = null; }
+    }
+
+    // Real wiring option A: Polling
+    window.startPolling = function startPolling(url, intervalMs = 400){
+      stopAll();
+      pollingTimer = setInterval(async () => {
+        try{
+          const data = await fetchJson(url, { cache: "no-store" });
+          window.applyScanData(data);
+        } catch (_) {}
+      }, Math.max(200, intervalMs));
+    };
+
+    if(window.__nnScanPollConfig && !window.__nnScanPollStarted){
+      window.startPolling(window.__nnScanPollConfig.url, window.__nnScanPollConfig.intervalMs);
+      window.__nnScanPollStarted = true;
+    }
+
+    // Real wiring option B: WebSocket
+    window.connectWebSocket = function connectWebSocket(wsUrl){
+      stopAll();
+      try{
+        ws = new WebSocket(wsUrl);
+        ws.onmessage = (ev) => {
+          try{
+            const data = JSON.parse(ev.data);
+            window.applyScanData(data);
+          } catch(_) {}
+        };
+        ws.onclose = () => { ws = null; };
+        ws.onerror = () => { /* neon stoicism */ };
+      } catch(_) { ws = null; }
+    };
+
+    btnStart?.addEventListener("click", () => {
+      window.nnRunScan?.("my");
+    });
+    btnStop?.addEventListener("click", () => {
+      stopAll();
+      window.nnStopScan?.();
+    });
+
+    // Initial state
+    window.applyScanData({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
+
+
+    // ---------- Discovery Map wiring (holo_map.html behavior, embedded) ----------
+    const stage = document.getElementById("nnStage");
+    const hudStatus = document.getElementById("nnHudStatus");
+    const card = document.getElementById("nnMapCard");
+
+    let rotX = 58;
+    let rotZ = -10;
+    let zoom = 1.15;
+
+    const pointers = new Map();
+    let lastPinchDist = null;
+
+    let nodeEls = [];
+
+    function applyTransform(){
+      if(!stage) return;
+      stage.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) scale(${zoom})`;
+    }
+    applyTransform();
+
+    function clearGraph(){
+      if(!stage) return;
+      stage.querySelectorAll(".nn-node,.nn-link,.nn-packet").forEach(e => e.remove());
+      nodeEls = [];
+    }
+
+    function createNode(d){
+      const n = document.createElement("div");
+      n.className = "nn-node" + (d.threat ? " threat" : "");
+      n.style.left = d.x + "px";
+      n.style.top  = d.y + "px";
+
+      const label = document.createElement("div");
+      label.className = "nn-label";
+      label.textContent = d.name || "Device";
+
+      n.appendChild(label);
+      stage.appendChild(n);
+      return n;
+    }
+
+    function createLink(aEl, bEl){
+      const ax = aEl.offsetLeft + aEl.offsetWidth/2;
+      const ay = aEl.offsetTop  + aEl.offsetHeight/2;
+      const bx = bEl.offsetLeft + bEl.offsetWidth/2;
+      const by = bEl.offsetTop  + bEl.offsetHeight/2;
+
+      const dx = bx - ax;
+      const dy = by - ay;
+      const dist = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      const line = document.createElement("div");
+      line.className = "nn-link";
+      line.style.width = dist + "px";
+      line.style.left = ax + "px";
+      line.style.top = ay + "px";
+      line.style.transform = `rotate(${angle}deg)`;
+
+      stage.appendChild(line);
+    }
+
+    function hashCode(str){
+      let h = 2166136261;
+      for(let i = 0; i < str.length; i++){
+        h ^= str.charCodeAt(i);
+        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+      }
+      return h >>> 0;
+    }
+
+    // Public API: update map from devices list
+    window.nnUpdateDiscoveryMap = function(){
+      if(!stage || !hudStatus) return;
+
+      // Try to reuse the app's device list if it exists; otherwise keep whatever's there.
+      const list = Array.isArray(window.devices) ? window.devices : (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
+      if(!Array.isArray(list) || list.length === 0){
+        hudStatus.textContent = "0 devices • idle";
+        clearGraph();
+        return;
+      }
+
+      clearGraph();
+
+      const W = stage.clientWidth;
+      const H = stage.clientHeight;
+      const pad = 80;
+
+      // Map device objects into the holo layout
+      const mapped = list.slice(0, 18).map((d) => {
+        const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+        const h = hashCode(key);
+        const x = pad + (h % Math.max(1, (W - pad * 2)));
+        const y = pad + ((h >>> 16) % Math.max(1, (H - pad * 2)));
+        return {
+          name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+          // Threat heuristic: Unknown trust OR Blocked status OR explicit threat flag
+          threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+          x,
+          y
+        };
+      });
+
+      mapped.forEach(d => nodeEls.push(createNode(d)));
+
+      // Star topology from the first node (gateway-ish)
+      for(let i = 1; i < nodeEls.length; i++){
+        createLink(nodeEls[0], nodeEls[i]);
+      }
+
+      hudStatus.textContent = `${mapped.length} devices • live`;
+    };
+
+    let trafficMode = false;
+    async function toggleTraffic(){
+      trafficMode = !trafficMode;
+      if(!trafficMode){
+        window.nnUpdateDiscoveryMap?.();
+        return;
+      }
+      try{
+        const metrics = await fetchJson("/api/v1/metrics");
+        hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online • metrics`;
+      } catch (_){
+        hudStatus.textContent = `${nodeEls.length} devices • live`;
+      }
+    }
+
+    // Touch orbit + pinch zoom
+    card?.addEventListener("pointerdown", (e) => {
+      card.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+      if(pointers.size === 2) lastPinchDist = null;
+    });
+    card?.addEventListener("pointermove", (e) => {
+      if(!pointers.has(e.pointerId)) return;
+
+      const prev = pointers.get(e.pointerId);
+      pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+
+      if(pointers.size === 1){
+        const dx = e.clientX - prev.x;
+        const dy = e.clientY - prev.y;
+        rotZ += dx * 0.22;
+        rotX = Math.max(25, Math.min(82, rotX - dy * 0.22));
+        applyTransform();
+        return;
+      }
+
+      if(pointers.size === 2){
+        const pts = Array.from(pointers.values());
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if(lastPinchDist != null){
+          const delta = dist - lastPinchDist;
+          zoom = Math.max(0.7, Math.min(1.85, zoom + delta * 0.0022));
+          applyTransform();
+        }
+        lastPinchDist = dist;
+      }
+    });
+    card?.addEventListener("pointerup", (e) => {
+      pointers.delete(e.pointerId);
+      if(pointers.size < 2) lastPinchDist = null;
+    });
+    card?.addEventListener("pointercancel", (e) => {
+      pointers.delete(e.pointerId);
+      if(pointers.size < 2) lastPinchDist = null;
+    });
+
+    // Map buttons
+    document.getElementById("btnMapRefresh")?.addEventListener("click", () => window.nnUpdateDiscoveryMap?.());
+    document.getElementById("btnMapTraffic")?.addEventListener("click", () => toggleTraffic());
+
+    // First render
+    setTimeout(() => {
+      window.nnUpdateDiscoveryMap?.();
+    }, 60);
+  })();
+  </script>
+
+</body>
+</html>
