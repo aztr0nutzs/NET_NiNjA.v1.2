@@ -14,6 +14,7 @@ import android.provider.Settings
 import android.util.Log
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
+import android.webkit.PermissionRequest
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -33,6 +34,7 @@ class MainActivity : AppCompatActivity() {
   private val permissionRequestCode = 1201
   private var locationPrompted = false
   private val permissionPrefsName = "netninja_permissions"
+  private lateinit var web: WebView
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -43,7 +45,7 @@ class MainActivity : AppCompatActivity() {
     ensureRuntimePermissions()
     ensureLocationServicesEnabled()
 
-    val web = WebView(this)
+    web = WebView(this)
     web.settings.javaScriptEnabled = true
     web.settings.domStorageEnabled = true
     web.settings.cacheMode = WebSettings.LOAD_NO_CACHE
@@ -63,6 +65,27 @@ class MainActivity : AppCompatActivity() {
           "console: ${consoleMessage.message()} (${consoleMessage.sourceId()}:${consoleMessage.lineNumber()})"
         )
         return true
+      }
+
+      override fun onPermissionRequest(request: PermissionRequest) {
+        // Keep behavior safe-by-default: only grant if the corresponding Android permission is granted.
+        val needsCamera = request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+        val needsMic = request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
+
+        val cameraOk = !needsCamera || ContextCompat.checkSelfPermission(
+          this@MainActivity,
+          Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        val micOk = !needsMic || ContextCompat.checkSelfPermission(
+          this@MainActivity,
+          Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (cameraOk && micOk) {
+          request.grant(request.resources)
+        } else {
+          request.deny()
+        }
       }
     }
     web.webViewClient = object : WebViewClient() {
@@ -108,8 +131,14 @@ class MainActivity : AppCompatActivity() {
 
   override fun onResume() {
     super.onResume()
+    PermissionBridge.setForegroundActivity(this)
     ensureLocationServicesEnabled()
     ensureRuntimePermissions()
+  }
+
+  override fun onPause() {
+    super.onPause()
+    PermissionBridge.setForegroundActivity(null)
   }
 
   private fun ensureRuntimePermissions() {
@@ -149,7 +178,14 @@ class MainActivity : AppCompatActivity() {
     grantResults: IntArray
   ) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    if (requestCode != permissionRequestCode) return
+    if (
+      requestCode != permissionRequestCode &&
+      requestCode != PermissionBridge.REQ_CAMERA &&
+      requestCode != PermissionBridge.REQ_MIC &&
+      requestCode != PermissionBridge.REQ_NOTIFICATIONS
+    ) {
+      return
+    }
     permissions.forEachIndexed { index, permission ->
       val granted = grantResults.getOrNull(index) == PackageManager.PERMISSION_GRANTED
       val permanentlyDenied = !granted && !ActivityCompat.shouldShowRequestPermissionRationale(this, permission)

@@ -121,7 +121,15 @@ import android.database.sqlite.SQLiteDatabase
   val linkUp: Boolean = true,
   val updatedAt: Long = System.currentTimeMillis()
 )
-@Serializable data class PermissionsActionRequest(val action: String? = null)
+@Serializable data class PermissionsActionRequest(val action: String? = null, val context: String? = null)
+
+@Serializable
+data class PermissionsActionResponse(
+  val ok: Boolean,
+  val message: String,
+  val platform: String = "android",
+  val details: Map<String, String?> = emptyMap()
+)
 @Serializable data class OpenClawStatus(val nodes: Int, val uptimeMs: Long)
 
 class AndroidLocalServer(private val ctx: Context) {
@@ -542,8 +550,15 @@ class AndroidLocalServer(private val ctx: Context) {
 
       post("/api/v1/system/permissions/action") {
         val req = runCatching { call.receive<PermissionsActionRequest>() }.getOrNull()
-        val ok = runCatching { handlePermissionAction(req?.action) }.getOrDefault(false)
-        call.respond(mapOf("ok" to ok))
+        val resp = runCatching { handlePermissionAction(req?.action, req?.context) }
+          .getOrElse { e ->
+            PermissionsActionResponse(
+              ok = false,
+              message = "Failed to perform permission action.",
+              details = mapOf("error" to e.message)
+            )
+          }
+        call.respond(resp)
       }
 
       get("/api/v1/system/state") {
@@ -1230,7 +1245,14 @@ class AndroidLocalServer(private val ctx: Context) {
       "coarseLocation" to snapshot.coarseLocation,
       "networkState" to snapshot.networkState,
       "wifiState" to snapshot.wifiState,
-      "permissionPermanentlyDenied" to snapshot.permissionPermanentlyDenied
+      "permissionPermanentlyDenied" to snapshot.permissionPermanentlyDenied,
+      "camera" to hasPermission(android.Manifest.permission.CAMERA),
+      "mic" to hasPermission(android.Manifest.permission.RECORD_AUDIO),
+      "notifications" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        hasPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+      } else {
+        null
+      }
     )
   }
 
@@ -1333,18 +1355,72 @@ class AndroidLocalServer(private val ctx: Context) {
     )
   }
 
-  private fun handlePermissionAction(action: String?): Boolean {
-    val intent = when (action) {
-      "app_settings" -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-        data = Uri.fromParts("package", ctx.packageName, null)
-      }
-      "location_settings" -> Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-      "wifi_settings" -> Intent(Settings.ACTION_WIFI_SETTINGS)
+  private fun handlePermissionAction(actionRaw: String?, contextRaw: String?): PermissionsActionResponse {
+    val action = actionRaw.normalizedPermissionAction()
+    val context = contextRaw?.trim()?.uppercase(java.util.Locale.ROOT)
+
+    if (action.isBlank()) {
+      return PermissionsActionResponse(
+        ok = false,
+        message = "Missing 'action'.",
+        details = mapOf("action" to null, "context" to context)
+      )
+    }
+
+    // Back-compat for scan-precondition fix actions.
+    val legacy = when (actionRaw?.trim()) {
+      "app_settings", "location_settings", "wifi_settings" -> actionRaw.trim()
       else -> null
-    } ?: return false
-    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    ctx.startActivity(intent)
-    return true
+    }
+    if (legacy != null) {
+      val intent = when (legacy) {
+        "app_settings" -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+          data = Uri.fromParts("package", ctx.packageName, null)
+        }
+        "location_settings" -> Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        "wifi_settings" -> Intent(Settings.ACTION_WIFI_SETTINGS)
+        else -> null
+      } ?: return PermissionsActionResponse(
+        ok = false,
+        message = "Unsupported permission action.",
+        details = mapOf("action" to action, "context" to context)
+      )
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      return runCatching {
+        ctx.startActivity(intent)
+        PermissionsActionResponse(ok = true, message = "Opened system settings.", details = mapOf("action" to legacy))
+      }.getOrElse { e ->
+        PermissionsActionResponse(ok = false, message = "Failed to open system settings.", details = mapOf("action" to legacy, "error" to e.message))
+      }
+    }
+
+    val result = when (action) {
+      "OPEN_SETTINGS" -> PermissionBridge.openAppSettings(ctx)
+      "REQUEST_CAMERA" -> PermissionBridge.requestCamera()
+      "REQUEST_MIC" -> PermissionBridge.requestMic()
+      "REQUEST_NOTIFICATIONS" -> PermissionBridge.requestNotifications(ctx)
+
+      // Allow server-style payloads: { "action": "OPEN_SETTINGS", "context": "CAMERA" } or { "action": "REQUEST", "context": "CAMERA" }
+      "REQUEST" -> when (context) {
+        "CAMERA" -> PermissionBridge.requestCamera()
+        "MIC" -> PermissionBridge.requestMic()
+        "NOTIFICATIONS" -> PermissionBridge.requestNotifications(ctx)
+        else -> PermissionActionResult(ok = false, message = "Unsupported context '$contextRaw'.", status = "unsupported")
+      }
+
+      else -> PermissionActionResult(ok = false, message = "Unsupported action '$actionRaw'.", status = "unsupported")
+    }
+
+    return PermissionsActionResponse(
+      ok = result.ok,
+      message = result.message,
+      details = mapOf(
+        "action" to action,
+        "context" to context,
+        "status" to result.status,
+        "error" to result.error
+      )
+    )
   }
 
   private fun cachedResults(): List<Device> {
