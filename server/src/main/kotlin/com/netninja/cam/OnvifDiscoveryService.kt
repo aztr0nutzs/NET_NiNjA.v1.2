@@ -1,27 +1,22 @@
 package com.netninja.cam
 
-import kotlinx.serialization.Serializable
+import cam.CameraDevice
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.SocketTimeoutException
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-
-@Serializable
-data class OnvifDevice(
-  val xaddr: String,
-  val rtsp: String? = null
-)
 
 class OnvifDiscoveryService(
   private val timeoutMs: Int = 2000,
   private val maxResponses: Int = 32
 ) {
-  fun discover(): List<OnvifDevice> {
+  fun discover(): List<CameraDevice> {
     val message = buildProbe()
     val address = InetAddress.getByName(MULTICAST_ADDRESS)
-    val results = mutableListOf<OnvifDevice>()
+    val results = mutableListOf<CameraDevice>()
 
     DatagramSocket().use { socket ->
       socket.soTimeout = timeoutMs
@@ -67,7 +62,7 @@ class OnvifDiscoveryService(
     return body.toByteArray(StandardCharsets.UTF_8)
   }
 
-  private fun parseResponse(payload: String): List<OnvifDevice> {
+  private fun parseResponse(payload: String): List<CameraDevice> {
     val xaddrMatches = Regex("<XAddrs>(.*?)</XAddrs>", RegexOption.DOT_MATCHES_ALL)
       .findAll(payload)
       .flatMap { match ->
@@ -76,11 +71,26 @@ class OnvifDiscoveryService(
       .filter { it.isNotBlank() }
       .toList()
 
-    val rtsp = Regex("rtsp://[^\\s<>\"]+", RegexOption.IGNORE_CASE)
+    val nameFromScope = Regex("onvif://www\\.onvif\\.org/name/([^\\s<]+)")
       .find(payload)
-      ?.value
+      ?.groupValues
+      ?.getOrNull(1)
+      ?.replace("_", " ")
 
-    return xaddrMatches.map { OnvifDevice(xaddr = it, rtsp = rtsp) }
+    return xaddrMatches.mapNotNull { xaddr ->
+      val ip = extractIp(xaddr) ?: return@mapNotNull null
+      val name = nameFromScope ?: "ONVIF Camera $ip"
+      CameraDevice(name = name, xaddr = xaddr, ip = ip)
+    }
+  }
+
+  private fun extractIp(xaddr: String): String? {
+    val uriHost = runCatching { URI(xaddr).host }.getOrNull()
+    if (!uriHost.isNullOrBlank()) return uriHost
+    return Regex("""https?://([0-9]{1,3}(?:\\.[0-9]{1,3}){3})""")
+      .find(xaddr)
+      ?.groupValues
+      ?.getOrNull(1)
   }
 
   companion object {

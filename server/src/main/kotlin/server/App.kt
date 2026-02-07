@@ -21,6 +21,7 @@ import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -33,8 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import server.openclaw.OpenClawGatewayRegistry
 import server.openclaw.openClawRoutes
+import server.openclaw.openClawWebSocketServer
 
 @Serializable
 data class ScanRequest(val subnet: String? = null, val timeoutMs: Int? = 250)
@@ -119,7 +120,6 @@ fun startServer(
   val scanProgress = AtomicReference(ScanProgress())
   val scanCancel = AtomicBoolean(false)
   val scanJob = AtomicReference<Job?>(null)
-  val openClawGateway = OpenClawGatewayRegistry()
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
@@ -322,6 +322,7 @@ fun startServer(
 
   embeddedServer(Netty, port = port, host = host) {
     install(ContentNegotiation) { json() }
+    install(WebSockets)
     install(CORS) {
       allowedOrigins
         .mapNotNull { origin -> runCatching { java.net.URI(origin) }.getOrNull() }
@@ -340,6 +341,7 @@ fun startServer(
     routing {
       // Serve web-ui
       staticFiles("/ui", webUiDir, index = "ninja_mobile_new.html")
+      staticFiles("/assets", File(webUiDir, "assets"))
       get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
 
       get("/api/v1/system/info") {
@@ -612,7 +614,8 @@ fun startServer(
         ))
       }
 
-      openClawRoutes(openClawGateway)
+      openClawRoutes()
+      openClawWebSocketServer()
 
       // SSE stream for logs
       get("/api/v1/logs/stream") {
