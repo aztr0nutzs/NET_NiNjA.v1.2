@@ -51,6 +51,7 @@ data class RuleRequest(val match: String? = null, val action: String? = null)
 @Serializable
 data class RuleEntry(val match: String, val action: String)
 
+
 @Serializable
 data class DeviceMetaUpdate(
   val name: String? = null,
@@ -89,6 +90,7 @@ data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Lo
 
 @Serializable
 data class SystemInfo(val os: String? = null, val arch: String? = null, val timeMs: Long = System.currentTimeMillis())
+
 
 fun main() {
   val config = resolveServerConfig()
@@ -363,6 +365,28 @@ fun startServer(
             "coarseLocation" to null,
             "wifiState" to ifaceUp,
             "networkState" to ifaceUp
+          )
+        )
+      }
+
+      post("/api/v1/system/permissions/action") {
+        val req = runCatching { call.receive<PermissionActionRequest>() }.getOrNull() ?: PermissionActionRequest()
+        val action = req.action?.trim().orEmpty()
+        if (action.isBlank()) {
+          return@post call.respond(
+            mapOf(
+              "ok" to false,
+              "action" to action,
+              "message" to "Action is required."
+            )
+          )
+        }
+        val (ok, message) = tryLaunchSettings(action)
+        call.respond(
+          mapOf(
+            "ok" to ok,
+            "action" to action,
+            "message" to message
           )
         )
       }
