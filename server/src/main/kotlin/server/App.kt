@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import server.openclaw.OpenClawGatewayRegistry
@@ -50,6 +51,9 @@ data class RuleRequest(val match: String? = null, val action: String? = null)
 
 @Serializable
 data class RuleEntry(val match: String, val action: String)
+
+@Serializable
+data class PermissionActionRequest(val action: String? = null)
 
 @Serializable
 data class DeviceMetaUpdate(
@@ -89,6 +93,52 @@ data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Lo
 
 @Serializable
 data class SystemInfo(val os: String? = null, val arch: String? = null, val timeMs: Long = System.currentTimeMillis())
+
+private fun settingsCommandFor(osName: String, action: String): List<String>? {
+  val os = osName.lowercase()
+  return when {
+    os.contains("win") -> when (action) {
+      "app_settings" -> listOf("cmd", "/c", "start", "", "ms-settings:")
+      "location_settings" -> listOf("cmd", "/c", "start", "", "ms-settings:privacy-location")
+      "wifi_settings" -> listOf("cmd", "/c", "start", "", "ms-settings:network-wifi")
+      else -> null
+    }
+    os.contains("mac") -> when (action) {
+      "app_settings" -> listOf("open", "x-apple.systempreferences:")
+      "location_settings" -> listOf(
+        "open",
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices"
+      )
+      "wifi_settings" -> listOf(
+        "open",
+        "x-apple.systempreferences:com.apple.preference.network?Wi-Fi"
+      )
+      else -> null
+    }
+    else -> null
+  }
+}
+
+private fun tryLaunchSettings(action: String): Pair<Boolean, String> {
+  val cmd = settingsCommandFor(System.getProperty("os.name") ?: "unknown", action)
+    ?: return false to "Permission control is not supported on this host."
+  return runCatching {
+    val process = ProcessBuilder(cmd)
+      .redirectErrorStream(true)
+      .start()
+    val finished = process.waitFor(2, TimeUnit.SECONDS)
+    if (!finished) {
+      process.destroy()
+      false to "Settings command timed out."
+    } else if (process.exitValue() == 0) {
+      true to "Opening settings."
+    } else {
+      false to "Settings command failed."
+    }
+  }.getOrElse {
+    false to "Unable to launch settings."
+  }
+}
 
 fun main() {
   val config = resolveServerConfig()
@@ -363,6 +413,28 @@ fun startServer(
             "coarseLocation" to null,
             "wifiState" to ifaceUp,
             "networkState" to ifaceUp
+          )
+        )
+      }
+
+      post("/api/v1/system/permissions/action") {
+        val req = runCatching { call.receive<PermissionActionRequest>() }.getOrNull() ?: PermissionActionRequest()
+        val action = req.action?.trim().orEmpty()
+        if (action.isBlank()) {
+          return@post call.respond(
+            mapOf(
+              "ok" to false,
+              "action" to action,
+              "message" to "Action is required."
+            )
+          )
+        }
+        val (ok, message) = tryLaunchSettings(action)
+        call.respond(
+          mapOf(
+            "ok" to ok,
+            "action" to action,
+            "message" to message
           )
         )
       }
