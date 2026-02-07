@@ -153,7 +153,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private val minScanIntervalMs = 60_000L
 
   private val watchdogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-  private var engine: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
+  private var engine: ApplicationEngine? = null
 
   private val scanMutex = Mutex()
 
