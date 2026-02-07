@@ -16,7 +16,7 @@ fun startStaticServer(
   uiDir: File,
   port: Int = 8787,
   dbPath: String = "netninja.db"
-): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
+): ApplicationEngine {
   require(uiDir.exists() && uiDir.isDirectory) { "web-ui directory not found: ${uiDir.absolutePath}" }
 
   val conn = Db.open(dbPath)
