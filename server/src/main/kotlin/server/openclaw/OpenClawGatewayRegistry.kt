@@ -27,6 +27,8 @@ class OpenClawGatewayRegistry : OpenClawGateway {
 
   override fun uptimeMs(): Long = System.currentTimeMillis() - startTimeMs
 
+  fun get(nodeId: String): OpenClawNodeSnapshot? = nodes[nodeId]
+
   fun upsert(node: OpenClawNodeSnapshot) {
     nodes[node.id] = node
   }

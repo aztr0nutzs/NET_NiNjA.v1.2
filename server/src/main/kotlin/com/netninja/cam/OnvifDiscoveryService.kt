@@ -5,23 +5,25 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.SocketTimeoutException
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 @Serializable
-data class OnvifDevice(
+data class CameraDevice(
+  val name: String,
   val xaddr: String,
-  val rtsp: String? = null
+  val ip: String
 )
 
 class OnvifDiscoveryService(
   private val timeoutMs: Int = 2000,
   private val maxResponses: Int = 32
 ) {
-  fun discover(): List<OnvifDevice> {
+  fun discover(): List<CameraDevice> {
     val message = buildProbe()
     val address = InetAddress.getByName(MULTICAST_ADDRESS)
-    val results = mutableListOf<OnvifDevice>()
+    val results = mutableListOf<CameraDevice>()
 
     DatagramSocket().use { socket ->
       socket.soTimeout = timeoutMs
@@ -41,7 +43,9 @@ class OnvifDiscoveryService(
       }
     }
 
-    return results.distinctBy { it.xaddr }
+    return results
+      .filter { it.xaddr.isNotBlank() && it.ip.isNotBlank() }
+      .distinctBy { it.xaddr }
   }
 
   private fun buildProbe(): ByteArray {
@@ -67,20 +71,28 @@ class OnvifDiscoveryService(
     return body.toByteArray(StandardCharsets.UTF_8)
   }
 
-  private fun parseResponse(payload: String): List<OnvifDevice> {
+  private fun parseResponse(payload: String): List<CameraDevice> {
     val xaddrMatches = Regex("<XAddrs>(.*?)</XAddrs>", RegexOption.DOT_MATCHES_ALL)
       .findAll(payload)
       .flatMap { match ->
         match.groupValues[1].trim().split(Regex("\\s+")).asSequence()
       }
+      .map { it.trim() }
       .filter { it.isNotBlank() }
       .toList()
 
-    val rtsp = Regex("rtsp://[^\\s<>\"]+", RegexOption.IGNORE_CASE)
-      .find(payload)
-      ?.value
+    return xaddrMatches.mapNotNull { xaddr ->
+      val ip = extractIp(xaddr) ?: return@mapNotNull null
+      val name = "ONVIF Camera $ip"
+      CameraDevice(name = name, xaddr = xaddr, ip = ip)
+    }
+  }
 
-    return xaddrMatches.map { OnvifDevice(xaddr = it, rtsp = rtsp) }
+  private fun extractIp(xaddr: String): String? {
+    return runCatching {
+      val uri = URI(xaddr)
+      uri.host?.takeIf { it.isNotBlank() }
+    }.getOrNull()
   }
 
   companion object {

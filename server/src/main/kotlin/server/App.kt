@@ -21,6 +21,7 @@ import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -33,8 +34,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import java.time.Duration
 import server.openclaw.OpenClawGatewayRegistry
+import server.openclaw.OpenClawGatewayState
 import server.openclaw.openClawRoutes
+import server.openclaw.openClawWebSocketServer
 
 @Serializable
 data class ScanRequest(val subnet: String? = null, val timeoutMs: Int? = 250)
@@ -123,6 +127,7 @@ fun startServer(
   val scanCancel = AtomicBoolean(false)
   val scanJob = AtomicReference<Job?>(null)
   val openClawGateway = OpenClawGatewayRegistry()
+  OpenClawGatewayState.bindRegistry(openClawGateway)
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
@@ -325,6 +330,11 @@ fun startServer(
 
   embeddedServer(Netty, port = port, host = host) {
     install(ContentNegotiation) { json() }
+    install(WebSockets) {
+      pingPeriod = Duration.ofSeconds(15)
+      timeout = Duration.ofSeconds(30)
+      maxFrameSize = 1_048_576
+    }
     install(CORS) {
       allowedOrigins
         .mapNotNull { origin -> runCatching { java.net.URI(origin) }.getOrNull() }
@@ -343,7 +353,11 @@ fun startServer(
     routing {
       // Serve web-ui
       staticFiles("/ui", webUiDir, index = "ninja_mobile_new.html")
+      staticFiles("/assets", File(webUiDir, "assets"))
       get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
+
+      openClawWebSocketServer()
+      openClawRoutes()
 
       get("/api/v1/system/info") {
         call.respond(
@@ -628,7 +642,6 @@ fun startServer(
         ))
       }
 
-      openClawRoutes(openClawGateway)
 
       // SSE stream for logs
       get("/api/v1/logs/stream") {
