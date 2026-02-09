@@ -598,7 +598,7 @@ input, .mono{
 <main class="nn-main">
   <section class="glass-panel" style="position:relative; width:auto; margin:0 0 14px; max-width:none;">
     <div class="neon-title" style="font-size:2.0rem" id="titleText">OPENCLAW</div>
-    <p class="subtitle" id="subText">Gateway dashboard shell. The sidebar tabs are wired. The backend is still your problem (as usual).</p>
+    <p class="subtitle" id="subText">Gateway dashboard connected to the local OpenClaw service.</p>
 
     <div class="badges">
       <div class="badge" id="badgeAgent"><span class="dot"></span><span>AGENT: <b>none</b></span></div>
@@ -612,7 +612,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Chat</h2>
-        <p class="subtitle" style="margin-top:-6px;">Message composition + routing UI placeholder (wire to your gateway).</p>
+        <p class="subtitle" style="margin-top:-6px;">Compose and route messages through the active gateway.</p>
 
         <div class="controls">
           <div class="row">
@@ -647,7 +647,7 @@ input, .mono{
 
       <div class="card">
         <h2>Chat history</h2>
-        <p class="subtitle" style="margin-top:-6px;">This is a shell. You can stream messages here later.</p>
+        <p class="subtitle" style="margin-top:-6px;">Recent outbound message history.</p>
         <div class="output-glass" style="margin-top:12px;">
           <h2>Messages</h2>
           <div class="output-text mono" id="chatStream" style="white-space:pre-wrap; min-height: 240px;">(no messages)</div>
@@ -709,7 +709,7 @@ input, .mono{
   <section class="view" id="view-channels">
     <div class="card">
       <h2>Channels</h2>
-      <p class="subtitle" style="margin-top:-6px;">Gateway channels live here. (This is your “Channels” tab from the screenshot.)</p>
+      <p class="subtitle" style="margin-top:-6px;">Gateway channels and connectivity controls.</p>
 
       <table class="table" aria-label="Channels table">
         <thead>
@@ -795,7 +795,7 @@ input, .mono{
   <section class="view" id="view-cron">
     <div class="card">
       <h2>Cron Jobs</h2>
-      <p class="subtitle" style="margin-top:-6px;">Job schedule + execution log placeholder. Wire it later.</p>
+      <p class="subtitle" style="margin-top:-6px;">Job schedule + execution log feed.</p>
       <div class="row" style="justify-content:flex-end;">
         <button class="cybr-btn" type="button" id="btnClearLogs">
           Clear
@@ -814,7 +814,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Skills</h2>
-        <p class="subtitle" style="margin-top:-6px;">Agent capabilities list placeholder.</p>
+        <p class="subtitle" style="margin-top:-6px;">Agent capabilities synced from OpenClaw.</p>
         <div class="output-glass">
           <h2>Registered skills</h2>
           <div class="output-text mono" id="skillsOut">No skills loaded. (Wire backend)</div>
@@ -846,7 +846,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Modes</h2>
-        <p class="subtitle" style="margin-top:-6px;">Mode selector placeholder.</p>
+        <p class="subtitle" style="margin-top:-6px;">Mode selector and safety controls.</p>
         <div class="row">
           <button class="cybr-btn" type="button" id="btnModeSafe" style="flex:1;">
             Safe
@@ -878,7 +878,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Config</h2>
-        <p class="subtitle" style="margin-top:-6px;">Configuration view placeholder (separate tab like screenshot).</p>
+        <p class="subtitle" style="margin-top:-6px;">Active gateway configuration.</p>
 
         <div class="row">
           <button class="cybr-btn" type="button" id="btnConfigFetch" style="flex:1;">
@@ -912,7 +912,7 @@ input, .mono{
     <div class="nn-grid">
       <div class="card">
         <h2>Debug</h2>
-        <p class="subtitle" style="margin-top:-6px;">Debug view placeholder (separate tab like screenshot).</p>
+        <p class="subtitle" style="margin-top:-6px;">Runtime diagnostics and gateway state.</p>
 
         <div class="row">
           <button class="cybr-btn" type="button" id="btnDebugFetch" style="flex:1;">
@@ -946,7 +946,7 @@ input, .mono{
 <div class="nn-modal" id="modalCommand" aria-hidden="true">
   <section class="glass-panel">
     <div class="neon-title" style="font-size:1.6rem">RUN COMMAND</div>
-    <p class="subtitle">UI shell. Wire it to your Android companion service.</p>
+    <p class="subtitle">Execute an OpenClaw command via the gateway service.</p>
 
     <div class="controls">
       <input id="cmdText" class="mono" placeholder="openclaw status"/>
@@ -966,7 +966,7 @@ input, .mono{
 <div class="nn-modal" id="modalSettings" aria-hidden="true">
   <section class="glass-panel">
     <div class="neon-title" style="font-size:1.6rem">SETTINGS</div>
-    <p class="subtitle">Connection + appearance knobs.</p>
+    <p class="subtitle">Connection + profile settings.</p>
 
     <div class="controls">
       <div class="row">
@@ -1153,84 +1153,99 @@ input, .mono{
   window.__ocui = { showView, openModal, closeModal, closeSide };
 })();
 
-/* ===== Demo data + wiring hooks ===== */
+/* ===== Data wiring (OpenClaw gateway API) ===== */
 (function(){
+  const apiTimeoutMs = 7000;
   const state = {
-    connected: false,
-    host: '',
-    profile: 'default',
-    workspace: '~/.openclaw/workspace',
-    agent: null,
-    memory: { indexed: false, items: 0 },
-    gateways: [
-      { key:'whatsapp', name:'WhatsApp', status:'down', sessions:0 },
-      { key:'telegram', name:'Telegram', status:'down', sessions:0 },
-      { key:'discord', name:'Discord', status:'down', sessions:0 },
-      { key:'imessage', name:'iMessage', status:'down', sessions:0 },
-    ],
-    agents: [
-      { name:'default', profile:'default', workspace:'~/.openclaw/workspace', sandbox:false, access:'rw' },
-      { name:'work', profile:'work', workspace:'~/.openclaw/workspace-work', sandbox:true, access:'ro' },
-    ],
-    tasks: [
-      { id:'S-1024', type:'session', target:'default', state:'idle' },
-      { id:'S-1025', type:'message', target:'whatsapp:family', state:'queued' },
-    ],
+    dashboard: null,
+    gateways: [],
+    instances: [],
+    sessions: [],
+    skills: [],
+    mode: 'safe',
     logs: [],
-    mode: 'safe'
+    messages: []
   };
 
   const el = (id)=>document.getElementById(id);
 
-  const log = (msg)=>{
-    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    state.logs.push(line);
-
-    const ls = el('logStream');
-    if(ls) ls.textContent = state.logs.slice(-200).join('\n');
-
-    const c = el('consoleOut');
-    if(c) c.textContent = line;
-
-    const oc = el('overviewConsole');
-    if(oc) oc.textContent = line;
-
-    const cc = el('configConsole');
-    if(cc) cc.textContent = line;
-
-    const dc = el('debugConsole');
-    if(dc) dc.textContent = line;
-
-    const mc = el('modeConsole');
-    if(mc) mc.textContent = line;
-
-    const sc = el('skillsConsole');
-    if(sc) sc.textContent = line;
+  const setText = (id, value) => {
+    const node = el(id);
+    if(node) node.textContent = value;
   };
 
-  function renderBadges(){
-    const a = el('badgeAgent');
-    const m = el('badgeMemory');
-    const g = el('badgeGateways');
+  const formatTime = (ms) => {
+    if(!ms) return 'never';
+    return new Date(ms).toLocaleString();
+  };
 
-    a.querySelector('b').textContent = state.agent ? state.agent.name : 'none';
-    m.querySelector('b').textContent = state.memory.indexed ? `${state.memory.items} items` : 'not indexed';
+  const showError = (msg) => {
+    const message = typeof msg === 'string' ? msg : (msg?.message || 'Unknown error');
+    setText('consoleOut', message);
+    setText('overviewConsole', message);
+    setText('configConsole', message);
+    setText('debugConsole', message);
+    setText('modeConsole', message);
+    setText('skillsConsole', message);
+  };
 
-    const up = state.gateways.filter(x=>x.status==='up').length;
-    g.querySelector('b').textContent = `${up}/${state.gateways.length} up`;
+  async function apiRequest(path, options = {}) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), apiTimeoutMs);
+    const headers = { ...(options.headers || {}) };
+    if(options.body && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+    try{
+      const res = await fetch(path, {
+        ...options,
+        headers,
+        signal: controller.signal
+      });
+      if(!res.ok){
+        const detail = await res.text();
+        throw new Error(detail || `Request failed (${res.status})`);
+      }
+      const contentType = res.headers.get('content-type') || '';
+      if(contentType.includes('application/json')){
+        return await res.json();
+      }
+      return await res.text();
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
-  function renderTop(){
-    el('quickStatus').textContent = state.connected ? 'CONNECTED' : 'DISCONNECTED';
-    el('stHost').textContent = state.host || 'not set';
-    el('stProfile').textContent = state.profile || 'default';
-    el('stWorkspace').textContent = state.workspace || '~/.openclaw/workspace';
+  function renderBadges() {
+    const dashboard = state.dashboard;
+    if(!dashboard) return;
+    const agentName = dashboard.activeInstance || 'none';
+    const memoryText = dashboard.memoryIndexed ? `${dashboard.memoryItems} items` : 'not indexed';
+    const up = state.gateways.filter(x=>x.status === 'up').length;
+    const total = state.gateways.length || 0;
+    el('badgeAgent').querySelector('b').textContent = agentName;
+    el('badgeMemory').querySelector('b').textContent = memoryText;
+    el('badgeGateways').querySelector('b').textContent = `${up}/${total} up`;
   }
 
-  function renderAgents(){
+  function renderTop() {
+    const dashboard = state.dashboard;
+    if(!dashboard) return;
+    setText('quickStatus', dashboard.connected ? 'CONNECTED' : 'DISCONNECTED');
+    setText('stHost', dashboard.host || 'not set');
+    setText('stProfile', dashboard.profile || 'default');
+    setText('stWorkspace', dashboard.workspace || '~/.openclaw/workspace');
+    setText('stSync', formatTime(dashboard.lastSync));
+    const hostInput = el('setHost');
+    const profileInput = el('setProfile');
+    if(hostInput) hostInput.value = dashboard.host || '';
+    if(profileInput) profileInput.value = dashboard.profile || 'default';
+  }
+
+  function renderAgents() {
     const tb = el('agentRows');
     tb.innerHTML = '';
-    state.agents.forEach((a,i)=>{
+    state.instances.forEach((a)=>{
       const tr = document.createElement('tr');
       tr.className = 'row-glass';
       tr.innerHTML = `
@@ -1238,7 +1253,7 @@ input, .mono{
         <td>${a.profile}</td>
         <td class="mono">${a.workspace}</td>
         <td>
-          <button class="cybr-btn" type="button" data-act="selectAgent" data-i="${i}">
+          <button class="cybr-btn" type="button" data-act="selectAgent" data-name="${a.name}">
             Select <span aria-hidden class="cybr-btn__glitch">Select</span>
           </button>
         </td>`;
@@ -1246,7 +1261,7 @@ input, .mono{
     });
   }
 
-  function renderGateways(){
+  function renderGateways() {
     const tb = el('gwRows');
     tb.innerHTML = '';
     state.gateways.forEach((gw)=>{
@@ -1254,6 +1269,7 @@ input, .mono{
       tr.className = 'row-glass';
       const dotClass = gw.status === 'up' ? 'badge' : 'badge warn';
       const dot = gw.status === 'up' ? 'UP' : 'DOWN';
+      const ping = gw.lastPingMs ? `${gw.lastPingMs}ms` : '--';
       tr.innerHTML = `
         <td><b style="color:var(--neon-blue)">${gw.name}</b></td>
         <td><span class="${dotClass}"><span class="dot"></span>${dot}</span></td>
@@ -1263,17 +1279,17 @@ input, .mono{
             Restart <span aria-hidden class="cybr-btn__glitch">Restart</span>
           </button>
           <button class="cybr-btn" type="button" data-act="gwPing" data-key="${gw.key}">
-            Ping <span aria-hidden class="cybr-btn__glitch">Ping</span>
+            Ping (${ping}) <span aria-hidden class="cybr-btn__glitch">Ping</span>
           </button>
         </td>`;
       tb.appendChild(tr);
     });
   }
 
-  function renderTasks(){
+  function renderTasks() {
     const tb = el('taskRows');
     tb.innerHTML = '';
-    state.tasks.forEach((t, i)=>{
+    state.sessions.forEach((t)=>{
       const tr = document.createElement('tr');
       tr.className = 'row-glass';
       tr.innerHTML = `
@@ -1282,7 +1298,7 @@ input, .mono{
         <td class="mono">${t.target}</td>
         <td>${t.state}</td>
         <td>
-          <button class="cybr-btn" type="button" data-act="taskCancel" data-i="${i}">
+          <button class="cybr-btn" type="button" data-act="taskCancel" data-id="${t.id}">
             Cancel <span aria-hidden class="cybr-btn__glitch">Cancel</span>
           </button>
         </td>`;
@@ -1290,192 +1306,400 @@ input, .mono{
     });
   }
 
-  function renderSelectedAgent(){
-    el('agName').textContent = state.agent ? state.agent.name : 'none';
-    el('agWs').textContent = state.agent ? state.agent.workspace : '-';
-    el('agSandbox').textContent = state.agent ? (state.agent.sandbox ? 'enabled' : 'disabled') : 'disabled';
-    el('agAccess').textContent = state.agent ? state.agent.access : 'rw';
+  function renderSelectedAgent() {
+    const selected = state.instances.find(i => i.active) || null;
+    setText('agName', selected ? selected.name : 'none');
+    setText('agWs', selected ? selected.workspace : '-');
+    setText('agSandbox', selected ? (selected.sandbox ? 'enabled' : 'disabled') : 'disabled');
+    setText('agAccess', selected ? selected.access : 'rw');
   }
 
-  function rerender(){
+  function renderSkills() {
+    const list = state.skills.map(skill => `- ${skill.name} (${skill.status})`).join('\n');
+    setText('skillsOut', list || 'No skills loaded.');
+  }
+
+  function renderMode() {
+    setText('modeOut', state.mode || 'safe');
+  }
+
+  function renderLogs() {
+    const entries = state.logs || [];
+    const last = entries[entries.length - 1];
+    setText('logStream', entries.length ? entries.join('\n') : '(no events)');
+    setText('consoleOut', last || 'Awaiting connection.');
+    setText('overviewConsole', last || 'Ready.');
+    setText('configConsole', last || '(idle)');
+    setText('debugConsole', last || '(idle)');
+    setText('modeConsole', last || '(idle)');
+    setText('skillsConsole', last || '(idle)');
+  }
+
+  function renderMessages() {
+    const stream = el('chatStream');
+    if(!stream) return;
+    if(!state.messages.length){
+      stream.textContent = '(no messages)';
+      return;
+    }
+    stream.textContent = state.messages.map(msg => {
+      const time = new Date(msg.sentAt).toLocaleTimeString();
+      return `[${time}] ${msg.gateway}:${msg.channel} -> ${msg.body}`;
+    }).join('\n');
+  }
+
+  function rerender() {
     renderTop();
     renderBadges();
-    renderAgents();
     renderGateways();
+    renderAgents();
     renderTasks();
     renderSelectedAgent();
-    el('modeOut').textContent = state.mode;
+    renderSkills();
+    renderMode();
+    renderLogs();
+    renderMessages();
   }
 
-  // Topbar
-  el('btnConnect').addEventListener('click', ()=>{
-    state.connected = !state.connected;
-    state.host = state.connected ? (state.host || 'http://192.168.1.12:8080') : state.host;
-    el('stSync').textContent = new Date().toLocaleString();
-    log(state.connected ? 'Connected (demo).' : 'Disconnected (demo).');
+  async function refreshAll() {
+    const results = await Promise.allSettled([
+      apiRequest('/api/openclaw/dashboard'),
+      apiRequest('/api/openclaw/gateways'),
+      apiRequest('/api/openclaw/instances'),
+      apiRequest('/api/openclaw/sessions'),
+      apiRequest('/api/openclaw/skills'),
+      apiRequest('/api/openclaw/mode'),
+      apiRequest('/api/openclaw/logs'),
+      apiRequest('/api/openclaw/messages')
+    ]);
+
+    if(results[0].status === 'fulfilled') state.dashboard = results[0].value;
+    if(results[1].status === 'fulfilled') state.gateways = results[1].value || [];
+    if(results[2].status === 'fulfilled') state.instances = results[2].value || [];
+    if(results[3].status === 'fulfilled') state.sessions = results[3].value || [];
+    if(results[4].status === 'fulfilled') state.skills = results[4].value || [];
+    if(results[5].status === 'fulfilled') state.mode = results[5].value?.mode || 'safe';
+    if(results[6].status === 'fulfilled') state.logs = results[6].value || [];
+    if(results[7].status === 'fulfilled') state.messages = results[7].value || [];
+
+    results.forEach((result) => {
+      if(result.status === 'rejected') showError(result.reason);
+    });
     rerender();
+  }
+
+  // Topbar actions
+  el('btnConnect').addEventListener('click', async ()=>{
+    try{
+      if(state.dashboard?.connected){
+        await apiRequest('/api/openclaw/disconnect', { method:'POST' });
+      } else {
+        await apiRequest('/api/openclaw/connect', {
+          method:'POST',
+          body: JSON.stringify({ host: state.dashboard?.host || '' })
+        });
+      }
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
-  el('btnRefresh').addEventListener('click', ()=>{
-    el('stSync').textContent = new Date().toLocaleString();
-    log('Refresh requested.');
-    rerender();
+  el('btnRefresh').addEventListener('click', async ()=>{
+    try{
+      await apiRequest('/api/openclaw/refresh', { method:'POST' });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
-  el('btnPanic').addEventListener('click', ()=>{
-    log('PANIC: stop all running sessions + disconnect gateways (demo).');
-    state.tasks.forEach(t=>t.state='canceled');
-    state.gateways.forEach(g=>{g.status='down'; g.sessions=0;});
-    rerender();
+  el('btnPanic').addEventListener('click', async ()=>{
+    try{
+      await apiRequest('/api/openclaw/panic', { method:'POST' });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
   // Overview quick commands
-  el('btnStatus').addEventListener('click', ()=> log('Slash command: /status'));
-  el('btnConfigCmd').addEventListener('click', ()=> { log('Slash command: /config'); window.__ocui.showView('config'); });
-  el('btnDebugCmd').addEventListener('click', ()=> { log('Slash command: /debug'); window.__ocui.showView('debug'); });
+  el('btnStatus').addEventListener('click', async ()=>{
+    try{
+      const res = await apiRequest('/api/openclaw/command', {
+        method:'POST',
+        body: JSON.stringify({ command: '/status' })
+      });
+      setText('overviewConsole', res.output || 'Command queued.');
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
+  });
+  el('btnConfigCmd').addEventListener('click', async ()=>{
+    window.__ocui.showView('config');
+    try{
+      const res = await apiRequest('/api/openclaw/command', {
+        method:'POST',
+        body: JSON.stringify({ command: '/config' })
+      });
+      setText('overviewConsole', res.output || 'Command queued.');
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
+  });
+  el('btnDebugCmd').addEventListener('click', async ()=>{
+    window.__ocui.showView('debug');
+    try{
+      const res = await apiRequest('/api/openclaw/command', {
+        method:'POST',
+        body: JSON.stringify({ command: '/debug' })
+      });
+      setText('overviewConsole', res.output || 'Command queued.');
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
+  });
 
   // Chat
-  el('btnMsgSend').addEventListener('click', ()=>{
+  el('btnMsgSend').addEventListener('click', async ()=>{
     const gw = el('msgGateway').value;
     const ch = el('msgChannel').value.trim();
     const body = el('msgBody').value.trim();
-    if(!ch || !body){ log('Message rejected: missing channel/body.'); return; }
-    const line = `SEND: ${gw}:${ch} -> ${body.slice(0,140)}${body.length>140?'…':''}`;
-    log(line);
-    const stream = el('chatStream');
-    if(stream){
-      const prev = stream.textContent === '(no messages)' ? '' : (stream.textContent + '\n');
-      stream.textContent = (prev + line).slice(-6000);
+    if(!ch || !body){
+      showError('Message rejected: missing channel/body.');
+      return;
     }
-    el('msgBody').value = '';
+    try{
+      await apiRequest('/api/openclaw/messages', {
+        method:'POST',
+        body: JSON.stringify({ gateway: gw, channel: ch, body })
+      });
+      el('msgBody').value = '';
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
   // Sessions create
-  el('btnCreateTask').addEventListener('click', ()=>{
-    const t = {
-      id: 'S-' + Math.floor(Math.random()*9000+1000),
-      type: el('taskType').value.trim() || 'session',
-      target: el('taskTarget').value.trim() || 'default',
-      state: 'queued'
-    };
-    state.tasks.unshift(t);
-    log(`Enqueued session ${t.id} (${t.type})`);
-    renderTasks();
+  el('btnCreateTask').addEventListener('click', async ()=>{
+    const type = el('taskType').value.trim() || 'session';
+    const target = el('taskTarget').value.trim() || 'default';
+    const payload = el('taskPayload').value.trim() || null;
+    try{
+      await apiRequest('/api/openclaw/sessions', {
+        method:'POST',
+        body: JSON.stringify({ type, target, payload })
+      });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
   // Skills / Modes
-  el('btnSkillRefresh').addEventListener('click', ()=>{
-    el('skillsOut').textContent = `- scan_network\n- onvif_discovery\n- rtsp_probe\n(wire backend)`;
-    log('Skills refreshed (demo).');
+  el('btnSkillRefresh').addEventListener('click', async ()=>{
+    try{
+      await apiRequest('/api/openclaw/skills/refresh', { method:'POST' });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
-  el('btnSkillInvoke').addEventListener('click', ()=>{
-    log('Invoke skill (demo).');
+  el('btnSkillInvoke').addEventListener('click', async ()=>{
+    const name = state.skills[0]?.name || 'scan_network';
+    try{
+      await apiRequest('/api/openclaw/skills/invoke', {
+        method:'POST',
+        body: JSON.stringify({ name })
+      });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
-  el('btnModeSafe').addEventListener('click', ()=>{
-    state.mode = 'safe';
-    log('Mode set: safe (demo).');
-    rerender();
+  el('btnModeSafe').addEventListener('click', async ()=>{
+    try{
+      await apiRequest('/api/openclaw/mode', {
+        method:'POST',
+        body: JSON.stringify({ mode: 'safe' })
+      });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
-  el('btnModePower').addEventListener('click', ()=>{
-    state.mode = 'power';
-    log('Mode set: power (demo).');
-    rerender();
+  el('btnModePower').addEventListener('click', async ()=>{
+    try{
+      await apiRequest('/api/openclaw/mode', {
+        method:'POST',
+        body: JSON.stringify({ mode: 'power' })
+      });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
   // Config / Debug views
-  el('btnConfigFetch').addEventListener('click', ()=>{
-    log('FETCH: /config (demo)');
-    el('configOut').textContent = JSON.stringify({ host: state.host || null, profile: state.profile, workspace: state.workspace }, null, 2);
+  el('btnConfigFetch').addEventListener('click', async ()=>{
+    try{
+      const res = await apiRequest('/api/openclaw/config');
+      el('configOut').textContent = JSON.stringify(res, null, 2);
+    } catch(err){
+      showError(err);
+    }
   });
 
-  el('btnDebugFetch').addEventListener('click', ()=>{
-    log('FETCH: /debug (demo)');
-    el('debugOut').textContent = '(demo) debug endpoint response would render here.';
+  el('btnDebugFetch').addEventListener('click', async ()=>{
+    try{
+      const res = await apiRequest('/api/openclaw/debug');
+      el('debugOut').textContent = JSON.stringify(res, null, 2).slice(0, 9000);
+    } catch(err){
+      showError(err);
+    }
   });
-  el('btnDebugDump').addEventListener('click', ()=>{
-    log('Dumping local UI state (demo).');
-    el('debugOut').textContent = JSON.stringify(state, null, 2).slice(0, 9000);
-  });
-
-  // Settings modal
-  const modals = {
-    settings: document.getElementById('modalSettings'),
-    command: document.getElementById('modalCommand')
-  };
-
-  // modal wiring
-  document.querySelectorAll('[data-open="command"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.openModal('command'));
+  el('btnDebugDump').addEventListener('click', async ()=>{
+    try{
+      const res = await apiRequest('/api/openclaw/debug/dump', { method:'POST' });
+      el('debugOut').textContent = JSON.stringify(res, null, 2).slice(0, 9000);
+    } catch(err){
+      showError(err);
+    }
   });
 
-  document.querySelectorAll('[data-open="settings"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.openModal('settings'));
+  el('btnSaveSettings').addEventListener('click', async ()=>{
+    try{
+      const host = el('setHost').value.trim();
+      const profile = el('setProfile').value.trim() || 'default';
+      await apiRequest('/api/openclaw/config', {
+        method:'POST',
+        body: JSON.stringify({ host, profile })
+      });
+      await refreshAll();
+      window.__ocui.closeModal('settings');
+    } catch(err){
+      showError(err);
+    }
   });
 
-  document.querySelectorAll('[data-close="settings"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.closeModal('settings'));
-  });
-  document.querySelectorAll('[data-close="command"]').forEach(btn=>{
-    btn.addEventListener('click', ()=> window.__ocui.closeModal('command'));
-  });
-
-  el('btnSaveSettings').addEventListener('click', ()=>{
-    state.host = el('setHost').value.trim();
-    state.profile = el('setProfile').value.trim() || 'default';
-    log(`Settings saved: host=${state.host||'(none)'} profile=${state.profile}`);
-    rerender();
-    window.__ocui.closeModal('settings');
-  });
-
-  el('btnCmdRun').addEventListener('click', ()=>{
+  el('btnCmdRun').addEventListener('click', async ()=>{
     const cmd = el('cmdText').value.trim();
-    if(!cmd){ el('cmdOut').textContent='Enter a command.'; return; }
-    log(`RUN: ${cmd}`);
-    el('cmdOut').textContent = `(demo) executed: ${cmd}`;
+    if(!cmd){
+      el('cmdOut').textContent = 'Enter a command.';
+      return;
+    }
+    try{
+      const res = await apiRequest('/api/openclaw/command', {
+        method:'POST',
+        body: JSON.stringify({ command: cmd })
+      });
+      el('cmdOut').textContent = res.output || 'Command queued.';
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
   // Cron clear
-  el('btnClearLogs').addEventListener('click', ()=>{
-    state.logs = [];
-    el('logStream').textContent = '(no events)';
-    el('consoleOut').textContent = 'Awaiting connection.';
-    el('overviewConsole').textContent = 'Ready.';
-    el('configConsole').textContent = '(idle)';
-    el('debugConsole').textContent = '(idle)';
-    el('modeConsole').textContent = '(idle)';
-    el('skillsConsole').textContent = '(idle)';
+  el('btnClearLogs').addEventListener('click', async ()=>{
+    try{
+      await apiRequest('/api/openclaw/logs/clear', { method:'POST' });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
+  });
+
+  // Instances actions
+  el('btnAddAgent').addEventListener('click', async ()=>{
+    const suffix = String(Date.now()).slice(-4);
+    const name = `instance-${suffix}`;
+    try{
+      await apiRequest('/api/openclaw/instances', {
+        method:'POST',
+        body: JSON.stringify({ name })
+      });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
+  });
+
+  el('btnAgentActivate').addEventListener('click', async ()=>{
+    const active = state.instances.find(i => i.active) || null;
+    if(!active){
+      showError('Select an instance to activate.');
+      return;
+    }
+    try{
+      await apiRequest(`/api/openclaw/instances/${active.name}/activate`, { method:'POST' });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
+  });
+
+  el('btnAgentStop').addEventListener('click', async ()=>{
+    const active = state.instances.find(i => i.active) || null;
+    if(!active){
+      showError('Select an instance to stop.');
+      return;
+    }
+    try{
+      await apiRequest(`/api/openclaw/instances/${active.name}/stop`, { method:'POST' });
+      await refreshAll();
+    } catch(err){
+      showError(err);
+    }
   });
 
   // Table action wiring (instances/channels/sessions)
-  document.body.addEventListener('click', (e)=>{
+  document.body.addEventListener('click', async (e)=>{
     const btn = e.target.closest('[data-act]');
     if(!btn) return;
     const act = btn.getAttribute('data-act');
     if(act === 'selectAgent'){
-      const i = Number(btn.getAttribute('data-i'));
-      state.agent = state.agents[i] || null;
-      log(`Selected instance: ${state.agent ? state.agent.name : 'none'}`);
-      rerender();
+      const name = btn.getAttribute('data-name');
+      try{
+        await apiRequest(`/api/openclaw/instances/${name}/select`, { method:'POST' });
+        await refreshAll();
+      } catch(err){
+        showError(err);
+      }
     } else if(act === 'gwRestart'){
       const key = btn.getAttribute('data-key');
-      const gw = state.gateways.find(x=>x.key===key);
-      if(gw){ gw.status='up'; gw.sessions=Math.floor(Math.random()*4); }
-      log(`Channel restart: ${key}`);
-      rerender();
+      try{
+        await apiRequest(`/api/openclaw/gateways/${key}/restart`, { method:'POST' });
+        await refreshAll();
+      } catch(err){
+        showError(err);
+      }
     } else if(act === 'gwPing'){
       const key = btn.getAttribute('data-key');
-      log(`Channel ping: ${key}`);
+      try{
+        await apiRequest(`/api/openclaw/gateways/${key}/ping`, { method:'POST' });
+        await refreshAll();
+      } catch(err){
+        showError(err);
+      }
     } else if(act === 'taskCancel'){
-      const i = Number(btn.getAttribute('data-i'));
-      if(state.tasks[i]) state.tasks[i].state='canceled';
-      log(`Session canceled: ${state.tasks[i] ? state.tasks[i].id : '(missing)'}`);
-      renderTasks();
+      const id = btn.getAttribute('data-id');
+      try{
+        await apiRequest(`/api/openclaw/sessions/${id}/cancel`, { method:'POST' });
+        await refreshAll();
+      } catch(err){
+        showError(err);
+      }
     }
   });
 
-  rerender();
-  log('UI booted (demo).');
+  refreshAll();
+  setInterval(refreshAll, 20000);
 })();
 </script>
 </body>

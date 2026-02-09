@@ -35,9 +35,12 @@ class MainActivity : AppCompatActivity() {
   private var locationPrompted = false
   private val permissionPrefsName = "netninja_permissions"
   private lateinit var web: WebView
+  private var serverFallbackTriggered = false
+  private var bootStartedAtMs: Long = 0L
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    bootStartedAtMs = System.currentTimeMillis()
 
     // Start engine service (foreground) so localhost server is up.
     startForegroundService(Intent(this, EngineService::class.java))
@@ -100,6 +103,14 @@ class MainActivity : AppCompatActivity() {
       ) {
         if (request.isForMainFrame) {
           Log.e(logTag, "load error: ${error.errorCode} ${error.description}")
+
+          val isLocalServerUrl = request.url.toString().startsWith("http://127.0.0.1:8787/")
+          val withinBootstrapWindow = System.currentTimeMillis() - bootStartedAtMs < 20_000L
+          if (isLocalServerUrl && withinBootstrapWindow && !serverFallbackTriggered) {
+            serverFallbackTriggered = true
+            Log.w(logTag, "Local server not ready; falling back to asset bootstrap page.")
+            view.loadUrl("file:///android_asset/web-ui/ninja_mobile_new.html?bootstrap=1")
+          }
         }
       }
 
@@ -123,8 +134,10 @@ class MainActivity : AppCompatActivity() {
 
     val serverDashboardUrl = "http://127.0.0.1:8787/ui/ninja_mobile_new.html"
     val assetDashboardUrl = "file:///android_asset/web-ui/ninja_mobile_new.html?bootstrap=1"
-    web.loadUrl(assetDashboardUrl)
-    waitForServerAndLoad(web, serverDashboardUrl)
+
+    // Prefer serving everything from the local server. If it's not ready yet, WebViewClient will fall back to assets.
+    web.loadUrl(serverDashboardUrl)
+    waitForServerAndLoad(web, serverDashboardUrl, assetDashboardUrl)
 
     setContentView(web)
   }
@@ -236,7 +249,7 @@ class MainActivity : AppCompatActivity() {
     }
   }
 
-  private fun waitForServerAndLoad(web: WebView, url: String) {
+  private fun waitForServerAndLoad(web: WebView, url: String, assetFallbackUrl: String) {
     val main = Handler(Looper.getMainLooper())
     thread(name = "NetNinjaServerProbe") {
       val deadline = System.currentTimeMillis() + 150_000L
@@ -249,7 +262,13 @@ class MainActivity : AppCompatActivity() {
         Thread.sleep(delayMs)
         delayMs = (delayMs * 1.2).toLong().coerceAtMost(1250L)
       }
-      main.post { web.loadUrl(url) }
+      // Still attempt to load the server URL; if it fails the WebViewClient will use the asset fallback.
+      main.post {
+        if (!serverFallbackTriggered) {
+          web.loadUrl(assetFallbackUrl)
+        }
+        web.loadUrl(url)
+      }
     }
   }
 
