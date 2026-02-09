@@ -38,10 +38,11 @@ jobs:
           script: |
             set -euo pipefail
             adb logcat -c
-            mkdir -p android-app/build/outputs/logs
-            adb logcat -v time > android-app/build/outputs/logs/logcat-instrumentation.txt &
+            # App build outputs are rooted under `build/android-app` (see android-app/build.gradle.kts).
+            mkdir -p build/android-app/outputs/logs
+            adb logcat -v time > build/android-app/outputs/logs/logcat-instrumentation.txt &
             LOGCAT_PID=$!
-            trap 'adb logcat -d >> android-app/build/outputs/logs/logcat-instrumentation.txt; kill $LOGCAT_PID || true' EXIT
+            trap 'adb logcat -d >> build/android-app/outputs/logs/logcat-instrumentation.txt; kill $LOGCAT_PID || true' EXIT
             ./gradlew :app:connectedDebugAndroidTest
 
       - name: Upload unit test reports
@@ -49,31 +50,31 @@ jobs:
         with:
           name: unit-test-reports
           path: |
-            android-app/build/reports/tests/testDebugUnitTest
+            build/android-app/reports/tests/testDebugUnitTest
 
       - name: Upload unit test results
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
           path: |
-            android-app/build/test-results/testDebugUnitTest
+            build/android-app/test-results/testDebugUnitTest
 
       - name: Upload instrumentation test reports
         uses: actions/upload-artifact@v4
         with:
           name: android-test-reports
           path: |
-            android-app/build/reports/androidTests/connected
+            build/android-app/reports/androidTests/connected
 
       - name: Upload instrumentation test results
         uses: actions/upload-artifact@v4
         with:
           name: android-test-results
           path: |
-            android-app/build/outputs/androidTest-results/connected
+            build/android-app/outputs/androidTest-results/connected
 
       - name: Upload instrumentation logcat
         uses: actions/upload-artifact@v4
         with:
           name: instrumentation-logcat
-          path: android-app/build/outputs/logs/logcat-instrumentation.txt
+          path: build/android-app/outputs/logs/logcat-instrumentation.txt
