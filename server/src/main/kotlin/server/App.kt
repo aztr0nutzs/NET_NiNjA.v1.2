@@ -125,8 +125,9 @@ fun startServer(
   host: String = "127.0.0.1",
   port: Int = 8787,
   dbPath: String = "netninja.db",
-  allowedOrigins: List<String> = listOf("http://127.0.0.1:8787", "http://localhost:8787")
-) {
+  allowedOrigins: List<String> = listOf("http://127.0.0.1:8787", "http://localhost:8787"),
+  wait: Boolean = true
+): ApplicationEngine {
   val conn = Db.open(dbPath)
   val devices = DeviceDao(conn)
   val events = EventDao(conn)
@@ -340,7 +341,7 @@ fun startServer(
 
   startScheduler()
 
-  embeddedServer(Netty, port = port, host = host) {
+  val engine = embeddedServer(Netty, port = port, host = host) {
     install(ContentNegotiation) { json() }
     install(WebSockets) {
       pingPeriod = Duration.ofSeconds(15)
@@ -708,7 +709,9 @@ fun startServer(
         }
       }
     }
-  }.start(wait = true)
+  }
+  engine.start(wait = wait)
+  return engine
 }
 
 private fun resolveHostname(ip: String): String? {
@@ -802,5 +805,4 @@ private fun localNetworkInfo(): Map<String, Any?> {
     "gateway" to null
   )
 }
-
 
