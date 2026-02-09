@@ -2,6 +2,7 @@ package com.netninja.cam
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import kotlinx.serialization.Serializable
 
 /**
  * Service responsible for discovering ONVIF devices on the local network. The original
@@ -12,6 +13,7 @@ import android.net.wifi.WifiManager
  */
 class OnvifDiscoveryService(private val context: Context) {
 
+    @Serializable
     data class OnvifDevice(val host: String, val port: Int, val name: String)
 
     /**

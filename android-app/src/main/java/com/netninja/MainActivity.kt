@@ -24,7 +24,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.netninja.openclaw.OpenClawGatewayService
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
@@ -44,7 +43,6 @@ class MainActivity : AppCompatActivity() {
 
     // Start engine service (foreground) so localhost server is up.
     startForegroundService(Intent(this, EngineService::class.java))
-    startOpenClawGateway()
     ensureRuntimePermissions()
     ensureLocationServicesEnabled()
 
@@ -237,15 +235,6 @@ class MainActivity : AppCompatActivity() {
         }
         .setNegativeButton("Cancel", null)
         .show()
-    }
-  }
-
-  private fun startOpenClawGateway() {
-    val intent = Intent(this, OpenClawGatewayService::class.java)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      startForegroundService(intent)
-    } else {
-      startService(intent)
     }
   }
 

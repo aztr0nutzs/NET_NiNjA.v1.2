@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -243,11 +243,11 @@
     .tab-page.active{ display:block; }
     .tab-page.media{
       padding: 0;
-      display:flex;
       flex-direction:column;
       height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 26px);
       min-height: 0;
     }
+    .tab-page.media.active{ display:flex; }
     .tab-page.media iframe{
       flex:1 1 auto;
       width:100%;
@@ -805,7 +805,7 @@
     }
     #scanNowBtn{ font-size: 0.95rem; }
 
-    /* Replace “danger” red/pink with purple (requirement: cyan/purple/mint only) */
+    /* Replace â€œdangerâ€ red/pink with purple (requirement: cyan/purple/mint only) */
     .btn-danger{
       background: rgba(0,0,0,0.45) !important;
       border: 1px solid rgba(185,103,255,0.55) !important;
@@ -1143,7 +1143,7 @@
           <div class="brand-badge" id="brandBadge">MN</div>
           <div style="min-width:0;">
             <div class="brand-title">My Network Control</div>
-            <div class="brand-sub" id="brandSub">Home Wi‑Fi (SSID) • secure</div>
+            <div class="brand-sub" id="brandSub">Home Wiâ€‘Fi (SSID) â€¢ secure</div>
           </div>
         </div>
 
@@ -1192,7 +1192,7 @@
               <div class="card-title">My Network</div>
               <div class="pill ok" id="myNetPill">Secure</div>
             </div>
-            <div class="muted" id="myNetText">Home Wi‑Fi (SSID) – Secure</div>
+            <div class="muted" id="myNetText">Home Wiâ€‘Fi (SSID) â€“ Secure</div>
             <div class="card-actions">
               <button class="btn btn-primary" id="btnScanMyNetwork">Scan my network</button>
             </div>
@@ -1200,7 +1200,7 @@
 
           <div class="card" id="cardWhosOnline" role="button" tabindex="0">
             <div class="card-head">
-              <div class="card-title">Who’s Online</div>
+              <div class="card-title">Whoâ€™s Online</div>
               <div class="pill" id="onlineDeltaPill">Changed: 0</div>
             </div>
             <div class="big" id="onlineCount">0</div>
@@ -1229,8 +1229,8 @@
             <div class="muted">Keep it simple: no nested menus here.</div>
             <div class="card-actions">
               <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
-              <button class="btn btn-danger" id="btnBlockNew">Auto‑block new devices</button>
-              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi‑Fi details</button>
+              <button class="btn btn-danger" id="btnBlockNew">Autoâ€‘block new devices</button>
+              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wiâ€‘Fi details</button>
             </div>
           </div>
         </div>
@@ -1295,19 +1295,19 @@
             <div class="pill warn" id="permSummaryPill">Needs review</div>
           </div>
           <div class="muted">
-            Android requires Location or Nearby Wi‑Fi access to read SSID/BSSID and scan your network.
-            Background scans are rate‑limited and will pause if Wi‑Fi is disconnected or permissions are denied.
+            Android requires Location or Nearby Wiâ€‘Fi access to read SSID/BSSID and scan your network.
+            Background scans are rateâ€‘limited and will pause if Wiâ€‘Fi is disconnected or permissions are denied.
           </div>
           <div class="nn-permList" aria-live="polite">
-            <span>Nearby Wi‑Fi</span><span id="permNearbyWifi">Unknown</span>
+            <span>Nearby Wiâ€‘Fi</span><span id="permNearbyWifi">Unknown</span>
             <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
-            <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
+            <span>Wiâ€‘Fi state</span><span id="permWifiState">Unknown</span>
             <span>Network state</span><span id="permNetworkState">Unknown</span>
           </div>
           <div class="card-actions" style="margin-top:12px;">
             <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
             <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
-            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi‑Fi settings</button>
+            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wiâ€‘Fi settings</button>
             <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
           </div>
           <div class="muted" style="margin-top:10px;">
@@ -1338,7 +1338,7 @@
                 <path d="M21 21l-4.35-4.35"/>
                 <circle cx="11" cy="11" r="7"/>
               </svg>
-              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MAC…" autocomplete="off" />
+              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MACâ€¦" autocomplete="off" />
             </div>
             <button class="btn btn-ghost" id="btnRescanDevices">Scan devices again</button>
             <button class="btn btn-ghost purple" id="btnExportDevices">Export list</button>
@@ -1388,7 +1388,7 @@
                 <div class="side-title" id="spTitle">Select a device</div>
                 <div class="side-sub" id="spSub">Pick a row to view details.</div>
               </div>
-              <div class="pill" id="spStatus">—</div>
+              <div class="pill" id="spStatus">â€”</div>
             </div>
 
             <div class="row" style="margin-bottom: 10px;">
@@ -1417,7 +1417,7 @@
             <div id="spSectionNotes" style="display:none;">
               <div class="notes">
                 <div class="field">
-                  <label for="spNote">Add a note…</label>
+                  <label for="spNote">Add a noteâ€¦</label>
                   <textarea id="spNote" placeholder="Example: Guest device, allow 2 hours."></textarea>
                 </div>
                 <div class="field">
@@ -1448,7 +1448,7 @@
         </div>
 
         <div class="muted" style="margin-top: 10px;">
-          Tip: double‑click a device row to open the detailed view.
+          Tip: doubleâ€‘click a device row to open the detailed view.
         </div>
       </section>
 
@@ -1495,44 +1495,1930 @@
               <button class="btn btn-ghost" id="btnNetSec">Run security check</button>
             </div>
           </div>
+        </div>
+<!-- DISCOVERY MAP - Ultimate 3D Network Visualization -->
+<div class="divider"></div>
+<div class="card" id="nnMapCardContainer" style="cursor:default;">
+  <div class="card-head">
+    <div class="card-title">Discovery Map</div>
+    <div class="pill" id="nnMapPill">Live</div>
+  </div>
+  <div class="muted">Drag to orbit • Pinch to zoom • Tap nodes for details • Explore color themes and visualization modes</div>
+
+  <div class="nn-mapHost">
+    <div class="nn-mapCard" id="nnMapCard" data-theme="cyber">
+      <!-- Top HUD -->
+      <div class="nn-hudTop">
+        <div>
+          <div class="nn-title">NET NINJA • DISCOVERY MAP</div>
+          <div class="nn-sub" id="nnHudStatus">0 devices • idle</div>
         </div>
+        <div class="nn-hudControls">
+          <button class="nn-hudBtn" id="nnResetView" title="Reset view">⟲</button>
+          <button class="nn-hudBtn" id="nnToggleLabels" title="Toggle labels">◉</button>
+          <button class="nn-hudBtn" id="nnToggleGrid" title="Toggle grid">▦</button>
+          <button class="nn-hudBtn" id="nnToggleStats" title="Statistics">📊</button>
+          <button class="nn-hudBtn" id="nnToggleThemes" title="Color themes">🎨</button>
+        </div>
+      </div>
+
+      <!-- Theme Selector Panel -->
+      <div class="nn-themePanel" id="nnThemePanel">
+        <div class="nn-themePanelTitle">Color Themes</div>
+        <div class="nn-themeGrid">
+          <button class="nn-themeBtn active" data-theme="cyber" title="Cyber (Cyan/Purple)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #00f0ff, #b967ff);"></div>
+            <span>Cyber</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="matrix" title="Matrix (Green)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #00ff41, #00cc33);"></div>
+            <span>Matrix</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="sunset" title="Sunset (Orange/Pink)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #ff6b35, #ff0080);"></div>
+            <span>Sunset</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="ocean" title="Ocean (Blue/Teal)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #00d4ff, #0047ab);"></div>
+            <span>Ocean</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="neon" title="Neon (Pink/Yellow)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #ff1493, #ffff00);"></div>
+            <span>Neon</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="aurora" title="Aurora (Purple/Green)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #9d00ff, #00ff9d);"></div>
+            <span>Aurora</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="fire" title="Fire (Red/Orange)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #ff0000, #ff8800);"></div>
+            <span>Fire</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="ice" title="Ice (White/Blue)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #e0ffff, #4169e1);"></div>
+            <span>Ice</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistics Panel -->
+      <div class="nn-statsPanel" id="nnStatsPanel">
+        <div class="nn-statsPanelTitle">Network Statistics</div>
+        <div class="nn-statsGrid">
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Total Devices</div>
+            <div class="nn-statValue" id="statTotal">0</div>
+          </div>
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Online</div>
+            <div class="nn-statValue nn-statOnline" id="statOnline">0</div>
+          </div>
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Threats</div>
+            <div class="nn-statValue nn-statThreat" id="statThreats">0</div>
+          </div>
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Connections</div>
+            <div class="nn-statValue" id="statConnections">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D Viewport -->
+      <div class="nn-viewport">
+        <div class="nn-scene">
+          <div class="nn-stage" id="nnStage">
+            <div class="nn-grid"></div>
+            <div class="nn-neonFog"></div>
+            <div class="nn-radar"></div>
+            <div class="nn-particleField" id="nnParticles"></div>
+            <div class="nn-constellationLayer" id="nnConstellation"></div>
+            <canvas class="nn-heatmap" id="nnHeatmap"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="nn-legend" id="nnLegend">
+        <div class="nn-legendTitle">Legend</div>
+        <div class="nn-legendItem">
+          <div class="nn-legendIcon nn-legendNormal"></div>
+          <span>Trusted Device</span>
+        </div>
+        <div class="nn-legendItem">
+          <div class="nn-legendIcon nn-legendThreat"></div>
+          <span>Unknown/Threat</span>
+        </div>
+        <div class="nn-legendItem">
+          <div class="nn-legendIcon nn-legendLink"></div>
+          <span>Connection</span>
+        </div>
+      </div>
+
+      <!-- Bottom Controls -->
+      <div class="nn-hudBottom">
+        <div class="nn-controlsLeft">
+          <div class="nn-modeSelector">
+            <button class="nn-modeBtn active" data-mode="star" title="Star Topology">⭐</button>
+            <button class="nn-modeBtn" data-mode="ring" title="Ring Topology">⭕</button>
+            <button class="nn-modeBtn" data-mode="mesh" title="Mesh Topology">🕸️</button>
+            <button class="nn-modeBtn" data-mode="tree" title="Tree Topology">🌳</button>
+          </div>
+        </div>
+        
+        <div class="nn-help">
+          <span>Touch: drag • pinch</span>
+          <span class="nn-separator">|</span>
+          <span id="nnZoomLevel">Zoom: 100%</span>
+          <span class="nn-separator">|</span>
+          <span id="nnRotation">Rotation: 58°</span>
+        </div>
+        
+        <div class="nn-controlsRight">
+          <div class="nn-effectsToggle">
+            <button class="nn-effectBtn active" data-effect="particles" title="Particles">✨</button>
+            <button class="nn-effectBtn active" data-effect="glow" title="Glow Effects">💫</button>
+            <button class="nn-effectBtn" data-effect="heatmap" title="Heat Map">🔥</button>
+            <button class="nn-effectBtn" data-effect="constellation" title="Constellation">🌌</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-actions" style="margin-top:12px;">
+    <button class="btn btn-ghost purple" id="btnMapRefresh">Refresh map</button>
+    <button class="btn btn-ghost" id="btnMapTraffic">Toggle metrics</button>
+    <button class="btn btn-ghost" id="btnMapAutoRotate">Auto-rotate</button>
+    <button class="btn btn-ghost purple" id="btnMapFilter">Filter devices</button>
+    <button class="btn btn-ghost" id="btnMapExport">Export view</button>
+  </div>
+</div>
+
+<style>
+/* Enhanced 3D Discovery Map - Base Styles */
+.nn-mapHost{
+  position: relative;
+  height: 580px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid var(--theme-primary, rgba(0,240,255,0.35));
+  box-shadow: 
+    inset 0 0 60px var(--theme-primary-glow, rgba(0,240,255,0.18)),
+    inset 0 0 100px var(--theme-secondary-glow, rgba(185,103,255,0.12)),
+    0 0 40px var(--theme-primary-shadow, rgba(0,240,255,0.25)),
+    0 0 80px var(--theme-secondary-shadow, rgba(185,103,255,0.15));
+  background: 
+    radial-gradient(ellipse at 50% 0%, var(--theme-primary-glow, rgba(0,240,255,0.08)), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, var(--theme-secondary-glow, rgba(185,103,255,0.06)), transparent 60%),
+    rgba(0,0,0,0.35);
+  margin-top: 10px;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.nn-mapHost:hover{
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  box-shadow: 
+    inset 0 0 60px var(--theme-primary-glow, rgba(0,240,255,0.22)),
+    inset 0 0 100px var(--theme-secondary-glow, rgba(185,103,255,0.16)),
+    0 0 50px var(--theme-primary-shadow, rgba(0,240,255,0.35)),
+    0 0 90px var(--theme-secondary-shadow, rgba(185,103,255,0.20));
+}
+
+/* Theme Color Variables */
+.nn-mapCard[data-theme="cyber"]{
+  --theme-primary: #00f0ff;
+  --theme-secondary: #b967ff;
+  --theme-accent: #78ffdc;
+  --theme-primary-glow: rgba(0,240,255,0.18);
+  --theme-secondary-glow: rgba(185,103,255,0.12);
+  --theme-primary-shadow: rgba(0,240,255,0.25);
+  --theme-secondary-shadow: rgba(185,103,255,0.15);
+  --theme-primary-bright: rgba(0,240,255,0.95);
+  --theme-secondary-bright: rgba(185,103,255,0.90);
+}
+
+.nn-mapCard[data-theme="matrix"]{
+  --theme-primary: #00ff41;
+  --theme-secondary: #00cc33;
+  --theme-accent: #39ff14;
+  --theme-primary-glow: rgba(0,255,65,0.18);
+  --theme-secondary-glow: rgba(0,204,51,0.12);
+  --theme-primary-shadow: rgba(0,255,65,0.25);
+  --theme-secondary-shadow: rgba(0,204,51,0.15);
+  --theme-primary-bright: rgba(0,255,65,0.95);
+  --theme-secondary-bright: rgba(0,204,51,0.90);
+}
+
+.nn-mapCard[data-theme="sunset"]{
+  --theme-primary: #ff6b35;
+  --theme-secondary: #ff0080;
+  --theme-accent: #ffa500;
+  --theme-primary-glow: rgba(255,107,53,0.18);
+  --theme-secondary-glow: rgba(255,0,128,0.12);
+  --theme-primary-shadow: rgba(255,107,53,0.25);
+  --theme-secondary-shadow: rgba(255,0,128,0.15);
+  --theme-primary-bright: rgba(255,107,53,0.95);
+  --theme-secondary-bright: rgba(255,0,128,0.90);
+}
+
+.nn-mapCard[data-theme="ocean"]{
+  --theme-primary: #00d4ff;
+  --theme-secondary: #0047ab;
+  --theme-accent: #40e0d0;
+  --theme-primary-glow: rgba(0,212,255,0.18);
+  --theme-secondary-glow: rgba(0,71,171,0.12);
+  --theme-primary-shadow: rgba(0,212,255,0.25);
+  --theme-secondary-shadow: rgba(0,71,171,0.15);
+  --theme-primary-bright: rgba(0,212,255,0.95);
+  --theme-secondary-bright: rgba(0,71,171,0.90);
+}
+
+.nn-mapCard[data-theme="neon"]{
+  --theme-primary: #ff1493;
+  --theme-secondary: #ffff00;
+  --theme-accent: #ff69b4;
+  --theme-primary-glow: rgba(255,20,147,0.18);
+  --theme-secondary-glow: rgba(255,255,0,0.12);
+  --theme-primary-shadow: rgba(255,20,147,0.25);
+  --theme-secondary-shadow: rgba(255,255,0,0.15);
+  --theme-primary-bright: rgba(255,20,147,0.95);
+  --theme-secondary-bright: rgba(255,255,0,0.90);
+}
+
+.nn-mapCard[data-theme="aurora"]{
+  --theme-primary: #9d00ff;
+  --theme-secondary: #00ff9d;
+  --theme-accent: #bf00ff;
+  --theme-primary-glow: rgba(157,0,255,0.18);
+  --theme-secondary-glow: rgba(0,255,157,0.12);
+  --theme-primary-shadow: rgba(157,0,255,0.25);
+  --theme-secondary-shadow: rgba(0,255,157,0.15);
+  --theme-primary-bright: rgba(157,0,255,0.95);
+  --theme-secondary-bright: rgba(0,255,157,0.90);
+}
+
+.nn-mapCard[data-theme="fire"]{
+  --theme-primary: #ff0000;
+  --theme-secondary: #ff8800;
+  --theme-accent: #ff4500;
+  --theme-primary-glow: rgba(255,0,0,0.18);
+  --theme-secondary-glow: rgba(255,136,0,0.12);
+  --theme-primary-shadow: rgba(255,0,0,0.25);
+  --theme-secondary-shadow: rgba(255,136,0,0.15);
+  --theme-primary-bright: rgba(255,0,0,0.95);
+  --theme-secondary-bright: rgba(255,136,0,0.90);
+}
+
+.nn-mapCard[data-theme="ice"]{
+  --theme-primary: #e0ffff;
+  --theme-secondary: #4169e1;
+  --theme-accent: #b0e0e6;
+  --theme-primary-glow: rgba(224,255,255,0.18);
+  --theme-secondary-glow: rgba(65,105,225,0.12);
+  --theme-primary-shadow: rgba(224,255,255,0.25);
+  --theme-secondary-shadow: rgba(65,105,225,0.15);
+  --theme-primary-bright: rgba(224,255,255,0.95);
+  --theme-secondary-bright: rgba(65,105,225,0.90);
+}
+
+.nn-mapCard{
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  position: relative;
+  background: 
+    linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 50%, rgba(0,0,0,0.88) 100%),
+    repeating-linear-gradient(0deg, var(--theme-primary-glow, rgba(0,240,255,0.03)) 0px, transparent 1px, transparent 2px, var(--theme-secondary-glow, rgba(185,103,255,0.02)) 3px);
+  border: 1px solid var(--theme-accent, rgba(120,255,220,0.35));
+  box-shadow:
+    inset 0 0 60px var(--theme-accent, rgba(120,255,220,0.15)),
+    inset 0 0 100px var(--theme-secondary-glow, rgba(185,103,255,0.12)),
+    inset 0 0 140px var(--theme-primary-glow, rgba(0,240,255,0.08));
+  overflow: hidden;
+  touch-action: none;
+  transition: all 0.5s ease;
+}
+
+.nn-mapCard::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(90deg, var(--theme-accent, rgba(120,255,220,0.28)), transparent 25%, transparent 75%, var(--theme-secondary-glow, rgba(185,103,255,0.25))),
+    linear-gradient(0deg, transparent 40%, var(--theme-primary-glow, rgba(0,240,255,0.12)) 50%, transparent 60%);
+  opacity: 0.7;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  border-radius: 16px;
+  animation: nnSweep 8s linear infinite;
+}
+
+@keyframes nnSweep{
+  0%, 100% { transform: translateY(0%); opacity: 0.7; }
+  50% { transform: translateY(-20%); opacity: 0.9; }
+}
+
+.nn-mapCard::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.04) 0px,
+    transparent 1px,
+    transparent 4px
+  );
+  opacity: 0.15;
+  pointer-events: none;
+  animation: nnScanline 0.12s linear infinite;
+}
+
+@keyframes nnScanline{
+  0% { opacity: 0.10; }
+  50% { opacity: 0.20; }
+  100% { opacity: 0.10; }
+}
+
+/* HUD Elements */
+.nn-hudTop{
+  position: absolute;
+  inset: 14px 14px auto 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.nn-hudTop > div:first-child{
+  pointer-events: none;
+}
+
+.nn-hudControls{
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+  flex-wrap: wrap;
+}
+
+.nn-hudBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.35));
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 
+    0 0 16px var(--theme-primary-glow, rgba(0,240,255,0.18)),
+    inset 0 0 12px var(--theme-accent, rgba(120,255,220,0.10));
+}
+
+.nn-hudBtn:hover{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.15));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  box-shadow: 
+    0 0 28px var(--theme-primary-shadow, rgba(0,240,255,0.45)),
+    inset 0 0 18px var(--theme-accent, rgba(120,255,220,0.18));
+  transform: scale(1.1) translateY(-2px);
+}
+
+.nn-hudBtn:active{
+  transform: scale(0.95);
+}
+
+.nn-hudBtn.active{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.25));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.65));
+  box-shadow: 
+    0 0 24px var(--theme-primary-shadow, rgba(0,240,255,0.40)),
+    inset 0 0 20px var(--theme-accent, rgba(120,255,220,0.25));
+}
+
+/* Theme Selector Panel */
+.nn-themePanel{
+  position: absolute;
+  top: 60px;
+  right: 14px;
+  width: 280px;
+  max-height: 0;
+  overflow: hidden;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.35));
+  border-radius: 14px;
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.6),
+    inset 0 0 30px var(--theme-primary-glow, rgba(0,240,255,0.10));
+  z-index: 9;
+  transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: auto;
+}
+
+.nn-themePanel.open{
+  max-height: 400px;
+  padding: 14px;
+}
+
+.nn-themePanelTitle{
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  margin-bottom: 12px;
+  text-shadow: 0 0 12px var(--theme-primary-glow, rgba(0,240,255,0.40));
+}
+
+.nn-themeGrid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.nn-themeBtn{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255,255,255,0.85);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.nn-themeBtn:hover{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.25);
+  transform: translateY(-2px);
+}
+
+.nn-themeBtn.active{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.35);
+  box-shadow: 0 0 16px rgba(255,255,255,0.15);
+}
+
+.nn-themeSwatch{
+  width: 50px;
+  height: 30px;
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.3), inset 0 0 8px rgba(255,255,255,0.15);
+}
+
+/* Statistics Panel */
+.nn-statsPanel{
+  position: absolute;
+  top: 60px;
+  left: 14px;
+  width: 220px;
+  max-height: 0;
+  overflow: hidden;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.35));
+  border-radius: 14px;
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.6),
+    inset 0 0 30px var(--theme-primary-glow, rgba(0,240,255,0.10));
+  z-index: 9;
+  transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: auto;
+}
+
+.nn-statsPanel.open{
+  max-height: 300px;
+  padding: 14px;
+}
+
+.nn-statsPanelTitle{
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  margin-bottom: 12px;
+  text-shadow: 0 0 12px var(--theme-primary-glow, rgba(0,240,255,0.40));
+}
+
+.nn-statsGrid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.nn-statItem{
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.20));
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+
+.nn-statLabel{
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 6px;
+}
+
+.nn-statValue{
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--theme-primary, rgba(0,240,255,1));
+  text-shadow: 0 0 16px var(--theme-primary-glow, rgba(0,240,255,0.50));
+}
+
+.nn-statOnline{
+  color: #00ff41;
+  text-shadow: 0 0 16px rgba(0,255,65,0.50);
+}
+
+.nn-statThreat{
+  color: #ff0080;
+  text-shadow: 0 0 16px rgba(255,0,128,0.50);
+}
+
+.nn-title{
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-shadow: 
+    0 0 20px var(--theme-primary, rgba(0,240,255,0.65)),
+    0 0 40px var(--theme-accent, rgba(120,255,220,0.35));
+  color: var(--theme-accent, rgba(120,255,220,1));
+  font-weight: 700;
+  animation: nnTitlePulse 3s ease-in-out infinite;
+}
+
+@keyframes nnTitlePulse{
+  0%, 100% { 
+    filter: brightness(1);
+  }
+  50% { 
+    filter: brightness(1.3);
+  }
+}
+
+.nn-sub{
+  font-size: 11px;
+  color: rgba(210,255,245,0.92);
+  text-shadow: 0 0 16px var(--theme-secondary-glow, rgba(185,103,255,0.50));
+  margin-top: 4px;
+}
+
+/* Viewport */
+.nn-viewport{
+  position: absolute;
+  inset: 64px 14px 74px 14px;
+  border-radius: 16px;
+  background: 
+    radial-gradient(ellipse at center, var(--theme-primary-glow, rgba(0,240,255,0.08)), transparent 70%),
+    rgba(0,0,0,0.35);
+  border: 1px solid var(--theme-accent, rgba(120,255,220,0.28));
+  box-shadow:
+    inset 0 0 80px var(--theme-accent, rgba(120,255,220,0.15)),
+    inset 0 0 120px var(--theme-secondary-glow, rgba(185,103,255,0.12)),
+    inset 0 2px 0 rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.nn-scene{
+  width: 100%;
+  height: 100%;
+  perspective: 1400px;
+  perspective-origin: 50% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nn-stage{
+  width: min(1200px, 180vw);
+  height: min(750px, 90vh);
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.nn-grid{
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      var(--theme-accent, rgba(120,255,220,0.22)) 0 2px,
+      transparent 2px 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--theme-secondary-bright, rgba(185,103,255,0.20)) 0 2px,
+      transparent 2px 40px
+    ),
+    radial-gradient(
+      ellipse at center,
+      var(--theme-primary-glow, rgba(0,240,255,0.12)),
+      transparent 75%
+    );
+  box-shadow:
+    inset 0 0 200px var(--theme-accent, rgba(120,255,220,0.20)),
+    inset 0 0 200px var(--theme-secondary-glow, rgba(185,103,255,0.15));
+  border: 1px solid var(--theme-accent, rgba(120,255,220,0.28));
+  filter: saturate(1.5) contrast(1.2);
+  animation: nnGridPulse 4s ease-in-out infinite;
+  transition: opacity 0.4s ease;
+}
+
+@keyframes nnGridPulse{
+  0%, 100% { 
+    opacity: 1;
+    filter: saturate(1.5) contrast(1.2);
+  }
+  50% { 
+    opacity: 0.85;
+    filter: saturate(1.7) contrast(1.3);
+  }
+}
+
+.nn-neonFog{
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(circle at 25% 30%, var(--theme-accent, rgba(120,255,220,0.25)), transparent 50%),
+    radial-gradient(circle at 80% 40%, var(--theme-secondary-bright, rgba(185,103,255,0.22)), transparent 55%),
+    radial-gradient(circle at 60% 80%, var(--theme-primary-bright, rgba(0,240,255,0.18)), transparent 60%),
+    radial-gradient(circle at 15% 75%, var(--theme-accent, rgba(120,255,220,0.15)), transparent 50%);
+  mix-blend-mode: screen;
+  filter: blur(28px) saturate(1.8);
+  opacity: 1;
+  pointer-events: none;
+  animation: nnFogShift 12s ease-in-out infinite;
+}
+
+@keyframes nnFogShift{
+  0%, 100% { transform: translate(0%, 0%) scale(1); }
+  33% { transform: translate(3%, -2%) scale(1.05); }
+  66% { transform: translate(-2%, 3%) scale(0.98); }
+}
+
+.nn-radar{
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid var(--theme-primary-bright, rgba(0,240,255,0.85));
+  box-shadow: 
+    0 0 60px var(--theme-primary-shadow, rgba(0,240,255,0.50)),
+    inset 0 0 40px var(--theme-accent, rgba(120,255,220,0.25));
+  animation: nnRadarPulse 2.5s infinite ease-out;
+  pointer-events: none;
+}
+
+.nn-radar::before{
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-secondary-bright, rgba(185,103,255,0.45));
+  box-shadow: 0 0 40px var(--theme-secondary-shadow, rgba(185,103,255,0.35));
+  animation: nnRadarPulse 2.5s 0.5s infinite ease-out;
+}
+
+@keyframes nnRadarPulse{
+  0% { 
+    transform: translate(-50%, -50%) scale(0.35);
+    opacity: 1;
+  }
+  100% { 
+    transform: translate(-50%, -50%) scale(3.2);
+    opacity: 0;
+  }
+}
+
+/* Particle Field */
+.nn-particleField{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+}
+
+.nn-particleField.hidden{
+  opacity: 0;
+}
+
+.nn-particle{
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--theme-accent, rgba(120,255,220,1)), var(--theme-primary, rgba(0,240,255,0.5)));
+  box-shadow: 0 0 12px var(--theme-accent, rgba(120,255,220,0.8));
+  pointer-events: none;
+  animation: nnParticleFloat 8s linear infinite;
+}
+
+@keyframes nnParticleFloat{
+  0% { 
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  90% { 
+    opacity: 0.6;
+  }
+  100% { 
+    transform: translate(var(--tx), var(--ty)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Constellation Layer */
+.nn-constellationLayer{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.nn-constellationLayer.visible{
+  opacity: 1;
+}
+
+.nn-constellation{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 8px rgba(255,255,255,0.6);
+  animation: nnStarTwinkle 3s ease-in-out infinite;
+}
+
+@keyframes nnStarTwinkle{
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Heatmap Canvas */
+.nn-heatmap{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.4s ease;
+}
+
+.nn-heatmap.visible{
+  opacity: 0.6;
+}
+
+/* Links */
+.nn-link{
+  position: absolute;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary-bright, rgba(0,240,255,0.95)),
+    var(--theme-accent, rgba(120,255,220,0.92)) 50%,
+    var(--theme-secondary-bright, rgba(185,103,255,0.95))
+  );
+  box-shadow: 
+    0 0 22px var(--theme-primary-shadow, rgba(0,240,255,0.50)),
+    0 0 34px var(--theme-secondary-shadow, rgba(185,103,255,0.35));
+  transform-origin: left center;
+  opacity: 0.95;
+  filter: saturate(1.6) contrast(1.3);
+  animation: nnLinkPulse 2s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+.nn-link.strong{
+  height: 4px;
+  box-shadow: 
+    0 0 28px var(--theme-primary-shadow, rgba(0,240,255,0.70)),
+    0 0 42px var(--theme-secondary-shadow, rgba(185,103,255,0.50));
+}
+
+.nn-link.weak{
+  height: 2px;
+  opacity: 0.5;
+}
+
+@keyframes nnLinkPulse{
+  0%, 100% { 
+    opacity: 0.95;
+    filter: saturate(1.6) contrast(1.3);
+  }
+  50% { 
+    opacity: 1;
+    filter: saturate(1.9) contrast(1.5);
+  }
+}
+
+/* Nodes */
+.nn-node{
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: 
+    radial-gradient(circle at 30% 30%, 
+      rgba(255,255,255,1), 
+      var(--theme-primary-bright, rgba(0,240,255,0.95)) 35%, 
+      var(--theme-secondary-bright, rgba(185,103,255,0.90)) 75%
+    );
+  box-shadow: 
+    0 0 28px var(--theme-primary-shadow, rgba(0,240,255,0.70)),
+    0 0 50px var(--theme-secondary-shadow, rgba(185,103,255,0.40)),
+    inset 0 0 16px rgba(255,255,255,0.50);
+  animation: nnNodeFloat 3.5s infinite ease-in-out;
+  filter: saturate(1.7) contrast(1.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nn-node:hover{
+  transform: translateZ(80px) scale(1.3);
+  box-shadow: 
+    0 0 40px var(--theme-primary-shadow, rgba(0,240,255,0.90)),
+    0 0 70px var(--theme-secondary-shadow, rgba(185,103,255,0.60)),
+    inset 0 0 20px rgba(255,255,255,0.70);
+  filter: saturate(2.0) contrast(1.5);
+}
+
+.nn-node.threat{
+  background: 
+    radial-gradient(circle at 30% 30%, 
+      rgba(255,255,255,1), 
+      var(--theme-secondary-bright, rgba(185,103,255,0.98)) 45%, 
+      var(--theme-primary-bright, rgba(0,240,255,0.80)) 85%
+    );
+  box-shadow: 
+    0 0 40px var(--theme-secondary-shadow, rgba(185,103,255,0.80)),
+    0 0 60px var(--theme-primary-shadow, rgba(0,240,255,0.30)),
+    inset 0 0 18px rgba(255,255,255,0.60);
+  animation: nnNodeThreat 1.5s infinite ease-in-out;
+}
+
+.nn-node.selected{
+  box-shadow: 
+    0 0 50px var(--theme-primary-shadow, rgba(0,240,255,1)),
+    0 0 80px var(--theme-secondary-shadow, rgba(185,103,255,0.70)),
+    inset 0 0 24px rgba(255,255,255,0.80);
+  transform: translateZ(100px) scale(1.4);
+}
+
+@keyframes nnNodeFloat{
+  0%, 100% { 
+    transform: translateZ(0px);
+  }
+  50% { 
+    transform: translateZ(60px);
+  }
+}
+
+@keyframes nnNodeThreat{
+  0%, 100% { 
+    transform: translateZ(0px) scale(1);
+    filter: saturate(1.7) contrast(1.3);
+  }
+  50% { 
+    transform: translateZ(70px) scale(1.15);
+    filter: saturate(2.2) contrast(1.6);
+  }
+}
+
+/* Node Ripple Effect */
+.nn-ripple{
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--theme-primary-bright, rgba(0,240,255,0.9));
+  box-shadow: 0 0 30px var(--theme-primary-shadow, rgba(0,240,255,0.6));
+  pointer-events: none;
+  animation: nnRippleExpand 1.2s ease-out forwards;
+}
+
+@keyframes nnRippleExpand{
+  0% {
+    width: 28px;
+    height: 28px;
+    opacity: 1;
+  }
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0;
+  }
+}
+
+.nn-label{
+  position: absolute;
+  top: -30px;
+  left: -70px;
+  width: 160px;
+  font-size: 11px;
+  color: rgba(210,255,245,1);
+  text-shadow: 
+    0 0 18px var(--theme-primary-shadow, rgba(0,240,255,0.60)),
+    0 0 8px rgba(0,0,0,0.90);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  opacity: 0.95;
+  transition: all 0.3s ease;
+}
+
+.nn-node:hover .nn-label{
+  opacity: 1;
+  top: -35px;
+  text-shadow: 
+    0 0 24px var(--theme-primary-shadow, rgba(0,240,255,0.80)),
+    0 0 10px rgba(0,0,0,1);
+  transform: scale(1.1);
+}
+
+/* Packets */
+.nn-packet{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--theme-accent, rgba(120,255,220,1)), var(--theme-accent, rgba(120,255,220,0.3)));
+  box-shadow: 
+    0 0 20px var(--theme-accent, rgba(120,255,220,1)),
+    0 0 30px var(--theme-accent, rgba(120,255,220,0.6));
+  pointer-events: none;
+  animation: nnPacketTravel 2s linear infinite;
+}
+
+@keyframes nnPacketTravel{
+  0% { 
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  90% { 
+    opacity: 0.8;
+  }
+  100% { 
+    transform: translate(var(--px), var(--py)) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Legend */
+.nn-legend{
+  position: absolute;
+  bottom: 80px;
+  left: 14px;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  border-radius: 12px;
+  padding: 10px 12px;
+  z-index: 5;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.nn-legendTitle{
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  margin-bottom: 8px;
+  text-shadow: 0 0 10px var(--theme-primary-glow, rgba(0,240,255,0.40));
+}
+
+.nn-legendItem{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 6px;
+}
+
+.nn-legendItem:last-child{
+  margin-bottom: 0;
+}
+
+.nn-legendIcon{
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nn-legendNormal{
+  background: radial-gradient(circle, var(--theme-primary-bright, rgba(0,240,255,0.95)), var(--theme-secondary-bright, rgba(185,103,255,0.90)));
+  box-shadow: 0 0 12px var(--theme-primary-shadow, rgba(0,240,255,0.50));
+}
+
+.nn-legendThreat{
+  background: radial-gradient(circle, var(--theme-secondary-bright, rgba(185,103,255,0.98)), var(--theme-primary-bright, rgba(0,240,255,0.80)));
+  box-shadow: 0 0 12px var(--theme-secondary-shadow, rgba(185,103,255,0.50));
+}
+
+.nn-legendLink{
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--theme-primary-bright, rgba(0,240,255,0.95)), var(--theme-secondary-bright, rgba(185,103,255,0.95)));
+  box-shadow: 0 0 10px var(--theme-primary-shadow, rgba(0,240,255,0.40));
+}
+
+/* Bottom HUD */
+.nn-hudBottom{
+  position: absolute;
+  inset: auto 14px 14px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.nn-controlsLeft,
+.nn-controlsRight{
+  pointer-events: auto;
+}
+
+.nn-help{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: rgba(210,255,245,0.85);
+  text-shadow: 0 0 14px var(--theme-secondary-glow, rgba(185,103,255,0.45));
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  box-shadow: 0 0 18px var(--theme-primary-glow, rgba(0,240,255,0.15));
+  width: fit-content;
+  pointer-events: none;
+}
+
+.nn-separator{
+  color: var(--theme-secondary-bright, rgba(185,103,255,0.50));
+}
+
+/* Mode Selector */
+.nn-modeSelector{
+  display: flex;
+  gap: 6px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 0 18px var(--theme-primary-glow, rgba(0,240,255,0.15));
+}
+
+.nn-modeBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.75);
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nn-modeBtn:hover{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.15));
+  border-color: var(--theme-primary, rgba(0,240,255,0.35));
+  color: rgba(255,255,255,0.95);
+}
+
+.nn-modeBtn.active{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.25));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  color: var(--theme-accent, rgba(120,255,220,1));
+  box-shadow: 0 0 16px var(--theme-primary-shadow, rgba(0,240,255,0.30));
+}
+
+/* Effects Toggle */
+.nn-effectsToggle{
+  display: flex;
+  gap: 6px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 0 18px var(--theme-primary-glow, rgba(0,240,255,0.15));
+}
+
+.nn-effectBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.75);
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nn-effectBtn:hover{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.15));
+  border-color: var(--theme-primary, rgba(0,240,255,0.35));
+}
+
+.nn-effectBtn.active{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.25));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  box-shadow: 0 0 16px var(--theme-primary-shadow, rgba(0,240,255,0.30));
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  .nn-mapHost{
+    height: 480px;
+  }
+  
+  .nn-hudBtn{
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .nn-title{
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+  
+  .nn-sub{
+    font-size: 10px;
+  }
+  
+  .nn-help{
+    font-size: 9px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  
+  .nn-themePanel{
+    width: 240px;
+  }
+  
+  .nn-statsPanel{
+    width: 180px;
+  }
+  
+  .nn-legend{
+    display: none;
+  }
+  
+  .nn-modeBtn,
+  .nn-effectBtn{
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+</style>
+
+<script>
+(function(){
+  "use strict";
+  
+  const stage = document.getElementById("nnStage");
+  const hudStatus = document.getElementById("nnHudStatus");
+  const card = document.getElementById("nnMapCard");
+  const particlesContainer = document.getElementById("nnParticles");
+  const constellationLayer = document.getElementById("nnConstellation");
+  const heatmapCanvas = document.getElementById("nnHeatmap");
+  const zoomLevel = document.getElementById("nnZoomLevel");
+  const rotationDisplay = document.getElementById("nnRotation");
+  const themePanel = document.getElementById("nnThemePanel");
+  const statsPanel = document.getElementById("nnStatsPanel");
+  
+  let rotX = 58;
+  let rotZ = -10;
+  let zoom = 1.15;
+  let autoRotate = false;
+  let autoRotateInterval = null;
+  let labelsVisible = true;
+  let gridVisible = true;
+  let currentMode = "star"; // star, ring, mesh, tree
+  let currentTheme = "cyber";
+  
+  const effects = {
+    particles: true,
+    glow: true,
+    heatmap: false,
+    constellation: false
+  };
+  
+  const pointers = new Map();
+  let lastPinchDist = null;
+  let nodeEls = [];
+  let linkEls = [];
+  let momentum = { x: 0, y: 0 };
+  let isInteracting = false;
+  let selectedNode = null;
+  
+  function applyTransform(){
+    if(!stage) return;
+    stage.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) scale(${zoom})`;
+    if(zoomLevel) zoomLevel.textContent = `Zoom: ${Math.round(zoom * 100)}%`;
+    if(rotationDisplay) rotationDisplay.textContent = `Rotation: ${Math.round(rotX)}°`;
+  }
+  
+  function applyMomentum(){
+    if(isInteracting || (Math.abs(momentum.x) < 0.1 && Math.abs(momentum.y) < 0.1)){
+      return;
+    }
+    
+    rotZ += momentum.x;
+    rotX = Math.max(25, Math.min(82, rotX - momentum.y));
+    
+    momentum.x *= 0.92;
+    momentum.y *= 0.92;
+    
+    applyTransform();
+    requestAnimationFrame(applyMomentum);
+  }
+  
+  applyTransform();
+  
+  function clearGraph(){
+    if(!stage) return;
+    stage.querySelectorAll(".nn-node,.nn-link,.nn-packet,.nn-ripple").forEach(e => e.remove());
+    nodeEls = [];
+    linkEls = [];
+    selectedNode = null;
+  }
+  
+  function createParticles(){
+    if(!particlesContainer) return;
+    particlesContainer.innerHTML = "";
+    
+    for(let i = 0; i < 60; i++){
+      const particle = document.createElement("div");
+      particle.className = "nn-particle";
       
+      const startX = Math.random() * 100;
+      const startY = Math.random() * 100;
+      const endX = (Math.random() - 0.5) * 250;
+      const endY = (Math.random() - 0.5) * 250;
+      
+      particle.style.left = startX + "%";
+      particle.style.top = startY + "%";
+      particle.style.setProperty("--tx", endX + "px");
+      particle.style.setProperty("--ty", endY + "px");
+      particle.style.animationDelay = (Math.random() * 8) + "s";
+      particle.style.animationDuration = (5 + Math.random() * 6) + "s";
+      
+      particlesContainer.appendChild(particle);
+    }
+  }
+  
+  function createConstellation(){
+    if(!constellationLayer) return;
+    constellationLayer.innerHTML = "";
+    
+    for(let i = 0; i < 100; i++){
+      const star = document.createElement("div");
+      star.className = "nn-constellation";
+      star.style.left = (Math.random() * 100) + "%";
+      star.style.top = (Math.random() * 100) + "%";
+      star.style.animationDelay = (Math.random() * 3) + "s";
+      
+      constellationLayer.appendChild(star);
+    }
+  }
+  
+  function createHeatmap(nodes){
+    if(!heatmapCanvas) return;
+    const ctx = heatmapCanvas.getContext("2d");
+    heatmapCanvas.width = stage.clientWidth;
+    heatmapCanvas.height = stage.clientHeight;
+    
+    ctx.clearRect(0, 0, heatmapCanvas.width, heatmapCanvas.height);
+    
+    nodes.forEach(node => {
+      const gradient = ctx.createRadialGradient(
+        node.x, node.y, 0,
+        node.x, node.y, 100
+      );
+      
+      const intensity = node.threat ? 0.6 : 0.3;
+      const color = node.threat ? '185,103,255' : '0,240,255';
+      
+      gradient.addColorStop(0, `rgba(${color},${intensity})`);
+      gradient.addColorStop(0.5, `rgba(${color},${intensity * 0.3})`);
+      gradient.addColorStop(1, `rgba(${color},0)`);
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, heatmapCanvas.width, heatmapCanvas.height);
+    });
+  }
+  
+  function createNode(d){
+    const n = document.createElement("div");
+    n.className = "nn-node" + (d.threat ? " threat" : "");
+    n.style.left = d.x + "px";
+    n.style.top = d.y + "px";
+    n.dataset.id = d.id || "";
+    
+    const label = document.createElement("div");
+    label.className = "nn-label";
+    label.textContent = d.name || "Device";
+    label.style.display = labelsVisible ? "block" : "none";
+    
+    n.appendChild(label);
+    
+    // Click handler
+    n.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectNode(n, d);
+    });
+    
+    stage.appendChild(n);
+    return n;
+  }
+  
+  function selectNode(nodeEl, data){
+    // Deselect previous
+    if(selectedNode){
+      selectedNode.classList.remove("selected");
+    }
+    
+    // Select new
+    nodeEl.classList.add("selected");
+    selectedNode = nodeEl;
+    
+    // Create ripple effect
+    const ripple = document.createElement("div");
+    ripple.className = "nn-ripple";
+    ripple.style.left = nodeEl.style.left;
+    ripple.style.top = nodeEl.style.top;
+    stage.appendChild(ripple);
+    
+    setTimeout(() => ripple.remove(), 1200);
+    
+    // Show info (could be a tooltip or panel)
+    console.log("Selected node:", data);
+  }
+  
+  function createLink(aEl, bEl, strength = "normal"){
+    const ax = aEl.offsetLeft + aEl.offsetWidth / 2;
+    const ay = aEl.offsetTop + aEl.offsetHeight / 2;
+    const bx = bEl.offsetLeft + bEl.offsetWidth / 2;
+    const by = bEl.offsetTop + bEl.offsetHeight / 2;
+    
+    const dx = bx - ax;
+    const dy = by - ay;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    
+    const line = document.createElement("div");
+    line.className = "nn-link " + strength;
+    line.style.width = dist + "px";
+    line.style.left = ax + "px";
+    line.style.top = ay + "px";
+    line.style.transform = `rotate(${angle}deg)`;
+    
+    stage.appendChild(line);
+    linkEls.push(line);
+    
+    // Random packet animation
+    if(Math.random() > 0.5){
+      createPacket(ax, ay, dx, dy);
+    }
+  }
+  
+  function createPacket(startX, startY, dx, dy){
+    const packet = document.createElement("div");
+    packet.className = "nn-packet";
+    packet.style.left = startX + "px";
+    packet.style.top = startY + "px";
+    packet.style.setProperty("--px", dx + "px");
+    packet.style.setProperty("--py", dy + "px");
+    packet.style.animationDuration = (1.5 + Math.random() * 1.5) + "s";
+    packet.style.animationDelay = (Math.random() * 2) + "s";
+    
+    stage.appendChild(packet);
+    
+    setTimeout(() => packet.remove(), 5000);
+  }
+  
+  function hashCode(str){
+    let h = 2166136261;
+    for(let i = 0; i < str.length; i++){
+      h ^= str.charCodeAt(i);
+      h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+    }
+    return h >>> 0;
+  }
+  
+  function layoutStar(list, W, H){
+    const pad = 100;
+    return list.map((d) => {
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      const h = hashCode(key);
+      const angle = (h % 360) * Math.PI / 180;
+      const radius = 180 + (h % 150);
+      const x = (W / 2) + radius * Math.cos(angle);
+      const y = (H / 2) + radius * Math.sin(angle);
+      
+      return {
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x: Math.max(pad, Math.min(W - pad, x)),
+        y: Math.max(pad, Math.min(H - pad, y))
+      };
+    });
+  }
+  
+  function layoutRing(list, W, H){
+    const pad = 120;
+    const centerX = W / 2;
+    const centerY = H / 2;
+    const radius = Math.min(W, H) / 2 - pad;
+    
+    return list.map((d, i) => {
+      const angle = (i / list.length) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      return {
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x, y
+      };
+    });
+  }
+  
+  function layoutMesh(list, W, H){
+    const pad = 100;
+    const cols = Math.ceil(Math.sqrt(list.length));
+    const rows = Math.ceil(list.length / cols);
+    const cellW = (W - pad * 2) / cols;
+    const cellH = (H - pad * 2) / rows;
+    
+    return list.map((d, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = pad + col * cellW + cellW / 2 + (Math.random() - 0.5) * 40;
+      const y = pad + row * cellH + cellH / 2 + (Math.random() - 0.5) * 40;
+      
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      return {
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x, y
+      };
+    });
+  }
+  
+  function layoutTree(list, W, H){
+    const pad = 120;
+    const levels = Math.ceil(Math.log2(list.length + 1));
+    
+    return list.map((d, i) => {
+      const level = Math.floor(Math.log2(i + 1));
+      const posInLevel = i - (Math.pow(2, level) - 1);
+      const nodesInLevel = Math.pow(2, level);
+      
+      const y = pad + (level / levels) * (H - pad * 2);
+      const x = pad + ((posInLevel + 0.5) / nodesInLevel) * (W - pad * 2);
+      
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      return {
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x, y
+      };
+    });
+  }
+  
+  function connectStar(nodes){
+    if(nodes.length === 0) return;
+    
+    // Create center node
+    const centerNode = {
+      offsetLeft: stage.clientWidth / 2 - 14,
+      offsetTop: stage.clientHeight / 2 - 14,
+      offsetWidth: 28,
+      offsetHeight: 28
+    };
+    
+    for(let i = 0; i < nodeEls.length; i++){
+      const strength = Math.random() > 0.7 ? "strong" : "normal";
+      createLink(centerNode, nodeEls[i], strength);
+      
+      // Some inter-node connections
+      if(i > 0 && Math.random() > 0.7){
+        const targetIdx = Math.floor(Math.random() * i);
+        createLink(nodeEls[i], nodeEls[targetIdx], "weak");
+      }
+    }
+  }
+  
+  function connectRing(nodes){
+    for(let i = 0; i < nodeEls.length; i++){
+      const next = (i + 1) % nodeEls.length;
+      createLink(nodeEls[i], nodeEls[next], "normal");
+      
+      // Diagonal connections
+      if(i < nodeEls.length - 2){
+        const skip = (i + 2) % nodeEls.length;
+        if(Math.random() > 0.6){
+          createLink(nodeEls[i], nodeEls[skip], "weak");
+        }
+      }
+    }
+  }
+  
+  function connectMesh(nodes){
+    for(let i = 0; i < nodeEls.length; i++){
+      // Connect to 2-4 random neighbors
+      const connections = 2 + Math.floor(Math.random() * 3);
+      for(let j = 0; j < connections; j++){
+        const target = Math.floor(Math.random() * nodeEls.length);
+        if(target !== i){
+          const strength = Math.random() > 0.5 ? "normal" : "weak";
+          createLink(nodeEls[i], nodeEls[target], strength);
+        }
+      }
+    }
+  }
+  
+  function connectTree(nodes){
+    for(let i = 1; i < nodeEls.length; i++){
+      const parent = Math.floor((i - 1) / 2);
+      createLink(nodeEls[parent], nodeEls[i], "normal");
+    }
+  }
+  
+  window.nnUpdateDiscoveryMap = function(){
+    if(!stage || !hudStatus) return;
+    
+    const list = Array.isArray(window.devices) ? window.devices : 
+                 (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
+    
+    if(!Array.isArray(list) || list.length === 0){
+      hudStatus.textContent = "0 devices • idle";
+      clearGraph();
+      updateStats(0, 0, 0, 0);
+      return;
+    }
+    
+    clearGraph();
+    
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+    
+    // Layout based on mode
+    let mapped;
+    const displayList = list.slice(0, 32);
+    
+    switch(currentMode){
+      case "ring":
+        mapped = layoutRing(displayList, W, H);
+        break;
+      case "mesh":
+        mapped = layoutMesh(displayList, W, H);
+        break;
+      case "tree":
+        mapped = layoutTree(displayList, W, H);
+        break;
+      default:
+        mapped = layoutStar(displayList, W, H);
+    }
+    
+    // Create nodes
+    mapped.forEach(d => nodeEls.push(createNode(d)));
+    
+    // Create connections based on mode
+    switch(currentMode){
+      case "ring":
+        connectRing(mapped);
+        break;
+      case "mesh":
+        connectMesh(mapped);
+        break;
+      case "tree":
+        connectTree(mapped);
+        break;
+      default:
+        connectStar(mapped);
+    }
+    
+    // Update stats
+    const totalDevices = list.length;
+    const onlineDevices = list.filter(d => d.status === "Online").length;
+    const threats = list.filter(d => d.threat || d.trust === "Unknown" || d.status === "Blocked").length;
+    const connections = linkEls.length;
+    
+    updateStats(totalDevices, onlineDevices, threats, connections);
+    
+    hudStatus.textContent = `${mapped.length} devices • ${currentMode} topology`;
+    
+    // Update heatmap if enabled
+    if(effects.heatmap){
+      createHeatmap(mapped);
+    }
+  };
+  
+  function updateStats(total, online, threats, connections){
+    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statOnline").textContent = online;
+    document.getElementById("statThreats").textContent = threats;
+    document.getElementById("statConnections").textContent = connections;
+  }
+  
+  // Touch/pointer interaction
+  let lastPointerTime = 0;
+  let lastPointerPos = { x: 0, y: 0 };
+  
+  card?.addEventListener("pointerdown", (e) => {
+    card.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    lastPointerTime = Date.now();
+    lastPointerPos = { x: e.clientX, y: e.clientY };
+    isInteracting = true;
+    momentum = { x: 0, y: 0 };
+    if(pointers.size === 2) lastPinchDist = null;
+  });
+  
+  card?.addEventListener("pointermove", (e) => {
+    if(!pointers.has(e.pointerId)) return;
+    
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    
+    const now = Date.now();
+    const dt = Math.max(1, now - lastPointerTime);
+    
+    if(pointers.size === 1){
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      
+      rotZ += dx * 0.28;
+      rotX = Math.max(25, Math.min(82, rotX - dy * 0.28));
+      
+      momentum.x = (e.clientX - lastPointerPos.x) / dt * 16;
+      momentum.y = (e.clientY - lastPointerPos.y) / dt * 16;
+      
+      lastPointerPos = { x: e.clientX, y: e.clientY };
+      lastPointerTime = now;
+      
+      applyTransform();
+      return;
+    }
+    
+    if(pointers.size === 2){
+      const pts = Array.from(pointers.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      
+      if(lastPinchDist != null){
+        const delta = dist - lastPinchDist;
+        zoom = Math.max(0.6, Math.min(2.5, zoom + delta * 0.003));
+        applyTransform();
+      }
+      lastPinchDist = dist;
+    }
+  });
+  
+  card?.addEventListener("pointerup", (e) => {
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2) lastPinchDist = null;
+    if(pointers.size === 0){
+      isInteracting = false;
+      requestAnimationFrame(applyMomentum);
+    }
+  });
+  
+  card?.addEventListener("pointercancel", (e) => {
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2) lastPinchDist = null;
+    if(pointers.size === 0){
+      isInteracting = false;
+    }
+  });
+  
+  // Mouse wheel zoom
+  card?.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = e.deltaY * -0.001;
+    zoom = Math.max(0.6, Math.min(2.5, zoom + delta));
+    applyTransform();
+  }, { passive: false });
+  
+  // Control buttons
+  document.getElementById("nnResetView")?.addEventListener("click", () => {
+    rotX = 58;
+    rotZ = -10;
+    zoom = 1.15;
+    momentum = { x: 0, y: 0 };
+    applyTransform();
+  });
+  
+  document.getElementById("nnToggleLabels")?.addEventListener("click", (e) => {
+    labelsVisible = !labelsVisible;
+    stage.querySelectorAll(".nn-label").forEach(label => {
+      label.style.display = labelsVisible ? "block" : "none";
+    });
+    e.currentTarget.classList.toggle("active", labelsVisible);
+  });
+  
+  document.getElementById("nnToggleGrid")?.addEventListener("click", (e) => {
+    gridVisible = !gridVisible;
+    const grid = stage.querySelector(".nn-grid");
+    if(grid){
+      grid.style.opacity = gridVisible ? "1" : "0";
+    }
+    e.currentTarget.classList.toggle("active", gridVisible);
+  });
+  
+  document.getElementById("nnToggleThemes")?.addEventListener("click", (e) => {
+    themePanel.classList.toggle("open");
+    e.currentTarget.classList.toggle("active", themePanel.classList.contains("open"));
+  });
+  
+  document.getElementById("nnToggleStats")?.addEventListener("click", (e) => {
+    statsPanel.classList.toggle("open");
+    e.currentTarget.classList.toggle("active", statsPanel.classList.contains("open"));
+  });
+  
+  // Theme selection
+  document.querySelectorAll(".nn-themeBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentTheme = btn.dataset.theme;
+      card.dataset.theme = currentTheme;
+      
+      document.querySelectorAll(".nn-themeBtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      // Update border of host
+      const host = document.querySelector(".nn-mapHost");
+      if(host){
+        host.style.borderColor = getComputedStyle(card).getPropertyValue("--theme-primary");
+      }
+    });
+  });
+  
+  // Mode selection
+  document.querySelectorAll(".nn-modeBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentMode = btn.dataset.mode;
+      
+      document.querySelectorAll(".nn-modeBtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      window.nnUpdateDiscoveryMap?.();
+    });
+  });
+  
+  // Effects toggle
+  document.querySelectorAll(".nn-effectBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const effect = btn.dataset.effect;
+      effects[effect] = !effects[effect];
+      btn.classList.toggle("active", effects[effect]);
+      
+      if(effect === "particles"){
+        particlesContainer.classList.toggle("hidden", !effects.particles);
+      } else if(effect === "glow"){
+        // Toggle glow would adjust filter/opacity of various elements
+        stage.style.filter = effects.glow ? "" : "saturate(0.7) brightness(0.9)";
+      } else if(effect === "heatmap"){
+        heatmapCanvas.classList.toggle("visible", effects.heatmap);
+        if(effects.heatmap){
+          window.nnUpdateDiscoveryMap?.();
+        }
+      } else if(effect === "constellation"){
+        constellationLayer.classList.toggle("visible", effects.constellation);
+      }
+    });
+  });
+  
+  // Action buttons
+  document.getElementById("btnMapRefresh")?.addEventListener("click", () => {
+    window.nnUpdateDiscoveryMap?.();
+  });
+  
+  document.getElementById("btnMapAutoRotate")?.addEventListener("click", (e) => {
+    autoRotate = !autoRotate;
+    e.currentTarget.classList.toggle("active", autoRotate);
+    
+    if(autoRotate){
+      autoRotateInterval = setInterval(() => {
+        if(!isInteracting){
+          rotZ += 0.25;
+          applyTransform();
+        }
+      }, 30);
+    } else {
+      if(autoRotateInterval){
+        clearInterval(autoRotateInterval);
+        autoRotateInterval = null;
+      }
+    }
+  });
+  
+  let trafficMode = false;
+  document.getElementById("btnMapTraffic")?.addEventListener("click", async (e) => {
+    trafficMode = !trafficMode;
+    e.currentTarget.classList.toggle("active", trafficMode);
+    
+    if(!trafficMode){
+      window.nnUpdateDiscoveryMap?.();
+      return;
+    }
+    
+    try{
+      const metrics = await fetchJson("/api/v1/metrics");
+      hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online • metrics`;
+      updateStats(
+        metrics.devicesTotal ?? 0,
+        metrics.devicesOnline ?? 0,
+        metrics.threats ?? 0,
+        linkEls.length
+      );
+    } catch(_){
+      hudStatus.textContent = `${nodeEls.length} devices • live`;
+    }
+  });
+  
+  document.getElementById("btnMapFilter")?.addEventListener("click", () => {
+    // Could open a filter dialog
+    alert("Filter panel would open here - filter by device type, trust level, etc.");
+  });
+  
+  document.getElementById("btnMapExport")?.addEventListener("click", () => {
+    // Export current view as image or data
+    alert("Export functionality - screenshot or JSON export of current topology");
+  });
+  
+  // Initialize
+  createParticles();
+  createConstellation();
+  
+  setTimeout(() => {
+    window.nnUpdateDiscoveryMap?.();
+  }, 100);
+  
+  // Periodic updates for animations
+  setInterval(() => {
+    if(effects.particles && Math.random() > 0.9){
+      createParticles();
+    }
+  }, 10000);
+})();
+</script>
 
-        <!-- DISCOVERY MAP (integrated from holo_map.html) -->
-        <div class="divider"></div>
-        <div class="card" id="nnMapCardContainer" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Discovery Map</div>
-            <div class="pill" id="nnMapPill">Live</div>
-          </div>
-          <div class="muted">Pinch to zoom. Drag to orbit. Nodes light up based on your device list.</div>
-
-          <div class="nn-mapHost">
-            <div class="nn-mapCard" id="nnMapCard">
-              <div class="nn-hudTop">
-                <div class="nn-title">NET NINJA • DISCOVERY MAP</div>
-                <div class="nn-sub" id="nnHudStatus">0 devices • idle</div>
-              </div>
-
-              <div class="nn-viewport">
-                <div class="nn-scene">
-                  <div class="nn-stage" id="nnStage">
-                    <div class="nn-grid"></div>
-                    <div class="nn-neonFog"></div>
-                    <div class="nn-radar"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="nn-help">Touch: drag • pinch</div>
-            </div>
-          </div>
-
-          <div class="card-actions" style="margin-top:12px;">
-            <button class="btn btn-ghost purple" id="btnMapRefresh">Refresh map</button>
-            <button class="btn btn-ghost" id="btnMapTraffic">Toggle metrics</button>
-          </div>
-        </div>
 
 </section>
 
@@ -1590,7 +3476,7 @@
               <div class="card-title">Automation / Schedules</div>
               <div class="pill">Optional</div>
             </div>
-            <div class="muted">Schedule scans or auto‑block unknown devices.</div>
+            <div class="muted">Schedule scans or autoâ€‘block unknown devices.</div>
             <div class="card-actions">
               <button class="btn btn-primary" data-open-dialog="schedule">Create schedule</button>
             </div>
@@ -1598,7 +3484,7 @@
         </div>
 
         <div class="muted" style="margin-top: 10px;">
-          Each tool dialog keeps only 2–3 core controls plus an “Advanced options” expander. Because humans love clicking things.
+          Each tool dialog keeps only 2â€“3 core controls plus an â€œAdvanced optionsâ€ expander. Because humans love clicking things.
         </div>
       </section>
       <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
@@ -1617,29 +3503,29 @@
     <nav class="tabbar" aria-label="Primary navigation">
       <div class="tabbar-inner">
         <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
-          <div class="ticon">📊</div>
+          <div class="ticon">ðŸ“Š</div>
           <div class="tlabel">Dashboard</div>
         </button>
         <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
-          <div class="ticon">📱</div>
+          <div class="ticon">ðŸ“±</div>
           <div class="tlabel">Devices</div>
         </button>
         <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
-          <div class="ticon">📡</div>
+          <div class="ticon">ðŸ“¡</div>
           <div class="tlabel">Networks</div>
         </button>
         <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
-          <div class="ticon">🧰</div>
+          <div class="ticon">ðŸ§°</div>
           <div class="tlabel">Tools</div>
         </button>
         <!-- OpenClaw tab button -->
         <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
-          <div class="ticon">🤖</div>
+          <div class="ticon">ðŸ¤–</div>
           <div class="tlabel">OpenClaw</div>
         </button>
         <!-- Cameras tab button -->
         <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
-          <div class="ticon">📷</div>
+          <div class="ticon">ðŸ“·</div>
           <div class="tlabel">Cameras</div>
         </button>
       </div>
@@ -1800,7 +3686,7 @@
     let cachedNetworkInfo = null;
 
     function formatSeen(ms){
-      if(!ms) return "—";
+      if(!ms) return "â€”";
       const now = Date.now();
       const delta = now - ms;
       if(delta < 120000) return "Now";
@@ -1838,18 +3724,18 @@
         owner: raw?.owner || "",
         type: raw?.type || inferType(raw),
         status,
-        ip: raw?.ip || "—",
-        mac: raw?.mac || "—",
-        vendor: raw?.vendor || "—",
+        ip: raw?.ip || "â€”",
+        mac: raw?.mac || "â€”",
+        vendor: raw?.vendor || "â€”",
         firstSeen: formatSeen(firstSeenMap.get(id)),
         lastSeen: formatSeen(raw?.lastSeen),
         trust,
-        os: raw?.os || "—",
+        os: raw?.os || "â€”",
         via: raw?.via || "LAN",
-        signal: raw?.signal || "—",
-        iface: raw?.iface || "—",
-        activityToday: raw?.activityToday || "—",
-        traffic: raw?.traffic || "—",
+        signal: raw?.signal || "â€”",
+        iface: raw?.iface || "â€”",
+        activityToday: raw?.activityToday || "â€”",
+        traffic: raw?.traffic || "â€”",
         note: raw?.note || "",
         room: raw?.room || ""
       };
@@ -1928,12 +3814,12 @@
       cachedNetworkInfo = info;
 
       const name = info.name || "Network";
-      const ip = info.ip || "—";
-      const cidr = info.cidr || "—";
-      const gateway = info.gateway || "—";
+      const ip = info.ip || "â€”";
+      const cidr = info.cidr || "â€”";
+      const gateway = info.gateway || "â€”";
 
       $("#myNetText").textContent = `${name} (${cidr})`;
-      $("#brandSub").textContent = `${name} • ${cidr}`;
+      $("#brandSub").textContent = `${name} â€¢ ${cidr}`;
 
       const n1 = networks.find(n => n.id === "n1");
       if(n1){
@@ -1941,9 +3827,9 @@
         n1.details.ssid = name;
         n1.details.gateway = gateway;
         n1.details.yourIp = ip;
-        n1.details.dns = "—";
-        n1.details.security = n1.details.security || "—";
-        n1.details.openPorts = "—";
+        n1.details.dns = "â€”";
+        n1.details.security = n1.details.security || "â€”";
+        n1.details.openPorts = "â€”";
         n1.devices = devices.length;
       }
 
@@ -1956,20 +3842,20 @@
 
       renderNetworks();
 
-      if(gateway && gateway !== "—"){
+      if(gateway && gateway !== "â€”"){
         fetchJson("/api/v1/actions/portscan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ip: gateway, timeoutMs: 250 })
         }).then((res) => {
-          const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "—";
+          const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "â€”";
           if(n1){
-            n1.details.openPorts = ports || "—";
+            n1.details.openPorts = ports || "â€”";
             renderNetworks();
           }
         }).catch(() => {
           if(n1){
-            n1.details.openPorts = "—";
+            n1.details.openPorts = "â€”";
           }
         });
       }
@@ -2093,17 +3979,17 @@
         id: "n1",
         name: "Network",
         type: "LAN",
-        security: "—",
-        signal: "—",
+        security: "â€”",
+        signal: "â€”",
         devices: 0,
         status: "My network",
         details: {
           ssid: "Network",
-          gateway: "—",
-          yourIp: "—",
-          dns: "—",
-          security: "—",
-          openPorts: "—"
+          gateway: "â€”",
+          yourIp: "â€”",
+          dns: "â€”",
+          security: "â€”",
+          openPorts: "â€”"
         }
       }
     ];
@@ -2187,7 +4073,7 @@
       } else {
         $("#unknownPill").textContent = `${unknown.length} to review`;
         $("#unknownPill").className = "pill warn";
-        $("#unknownList").innerHTML = unknown.map(d => `• ${escapeHtml(d.name)} <span style="color:rgba(255,255,255,0.65)">(${escapeHtml(d.trust)})</span>`).join("<br>");
+        $("#unknownList").innerHTML = unknown.map(d => `â€¢ ${escapeHtml(d.name)} <span style="color:rgba(255,255,255,0.65)">(${escapeHtml(d.trust)})</span>`).join("<br>");
       }
 
       const last = state.lastScanAt ? `Last scan: ${state.lastScanAt}` : "Last scan: never";
@@ -2244,17 +4130,17 @@
         const isSel = d.id === state.selectedDeviceId;
         return `
           <tr data-id="${d.id}" class="${isSel ? "selected" : ""}">
-            <td title="Double‑click to open">${escapeHtml(d.name)}</td>
-            <td>${escapeHtml(d.owner || "—")}</td>
+            <td title="Doubleâ€‘click to open">${escapeHtml(d.name)}</td>
+            <td>${escapeHtml(d.owner || "â€”")}</td>
             <td>${typeIcon(d.type)} ${escapeHtml(d.type)}</td>
             <td><span class="status ${statusClass(d.status)}"><span class="dot"></span>${escapeHtml(d.status)}</span></td>
             <td>${escapeHtml(d.ip)}</td>
             <td>${escapeHtml(d.mac)}</td>
-            <td>${escapeHtml(d.vendor || "—")}</td>
-            <td>${escapeHtml(d.firstSeen || "—")}</td>
-            <td>${escapeHtml(d.lastSeen || "—")}</td>
+            <td>${escapeHtml(d.vendor || "â€”")}</td>
+            <td>${escapeHtml(d.firstSeen || "â€”")}</td>
+            <td>${escapeHtml(d.lastSeen || "â€”")}</td>
             <td>${escapeHtml(d.trust)}</td>
-            <td><button class="kebab" data-menu="${d.id}" title="Actions">⋮</button></td>
+            <td><button class="kebab" data-menu="${d.id}" title="Actions">â‹®</button></td>
           </tr>
         `;
       }).join("");
@@ -2291,7 +4177,7 @@
       if(!d){
         $("#spTitle").textContent = "Select a device";
         $("#spSub").textContent = "Pick a row to view details.";
-        $("#spStatus").textContent = "—";
+        $("#spStatus").textContent = "â€”";
         $("#spSummaryKv").innerHTML = "";
         $("#spNetworkKv").innerHTML = "";
         $("#spActivityKv").innerHTML = "";
@@ -2302,8 +4188,8 @@
         return;
       }
 
-      $("#spTitle").textContent = `${d.name} – ${d.type}`;
-      $("#spSub").textContent = `${d.owner || "No owner"} • ${d.vendor || "Unknown vendor"}`;
+      $("#spTitle").textContent = `${d.name} â€“ ${d.type}`;
+      $("#spSub").textContent = `${d.owner || "No owner"} â€¢ ${d.vendor || "Unknown vendor"}`;
       $("#spStatus").textContent = d.status.toUpperCase();
       $("#spStatus").className = "pill " + (d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : ""));
       $("#spPause").disabled = false;
@@ -2315,23 +4201,23 @@
         ["Status", d.status],
         ["Trust", d.trust],
         ["Type", d.type],
-        ["Owner", d.owner || "—"]
+        ["Owner", d.owner || "â€”"]
       ]);
 
       $("#spNetworkKv").innerHTML = kvLines([
         ["IP", d.ip],
         ["MAC", d.mac],
-        ["Vendor", d.vendor || "—"],
-        ["OS (detected)", d.os || "—"],
-        ["Connected via", d.via || "—"],
-        ["Signal", d.signal || "—"],
-        ["Interface", d.iface || "—"]
+        ["Vendor", d.vendor || "â€”"],
+        ["OS (detected)", d.os || "â€”"],
+        ["Connected via", d.via || "â€”"],
+        ["Signal", d.signal || "â€”"],
+        ["Interface", d.iface || "â€”"]
       ]);
 
       $("#spActivityKv").innerHTML = kvLines([
-        ["Last seen", d.lastSeen || "—"],
-        ["Online time today", d.activityToday || "—"],
-        ["Traffic", d.traffic || "—"]
+        ["Last seen", d.lastSeen || "â€”"],
+        ["Online time today", d.activityToday || "â€”"],
+        ["Traffic", d.traffic || "â€”"]
       ]);
 
       // keep form fields in sync
@@ -2354,12 +4240,12 @@
             <div class="card-title">Summary</div>
             <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
           </div>
-          <div class="muted" style="margin-top:4px;"><strong style="color:rgba(255,255,255,0.95);">${escapeHtml(d.name)}</strong> – ${escapeHtml(d.type)}</div>
+          <div class="muted" style="margin-top:4px;"><strong style="color:rgba(255,255,255,0.95);">${escapeHtml(d.name)}</strong> â€“ ${escapeHtml(d.type)}</div>
           <div class="kv" style="margin-top:10px;">
             ${kvLines([
               ["Trust state", d.trust],
-              ["Owner", d.owner || "—"],
-              ["Vendor", d.vendor || "—"]
+              ["Owner", d.owner || "â€”"],
+              ["Vendor", d.vendor || "â€”"]
             ])}
           </div>
           <div class="card-actions">
@@ -2381,9 +4267,9 @@
             ${kvLines([
               ["IP", d.ip],
               ["MAC", d.mac],
-              ["OS (detected)", d.os || "—"],
-              ["Connected via", d.via || "—"],
-              ["Signal strength", d.signal || "—"]
+              ["OS (detected)", d.os || "â€”"],
+              ["Connected via", d.via || "â€”"],
+              ["Signal strength", d.signal || "â€”"]
             ])}
           </div>
         </div>
@@ -2397,9 +4283,9 @@
           </div>
           <div class="kv">
             ${kvLines([
-              ["Last seen", d.lastSeen || "—"],
-              ["Total online time today", d.activityToday || "—"],
-              ["Traffic", d.traffic || "—"]
+              ["Last seen", d.lastSeen || "â€”"],
+              ["Total online time today", d.activityToday || "â€”"],
+              ["Traffic", d.traffic || "â€”"]
             ])}
           </div>
         </div>
@@ -2412,8 +4298,8 @@
             <div class="pill">Optional</div>
           </div>
           <div class="field">
-            <label for="mNote">Add a note…</label>
-            <textarea id="mNote" placeholder="Add a note…">${escapeHtml(d.note || "")}</textarea>
+            <label for="mNote">Add a noteâ€¦</label>
+            <textarea id="mNote" placeholder="Add a noteâ€¦">${escapeHtml(d.note || "")}</textarea>
           </div>
           <div class="field">
             <label for="mRoom">Room</label>
@@ -2467,7 +4353,7 @@
             <div class="card-title">${escapeHtml(d.name)}</div>
             <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
           </div>
-          <div class="muted">${escapeHtml(d.type)} • ${escapeHtml(d.ip)} • ${escapeHtml(d.trust)}</div>
+          <div class="muted">${escapeHtml(d.type)} â€¢ ${escapeHtml(d.ip)} â€¢ ${escapeHtml(d.trust)}</div>
           <div class="card-actions" style="margin-top: 12px;">
             <button class="btn btn-ghost" id="aView">View details</button>
             <button class="btn btn-ghost" id="aPause">Set status: Paused</button>
@@ -2492,7 +4378,7 @@
             pushHistory({
               when: nowLabel(),
               title: `Renamed device`,
-              detail: `${prev} → ${nextName}`,
+              detail: `${prev} â†’ ${nextName}`,
               undo: () => {
                 updateDeviceMeta(d.id, { name: prev }).then(() => {
                   showToast("Undone", "Rename reverted.");
@@ -2515,7 +4401,7 @@
       pushHistory({
         when: nowLabel(),
         title: `${label}: ${device.name}`,
-        detail: `${device.ip} • ${device.trust}`,
+        detail: `${device.ip} â€¢ ${device.trust}`,
         undo: null
       });
     }
@@ -2576,7 +4462,7 @@
         pushHistory({
           when: nowLabel(),
           title: `Trust changed: ${d.name}`,
-          detail: `${prev} → ${next}`,
+          detail: `${prev} â†’ ${next}`,
           undo: () => {
             updateDeviceMeta(d.id, { trust: prev }).then(() => {
               showToast("Undone", "Trust reverted.");
@@ -2676,7 +4562,7 @@
             <td>${escapeHtml(String(n.signal))}</td>
             <td>${escapeHtml(String(n.devices))}</td>
             <td>${escapeHtml(n.status)}</td>
-            <td><button class="kebab" data-net="${n.id}" title="Actions">⋮</button></td>
+            <td><button class="kebab" data-net="${n.id}" title="Actions">â‹®</button></td>
           </tr>
         `;
       }).join("");
@@ -2733,7 +4619,7 @@
             <div class="card-title">${escapeHtml(n.name)}</div>
             <div class="pill">${escapeHtml(n.status)}</div>
           </div>
-          <div class="muted">${escapeHtml(n.type)} • ${escapeHtml(n.security)}</div>
+          <div class="muted">${escapeHtml(n.type)} â€¢ ${escapeHtml(n.security)}</div>
           <div class="card-actions" style="margin-top: 12px;">
             <button class="btn btn-ghost" id="naViewDevices">View devices on this network</button>
             <button class="btn btn-ghost purple" id="naScan">Scan this network</button>
@@ -2802,7 +4688,7 @@
             });
             const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "None";
             closeOverlay("toolOverlay");
-            showToast("Port scan complete", `${devName} • Open: ${ports || "None"}`);
+            showToast("Port scan complete", `${devName} â€¢ Open: ${ports || "None"}`);
             pushHistory({ when: nowLabel(), title: `Port scan: ${devName}`, detail: `Open ports: ${ports || "None"}`, undo: null });
           } catch (_){
             showToast("Port scan failed", "Backend unavailable.");
@@ -2879,7 +4765,7 @@
           const act = $("#schAct")?.value || "Scan my network";
           const subnet = cachedNetworkInfo?.cidr || "";
           try{
-            if(act === "Auto‑block unknown devices"){
+            if(act === "Autoâ€‘block unknown devices"){
               await fetchJson("/api/v1/rules", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -2899,18 +4785,18 @@
                 body: JSON.stringify({ subnet, freq: freq.toLowerCase() })
               });
               closeOverlay("toolOverlay");
-              pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} • ${freq}`, undo: null });
-              showToast("Scheduled", `${act} • ${freq}`);
+              pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} â€¢ ${freq}`, undo: null });
+              showToast("Scheduled", `${act} â€¢ ${freq}`);
             }
           } catch (_){
             showToast("Schedule failed", "Backend unavailable.");
           }
         };
         $("#toolBody").innerHTML = toolTemplate(
-          "Schedule scans or auto‑block unknown devices.",
+          "Schedule scans or autoâ€‘block unknown devices.",
           [
             { label: "Schedule", type: "select", id: "schFreq", options: ["Daily", "Weekly", "Monthly"], value: "Weekly" },
-            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Auto‑block unknown devices"], value: "Scan my network" }
+            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Autoâ€‘block unknown devices"], value: "Scan my network" }
           ],
           "Create schedule",
           onPrimary
@@ -2958,7 +4844,7 @@
         <div class="card" style="cursor:default;">
           <div class="card-head">
             <div class="card-title">Options</div>
-            <div class="pill">2–3 controls</div>
+            <div class="pill">2â€“3 controls</div>
           </div>
           ${fieldsHtml}
 
@@ -3100,10 +4986,10 @@
 
     $("#btnShareWifi").addEventListener("click", (e) => {
       e.stopPropagation();
-      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} • ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wi‑Fi (SSID) • WPA2";
+      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} â€¢ ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wiâ€‘Fi (SSID) â€¢ WPA2";
       navigator.clipboard?.writeText(text).then(() => {
-        showToast("Copied", "Wi‑Fi details copied to clipboard.");
-        pushHistory({ when: nowLabel(), title: "Shared Wi‑Fi details", detail: "Copied to clipboard", undo: null });
+        showToast("Copied", "Wiâ€‘Fi details copied to clipboard.");
+        pushHistory({ when: nowLabel(), title: "Shared Wiâ€‘Fi details", detail: "Copied to clipboard", undo: null });
       }).catch(() => {
         showToast("Share", "Clipboard not available here.");
       });
@@ -3223,7 +5109,7 @@
     // ---- Utility renderers ----
     function kvLines(pairs){
       return pairs.map(([k,v]) => `
-        <div class="line"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v ?? "—"))}</span></div>
+        <div class="line"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v ?? "â€”"))}</span></div>
       `).join("");
     }
 
@@ -3234,8 +5120,8 @@
     }
 
     function typeIcon(type){
-      const map = { Phone:"📱", PC:"💻", TV:"📺", Printer:"🖨️", IoT:"🔌" };
-      return map[type] || "🔸";
+      const map = { Phone:"ðŸ“±", PC:"ðŸ’»", TV:"ðŸ“º", Printer:"ðŸ–¨ï¸", IoT:"ðŸ”Œ" };
+      return map[type] || "ðŸ”¸";
     }
 
     function selectOptions(options, value){
@@ -3318,8 +5204,8 @@
       renderNotifications();
 
       // default text while loading
-      $("#myNetText").textContent = "Loading network…";
-      $("#brandSub").textContent = "Loading network…";
+      $("#myNetText").textContent = "Loading networkâ€¦";
+      $("#brandSub").textContent = "Loading networkâ€¦";
 
       // Devices: sidepanel tabs default (already summary)
       renderSidePanel();
@@ -3489,6 +5375,7 @@
 
 
     // ---------- Discovery Map wiring (holo_map.html behavior, embedded) ----------
+    if(!document.getElementById("nnThemePanel")){
     const stage = document.getElementById("nnStage");
     const hudStatus = document.getElementById("nnHudStatus");
     const card = document.getElementById("nnMapCard");
@@ -3566,7 +5453,7 @@
       // Try to reuse the app's device list if it exists; otherwise keep whatever's there.
       const list = Array.isArray(window.devices) ? window.devices : (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
       if(!Array.isArray(list) || list.length === 0){
-        hudStatus.textContent = "0 devices • idle";
+        hudStatus.textContent = "0 devices â€¢ idle";
         clearGraph();
         return;
       }
@@ -3599,7 +5486,7 @@
         createLink(nodeEls[0], nodeEls[i]);
       }
 
-      hudStatus.textContent = `${mapped.length} devices • live`;
+      hudStatus.textContent = `${mapped.length} devices â€¢ live`;
     };
 
     let trafficMode = false;
@@ -3611,9 +5498,9 @@
       }
       try{
         const metrics = await fetchJson("/api/v1/metrics");
-        hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online • metrics`;
+        hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online â€¢ metrics`;
       } catch (_){
-        hudStatus.textContent = `${nodeEls.length} devices • live`;
+        hudStatus.textContent = `${nodeEls.length} devices â€¢ live`;
       }
     }
 
@@ -3666,8 +5553,11 @@
     setTimeout(() => {
       window.nnUpdateDiscoveryMap?.();
     }, 60);
+    }
   })();
   </script>
 
 </body>
 </html>
+
+

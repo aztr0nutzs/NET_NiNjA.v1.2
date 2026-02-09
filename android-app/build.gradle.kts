@@ -104,6 +104,9 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.robolectric)
+    testImplementation(libs.ktor.client.core)
+    testImplementation(libs.ktor.client.cio)
+    testImplementation(libs.ktor.client.websockets)
 
     androidTestImplementation(libs.junit4)
     androidTestImplementation(libs.androidx.test.core)

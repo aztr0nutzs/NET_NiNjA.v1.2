@@ -49,18 +49,19 @@ data class ModeRequest(val mode: String? = null)
 @Serializable
 data class SkillInvokeRequest(val name: String? = null)
 
+@Serializable
+data class OpenClawStatsResponse(
+  val uptimeMs: Long,
+  val nodeCount: Int
+)
+
 fun Route.openClawRoutes() {
   get("/api/openclaw/nodes") {
     call.respond(OpenClawGatewayState.listNodes())
   }
 
   get("/api/openclaw/stats") {
-    call.respond(
-      mapOf(
-        "uptimeMs" to OpenClawGatewayState.uptimeMs(),
-        "nodeCount" to OpenClawGatewayState.nodeCount()
-      )
-    )
+    call.respond(OpenClawStatsResponse(uptimeMs = OpenClawGatewayState.uptimeMs(), nodeCount = OpenClawGatewayState.nodeCount()))
   }
 
   get("/api/openclaw/dashboard") {

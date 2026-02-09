@@ -4,9 +4,13 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.ServerSocket
 import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.WebSocket
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 class ApiContractTest {
   @Test
@@ -161,5 +165,44 @@ class ApiContractTest {
     assertTrue(get(URI("$base/api/v1/onvif/discover")).first == 200)
     assertTrue(get(URI("$base/api/openclaw/nodes")).first == 200)
     assertTrue(get(URI("$base/api/openclaw/stats")).first == 200)
+
+    // WebSocket: register a node then verify it appears via REST.
+    run {
+      val nodeId = "test-node-${System.currentTimeMillis()}"
+      val wsUri = URI("ws://127.0.0.1:$port/openclaw/ws")
+      val opened = CompletableFuture<Unit>()
+      val client = HttpClient.newHttpClient()
+      val ws = client.newWebSocketBuilder().buildAsync(
+        wsUri,
+        object : WebSocket.Listener {
+          override fun onOpen(webSocket: WebSocket) {
+            opened.complete(Unit)
+            webSocket.request(1)
+          }
+
+          override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): java.util.concurrent.CompletionStage<*> {
+            webSocket.request(1)
+            return CompletableFuture.completedFuture(null)
+          }
+        }
+      ).get(3, TimeUnit.SECONDS)
+
+      opened.get(3, TimeUnit.SECONDS)
+      ws.sendText("""{"type":"HELLO","nodeId":"$nodeId","capabilities":["test"]}""", true).get(3, TimeUnit.SECONDS)
+
+      val nodesUri = URI("$base/api/openclaw/nodes")
+      val deadline = System.currentTimeMillis() + 5_000
+      var seen = false
+      while (System.currentTimeMillis() < deadline) {
+        val (_, body) = get(nodesUri)
+        if (body.contains(""""id":"$nodeId"""")) {
+          seen = true
+          break
+        }
+        Thread.sleep(100)
+      }
+      assertTrue(seen, "Expected node '$nodeId' to appear in $nodesUri within timeout.")
+      runCatching { ws.sendClose(WebSocket.NORMAL_CLOSURE, "test").get(1, TimeUnit.SECONDS) }
+    }
   }
 }

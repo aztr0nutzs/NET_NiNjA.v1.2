@@ -5,7 +5,13 @@ import androidx.test.core.app.ApplicationProvider
 import java.net.HttpURLConnection
 import java.net.ServerSocket
 import java.net.URI
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.Frame
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.delay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -155,6 +161,34 @@ class AndroidLocalServerApiContractTest {
       assertEquals(200, get(URI("$base/api/v1/onvif/discover")).first)
       assertEquals(200, get(URI("$base/api/openclaw/nodes")).first)
       assertEquals(200, get(URI("$base/api/openclaw/stats")).first)
+
+      // WebSocket: register a node then verify it appears via REST.
+      run {
+        val nodeId = "android-test-node-${System.currentTimeMillis()}"
+        val client = HttpClient(CIO) { install(WebSockets) }
+        try {
+          client.webSocket(host = "127.0.0.1", port = port, path = "/openclaw/ws") {
+            send(Frame.Text("""{"type":"HELLO","nodeId":"$nodeId","capabilities":["test"]}"""))
+            // Give the server a moment to register.
+            delay(150)
+          }
+        } finally {
+          client.close()
+        }
+
+        val nodesUri = URI("$base/api/openclaw/nodes")
+        val deadline = System.currentTimeMillis() + 5_000
+        var seen = false
+        while (System.currentTimeMillis() < deadline) {
+          val (_, body) = get(nodesUri)
+          if (body.contains(""""id":"$nodeId"""")) {
+            seen = true
+            break
+          }
+          Thread.sleep(100)
+        }
+        assertTrue("Expected node '$nodeId' to appear in $nodesUri within timeout.", seen)
+      }
     } finally {
       server.stop()
     }

@@ -51,10 +51,5 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
-        <service
-            android:name=".openclaw.OpenClawGatewayService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
     </application>
 </manifest>

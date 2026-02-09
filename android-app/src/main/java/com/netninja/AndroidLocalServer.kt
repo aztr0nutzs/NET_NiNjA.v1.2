@@ -153,6 +153,22 @@ data class OpenClawGatewaySnapshot(
   val updatedAt: Long = System.currentTimeMillis()
 )
 
+@Serializable
+data class OpenClawStatsResponse(
+  val uptimeMs: Long,
+  val nodeCount: Int
+)
+
+@Serializable
+data class MetricsResponse(
+  val uptimeMs: Long,
+  val memTotal: Long,
+  val memUsed: Long,
+  val devicesTotal: Int,
+  val devicesOnline: Int,
+  val lastScanAt: Long? = null
+)
+
 class AndroidLocalServer(private val ctx: Context) {
 
   private val db = LocalDatabase(ctx)
@@ -368,12 +384,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/openclaw/stats") {
-        call.respond(
-          mapOf(
-            "uptimeMs" to OpenClawGatewayState.uptimeMs(),
-            "nodeCount" to OpenClawGatewayState.nodeCount()
-          )
-        )
+        call.respond(OpenClawStatsResponse(uptimeMs = OpenClawGatewayState.uptimeMs(), nodeCount = OpenClawGatewayState.nodeCount()))
       }
 
       webSocket("/openclaw/ws") {
@@ -643,14 +654,14 @@ class AndroidLocalServer(private val ctx: Context) {
         val memUsed = memTotal - memFree
         val all = devices.values.toList()
         call.respond(
-          mapOf(
+          MetricsResponse(
             // Robolectric/host JVM environments may not fully implement Android clock APIs.
-            "uptimeMs" to runCatching { SystemClock.elapsedRealtime() }.getOrElse { System.nanoTime() / 1_000_000L },
-            "memTotal" to memTotal,
-            "memUsed" to memUsed,
-            "devicesTotal" to all.size,
-            "devicesOnline" to all.count { it.online },
-            "lastScanAt" to lastScanAt.get()
+            uptimeMs = runCatching { SystemClock.elapsedRealtime() }.getOrElse { System.nanoTime() / 1_000_000L },
+            memTotal = memTotal,
+            memUsed = memUsed,
+            devicesTotal = all.size,
+            devicesOnline = all.count { it.online },
+            lastScanAt = lastScanAt.get()
           )
         )
       }

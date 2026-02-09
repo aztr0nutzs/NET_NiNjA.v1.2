@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -243,11 +243,11 @@
     .tab-page.active{ display:block; }
     .tab-page.media{
       padding: 0;
-      display:flex;
       flex-direction:column;
       height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 26px);
       min-height: 0;
     }
+    .tab-page.media.active{ display:flex; }
     .tab-page.media iframe{
       flex:1 1 auto;
       width:100%;
@@ -805,7 +805,7 @@
     }
     #scanNowBtn{ font-size: 0.95rem; }
 
-    /* Replace “danger” red/pink with purple (requirement: cyan/purple/mint only) */
+    /* Replace â€œdangerâ€ red/pink with purple (requirement: cyan/purple/mint only) */
     .btn-danger{
       background: rgba(0,0,0,0.45) !important;
       border: 1px solid rgba(185,103,255,0.55) !important;
@@ -1143,7 +1143,7 @@
           <div class="brand-badge" id="brandBadge">MN</div>
           <div style="min-width:0;">
             <div class="brand-title">My Network Control</div>
-            <div class="brand-sub" id="brandSub">Home Wi‑Fi (SSID) • secure</div>
+            <div class="brand-sub" id="brandSub">Home Wiâ€‘Fi (SSID) â€¢ secure</div>
           </div>
         </div>
 
@@ -1192,7 +1192,7 @@
               <div class="card-title">My Network</div>
               <div class="pill ok" id="myNetPill">Secure</div>
             </div>
-            <div class="muted" id="myNetText">Home Wi‑Fi (SSID) – Secure</div>
+            <div class="muted" id="myNetText">Home Wiâ€‘Fi (SSID) â€“ Secure</div>
             <div class="card-actions">
               <button class="btn btn-primary" id="btnScanMyNetwork">Scan my network</button>
             </div>
@@ -1200,7 +1200,7 @@
 
           <div class="card" id="cardWhosOnline" role="button" tabindex="0">
             <div class="card-head">
-              <div class="card-title">Who’s Online</div>
+              <div class="card-title">Whoâ€™s Online</div>
               <div class="pill" id="onlineDeltaPill">Changed: 0</div>
             </div>
             <div class="big" id="onlineCount">0</div>
@@ -1229,8 +1229,8 @@
             <div class="muted">Keep it simple: no nested menus here.</div>
             <div class="card-actions">
               <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
-              <button class="btn btn-danger" id="btnBlockNew">Auto‑block new devices</button>
-              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi‑Fi details</button>
+              <button class="btn btn-danger" id="btnBlockNew">Autoâ€‘block new devices</button>
+              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wiâ€‘Fi details</button>
             </div>
           </div>
         </div>
@@ -1295,19 +1295,19 @@
             <div class="pill warn" id="permSummaryPill">Needs review</div>
           </div>
           <div class="muted">
-            Android requires Location or Nearby Wi‑Fi access to read SSID/BSSID and scan your network.
-            Background scans are rate‑limited and will pause if Wi‑Fi is disconnected or permissions are denied.
+            Android requires Location or Nearby Wiâ€‘Fi access to read SSID/BSSID and scan your network.
+            Background scans are rateâ€‘limited and will pause if Wiâ€‘Fi is disconnected or permissions are denied.
           </div>
           <div class="nn-permList" aria-live="polite">
-            <span>Nearby Wi‑Fi</span><span id="permNearbyWifi">Unknown</span>
+            <span>Nearby Wiâ€‘Fi</span><span id="permNearbyWifi">Unknown</span>
             <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
-            <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
+            <span>Wiâ€‘Fi state</span><span id="permWifiState">Unknown</span>
             <span>Network state</span><span id="permNetworkState">Unknown</span>
           </div>
           <div class="card-actions" style="margin-top:12px;">
             <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
             <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
-            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi‑Fi settings</button>
+            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wiâ€‘Fi settings</button>
             <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
           </div>
           <div class="muted" style="margin-top:10px;">
@@ -1338,7 +1338,7 @@
                 <path d="M21 21l-4.35-4.35"/>
                 <circle cx="11" cy="11" r="7"/>
               </svg>
-              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MAC…" autocomplete="off" />
+              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MACâ€¦" autocomplete="off" />
             </div>
             <button class="btn btn-ghost" id="btnRescanDevices">Scan devices again</button>
             <button class="btn btn-ghost purple" id="btnExportDevices">Export list</button>
@@ -1388,7 +1388,7 @@
                 <div class="side-title" id="spTitle">Select a device</div>
                 <div class="side-sub" id="spSub">Pick a row to view details.</div>
               </div>
-              <div class="pill" id="spStatus">—</div>
+              <div class="pill" id="spStatus">â€”</div>
             </div>
 
             <div class="row" style="margin-bottom: 10px;">
@@ -1417,7 +1417,7 @@
             <div id="spSectionNotes" style="display:none;">
               <div class="notes">
                 <div class="field">
-                  <label for="spNote">Add a note…</label>
+                  <label for="spNote">Add a noteâ€¦</label>
                   <textarea id="spNote" placeholder="Example: Guest device, allow 2 hours."></textarea>
                 </div>
                 <div class="field">
@@ -1448,7 +1448,7 @@
         </div>
 
         <div class="muted" style="margin-top: 10px;">
-          Tip: double‑click a device row to open the detailed view.
+          Tip: doubleâ€‘click a device row to open the detailed view.
         </div>
       </section>
 
@@ -1498,1858 +1498,1928 @@
         </div>
       
 
-        <!-- DISCOVERY MAP (integrated from holo_map.html) -->
-        <div class="divider"></div>
-        <div class="card" id="nnMapCardContainer" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Discovery Map</div>
-            <div class="pill" id="nnMapPill">Live</div>
-          </div>
-          <div class="muted">Pinch to zoom. Drag to orbit. Nodes light up based on your device list.</div>
+        <!-- DISCOVERY MAP - Ultimate 3D Network Visualization -->
+<div class="divider"></div>
+<div class="card" id="nnMapCardContainer" style="cursor:default;">
+  <div class="card-head">
+    <div class="card-title">Discovery Map</div>
+    <div class="pill" id="nnMapPill">Live</div>
+  </div>
+  <div class="muted">Drag to orbit • Pinch to zoom • Tap nodes for details • Explore color themes and visualization modes</div>
 
-          <div class="nn-mapHost">
-            <div class="nn-mapCard" id="nnMapCard">
-              <div class="nn-hudTop">
-                <div class="nn-title">NET NINJA • DISCOVERY MAP</div>
-                <div class="nn-sub" id="nnHudStatus">0 devices • idle</div>
-              </div>
-
-              <div class="nn-viewport">
-                <div class="nn-scene">
-                  <div class="nn-stage" id="nnStage">
-                    <div class="nn-grid"></div>
-                    <div class="nn-neonFog"></div>
-                    <div class="nn-radar"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="nn-help">Touch: drag • pinch</div>
-            </div>
-          </div>
-
-          <div class="card-actions" style="margin-top:12px;">
-            <button class="btn btn-ghost purple" id="btnMapRefresh">Refresh map</button>
-            <button class="btn btn-ghost" id="btnMapTraffic">Toggle metrics</button>
-          </div>
+  <div class="nn-mapHost">
+    <div class="nn-mapCard" id="nnMapCard" data-theme="cyber">
+      <!-- Top HUD -->
+      <div class="nn-hudTop">
+        <div>
+          <div class="nn-title">NET NINJA • DISCOVERY MAP</div>
+          <div class="nn-sub" id="nnHudStatus">0 devices • idle</div>
         </div>
-
-</section>
-
-      <!-- TOOLS -->
-      <section class="tab-page" id="tab-tools" aria-labelledby="tabbtn-tools">
-        <h2>Tools</h2>
-
-        <div class="grid grid-2">
-          <div class="card" id="toolFullScan" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Full device scan</div>
-              <div class="pill">Preset</div>
-            </div>
-            <div class="muted">Scan all addresses on your network for any device.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="fullScan">Run full scan</button>
-            </div>
-          </div>
-
-          <div class="card" id="toolPortScan" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Port scan</div>
-              <div class="pill">Preset</div>
-            </div>
-            <div class="muted">Check which ports are open on a device.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="portScan">Choose device</button>
-            </div>
-          </div>
-
-          <div class="card" id="toolSecurity" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Security check</div>
-              <div class="pill warn">Careful</div>
-            </div>
-            <div class="muted">Look for weak security on your network.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="security">Run security check</button>
-            </div>
-          </div>
-
-          <div class="card" id="toolReports" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Reports</div>
-              <div class="pill">Export</div>
-            </div>
-            <div class="muted">Export devices, activity, and scan results.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="reports">Open reports</button>
-            </div>
-          </div>
-
-          <div class="card" id="toolAutomation" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Automation / Schedules</div>
-              <div class="pill">Optional</div>
-            </div>
-            <div class="muted">Schedule scans or auto‑block unknown devices.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="schedule">Create schedule</button>
-            </div>
-          </div>
+        <div class="nn-hudControls">
+          <button class="nn-hudBtn" id="nnResetView" title="Reset view">⟲</button>
+          <button class="nn-hudBtn" id="nnToggleLabels" title="Toggle labels">◉</button>
+          <button class="nn-hudBtn" id="nnToggleGrid" title="Toggle grid">▦</button>
+          <button class="nn-hudBtn" id="nnToggleStats" title="Statistics">📊</button>
+          <button class="nn-hudBtn" id="nnToggleThemes" title="Color themes">🎨</button>
         </div>
-
-        <div class="muted" style="margin-top: 10px;">
-          Each tool dialog keeps only 2–3 core controls plus an “Advanced options” expander. Because humans love clicking things.
-        </div>
-      </section>
-      <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
-      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw">
-        <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
-        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard"></iframe>
-      </section>
-      <!-- Cameras tab page -->
-      <section id="tab-cameras" class="tab-page media" aria-labelledby="tabbtn-cameras">
-        <!-- Load the camera viewer via iframe -->
-        <iframe src="net_ninja_cam.html" title="Cameras"></iframe>
-      </section>
-    </main>
-
-    <!-- BOTTOM NAV (TABS) -->
-    <nav class="tabbar" aria-label="Primary navigation">
-      <div class="tabbar-inner">
-        <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
-          <div class="ticon">📊</div>
-          <div class="tlabel">Dashboard</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
-          <div class="ticon">📱</div>
-          <div class="tlabel">Devices</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
-          <div class="ticon">📡</div>
-          <div class="tlabel">Networks</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
-          <div class="ticon">🧰</div>
-          <div class="tlabel">Tools</div>
-        </button>
-        <!-- OpenClaw tab button -->
-        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
-          <div class="ticon">🤖</div>
-          <div class="tlabel">OpenClaw</div>
-        </button>
-        <!-- Cameras tab button -->
-        <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
-          <div class="ticon">📷</div>
-          <div class="tlabel">Cameras</div>
-        </button>
       </div>
-    </nav>
 
-    <!-- RECENT ACTIONS / UNDO -->
-    <div class="overlay" id="historyOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Recent actions">
-        <div class="sheet-head">
-          <div class="sheet-title">Recent actions</div>
-          <button class="btn icon-btn" data-close="historyOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
+      <!-- Theme Selector Panel -->
+      <div class="nn-themePanel" id="nnThemePanel">
+        <div class="nn-themePanelTitle">Color Themes</div>
+        <div class="nn-themeGrid">
+          <button class="nn-themeBtn active" data-theme="cyber" title="Cyber (Cyan/Purple)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #00f0ff, #b967ff);"></div>
+            <span>Cyber</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="matrix" title="Matrix (Green)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #00ff41, #00cc33);"></div>
+            <span>Matrix</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="sunset" title="Sunset (Orange/Pink)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #ff6b35, #ff0080);"></div>
+            <span>Sunset</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="ocean" title="Ocean (Blue/Teal)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #00d4ff, #0047ab);"></div>
+            <span>Ocean</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="neon" title="Neon (Pink/Yellow)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #ff1493, #ffff00);"></div>
+            <span>Neon</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="aurora" title="Aurora (Purple/Green)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #9d00ff, #00ff9d);"></div>
+            <span>Aurora</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="fire" title="Fire (Red/Orange)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #ff0000, #ff8800);"></div>
+            <span>Fire</span>
+          </button>
+          <button class="nn-themeBtn" data-theme="ice" title="Ice (White/Blue)">
+            <div class="nn-themeSwatch" style="background: linear-gradient(135deg, #e0ffff, #4169e1);"></div>
+            <span>Ice</span>
           </button>
         </div>
-        <div class="sheet-body">
-          <div class="muted">Last thing you did shows up here. Undo is available when it makes sense.</div>
-          <div class="divider"></div>
-          <div class="list" id="historyList"></div>
-        </div>
       </div>
-    </div>
 
-    <!-- NOTIFICATIONS -->
-    <div class="overlay" id="notifOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Notifications">
-        <div class="sheet-head">
-          <div class="sheet-title">Notifications</div>
-          <button class="btn icon-btn" data-close="notifOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body">
-          <div class="list" id="notifList"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DEVICE DETAILS (MOBILE SHEET) -->
-    <div class="overlay" id="deviceOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Device details">
-        <div class="sheet-head">
-          <div class="sheet-title" id="devSheetTitle">Device details</div>
-          <button class="btn icon-btn" data-close="deviceOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body" id="devSheetBody"></div>
-      </div>
-    </div>
-
-    <!-- GENERIC TOOL DIALOG -->
-    <div class="overlay" id="toolOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Tool dialog">
-        <div class="sheet-head">
-          <div class="sheet-title" id="toolTitle">Tool</div>
-          <button class="btn icon-btn" data-close="toolOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body" id="toolBody"></div>
-      </div>
-    </div>
-
-    <!-- SETTINGS (simple sheet) -->
-    <div class="overlay" id="settingsOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
-        <div class="sheet-head">
-          <div class="sheet-title">Settings</div>
-          <button class="btn icon-btn" data-close="settingsOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body">
-          <div class="card" style="cursor:default;">
-            <div class="card-head">
-              <div class="card-title">General</div>
-              <div class="pill">Theme</div>
-            </div>
-            <div class="kv">
-              <div class="line"><span class="k">App theme</span><span class="v">Neon dark</span></div>
-              <div class="line"><span class="k">Language</span><span class="v">English</span></div>
-            </div>
+      <!-- Statistics Panel -->
+      <div class="nn-statsPanel" id="nnStatsPanel">
+        <div class="nn-statsPanelTitle">Network Statistics</div>
+        <div class="nn-statsGrid">
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Total Devices</div>
+            <div class="nn-statValue" id="statTotal">0</div>
           </div>
-
-          <div style="height:12px;"></div>
-
-          <div class="card" style="cursor:default;">
-            <div class="card-head">
-              <div class="card-title">Network</div>
-              <div class="pill">Interface</div>
-            </div>
-            <div class="kv">
-              <div class="line"><span class="k">Active interface</span><span class="v">Auto</span></div>
-              <div class="line"><span class="k">Router control</span><span class="v">Off</span></div>
-            </div>
-            <div class="muted" style="margin-top:10px;">
-              Router-control features require explicit permissions and should never be assumed. Humans hate consent until it matters.
-            </div>
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Online</div>
+            <div class="nn-statValue nn-statOnline" id="statOnline">0</div>
           </div>
-
-          <div style="height:12px;"></div>
-
-          <div class="card" style="cursor:default;">
-            <div class="card-head">
-              <div class="card-title">Notifications</div>
-              <div class="pill">Alerts</div>
-            </div>
-            <div class="kv">
-              <div class="line"><span class="k">New device alerts</span><span class="v">On</span></div>
-              <div class="line"><span class="k">Device blocked alerts</span><span class="v">On</span></div>
-            </div>
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Threats</div>
+            <div class="nn-statValue nn-statThreat" id="statThreats">0</div>
+          </div>
+          <div class="nn-statItem">
+            <div class="nn-statLabel">Connections</div>
+            <div class="nn-statValue" id="statConnections">0</div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast">
-      <div class="t1" id="toastTitle"></div>
-      <div class="t2" id="toastBody"></div>
-      <div class="tact" id="toastActions"></div>
+      <!-- 3D Viewport -->
+      <div class="nn-viewport">
+        <div class="nn-scene">
+          <div class="nn-stage" id="nnStage">
+            <div class="nn-grid"></div>
+            <div class="nn-neonFog"></div>
+            <div class="nn-radar"></div>
+            <div class="nn-particleField" id="nnParticles"></div>
+            <div class="nn-constellationLayer" id="nnConstellation"></div>
+            <canvas class="nn-heatmap" id="nnHeatmap"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="nn-legend" id="nnLegend">
+        <div class="nn-legendTitle">Legend</div>
+        <div class="nn-legendItem">
+          <div class="nn-legendIcon nn-legendNormal"></div>
+          <span>Trusted Device</span>
+        </div>
+        <div class="nn-legendItem">
+          <div class="nn-legendIcon nn-legendThreat"></div>
+          <span>Unknown/Threat</span>
+        </div>
+        <div class="nn-legendItem">
+          <div class="nn-legendIcon nn-legendLink"></div>
+          <span>Connection</span>
+        </div>
+      </div>
+
+      <!-- Bottom Controls -->
+      <div class="nn-hudBottom">
+        <div class="nn-controlsLeft">
+          <div class="nn-modeSelector">
+            <button class="nn-modeBtn active" data-mode="star" title="Star Topology">⭐</button>
+            <button class="nn-modeBtn" data-mode="ring" title="Ring Topology">⭕</button>
+            <button class="nn-modeBtn" data-mode="mesh" title="Mesh Topology">🕸️</button>
+            <button class="nn-modeBtn" data-mode="tree" title="Tree Topology">🌳</button>
+          </div>
+        </div>
+        
+        <div class="nn-help">
+          <span>Touch: drag • pinch</span>
+          <span class="nn-separator">|</span>
+          <span id="nnZoomLevel">Zoom: 100%</span>
+          <span class="nn-separator">|</span>
+          <span id="nnRotation">Rotation: 58°</span>
+        </div>
+        
+        <div class="nn-controlsRight">
+          <div class="nn-effectsToggle">
+            <button class="nn-effectBtn active" data-effect="particles" title="Particles">✨</button>
+            <button class="nn-effectBtn active" data-effect="glow" title="Glow Effects">💫</button>
+            <button class="nn-effectBtn" data-effect="heatmap" title="Heat Map">🔥</button>
+            <button class="nn-effectBtn" data-effect="constellation" title="Constellation">🌌</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <script>
-    // ---- State ----
-    const state = {
-      activeTab: "dashboard",
-      deviceFilter: "all",
-      search: "",
-      selectedDeviceId: null,
-      selectedNetworkId: null,
-      lastScanAt: null,
-      lastChangeCount: 0,
-      history: [],
-      notifications: []
-    };
+  <div class="card-actions" style="margin-top:12px;">
+    <button class="btn btn-ghost purple" id="btnMapRefresh">Refresh map</button>
+    <button class="btn btn-ghost" id="btnMapTraffic">Toggle metrics</button>
+    <button class="btn btn-ghost" id="btnMapAutoRotate">Auto-rotate</button>
+    <button class="btn btn-ghost purple" id="btnMapFilter">Filter devices</button>
+    <button class="btn btn-ghost" id="btnMapExport">Export view</button>
+  </div>
+</div>
 
-    let scanInFlight = false;
+<style>
+/* Enhanced 3D Discovery Map - Base Styles */
+.nn-mapHost{
+  position: relative;
+  height: 580px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid var(--theme-primary, rgba(0,240,255,0.35));
+  box-shadow: 
+    inset 0 0 60px var(--theme-primary-glow, rgba(0,240,255,0.18)),
+    inset 0 0 100px var(--theme-secondary-glow, rgba(185,103,255,0.12)),
+    0 0 40px var(--theme-primary-shadow, rgba(0,240,255,0.25)),
+    0 0 80px var(--theme-secondary-shadow, rgba(185,103,255,0.15));
+  background: 
+    radial-gradient(ellipse at 50% 0%, var(--theme-primary-glow, rgba(0,240,255,0.08)), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, var(--theme-secondary-glow, rgba(185,103,255,0.06)), transparent 60%),
+    rgba(0,0,0,0.35);
+  margin-top: 10px;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
 
-    let devices = [];
+.nn-mapHost:hover{
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  box-shadow: 
+    inset 0 0 60px var(--theme-primary-glow, rgba(0,240,255,0.22)),
+    inset 0 0 100px var(--theme-secondary-glow, rgba(185,103,255,0.16)),
+    0 0 50px var(--theme-primary-shadow, rgba(0,240,255,0.35)),
+    0 0 90px var(--theme-secondary-shadow, rgba(185,103,255,0.20));
+}
 
-    // expose for embedded widgets (discovery map, etc)
-    window.devices = devices;
+/* Theme Color Variables */
+.nn-mapCard[data-theme="cyber"]{
+  --theme-primary: #00f0ff;
+  --theme-secondary: #b967ff;
+  --theme-accent: #78ffdc;
+  --theme-primary-glow: rgba(0,240,255,0.18);
+  --theme-secondary-glow: rgba(185,103,255,0.12);
+  --theme-primary-shadow: rgba(0,240,255,0.25);
+  --theme-secondary-shadow: rgba(185,103,255,0.15);
+  --theme-primary-bright: rgba(0,240,255,0.95);
+  --theme-secondary-bright: rgba(185,103,255,0.90);
+}
 
-    // Local UI caches
-    const firstSeenMap = new Map();
-    let cachedNetworkInfo = null;
+.nn-mapCard[data-theme="matrix"]{
+  --theme-primary: #00ff41;
+  --theme-secondary: #00cc33;
+  --theme-accent: #39ff14;
+  --theme-primary-glow: rgba(0,255,65,0.18);
+  --theme-secondary-glow: rgba(0,204,51,0.12);
+  --theme-primary-shadow: rgba(0,255,65,0.25);
+  --theme-secondary-shadow: rgba(0,204,51,0.15);
+  --theme-primary-bright: rgba(0,255,65,0.95);
+  --theme-secondary-bright: rgba(0,204,51,0.90);
+}
 
-    function formatSeen(ms){
-      if(!ms) return "—";
-      const now = Date.now();
-      const delta = now - ms;
-      if(delta < 120000) return "Now";
-      if(delta < 3600000) return `${Math.round(delta / 60000)} min ago`;
-      if(delta < 86400000) return `${Math.round(delta / 3600000)}h ago`;
-      if(delta < 172800000) return "Yesterday";
-      return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+.nn-mapCard[data-theme="sunset"]{
+  --theme-primary: #ff6b35;
+  --theme-secondary: #ff0080;
+  --theme-accent: #ffa500;
+  --theme-primary-glow: rgba(255,107,53,0.18);
+  --theme-secondary-glow: rgba(255,0,128,0.12);
+  --theme-primary-shadow: rgba(255,107,53,0.25);
+  --theme-secondary-shadow: rgba(255,0,128,0.15);
+  --theme-primary-bright: rgba(255,107,53,0.95);
+  --theme-secondary-bright: rgba(255,0,128,0.90);
+}
+
+.nn-mapCard[data-theme="ocean"]{
+  --theme-primary: #00d4ff;
+  --theme-secondary: #0047ab;
+  --theme-accent: #40e0d0;
+  --theme-primary-glow: rgba(0,212,255,0.18);
+  --theme-secondary-glow: rgba(0,71,171,0.12);
+  --theme-primary-shadow: rgba(0,212,255,0.25);
+  --theme-secondary-shadow: rgba(0,71,171,0.15);
+  --theme-primary-bright: rgba(0,212,255,0.95);
+  --theme-secondary-bright: rgba(0,71,171,0.90);
+}
+
+.nn-mapCard[data-theme="neon"]{
+  --theme-primary: #ff1493;
+  --theme-secondary: #ffff00;
+  --theme-accent: #ff69b4;
+  --theme-primary-glow: rgba(255,20,147,0.18);
+  --theme-secondary-glow: rgba(255,255,0,0.12);
+  --theme-primary-shadow: rgba(255,20,147,0.25);
+  --theme-secondary-shadow: rgba(255,255,0,0.15);
+  --theme-primary-bright: rgba(255,20,147,0.95);
+  --theme-secondary-bright: rgba(255,255,0,0.90);
+}
+
+.nn-mapCard[data-theme="aurora"]{
+  --theme-primary: #9d00ff;
+  --theme-secondary: #00ff9d;
+  --theme-accent: #bf00ff;
+  --theme-primary-glow: rgba(157,0,255,0.18);
+  --theme-secondary-glow: rgba(0,255,157,0.12);
+  --theme-primary-shadow: rgba(157,0,255,0.25);
+  --theme-secondary-shadow: rgba(0,255,157,0.15);
+  --theme-primary-bright: rgba(157,0,255,0.95);
+  --theme-secondary-bright: rgba(0,255,157,0.90);
+}
+
+.nn-mapCard[data-theme="fire"]{
+  --theme-primary: #ff0000;
+  --theme-secondary: #ff8800;
+  --theme-accent: #ff4500;
+  --theme-primary-glow: rgba(255,0,0,0.18);
+  --theme-secondary-glow: rgba(255,136,0,0.12);
+  --theme-primary-shadow: rgba(255,0,0,0.25);
+  --theme-secondary-shadow: rgba(255,136,0,0.15);
+  --theme-primary-bright: rgba(255,0,0,0.95);
+  --theme-secondary-bright: rgba(255,136,0,0.90);
+}
+
+.nn-mapCard[data-theme="ice"]{
+  --theme-primary: #e0ffff;
+  --theme-secondary: #4169e1;
+  --theme-accent: #b0e0e6;
+  --theme-primary-glow: rgba(224,255,255,0.18);
+  --theme-secondary-glow: rgba(65,105,225,0.12);
+  --theme-primary-shadow: rgba(224,255,255,0.25);
+  --theme-secondary-shadow: rgba(65,105,225,0.15);
+  --theme-primary-bright: rgba(224,255,255,0.95);
+  --theme-secondary-bright: rgba(65,105,225,0.90);
+}
+
+.nn-mapCard{
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  position: relative;
+  background: 
+    linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 50%, rgba(0,0,0,0.88) 100%),
+    repeating-linear-gradient(0deg, var(--theme-primary-glow, rgba(0,240,255,0.03)) 0px, transparent 1px, transparent 2px, var(--theme-secondary-glow, rgba(185,103,255,0.02)) 3px);
+  border: 1px solid var(--theme-accent, rgba(120,255,220,0.35));
+  box-shadow:
+    inset 0 0 60px var(--theme-accent, rgba(120,255,220,0.15)),
+    inset 0 0 100px var(--theme-secondary-glow, rgba(185,103,255,0.12)),
+    inset 0 0 140px var(--theme-primary-glow, rgba(0,240,255,0.08));
+  overflow: hidden;
+  touch-action: none;
+  transition: all 0.5s ease;
+}
+
+.nn-mapCard::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(90deg, var(--theme-accent, rgba(120,255,220,0.28)), transparent 25%, transparent 75%, var(--theme-secondary-glow, rgba(185,103,255,0.25))),
+    linear-gradient(0deg, transparent 40%, var(--theme-primary-glow, rgba(0,240,255,0.12)) 50%, transparent 60%);
+  opacity: 0.7;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  border-radius: 16px;
+  animation: nnSweep 8s linear infinite;
+}
+
+@keyframes nnSweep{
+  0%, 100% { transform: translateY(0%); opacity: 0.7; }
+  50% { transform: translateY(-20%); opacity: 0.9; }
+}
+
+.nn-mapCard::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.04) 0px,
+    transparent 1px,
+    transparent 4px
+  );
+  opacity: 0.15;
+  pointer-events: none;
+  animation: nnScanline 0.12s linear infinite;
+}
+
+@keyframes nnScanline{
+  0% { opacity: 0.10; }
+  50% { opacity: 0.20; }
+  100% { opacity: 0.10; }
+}
+
+/* HUD Elements */
+.nn-hudTop{
+  position: absolute;
+  inset: 14px 14px auto 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.nn-hudTop > div:first-child{
+  pointer-events: none;
+}
+
+.nn-hudControls{
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+  flex-wrap: wrap;
+}
+
+.nn-hudBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.35));
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 
+    0 0 16px var(--theme-primary-glow, rgba(0,240,255,0.18)),
+    inset 0 0 12px var(--theme-accent, rgba(120,255,220,0.10));
+}
+
+.nn-hudBtn:hover{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.15));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  box-shadow: 
+    0 0 28px var(--theme-primary-shadow, rgba(0,240,255,0.45)),
+    inset 0 0 18px var(--theme-accent, rgba(120,255,220,0.18));
+  transform: scale(1.1) translateY(-2px);
+}
+
+.nn-hudBtn:active{
+  transform: scale(0.95);
+}
+
+.nn-hudBtn.active{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.25));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.65));
+  box-shadow: 
+    0 0 24px var(--theme-primary-shadow, rgba(0,240,255,0.40)),
+    inset 0 0 20px var(--theme-accent, rgba(120,255,220,0.25));
+}
+
+/* Theme Selector Panel */
+.nn-themePanel{
+  position: absolute;
+  top: 60px;
+  right: 14px;
+  width: 280px;
+  max-height: 0;
+  overflow: hidden;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.35));
+  border-radius: 14px;
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.6),
+    inset 0 0 30px var(--theme-primary-glow, rgba(0,240,255,0.10));
+  z-index: 9;
+  transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: auto;
+}
+
+.nn-themePanel.open{
+  max-height: 400px;
+  padding: 14px;
+}
+
+.nn-themePanelTitle{
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  margin-bottom: 12px;
+  text-shadow: 0 0 12px var(--theme-primary-glow, rgba(0,240,255,0.40));
+}
+
+.nn-themeGrid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.nn-themeBtn{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255,255,255,0.85);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.nn-themeBtn:hover{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.25);
+  transform: translateY(-2px);
+}
+
+.nn-themeBtn.active{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.35);
+  box-shadow: 0 0 16px rgba(255,255,255,0.15);
+}
+
+.nn-themeSwatch{
+  width: 50px;
+  height: 30px;
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.3), inset 0 0 8px rgba(255,255,255,0.15);
+}
+
+/* Statistics Panel */
+.nn-statsPanel{
+  position: absolute;
+  top: 60px;
+  left: 14px;
+  width: 220px;
+  max-height: 0;
+  overflow: hidden;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.35));
+  border-radius: 14px;
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.6),
+    inset 0 0 30px var(--theme-primary-glow, rgba(0,240,255,0.10));
+  z-index: 9;
+  transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: auto;
+}
+
+.nn-statsPanel.open{
+  max-height: 300px;
+  padding: 14px;
+}
+
+.nn-statsPanelTitle{
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  margin-bottom: 12px;
+  text-shadow: 0 0 12px var(--theme-primary-glow, rgba(0,240,255,0.40));
+}
+
+.nn-statsGrid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.nn-statItem{
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.20));
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+
+.nn-statLabel{
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 6px;
+}
+
+.nn-statValue{
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--theme-primary, rgba(0,240,255,1));
+  text-shadow: 0 0 16px var(--theme-primary-glow, rgba(0,240,255,0.50));
+}
+
+.nn-statOnline{
+  color: #00ff41;
+  text-shadow: 0 0 16px rgba(0,255,65,0.50);
+}
+
+.nn-statThreat{
+  color: #ff0080;
+  text-shadow: 0 0 16px rgba(255,0,128,0.50);
+}
+
+.nn-title{
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-shadow: 
+    0 0 20px var(--theme-primary, rgba(0,240,255,0.65)),
+    0 0 40px var(--theme-accent, rgba(120,255,220,0.35));
+  color: var(--theme-accent, rgba(120,255,220,1));
+  font-weight: 700;
+  animation: nnTitlePulse 3s ease-in-out infinite;
+}
+
+@keyframes nnTitlePulse{
+  0%, 100% { 
+    filter: brightness(1);
+  }
+  50% { 
+    filter: brightness(1.3);
+  }
+}
+
+.nn-sub{
+  font-size: 11px;
+  color: rgba(210,255,245,0.92);
+  text-shadow: 0 0 16px var(--theme-secondary-glow, rgba(185,103,255,0.50));
+  margin-top: 4px;
+}
+
+/* Viewport */
+.nn-viewport{
+  position: absolute;
+  inset: 64px 14px 74px 14px;
+  border-radius: 16px;
+  background: 
+    radial-gradient(ellipse at center, var(--theme-primary-glow, rgba(0,240,255,0.08)), transparent 70%),
+    rgba(0,0,0,0.35);
+  border: 1px solid var(--theme-accent, rgba(120,255,220,0.28));
+  box-shadow:
+    inset 0 0 80px var(--theme-accent, rgba(120,255,220,0.15)),
+    inset 0 0 120px var(--theme-secondary-glow, rgba(185,103,255,0.12)),
+    inset 0 2px 0 rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.nn-scene{
+  width: 100%;
+  height: 100%;
+  perspective: 1400px;
+  perspective-origin: 50% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nn-stage{
+  width: min(1200px, 180vw);
+  height: min(750px, 90vh);
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.nn-grid{
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      var(--theme-accent, rgba(120,255,220,0.22)) 0 2px,
+      transparent 2px 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--theme-secondary-bright, rgba(185,103,255,0.20)) 0 2px,
+      transparent 2px 40px
+    ),
+    radial-gradient(
+      ellipse at center,
+      var(--theme-primary-glow, rgba(0,240,255,0.12)),
+      transparent 75%
+    );
+  box-shadow:
+    inset 0 0 200px var(--theme-accent, rgba(120,255,220,0.20)),
+    inset 0 0 200px var(--theme-secondary-glow, rgba(185,103,255,0.15));
+  border: 1px solid var(--theme-accent, rgba(120,255,220,0.28));
+  filter: saturate(1.5) contrast(1.2);
+  animation: nnGridPulse 4s ease-in-out infinite;
+  transition: opacity 0.4s ease;
+}
+
+@keyframes nnGridPulse{
+  0%, 100% { 
+    opacity: 1;
+    filter: saturate(1.5) contrast(1.2);
+  }
+  50% { 
+    opacity: 0.85;
+    filter: saturate(1.7) contrast(1.3);
+  }
+}
+
+.nn-neonFog{
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(circle at 25% 30%, var(--theme-accent, rgba(120,255,220,0.25)), transparent 50%),
+    radial-gradient(circle at 80% 40%, var(--theme-secondary-bright, rgba(185,103,255,0.22)), transparent 55%),
+    radial-gradient(circle at 60% 80%, var(--theme-primary-bright, rgba(0,240,255,0.18)), transparent 60%),
+    radial-gradient(circle at 15% 75%, var(--theme-accent, rgba(120,255,220,0.15)), transparent 50%);
+  mix-blend-mode: screen;
+  filter: blur(28px) saturate(1.8);
+  opacity: 1;
+  pointer-events: none;
+  animation: nnFogShift 12s ease-in-out infinite;
+}
+
+@keyframes nnFogShift{
+  0%, 100% { transform: translate(0%, 0%) scale(1); }
+  33% { transform: translate(3%, -2%) scale(1.05); }
+  66% { transform: translate(-2%, 3%) scale(0.98); }
+}
+
+.nn-radar{
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid var(--theme-primary-bright, rgba(0,240,255,0.85));
+  box-shadow: 
+    0 0 60px var(--theme-primary-shadow, rgba(0,240,255,0.50)),
+    inset 0 0 40px var(--theme-accent, rgba(120,255,220,0.25));
+  animation: nnRadarPulse 2.5s infinite ease-out;
+  pointer-events: none;
+}
+
+.nn-radar::before{
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-secondary-bright, rgba(185,103,255,0.45));
+  box-shadow: 0 0 40px var(--theme-secondary-shadow, rgba(185,103,255,0.35));
+  animation: nnRadarPulse 2.5s 0.5s infinite ease-out;
+}
+
+@keyframes nnRadarPulse{
+  0% { 
+    transform: translate(-50%, -50%) scale(0.35);
+    opacity: 1;
+  }
+  100% { 
+    transform: translate(-50%, -50%) scale(3.2);
+    opacity: 0;
+  }
+}
+
+/* Particle Field */
+.nn-particleField{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+}
+
+.nn-particleField.hidden{
+  opacity: 0;
+}
+
+.nn-particle{
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--theme-accent, rgba(120,255,220,1)), var(--theme-primary, rgba(0,240,255,0.5)));
+  box-shadow: 0 0 12px var(--theme-accent, rgba(120,255,220,0.8));
+  pointer-events: none;
+  animation: nnParticleFloat 8s linear infinite;
+}
+
+@keyframes nnParticleFloat{
+  0% { 
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  90% { 
+    opacity: 0.6;
+  }
+  100% { 
+    transform: translate(var(--tx), var(--ty)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Constellation Layer */
+.nn-constellationLayer{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.nn-constellationLayer.visible{
+  opacity: 1;
+}
+
+.nn-constellation{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 8px rgba(255,255,255,0.6);
+  animation: nnStarTwinkle 3s ease-in-out infinite;
+}
+
+@keyframes nnStarTwinkle{
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Heatmap Canvas */
+.nn-heatmap{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.4s ease;
+}
+
+.nn-heatmap.visible{
+  opacity: 0.6;
+}
+
+/* Links */
+.nn-link{
+  position: absolute;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary-bright, rgba(0,240,255,0.95)),
+    var(--theme-accent, rgba(120,255,220,0.92)) 50%,
+    var(--theme-secondary-bright, rgba(185,103,255,0.95))
+  );
+  box-shadow: 
+    0 0 22px var(--theme-primary-shadow, rgba(0,240,255,0.50)),
+    0 0 34px var(--theme-secondary-shadow, rgba(185,103,255,0.35));
+  transform-origin: left center;
+  opacity: 0.95;
+  filter: saturate(1.6) contrast(1.3);
+  animation: nnLinkPulse 2s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+.nn-link.strong{
+  height: 4px;
+  box-shadow: 
+    0 0 28px var(--theme-primary-shadow, rgba(0,240,255,0.70)),
+    0 0 42px var(--theme-secondary-shadow, rgba(185,103,255,0.50));
+}
+
+.nn-link.weak{
+  height: 2px;
+  opacity: 0.5;
+}
+
+@keyframes nnLinkPulse{
+  0%, 100% { 
+    opacity: 0.95;
+    filter: saturate(1.6) contrast(1.3);
+  }
+  50% { 
+    opacity: 1;
+    filter: saturate(1.9) contrast(1.5);
+  }
+}
+
+/* Nodes */
+.nn-node{
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: 
+    radial-gradient(circle at 30% 30%, 
+      rgba(255,255,255,1), 
+      var(--theme-primary-bright, rgba(0,240,255,0.95)) 35%, 
+      var(--theme-secondary-bright, rgba(185,103,255,0.90)) 75%
+    );
+  box-shadow: 
+    0 0 28px var(--theme-primary-shadow, rgba(0,240,255,0.70)),
+    0 0 50px var(--theme-secondary-shadow, rgba(185,103,255,0.40)),
+    inset 0 0 16px rgba(255,255,255,0.50);
+  animation: nnNodeFloat 3.5s infinite ease-in-out;
+  filter: saturate(1.7) contrast(1.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nn-node:hover{
+  transform: translateZ(80px) scale(1.3);
+  box-shadow: 
+    0 0 40px var(--theme-primary-shadow, rgba(0,240,255,0.90)),
+    0 0 70px var(--theme-secondary-shadow, rgba(185,103,255,0.60)),
+    inset 0 0 20px rgba(255,255,255,0.70);
+  filter: saturate(2.0) contrast(1.5);
+}
+
+.nn-node.threat{
+  background: 
+    radial-gradient(circle at 30% 30%, 
+      rgba(255,255,255,1), 
+      var(--theme-secondary-bright, rgba(185,103,255,0.98)) 45%, 
+      var(--theme-primary-bright, rgba(0,240,255,0.80)) 85%
+    );
+  box-shadow: 
+    0 0 40px var(--theme-secondary-shadow, rgba(185,103,255,0.80)),
+    0 0 60px var(--theme-primary-shadow, rgba(0,240,255,0.30)),
+    inset 0 0 18px rgba(255,255,255,0.60);
+  animation: nnNodeThreat 1.5s infinite ease-in-out;
+}
+
+.nn-node.selected{
+  box-shadow: 
+    0 0 50px var(--theme-primary-shadow, rgba(0,240,255,1)),
+    0 0 80px var(--theme-secondary-shadow, rgba(185,103,255,0.70)),
+    inset 0 0 24px rgba(255,255,255,0.80);
+  transform: translateZ(100px) scale(1.4);
+}
+
+@keyframes nnNodeFloat{
+  0%, 100% { 
+    transform: translateZ(0px);
+  }
+  50% { 
+    transform: translateZ(60px);
+  }
+}
+
+@keyframes nnNodeThreat{
+  0%, 100% { 
+    transform: translateZ(0px) scale(1);
+    filter: saturate(1.7) contrast(1.3);
+  }
+  50% { 
+    transform: translateZ(70px) scale(1.15);
+    filter: saturate(2.2) contrast(1.6);
+  }
+}
+
+/* Node Ripple Effect */
+.nn-ripple{
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--theme-primary-bright, rgba(0,240,255,0.9));
+  box-shadow: 0 0 30px var(--theme-primary-shadow, rgba(0,240,255,0.6));
+  pointer-events: none;
+  animation: nnRippleExpand 1.2s ease-out forwards;
+}
+
+@keyframes nnRippleExpand{
+  0% {
+    width: 28px;
+    height: 28px;
+    opacity: 1;
+  }
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0;
+  }
+}
+
+.nn-label{
+  position: absolute;
+  top: -30px;
+  left: -70px;
+  width: 160px;
+  font-size: 11px;
+  color: rgba(210,255,245,1);
+  text-shadow: 
+    0 0 18px var(--theme-primary-shadow, rgba(0,240,255,0.60)),
+    0 0 8px rgba(0,0,0,0.90);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  opacity: 0.95;
+  transition: all 0.3s ease;
+}
+
+.nn-node:hover .nn-label{
+  opacity: 1;
+  top: -35px;
+  text-shadow: 
+    0 0 24px var(--theme-primary-shadow, rgba(0,240,255,0.80)),
+    0 0 10px rgba(0,0,0,1);
+  transform: scale(1.1);
+}
+
+/* Packets */
+.nn-packet{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--theme-accent, rgba(120,255,220,1)), var(--theme-accent, rgba(120,255,220,0.3)));
+  box-shadow: 
+    0 0 20px var(--theme-accent, rgba(120,255,220,1)),
+    0 0 30px var(--theme-accent, rgba(120,255,220,0.6));
+  pointer-events: none;
+  animation: nnPacketTravel 2s linear infinite;
+}
+
+@keyframes nnPacketTravel{
+  0% { 
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  90% { 
+    opacity: 0.8;
+  }
+  100% { 
+    transform: translate(var(--px), var(--py)) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Legend */
+.nn-legend{
+  position: absolute;
+  bottom: 80px;
+  left: 14px;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  border-radius: 12px;
+  padding: 10px 12px;
+  z-index: 5;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.nn-legendTitle{
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--theme-accent, rgba(120,255,220,0.95));
+  margin-bottom: 8px;
+  text-shadow: 0 0 10px var(--theme-primary-glow, rgba(0,240,255,0.40));
+}
+
+.nn-legendItem{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 6px;
+}
+
+.nn-legendItem:last-child{
+  margin-bottom: 0;
+}
+
+.nn-legendIcon{
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nn-legendNormal{
+  background: radial-gradient(circle, var(--theme-primary-bright, rgba(0,240,255,0.95)), var(--theme-secondary-bright, rgba(185,103,255,0.90)));
+  box-shadow: 0 0 12px var(--theme-primary-shadow, rgba(0,240,255,0.50));
+}
+
+.nn-legendThreat{
+  background: radial-gradient(circle, var(--theme-secondary-bright, rgba(185,103,255,0.98)), var(--theme-primary-bright, rgba(0,240,255,0.80)));
+  box-shadow: 0 0 12px var(--theme-secondary-shadow, rgba(185,103,255,0.50));
+}
+
+.nn-legendLink{
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--theme-primary-bright, rgba(0,240,255,0.95)), var(--theme-secondary-bright, rgba(185,103,255,0.95)));
+  box-shadow: 0 0 10px var(--theme-primary-shadow, rgba(0,240,255,0.40));
+}
+
+/* Bottom HUD */
+.nn-hudBottom{
+  position: absolute;
+  inset: auto 14px 14px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.nn-controlsLeft,
+.nn-controlsRight{
+  pointer-events: auto;
+}
+
+.nn-help{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: rgba(210,255,245,0.85);
+  text-shadow: 0 0 14px var(--theme-secondary-glow, rgba(185,103,255,0.45));
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  box-shadow: 0 0 18px var(--theme-primary-glow, rgba(0,240,255,0.15));
+  width: fit-content;
+  pointer-events: none;
+}
+
+.nn-separator{
+  color: var(--theme-secondary-bright, rgba(185,103,255,0.50));
+}
+
+/* Mode Selector */
+.nn-modeSelector{
+  display: flex;
+  gap: 6px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 0 18px var(--theme-primary-glow, rgba(0,240,255,0.15));
+}
+
+.nn-modeBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.75);
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nn-modeBtn:hover{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.15));
+  border-color: var(--theme-primary, rgba(0,240,255,0.35));
+  color: rgba(255,255,255,0.95);
+}
+
+.nn-modeBtn.active{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.25));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  color: var(--theme-accent, rgba(120,255,220,1));
+  box-shadow: 0 0 16px var(--theme-primary-shadow, rgba(0,240,255,0.30));
+}
+
+/* Effects Toggle */
+.nn-effectsToggle{
+  display: flex;
+  gap: 6px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-primary, rgba(0,240,255,0.25));
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 0 18px var(--theme-primary-glow, rgba(0,240,255,0.15));
+}
+
+.nn-effectBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.75);
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nn-effectBtn:hover{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.15));
+  border-color: var(--theme-primary, rgba(0,240,255,0.35));
+}
+
+.nn-effectBtn.active{
+  background: var(--theme-primary-glow, rgba(0,240,255,0.25));
+  border-color: var(--theme-primary-bright, rgba(0,240,255,0.55));
+  box-shadow: 0 0 16px var(--theme-primary-shadow, rgba(0,240,255,0.30));
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  .nn-mapHost{
+    height: 480px;
+  }
+  
+  .nn-hudBtn{
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .nn-title{
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+  
+  .nn-sub{
+    font-size: 10px;
+  }
+  
+  .nn-help{
+    font-size: 9px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  
+  .nn-themePanel{
+    width: 240px;
+  }
+  
+  .nn-statsPanel{
+    width: 180px;
+  }
+  
+  .nn-legend{
+    display: none;
+  }
+  
+  .nn-modeBtn,
+  .nn-effectBtn{
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+</style>
+
+<script>
+(function(){
+  "use strict";
+  
+  const stage = document.getElementById("nnStage");
+  const hudStatus = document.getElementById("nnHudStatus");
+  const card = document.getElementById("nnMapCard");
+  const particlesContainer = document.getElementById("nnParticles");
+  const constellationLayer = document.getElementById("nnConstellation");
+  const heatmapCanvas = document.getElementById("nnHeatmap");
+  const zoomLevel = document.getElementById("nnZoomLevel");
+  const rotationDisplay = document.getElementById("nnRotation");
+  const themePanel = document.getElementById("nnThemePanel");
+  const statsPanel = document.getElementById("nnStatsPanel");
+  
+  let rotX = 58;
+  let rotZ = -10;
+  let zoom = 1.15;
+  let autoRotate = false;
+  let autoRotateInterval = null;
+  let labelsVisible = true;
+  let gridVisible = true;
+  let currentMode = "star"; // star, ring, mesh, tree
+  let currentTheme = "cyber";
+  
+  const effects = {
+    particles: true,
+    glow: true,
+    heatmap: false,
+    constellation: false
+  };
+  
+  const pointers = new Map();
+  let lastPinchDist = null;
+  let nodeEls = [];
+  let linkEls = [];
+  let momentum = { x: 0, y: 0 };
+  let isInteracting = false;
+  let selectedNode = null;
+  
+  function applyTransform(){
+    if(!stage) return;
+    stage.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) scale(${zoom})`;
+    if(zoomLevel) zoomLevel.textContent = `Zoom: ${Math.round(zoom * 100)}%`;
+    if(rotationDisplay) rotationDisplay.textContent = `Rotation: ${Math.round(rotX)}°`;
+  }
+  
+  function applyMomentum(){
+    if(isInteracting || (Math.abs(momentum.x) < 0.1 && Math.abs(momentum.y) < 0.1)){
+      return;
     }
-
-    function inferType(raw){
-      const host = String(raw?.hostname || "").toLowerCase();
-      const os = String(raw?.os || "").toLowerCase();
-      const vendor = String(raw?.vendor || "").toLowerCase();
-      if(os.includes("android") || os.includes("ios")) return "Phone";
-      if(os.includes("tizen") || os.includes("webos") || os.includes("tv")) return "TV";
-      if(os.includes("windows") || os.includes("linux") || os.includes("mac")) return "PC";
-      if(host.includes("printer") || os.includes("printer")) return "Printer";
-      if(vendor.includes("hikvision") || vendor.includes("tuya")) return "IoT";
-      return "IoT";
+    
+    rotZ += momentum.x;
+    rotX = Math.max(25, Math.min(82, rotX - momentum.y));
+    
+    momentum.x *= 0.92;
+    momentum.y *= 0.92;
+    
+    applyTransform();
+    requestAnimationFrame(applyMomentum);
+  }
+  
+  applyTransform();
+  
+  function clearGraph(){
+    if(!stage) return;
+    stage.querySelectorAll(".nn-node,.nn-link,.nn-packet,.nn-ripple").forEach(e => e.remove());
+    nodeEls = [];
+    linkEls = [];
+    selectedNode = null;
+  }
+  
+  function createParticles(){
+    if(!particlesContainer) return;
+    particlesContainer.innerHTML = "";
+    
+    for(let i = 0; i < 60; i++){
+      const particle = document.createElement("div");
+      particle.className = "nn-particle";
+      
+      const startX = Math.random() * 100;
+      const startY = Math.random() * 100;
+      const endX = (Math.random() - 0.5) * 250;
+      const endY = (Math.random() - 0.5) * 250;
+      
+      particle.style.left = startX + "%";
+      particle.style.top = startY + "%";
+      particle.style.setProperty("--tx", endX + "px");
+      particle.style.setProperty("--ty", endY + "px");
+      particle.style.animationDelay = (Math.random() * 8) + "s";
+      particle.style.animationDuration = (5 + Math.random() * 6) + "s";
+      
+      particlesContainer.appendChild(particle);
     }
-
-    function mergeDevice(raw){
-      const id = raw?.id || raw?.mac || raw?.ip;
-      if(!id) return null;
-      if(!firstSeenMap.has(id)){
-        firstSeenMap.set(id, raw?.lastSeen || Date.now());
-      }
-      const online = !!raw?.online;
-      const trust = raw?.trust || "Unknown";
-      const status = raw?.status || (trust === "Blocked" ? "Blocked" : (online ? "Online" : "Offline"));
-
+  }
+  
+  function createConstellation(){
+    if(!constellationLayer) return;
+    constellationLayer.innerHTML = "";
+    
+    for(let i = 0; i < 100; i++){
+      const star = document.createElement("div");
+      star.className = "nn-constellation";
+      star.style.left = (Math.random() * 100) + "%";
+      star.style.top = (Math.random() * 100) + "%";
+      star.style.animationDelay = (Math.random() * 3) + "s";
+      
+      constellationLayer.appendChild(star);
+    }
+  }
+  
+  function createHeatmap(nodes){
+    if(!heatmapCanvas) return;
+    const ctx = heatmapCanvas.getContext("2d");
+    heatmapCanvas.width = stage.clientWidth;
+    heatmapCanvas.height = stage.clientHeight;
+    
+    ctx.clearRect(0, 0, heatmapCanvas.width, heatmapCanvas.height);
+    
+    nodes.forEach(node => {
+      const gradient = ctx.createRadialGradient(
+        node.x, node.y, 0,
+        node.x, node.y, 100
+      );
+      
+      const intensity = node.threat ? 0.6 : 0.3;
+      const color = node.threat ? '185,103,255' : '0,240,255';
+      
+      gradient.addColorStop(0, `rgba(${color},${intensity})`);
+      gradient.addColorStop(0.5, `rgba(${color},${intensity * 0.3})`);
+      gradient.addColorStop(1, `rgba(${color},0)`);
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, heatmapCanvas.width, heatmapCanvas.height);
+    });
+  }
+  
+  function createNode(d){
+    const n = document.createElement("div");
+    n.className = "nn-node" + (d.threat ? " threat" : "");
+    n.style.left = d.x + "px";
+    n.style.top = d.y + "px";
+    n.dataset.id = d.id || "";
+    
+    const label = document.createElement("div");
+    label.className = "nn-label";
+    label.textContent = d.name || "Device";
+    label.style.display = labelsVisible ? "block" : "none";
+    
+    n.appendChild(label);
+    
+    // Click handler
+    n.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectNode(n, d);
+    });
+    
+    stage.appendChild(n);
+    return n;
+  }
+  
+  function selectNode(nodeEl, data){
+    // Deselect previous
+    if(selectedNode){
+      selectedNode.classList.remove("selected");
+    }
+    
+    // Select new
+    nodeEl.classList.add("selected");
+    selectedNode = nodeEl;
+    
+    // Create ripple effect
+    const ripple = document.createElement("div");
+    ripple.className = "nn-ripple";
+    ripple.style.left = nodeEl.style.left;
+    ripple.style.top = nodeEl.style.top;
+    stage.appendChild(ripple);
+    
+    setTimeout(() => ripple.remove(), 1200);
+    
+    // Show info (could be a tooltip or panel)
+    console.log("Selected node:", data);
+  }
+  
+  function createLink(aEl, bEl, strength = "normal"){
+    const ax = aEl.offsetLeft + aEl.offsetWidth / 2;
+    const ay = aEl.offsetTop + aEl.offsetHeight / 2;
+    const bx = bEl.offsetLeft + bEl.offsetWidth / 2;
+    const by = bEl.offsetTop + bEl.offsetHeight / 2;
+    
+    const dx = bx - ax;
+    const dy = by - ay;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    
+    const line = document.createElement("div");
+    line.className = "nn-link " + strength;
+    line.style.width = dist + "px";
+    line.style.left = ax + "px";
+    line.style.top = ay + "px";
+    line.style.transform = `rotate(${angle}deg)`;
+    
+    stage.appendChild(line);
+    linkEls.push(line);
+    
+    // Random packet animation
+    if(Math.random() > 0.5){
+      createPacket(ax, ay, dx, dy);
+    }
+  }
+  
+  function createPacket(startX, startY, dx, dy){
+    const packet = document.createElement("div");
+    packet.className = "nn-packet";
+    packet.style.left = startX + "px";
+    packet.style.top = startY + "px";
+    packet.style.setProperty("--px", dx + "px");
+    packet.style.setProperty("--py", dy + "px");
+    packet.style.animationDuration = (1.5 + Math.random() * 1.5) + "s";
+    packet.style.animationDelay = (Math.random() * 2) + "s";
+    
+    stage.appendChild(packet);
+    
+    setTimeout(() => packet.remove(), 5000);
+  }
+  
+  function hashCode(str){
+    let h = 2166136261;
+    for(let i = 0; i < str.length; i++){
+      h ^= str.charCodeAt(i);
+      h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+    }
+    return h >>> 0;
+  }
+  
+  function layoutStar(list, W, H){
+    const pad = 100;
+    return list.map((d) => {
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      const h = hashCode(key);
+      const angle = (h % 360) * Math.PI / 180;
+      const radius = 180 + (h % 150);
+      const x = (W / 2) + radius * Math.cos(angle);
+      const y = (H / 2) + radius * Math.sin(angle);
+      
       return {
-        id,
-        name: raw?.name || raw?.hostname || raw?.ip || "Device",
-        owner: raw?.owner || "",
-        type: raw?.type || inferType(raw),
-        status,
-        ip: raw?.ip || "—",
-        mac: raw?.mac || "—",
-        vendor: raw?.vendor || "—",
-        firstSeen: formatSeen(firstSeenMap.get(id)),
-        lastSeen: formatSeen(raw?.lastSeen),
-        trust,
-        os: raw?.os || "—",
-        via: raw?.via || "LAN",
-        signal: raw?.signal || "—",
-        iface: raw?.iface || "—",
-        activityToday: raw?.activityToday || "—",
-        traffic: raw?.traffic || "—",
-        note: raw?.note || "",
-        room: raw?.room || ""
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x: Math.max(pad, Math.min(W - pad, x)),
+        y: Math.max(pad, Math.min(H - pad, y))
       };
+    });
+  }
+  
+  function layoutRing(list, W, H){
+    const pad = 120;
+    const centerX = W / 2;
+    const centerY = H / 2;
+    const radius = Math.min(W, H) / 2 - pad;
+    
+    return list.map((d, i) => {
+      const angle = (i / list.length) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      return {
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x, y
+      };
+    });
+  }
+  
+  function layoutMesh(list, W, H){
+    const pad = 100;
+    const cols = Math.ceil(Math.sqrt(list.length));
+    const rows = Math.ceil(list.length / cols);
+    const cellW = (W - pad * 2) / cols;
+    const cellH = (H - pad * 2) / rows;
+    
+    return list.map((d, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = pad + col * cellW + cellW / 2 + (Math.random() - 0.5) * 40;
+      const y = pad + row * cellH + cellH / 2 + (Math.random() - 0.5) * 40;
+      
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      return {
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x, y
+      };
+    });
+  }
+  
+  function layoutTree(list, W, H){
+    const pad = 120;
+    const levels = Math.ceil(Math.log2(list.length + 1));
+    
+    return list.map((d, i) => {
+      const level = Math.floor(Math.log2(i + 1));
+      const posInLevel = i - (Math.pow(2, level) - 1);
+      const nodesInLevel = Math.pow(2, level);
+      
+      const y = pad + (level / levels) * (H - pad * 2);
+      const x = pad + ((posInLevel + 0.5) / nodesInLevel) * (W - pad * 2);
+      
+      const key = String(d?.id || d?.mac || d?.ip || d?.name || "device");
+      return {
+        ...d,
+        id: key,
+        name: (d && (d.name || d.ip || d.id)) ? String(d.name || d.ip || d.id) : "Device",
+        threat: !!(d && (d.threat || d.trust === "Unknown" || d.status === "Blocked")),
+        x, y
+      };
+    });
+  }
+  
+  function connectStar(nodes){
+    if(nodes.length === 0) return;
+    
+    // Create center node
+    const centerNode = {
+      offsetLeft: stage.clientWidth / 2 - 14,
+      offsetTop: stage.clientHeight / 2 - 14,
+      offsetWidth: 28,
+      offsetHeight: 28
+    };
+    
+    for(let i = 0; i < nodeEls.length; i++){
+      const strength = Math.random() > 0.7 ? "strong" : "normal";
+      createLink(centerNode, nodeEls[i], strength);
+      
+      // Some inter-node connections
+      if(i > 0 && Math.random() > 0.7){
+        const targetIdx = Math.floor(Math.random() * i);
+        createLink(nodeEls[i], nodeEls[targetIdx], "weak");
+      }
     }
-
-    const API_BASE = (() => {
-      try {
-        if (location && location.origin && location.origin !== "null") {
-          const origin = String(location.origin);
-          if (!origin.startsWith("file:")) return origin;
+  }
+  
+  function connectRing(nodes){
+    for(let i = 0; i < nodeEls.length; i++){
+      const next = (i + 1) % nodeEls.length;
+      createLink(nodeEls[i], nodeEls[next], "normal");
+      
+      // Diagonal connections
+      if(i < nodeEls.length - 2){
+        const skip = (i + 2) % nodeEls.length;
+        if(Math.random() > 0.6){
+          createLink(nodeEls[i], nodeEls[skip], "weak");
         }
-      } catch (_) {}
-      return "http://127.0.0.1:8787";
-    })();
-
-    function resolveApiUrl(url){
-      if (typeof url !== "string") return url;
-      if (url.startsWith("/")) return API_BASE + url;
-      return url;
-    }
-
-    async function fetchJson(url, options = {}){
-      const headers = {
-        "Accept": "application/json",
-        ...(options.headers || {})
-      };
-      const { timeoutMs, ...fetchOptions } = options || {};
-      const controller = new AbortController();
-      const timeoutBudget = Number.isFinite(timeoutMs) ? timeoutMs : 8000;
-      const timeout = timeoutBudget > 0 ? setTimeout(() => controller.abort(), timeoutBudget) : null;
-      const res = await fetch(resolveApiUrl(url), { ...fetchOptions, headers, signal: controller.signal });
-      if(timeout) clearTimeout(timeout);
-      if(res.status === 401){
-        showToast("Unauthorized", "Access rejected by the local engine.");
-        throw new Error("Unauthorized");
       }
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
     }
-
-    function applyDevicesFromBackend(rawList){
-      if(!Array.isArray(rawList)) return;
-      const next = rawList.map(mergeDevice).filter(Boolean);
-      devices = next;
-      window.devices = devices;
-    }
-
-    function upsertDeviceFromBackend(raw){
-      const next = mergeDevice(raw);
-      if(!next) return;
-      const idx = devices.findIndex(d => d.id === next.id);
-      if(idx >= 0){
-        devices[idx] = next;
-      } else {
-        devices.unshift(next);
+  }
+  
+  function connectMesh(nodes){
+    for(let i = 0; i < nodeEls.length; i++){
+      // Connect to 2-4 random neighbors
+      const connections = 2 + Math.floor(Math.random() * 3);
+      for(let j = 0; j < connections; j++){
+        const target = Math.floor(Math.random() * nodeEls.length);
+        if(target !== i){
+          const strength = Math.random() > 0.5 ? "normal" : "weak";
+          createLink(nodeEls[i], nodeEls[target], strength);
+        }
       }
-      window.devices = devices;
     }
-
-    async function updateDeviceMeta(id, patch){
-      const updated = await fetchJson(`/api/v1/devices/${encodeURIComponent(id)}/meta`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch)
-      });
-      upsertDeviceFromBackend(updated);
-      renderDashboard();
-      renderDevices();
-      renderNetworks();
+  }
+  
+  function connectTree(nodes){
+    for(let i = 1; i < nodeEls.length; i++){
+      const parent = Math.floor((i - 1) / 2);
+      createLink(nodeEls[parent], nodeEls[i], "normal");
+    }
+  }
+  
+  window.nnUpdateDiscoveryMap = function(){
+    if(!stage || !hudStatus) return;
+    
+    const list = Array.isArray(window.devices) ? window.devices : 
+                 (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
+    
+    if(!Array.isArray(list) || list.length === 0){
+      hudStatus.textContent = "0 devices • idle";
+      clearGraph();
+      updateStats(0, 0, 0, 0);
+      return;
+    }
+    
+    clearGraph();
+    
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+    
+    // Layout based on mode
+    let mapped;
+    const displayList = list.slice(0, 32);
+    
+    switch(currentMode){
+      case "ring":
+        mapped = layoutRing(displayList, W, H);
+        break;
+      case "mesh":
+        mapped = layoutMesh(displayList, W, H);
+        break;
+      case "tree":
+        mapped = layoutTree(displayList, W, H);
+        break;
+      default:
+        mapped = layoutStar(displayList, W, H);
+    }
+    
+    // Create nodes
+    mapped.forEach(d => nodeEls.push(createNode(d)));
+    
+    // Create connections based on mode
+    switch(currentMode){
+      case "ring":
+        connectRing(mapped);
+        break;
+      case "mesh":
+        connectMesh(mapped);
+        break;
+      case "tree":
+        connectTree(mapped);
+        break;
+      default:
+        connectStar(mapped);
+    }
+    
+    // Update stats
+    const totalDevices = list.length;
+    const onlineDevices = list.filter(d => d.status === "Online").length;
+    const threats = list.filter(d => d.threat || d.trust === "Unknown" || d.status === "Blocked").length;
+    const connections = linkEls.length;
+    
+    updateStats(totalDevices, onlineDevices, threats, connections);
+    
+    hudStatus.textContent = `${mapped.length} devices • ${currentMode} topology`;
+    
+    // Update heatmap if enabled
+    if(effects.heatmap){
+      createHeatmap(mapped);
+    }
+  };
+  
+  function updateStats(total, online, threats, connections){
+    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statOnline").textContent = online;
+    document.getElementById("statThreats").textContent = threats;
+    document.getElementById("statConnections").textContent = connections;
+  }
+  
+  // Touch/pointer interaction
+  let lastPointerTime = 0;
+  let lastPointerPos = { x: 0, y: 0 };
+  
+  card?.addEventListener("pointerdown", (e) => {
+    card.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    lastPointerTime = Date.now();
+    lastPointerPos = { x: e.clientX, y: e.clientY };
+    isInteracting = true;
+    momentum = { x: 0, y: 0 };
+    if(pointers.size === 2) lastPinchDist = null;
+  });
+  
+  card?.addEventListener("pointermove", (e) => {
+    if(!pointers.has(e.pointerId)) return;
+    
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    
+    const now = Date.now();
+    const dt = Math.max(1, now - lastPointerTime);
+    
+    if(pointers.size === 1){
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      
+      rotZ += dx * 0.28;
+      rotX = Math.max(25, Math.min(82, rotX - dy * 0.28));
+      
+      momentum.x = (e.clientX - lastPointerPos.x) / dt * 16;
+      momentum.y = (e.clientY - lastPointerPos.y) / dt * 16;
+      
+      lastPointerPos = { x: e.clientX, y: e.clientY };
+      lastPointerTime = now;
+      
+      applyTransform();
+      return;
+    }
+    
+    if(pointers.size === 2){
+      const pts = Array.from(pointers.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      
+      if(lastPinchDist != null){
+        const delta = dist - lastPinchDist;
+        zoom = Math.max(0.6, Math.min(2.5, zoom + delta * 0.003));
+        applyTransform();
+      }
+      lastPinchDist = dist;
+    }
+  });
+  
+  card?.addEventListener("pointerup", (e) => {
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2) lastPinchDist = null;
+    if(pointers.size === 0){
+      isInteracting = false;
+      requestAnimationFrame(applyMomentum);
+    }
+  });
+  
+  card?.addEventListener("pointercancel", (e) => {
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2) lastPinchDist = null;
+    if(pointers.size === 0){
+      isInteracting = false;
+    }
+  });
+  
+  // Mouse wheel zoom
+  card?.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = e.deltaY * -0.001;
+    zoom = Math.max(0.6, Math.min(2.5, zoom + delta));
+    applyTransform();
+  }, { passive: false });
+  
+  // Control buttons
+  document.getElementById("nnResetView")?.addEventListener("click", () => {
+    rotX = 58;
+    rotZ = -10;
+    zoom = 1.15;
+    momentum = { x: 0, y: 0 };
+    applyTransform();
+  });
+  
+  document.getElementById("nnToggleLabels")?.addEventListener("click", (e) => {
+    labelsVisible = !labelsVisible;
+    stage.querySelectorAll(".nn-label").forEach(label => {
+      label.style.display = labelsVisible ? "block" : "none";
+    });
+    e.currentTarget.classList.toggle("active", labelsVisible);
+  });
+  
+  document.getElementById("nnToggleGrid")?.addEventListener("click", (e) => {
+    gridVisible = !gridVisible;
+    const grid = stage.querySelector(".nn-grid");
+    if(grid){
+      grid.style.opacity = gridVisible ? "1" : "0";
+    }
+    e.currentTarget.classList.toggle("active", gridVisible);
+  });
+  
+  document.getElementById("nnToggleThemes")?.addEventListener("click", (e) => {
+    themePanel.classList.toggle("open");
+    e.currentTarget.classList.toggle("active", themePanel.classList.contains("open"));
+  });
+  
+  document.getElementById("nnToggleStats")?.addEventListener("click", (e) => {
+    statsPanel.classList.toggle("open");
+    e.currentTarget.classList.toggle("active", statsPanel.classList.contains("open"));
+  });
+  
+  // Theme selection
+  document.querySelectorAll(".nn-themeBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentTheme = btn.dataset.theme;
+      card.dataset.theme = currentTheme;
+      
+      document.querySelectorAll(".nn-themeBtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      // Update border of host
+      const host = document.querySelector(".nn-mapHost");
+      if(host){
+        host.style.borderColor = getComputedStyle(card).getPropertyValue("--theme-primary");
+      }
+    });
+  });
+  
+  // Mode selection
+  document.querySelectorAll(".nn-modeBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentMode = btn.dataset.mode;
+      
+      document.querySelectorAll(".nn-modeBtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
       window.nnUpdateDiscoveryMap?.();
-      return updated;
-    }
-
-    function updateNetworkUi(info){
-      if(!info || typeof info !== "object") return;
-      cachedNetworkInfo = info;
-
-      const name = info.name || "Network";
-      const ip = info.ip || "—";
-      const cidr = info.cidr || "—";
-      const gateway = info.gateway || "—";
-
-      $("#myNetText").textContent = `${name} (${cidr})`;
-      $("#brandSub").textContent = `${name} • ${cidr}`;
-
-      const n1 = networks.find(n => n.id === "n1");
-      if(n1){
-        n1.name = name;
-        n1.details.ssid = name;
-        n1.details.gateway = gateway;
-        n1.details.yourIp = ip;
-        n1.details.dns = "—";
-        n1.details.security = n1.details.security || "—";
-        n1.details.openPorts = "—";
-        n1.devices = devices.length;
-      }
-
-      // keep scan target fields aligned
-      window.applyScanData?.({
-        ssid: name,
-        subnet: cidr,
-        gateway: gateway
-      });
-
-      renderNetworks();
-
-      if(gateway && gateway !== "—"){
-        fetchJson("/api/v1/actions/portscan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ip: gateway, timeoutMs: 250 })
-        }).then((res) => {
-          const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "—";
-          if(n1){
-            n1.details.openPorts = ports || "—";
-            renderNetworks();
-          }
-        }).catch(() => {
-          if(n1){
-            n1.details.openPorts = "—";
-          }
-        });
-      }
-    }
-
-    async function refreshNetworkInfo(){
-      try{
-        const info = await fetchJson("/api/v1/network/info");
-        updateNetworkUi(info);
-      } catch (_){}
-    }
-
-    async function refreshDiscoveryResults(){
-      try{
-        const data = await fetchJson("/api/v1/discovery/results");
-        applyDevicesFromBackend(data);
-        const n1 = networks.find(n => n.id === "n1");
-        if(n1){ n1.devices = devices.length; }
-        renderDashboard();
-        renderDevices();
-        renderNetworks();
-        window.nnUpdateDiscoveryMap?.();
-        return data;
-      } catch (_) {
-        return null;
-      }
-    }
-
-    function formatPerm(value){
-      if(value === true) return "Granted";
-      if(value === false) return "Denied";
-      return "Unknown";
-    }
-
-    async function refreshPermissionStatus(){
-      try{
-        const perms = await fetchJson("/api/v1/system/permissions");
-        const nearbyWifi = perms?.nearbyWifi;
-        const fine = perms?.fineLocation === true;
-        const coarse = perms?.coarseLocation === true;
-        const locationGranted = fine || coarse;
-
-        $("#permNearbyWifi").textContent = formatPerm(nearbyWifi);
-        $("#permLocation").textContent = formatPerm(locationGranted);
-        $("#permWifiState").textContent = formatPerm(perms?.wifiState);
-        $("#permNetworkState").textContent = formatPerm(perms?.networkState);
-
-        const summaryOk = (nearbyWifi === true) || (nearbyWifi === null && locationGranted);
-        const pill = $("#permSummaryPill");
-        if(summaryOk){
-          pill.textContent = "OK";
-          pill.className = "pill ok";
-        } else {
-          pill.textContent = "Needs review";
-          pill.className = "pill warn";
+    });
+  });
+  
+  // Effects toggle
+  document.querySelectorAll(".nn-effectBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const effect = btn.dataset.effect;
+      effects[effect] = !effects[effect];
+      btn.classList.toggle("active", effects[effect]);
+      
+      if(effect === "particles"){
+        particlesContainer.classList.toggle("hidden", !effects.particles);
+      } else if(effect === "glow"){
+        // Toggle glow would adjust filter/opacity of various elements
+        stage.style.filter = effects.glow ? "" : "saturate(0.7) brightness(0.9)";
+      } else if(effect === "heatmap"){
+        heatmapCanvas.classList.toggle("visible", effects.heatmap);
+        if(effects.heatmap){
+          window.nnUpdateDiscoveryMap?.();
         }
-      } catch (_) {}
-    }
-
-    async function sendPermissionAction(action){
-      try{
-        const res = await fetchJson("/api/v1/system/permissions/action", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action })
-        });
-        if(res?.ok){
-          showToast("Opening settings", "Use the system screen to grant permissions.");
-        } else {
-          showToast("Permission control unavailable", "This action is not supported on this device.");
+      } else if(effect === "constellation"){
+        constellationLayer.classList.toggle("visible", effects.constellation);
+      }
+    });
+  });
+  
+  // Action buttons
+  document.getElementById("btnMapRefresh")?.addEventListener("click", () => {
+    window.nnUpdateDiscoveryMap?.();
+  });
+  
+  document.getElementById("btnMapAutoRotate")?.addEventListener("click", (e) => {
+    autoRotate = !autoRotate;
+    e.currentTarget.classList.toggle("active", autoRotate);
+    
+    if(autoRotate){
+      autoRotateInterval = setInterval(() => {
+        if(!isInteracting){
+          rotZ += 0.25;
+          applyTransform();
         }
-      } catch (_){
-        showToast("Permission control unavailable", "Unable to reach the local service.");
+      }, 30);
+    } else {
+      if(autoRotateInterval){
+        clearInterval(autoRotateInterval);
+        autoRotateInterval = null;
       }
     }
-
-    function setupPermissionControls(){
-      const appBtn = $("#btnOpenAppSettings");
-      const locBtn = $("#btnOpenLocationSettings");
-      const wifiBtn = $("#btnOpenWifiSettings");
-      const refreshBtn = $("#btnRefreshPermissions");
-      appBtn?.addEventListener("click", () => sendPermissionAction("app_settings"));
-      locBtn?.addEventListener("click", () => sendPermissionAction("location_settings"));
-      wifiBtn?.addEventListener("click", () => sendPermissionAction("wifi_settings"));
-      refreshBtn?.addEventListener("click", () => refreshPermissionStatus());
+  });
+  
+  let trafficMode = false;
+  document.getElementById("btnMapTraffic")?.addEventListener("click", async (e) => {
+    trafficMode = !trafficMode;
+    e.currentTarget.classList.toggle("active", trafficMode);
+    
+    if(!trafficMode){
+      window.nnUpdateDiscoveryMap?.();
+      return;
     }
-
-    async function refreshDebugState(){
-      const panel = $("#nnDebugPanel");
-      if(!panel || !panel.classList.contains("visible")) return;
-      try{
-        const state = await fetchJson("/api/v1/system/state");
-        const text = JSON.stringify(state, null, 2);
-        $("#nnDebugText").textContent = text;
-      } catch (_) {
-        $("#nnDebugText").textContent = "Debug panel unavailable.";
-      }
+    
+    try{
+      const metrics = await fetchJson("/api/v1/metrics");
+      hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online • metrics`;
+      updateStats(
+        metrics.devicesTotal ?? 0,
+        metrics.devicesOnline ?? 0,
+        metrics.threats ?? 0,
+        linkEls.length
+      );
+    } catch(_){
+      hudStatus.textContent = `${nodeEls.length} devices • live`;
     }
-
-    function setupDebugPanel(){
-      const badge = $("#brandBadge");
-      const panel = $("#nnDebugPanel");
-      if(!badge || !panel) return;
-      let tapCount = 0;
-      let tapTimer = null;
-      badge.addEventListener("click", () => {
-        tapCount += 1;
-        if(tapTimer) clearTimeout(tapTimer);
-        tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
-        if(tapCount >= 5){
-          tapCount = 0;
-          panel.classList.toggle("visible");
-          refreshDebugState();
-        }
-      });
+  });
+  
+  document.getElementById("btnMapFilter")?.addEventListener("click", () => {
+    // Could open a filter dialog
+    alert("Filter panel would open here - filter by device type, trust level, etc.");
+  });
+  
+  document.getElementById("btnMapExport")?.addEventListener("click", () => {
+    // Export current view as image or data
+    alert("Export functionality - screenshot or JSON export of current topology");
+  });
+  
+  // Initialize
+  createParticles();
+  createConstellation();
+  
+  setTimeout(() => {
+    window.nnUpdateDiscoveryMap?.();
+  }, 100);
+  
+  // Periodic updates for animations
+  setInterval(() => {
+    if(effects.particles && Math.random() > 0.9){
+      createParticles();
     }
-
-
-    const networks = [
-      {
-        id: "n1",
-        name: "Network",
-        type: "LAN",
-        security: "—",
-        signal: "—",
-        devices: 0,
-        status: "My network",
-        details: {
-          ssid: "Network",
-          gateway: "—",
-          yourIp: "—",
-          dns: "—",
-          security: "—",
-          openPorts: "—"
-        }
-      }
-    ];
-
-    // ---- Helpers ----
-    const $ = (sel) => document.querySelector(sel);
-    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-
-    function nowLabel(){
-      const d = new Date();
-      const hh = String(d.getHours()).padStart(2,"0");
-      const mm = String(d.getMinutes()).padStart(2,"0");
-      return `${hh}:${mm}`;
-    }
-
-    function showToast(title, body, actions = []){
-      const toast = $("#toast");
-      $("#toastTitle").textContent = title;
-      $("#toastBody").textContent = body || "";
-      const act = $("#toastActions");
-      act.innerHTML = "";
-      actions.forEach(a => {
-        const b = document.createElement("button");
-        b.className = "btn btn-ghost purple";
-        b.textContent = a.label;
-        b.addEventListener("click", () => { a.onClick?.(); hideToast(); });
-        act.appendChild(b);
-      });
-      toast.classList.add("show");
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(hideToast, 3800);
-    }
-    function hideToast(){ $("#toast").classList.remove("show"); }
-
-    function openOverlay(id){
-      const el = document.getElementById(id);
-      if(!el) return;
-      el.classList.add("show");
-      el.setAttribute("aria-hidden", "false");
-    }
-    function closeOverlay(id){
-      const el = document.getElementById(id);
-      if(!el) return;
-      el.classList.remove("show");
-      el.setAttribute("aria-hidden", "true");
-    }
-
-    function pushHistory(entry){
-      state.history.unshift(entry);
-      state.history = state.history.slice(0, 20);
-      renderHistory();
-    }
-    function pushNotification(n){
-      state.notifications.unshift(n);
-      state.notifications = state.notifications.slice(0, 30);
-      renderNotifications();
-    }
-
-    // ---- Navigation ----
-    function setTab(tab){
-      state.activeTab = tab;
-      $$(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-      $$(".tab-page").forEach(p => p.classList.toggle("active", p.id === `tab-${tab}`));
-      if(tab === "devices"){ renderDevices(); }
-      if(tab === "networks"){ renderNetworks(); }
-      if(tab === "dashboard"){ renderDashboard(); }
-    }
-
-    $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
-
-    // ---- Dashboard ----
-    function renderDashboard(){
-      const onlineCount = devices.filter(d => d.status === "Online").length;
-      $("#onlineCount").textContent = String(onlineCount);
-
-      const unknown = devices.filter(d => d.trust === "Unknown").slice(0, 5);
-      if(unknown.length === 0){
-        $("#unknownList").textContent = "No new devices.";
-        $("#unknownPill").textContent = "All clear";
-        $("#unknownPill").className = "pill ok";
-      } else {
-        $("#unknownPill").textContent = `${unknown.length} to review`;
-        $("#unknownPill").className = "pill warn";
-        $("#unknownList").innerHTML = unknown.map(d => `• ${escapeHtml(d.name)} <span style="color:rgba(255,255,255,0.65)">(${escapeHtml(d.trust)})</span>`).join("<br>");
-      }
-
-      const last = state.lastScanAt ? `Last scan: ${state.lastScanAt}` : "Last scan: never";
-      $("#changePill").textContent = last;
-      $("#changeText").textContent = state.lastScanAt
-        ? "Scan results updated. Review unknown devices."
-        : "Run a scan to see changes and new devices.";
-
-      // naive "changed" indicator
-      $("#onlineDeltaPill").textContent = state.lastScanAt ? `Changed: ${state.lastChangeCount}` : "Changed: 0";
-    }
-
-    // ---- Devices ----
-    function statusClass(s){
-      if(s === "Online") return "online";
-      if(s === "Paused") return "offline";
-      if(s === "Offline") return "offline";
-      if(s === "Blocked") return "blocked";
-      return "offline";
-    }
-    function trustPill(trust){
-      if(trust === "Trusted") return `<span class="pill ok">Trusted</span>`;
-      if(trust === "Blocked") return `<span class="pill bad">Blocked</span>`;
-      return `<span class="pill warn">Unknown</span>`;
-    }
-
-    function deviceMatchesFilter(d){
-      const f = state.deviceFilter;
-      if(f === "all") return true;
-      if(f === "online") return d.status === "Online";
-      if(f === "offline") return d.status === "Offline";
-      if(f === "trusted") return d.trust === "Trusted";
-      if(f === "unknown") return d.trust === "Unknown";
-      if(f === "blocked") return d.trust === "Blocked" || d.status === "Blocked";
-      return true;
-    }
-
-    function deviceMatchesSearch(d){
-      const q = state.search.trim().toLowerCase();
-      if(!q) return true;
-      const hay = [
-        d.name, d.owner, d.type, d.status, d.ip, d.mac, d.vendor, d.trust, d.os
-      ].join(" ").toLowerCase();
-      return hay.includes(q);
-    }
-
-    function renderDevices(){
-      const tbody = $("#deviceTbody");
-      const rows = devices
-        .filter(deviceMatchesFilter)
-        .filter(deviceMatchesSearch);
-
-      tbody.innerHTML = rows.map(d => {
-        const isSel = d.id === state.selectedDeviceId;
-        return `
-          <tr data-id="${d.id}" class="${isSel ? "selected" : ""}">
-            <td title="Double‑click to open">${escapeHtml(d.name)}</td>
-            <td>${escapeHtml(d.owner || "—")}</td>
-            <td>${typeIcon(d.type)} ${escapeHtml(d.type)}</td>
-            <td><span class="status ${statusClass(d.status)}"><span class="dot"></span>${escapeHtml(d.status)}</span></td>
-            <td>${escapeHtml(d.ip)}</td>
-            <td>${escapeHtml(d.mac)}</td>
-            <td>${escapeHtml(d.vendor || "—")}</td>
-            <td>${escapeHtml(d.firstSeen || "—")}</td>
-            <td>${escapeHtml(d.lastSeen || "—")}</td>
-            <td>${escapeHtml(d.trust)}</td>
-            <td><button class="kebab" data-menu="${d.id}" title="Actions">⋮</button></td>
-          </tr>
-        `;
-      }).join("");
-
-      // attach row listeners
-      $$("#deviceTbody tr").forEach(tr => {
-        tr.addEventListener("click", () => selectDevice(tr.dataset.id, false));
-        tr.addEventListener("dblclick", () => selectDevice(tr.dataset.id, true));
-      });
-
-      // kebab menus (simple sheet per device)
-      $$("#deviceTbody .kebab").forEach(b => {
-        b.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const id = b.dataset.menu;
-          openDeviceActions(id);
-        });
-      });
-
-      // refresh side panel
-      renderSidePanel();
-    }
-
-    function selectDevice(id, openDetails){
-      state.selectedDeviceId = id;
-      renderDevices(); // re-render selection highlight
-      if(openDetails){
-        openDeviceDetails(id);
-      }
-    }
-
-    function renderSidePanel(){
-      const d = devices.find(x => x.id === state.selectedDeviceId);
-      if(!d){
-        $("#spTitle").textContent = "Select a device";
-        $("#spSub").textContent = "Pick a row to view details.";
-        $("#spStatus").textContent = "—";
-        $("#spSummaryKv").innerHTML = "";
-        $("#spNetworkKv").innerHTML = "";
-        $("#spActivityKv").innerHTML = "";
-        $("#spPause").disabled = true;
-        $("#spBlock").disabled = true;
-        $("#spTrust").disabled = true;
-        $("#spPortScan").disabled = true;
-        return;
-      }
-
-      $("#spTitle").textContent = `${d.name} – ${d.type}`;
-      $("#spSub").textContent = `${d.owner || "No owner"} • ${d.vendor || "Unknown vendor"}`;
-      $("#spStatus").textContent = d.status.toUpperCase();
-      $("#spStatus").className = "pill " + (d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : ""));
-      $("#spPause").disabled = false;
-      $("#spBlock").disabled = false;
-      $("#spTrust").disabled = false;
-      $("#spPortScan").disabled = false;
-
-      $("#spSummaryKv").innerHTML = kvLines([
-        ["Status", d.status],
-        ["Trust", d.trust],
-        ["Type", d.type],
-        ["Owner", d.owner || "—"]
-      ]);
-
-      $("#spNetworkKv").innerHTML = kvLines([
-        ["IP", d.ip],
-        ["MAC", d.mac],
-        ["Vendor", d.vendor || "—"],
-        ["OS (detected)", d.os || "—"],
-        ["Connected via", d.via || "—"],
-        ["Signal", d.signal || "—"],
-        ["Interface", d.iface || "—"]
-      ]);
-
-      $("#spActivityKv").innerHTML = kvLines([
-        ["Last seen", d.lastSeen || "—"],
-        ["Online time today", d.activityToday || "—"],
-        ["Traffic", d.traffic || "—"]
-      ]);
-
-      // keep form fields in sync
-      $("#spOwner").value = d.owner || "";
-      $("#spRoom").value = d.room || "";
-      $("#spNote").value = d.note || "";
-      $("#spTrust").textContent = d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted";
-    }
-
-    function openDeviceDetails(id){
-      const d = devices.find(x => x.id === id);
-      if(!d) return;
-
-      $("#devSheetTitle").textContent = "Device details";
-      const body = $("#devSheetBody");
-
-      body.innerHTML = `
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Summary</div>
-            <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
-          </div>
-          <div class="muted" style="margin-top:4px;"><strong style="color:rgba(255,255,255,0.95);">${escapeHtml(d.name)}</strong> – ${escapeHtml(d.type)}</div>
-          <div class="kv" style="margin-top:10px;">
-            ${kvLines([
-              ["Trust state", d.trust],
-              ["Owner", d.owner || "—"],
-              ["Vendor", d.vendor || "—"]
-            ])}
-          </div>
-          <div class="card-actions">
-            <button class="btn btn-ghost" id="mPause">Set status: Paused</button>
-            <button class="btn btn-danger" id="mBlock">Set status: Blocked</button>
-            <button class="btn btn-ghost purple" id="mTrust">${d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted"}</button>
-            <button class="btn btn-ghost" id="mPort">Run port scan</button>
-          </div>
-        </div>
-
-        <div style="height:12px;"></div>
-
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Network info</div>
-            <div class="pill">Details</div>
-          </div>
-          <div class="kv">
-            ${kvLines([
-              ["IP", d.ip],
-              ["MAC", d.mac],
-              ["OS (detected)", d.os || "—"],
-              ["Connected via", d.via || "—"],
-              ["Signal strength", d.signal || "—"]
-            ])}
-          </div>
-        </div>
-
-        <div style="height:12px;"></div>
-
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Activity</div>
-            <div class="pill">Today</div>
-          </div>
-          <div class="kv">
-            ${kvLines([
-              ["Last seen", d.lastSeen || "—"],
-              ["Total online time today", d.activityToday || "—"],
-              ["Traffic", d.traffic || "—"]
-            ])}
-          </div>
-        </div>
-
-        <div style="height:12px;"></div>
-
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Notes & labels</div>
-            <div class="pill">Optional</div>
-          </div>
-          <div class="field">
-            <label for="mNote">Add a note…</label>
-            <textarea id="mNote" placeholder="Add a note…">${escapeHtml(d.note || "")}</textarea>
-          </div>
-          <div class="field">
-            <label for="mRoom">Room</label>
-            <select id="mRoom">
-              ${selectOptions(["", "Office", "Living Room", "Bedroom", "Kitchen", "Garage"], d.room || "")}
-            </select>
-          </div>
-          <div class="field">
-            <label for="mOwner">Owner</label>
-            <select id="mOwner">
-              ${selectOptions(["", "Me", "Guest", "Child", "Work"], d.owner || "")}
-            </select>
-          </div>
-          <button class="btn btn-ghost purple" id="mSave">Save</button>
-        </div>
-      `;
-
-      // Wire actions
-      $("#mPause").addEventListener("click", () => pauseDevice(d.id));
-      $("#mBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
-      $("#mTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
-      $("#mPort").addEventListener("click", () => doAction("Run port scan", d, () => openToolDialog("portScan", d.id)));
-
-      $("#mSave").addEventListener("click", async () => {
-        const patch = {
-          note: $("#mNote").value,
-          room: $("#mRoom").value || "",
-          owner: $("#mOwner").value || ""
-        };
-        try{
-          await updateDeviceMeta(d.id, patch);
-          pushHistory({ when: nowLabel(), title: `Saved notes for ${d.name}`, detail: "Notes / labels updated", undo: null });
-          showToast("Saved", "Notes and labels updated.");
-        } catch (_){
-          showToast("Save failed", "Unable to update device notes.");
-        }
-      });
-
-      openOverlay("deviceOverlay");
-    }
-
-    function openDeviceActions(id){
-      const d = devices.find(x => x.id === id);
-      if(!d) return;
-
-      $("#devSheetTitle").textContent = "Device actions";
-      const body = $("#devSheetBody");
-      body.innerHTML = `
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">${escapeHtml(d.name)}</div>
-            <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
-          </div>
-          <div class="muted">${escapeHtml(d.type)} • ${escapeHtml(d.ip)} • ${escapeHtml(d.trust)}</div>
-          <div class="card-actions" style="margin-top: 12px;">
-            <button class="btn btn-ghost" id="aView">View details</button>
-            <button class="btn btn-ghost" id="aPause">Set status: Paused</button>
-            <button class="btn btn-danger" id="aBlock">Set status: Blocked</button>
-            <button class="btn btn-ghost purple" id="aTrust">${d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted"}</button>
-            <button class="btn btn-ghost" id="aRename">Rename device</button>
-            <button class="btn btn-ghost purple" id="aOwner">Assign owner / room</button>
-          </div>
-        </div>
-      `;
-
-      $("#aView").addEventListener("click", () => { closeOverlay("deviceOverlay"); openDeviceDetails(d.id); });
-      $("#aPause").addEventListener("click", () => pauseDevice(d.id));
-      $("#aBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
-      $("#aTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
-      $("#aRename").addEventListener("click", () => {
-        const next = prompt("Rename device:", d.name);
-        if(next && next.trim()){
-          const prev = d.name;
-          const nextName = next.trim();
-          updateDeviceMeta(d.id, { name: nextName }).then(() => {
-            pushHistory({
-              when: nowLabel(),
-              title: `Renamed device`,
-              detail: `${prev} → ${nextName}`,
-              undo: () => {
-                updateDeviceMeta(d.id, { name: prev }).then(() => {
-                  showToast("Undone", "Rename reverted.");
-                }).catch(() => showToast("Undo failed", "Unable to revert rename."));
-              }
-            });
-            showToast("Renamed", nextName);
-          }).catch(() => {
-            showToast("Rename failed", "Unable to rename device.");
-          });
-        }
-      });
-      $("#aOwner").addEventListener("click", () => { closeOverlay("deviceOverlay"); openDeviceDetails(d.id); });
-
-      openOverlay("deviceOverlay");
-    }
-
-    function doAction(label, device, fn){
-      fn?.();
-      pushHistory({
-        when: nowLabel(),
-        title: `${label}: ${device.name}`,
-        detail: `${device.ip} • ${device.trust}`,
-        undo: null
-      });
-    }
-
-    function blockDevice(id){
-      const d = devices.find(x => x.id === id);
-      if(!d) return;
-      const prev = { status: d.status, trust: d.trust };
-      updateDeviceMeta(d.id, { status: "Blocked", trust: "Blocked" }).then(() => {
-        pushHistory({
-          when: nowLabel(),
-          title: `Blocked ${d.name}`,
-          detail: "Device status set to Blocked.",
-          undo: () => {
-            updateDeviceMeta(d.id, { status: prev.status, trust: prev.trust }).then(() => {
-              showToast("Unblocked", `${d.name} restored.`);
-            }).catch(() => showToast("Undo failed", "Unable to restore device."));
-          }
-        });
-        pushNotification({
-          when: nowLabel(),
-          title: `Device blocked: ${d.name}`,
-          detail: "Tap Undo in Recent actions to revert."
-        });
-        showToast("Status updated", `${d.name} marked as Blocked.`, [{ label: "Undo", onClick: () => undoLast() }]);
-      }).catch(() => {
-        showToast("Block failed", "Unable to block device.");
-      });
-    }
-
-    function pauseDevice(id){
-      const d = devices.find(x => x.id === id);
-      if(!d) return;
-      const prev = d.status;
-      updateDeviceMeta(d.id, { status: "Paused" }).then(() => {
-        pushHistory({
-          when: nowLabel(),
-          title: `Paused ${d.name}`,
-          detail: `${d.ip} status set to Paused`,
-          undo: () => {
-            updateDeviceMeta(d.id, { status: prev }).then(() => {
-              showToast("Status updated", `${d.name} restored.`);
-            }).catch(() => showToast("Undo failed", "Unable to restore device."));
-          }
-        });
-        showToast("Status updated", `${d.name} marked as Paused.`);
-      }).catch(() => {
-        showToast("Pause failed", "Unable to pause device.");
-      });
-    }
-
-    function toggleTrust(id){
-      const d = devices.find(x => x.id === id);
-      if(!d) return;
-      const prev = d.trust;
-      const next = (d.trust === "Trusted") ? "Unknown" : "Trusted";
-      updateDeviceMeta(d.id, { trust: next }).then(() => {
-        pushHistory({
-          when: nowLabel(),
-          title: `Trust changed: ${d.name}`,
-          detail: `${prev} → ${next}`,
-          undo: () => {
-            updateDeviceMeta(d.id, { trust: prev }).then(() => {
-              showToast("Undone", "Trust reverted.");
-            }).catch(() => showToast("Undo failed", "Unable to revert trust."));
-          }
-        });
-        showToast("Updated", `${d.name} is now ${next}.`);
-      }).catch(() => {
-        showToast("Update failed", "Unable to change trust.");
-      });
-    }
-
-    // sidepanel actions
-    $("#spPause").addEventListener("click", () => {
-      const d = devices.find(x => x.id === state.selectedDeviceId);
-      if(!d) return;
-      pauseDevice(d.id);
-    });
-    $("#spBlock").addEventListener("click", () => {
-      const d = devices.find(x => x.id === state.selectedDeviceId);
-      if(!d) return;
-      blockDevice(d.id);
-    });
-    $("#spTrust").addEventListener("click", () => {
-      const d = devices.find(x => x.id === state.selectedDeviceId);
-      if(!d) return;
-      toggleTrust(d.id);
-    });
-    $("#spPortScan").addEventListener("click", () => {
-      const d = devices.find(x => x.id === state.selectedDeviceId);
-      if(!d) return;
-      openToolDialog("portScan", d.id);
-    });
-    $("#spSaveNotes").addEventListener("click", () => {
-      const d = devices.find(x => x.id === state.selectedDeviceId);
-      if(!d) return;
-      updateDeviceMeta(d.id, {
-        note: $("#spNote").value,
-        room: $("#spRoom").value || "",
-        owner: $("#spOwner").value || ""
-      }).then(() => {
-        pushHistory({ when: nowLabel(), title: `Saved notes for ${d.name}`, detail: "Notes / labels updated", undo: null });
-        showToast("Saved", "Notes and labels updated.");
-      }).catch(() => {
-        showToast("Save failed", "Unable to update device notes.");
-      });
-    });
-
-    // sidepanel section tabs
-    $$(".tab2").forEach(b => b.addEventListener("click", () => {
-      $$(".tab2").forEach(x => x.classList.remove("active"));
-      b.classList.add("active");
-      const t = b.dataset.spTab;
-      $("#spSectionSummary").style.display = (t === "summary") ? "block" : "none";
-      $("#spSectionNetwork").style.display = (t === "network") ? "block" : "none";
-      $("#spSectionActivity").style.display = (t === "activity") ? "block" : "none";
-      $("#spSectionNotes").style.display = (t === "notes") ? "block" : "none";
-    }));
-
-    // filters
-    $("#deviceSearch").addEventListener("input", (e) => {
-      state.search = e.target.value || "";
-      renderDevices();
-    });
-    $$("#trustChips .chip").forEach(ch => ch.addEventListener("click", () => {
-      $$("#trustChips .chip").forEach(x => x.classList.remove("active"));
-      ch.classList.add("active");
-      state.deviceFilter = ch.dataset.filter;
-      renderDevices();
-    }));
-
-    // export / rescan
-    $("#btnRescanDevices").addEventListener("click", () => {
-      runScan();
-    });
-    $("#btnExportDevices").addEventListener("click", () => {
-      fetchJson("/api/v1/export/devices").then((data) => {
-        const payload = JSON.stringify(data, null, 2);
-        downloadText(payload, "devices.json", "application/json");
-        pushHistory({ when: nowLabel(), title: "Exported device list", detail: "devices.json downloaded", undo: null });
-        showToast("Exported", "Downloaded devices.json");
-      }).catch(() => {
-        showToast("Export failed", "Backend unavailable.");
-      });
-    });
-
-    // ---- Networks ----
-    function renderNetworks(){
-      const tbody = $("#netTbody");
-      tbody.innerHTML = networks.map(n => {
-        const sel = n.id === state.selectedNetworkId;
-        return `
-          <tr data-id="${n.id}" class="${sel ? "selected" : ""}">
-            <td>${escapeHtml(n.name)}</td>
-            <td>${escapeHtml(n.type)}</td>
-            <td>${escapeHtml(n.security)}</td>
-            <td>${escapeHtml(String(n.signal))}</td>
-            <td>${escapeHtml(String(n.devices))}</td>
-            <td>${escapeHtml(n.status)}</td>
-            <td><button class="kebab" data-net="${n.id}" title="Actions">⋮</button></td>
-          </tr>
-        `;
-      }).join("");
-
-      $$("#netTbody tr").forEach(tr => {
-        tr.addEventListener("click", () => selectNetwork(tr.dataset.id));
-      });
-      $$("#netTbody .kebab").forEach(b => {
-        b.addEventListener("click", (e) => {
-          e.stopPropagation();
-          openNetworkActions(b.dataset.net);
-        });
-      });
-
-      renderNetworkDetails();
-    }
-
-    function selectNetwork(id){
-      state.selectedNetworkId = id;
-      renderNetworks();
-    }
-
-    function renderNetworkDetails(){
-      const n = networks.find(x => x.id === state.selectedNetworkId);
-      const kv = $("#netDetailsKv");
-      const pill = $("#netDetailsPill");
-      const actions = $("#netDetailsActions");
-      actions.style.display = n ? "flex" : "none";
-
-      if(!n){
-        pill.textContent = "Select a network";
-        kv.innerHTML = "";
-        return;
-      }
-
-      pill.textContent = n.status;
-      kv.innerHTML = kvLines([
-        ["SSID / CIDR", n.details.ssid],
-        ["Gateway IP", n.details.gateway],
-        ["Your IP", n.details.yourIp],
-        ["DNS", n.details.dns],
-        ["Security", n.details.security],
-        ["Open ports on gateway", n.details.openPorts]
-      ]);
-    }
-
-    function openNetworkActions(id){
-      const n = networks.find(x => x.id === id);
-      if(!n) return;
-      $("#toolTitle").textContent = "Network actions";
-      $("#toolBody").innerHTML = `
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">${escapeHtml(n.name)}</div>
-            <div class="pill">${escapeHtml(n.status)}</div>
-          </div>
-          <div class="muted">${escapeHtml(n.type)} • ${escapeHtml(n.security)}</div>
-          <div class="card-actions" style="margin-top: 12px;">
-            <button class="btn btn-ghost" id="naViewDevices">View devices on this network</button>
-            <button class="btn btn-ghost purple" id="naScan">Scan this network</button>
-            <button class="btn btn-ghost" id="naSecurity">Run security check</button>
-          </div>
-        </div>
-      `;
-      $("#naViewDevices").addEventListener("click", () => { closeOverlay("toolOverlay"); setTab("devices"); });
-      $("#naScan").addEventListener("click", () => { closeOverlay("toolOverlay"); runScan(); });
-      $("#naSecurity").addEventListener("click", () => { closeOverlay("toolOverlay"); openToolDialog("security"); });
-      openOverlay("toolOverlay");
-    }
-
-    $("#btnNetworksSecurity").addEventListener("click", () => openToolDialog("security"));
-
-    $("#btnNetViewDevices").addEventListener("click", () => setTab("devices"));
-    $("#btnNetScan").addEventListener("click", () => {
-      const n = networks.find(x => x.id === state.selectedNetworkId);
-      if(!n) return showToast("Select a network", "Pick a network row first.");
-      runScan();
-    });
-    $("#btnNetSec").addEventListener("click", () => openToolDialog("security"));
-
-    // ---- Tools dialog ----
-    function openToolDialog(kind, deviceId){
-      const d = deviceId ? devices.find(x => x.id === deviceId) : null;
-      const titleMap = {
-        fullScan: "Run full scan",
-        portScan: "Port scan",
-        security: "Run security check",
-        reports: "Reports",
-        schedule: "Create schedule"
-      };
-      $("#toolTitle").textContent = titleMap[kind] || "Tool";
-
-      if(kind === "fullScan"){
-        const onPrimary = () => {
-          closeOverlay("toolOverlay");
-          runScan();
-          pushHistory({ when: nowLabel(), title: "Full scan started", detail: "Full device scan.", undo: null });
-        };
-        $("#toolBody").innerHTML = toolTemplate(
-          "Scan all addresses on your network for any device.",
-          [
-            { label: "Scope", type: "select", id: "fsScope", options: ["Local subnet", "All known subnets"], value: "Local subnet" },
-            { label: "Speed", type: "select", id: "fsSpeed", options: ["Fast", "Balanced", "Thorough"], value: "Balanced" }
-          ],
-          "Run full scan",
-          onPrimary
-        );
-        wireToolPrimary(onPrimary);
-      } else if(kind === "portScan"){
-        const onPrimary = async () => {
-          const devName = $("#psDevice")?.value || "device";
-          const profile = $("#psProfile")?.value || "Quick scan";
-          const device = devices.find(x => x.name === devName) || devices[0];
-          if(!device?.ip){
-            showToast("Port scan failed", "Device IP unavailable.");
-            return;
-          }
-          try{
-            const res = await fetchJson("/api/v1/actions/portscan", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ip: device.ip, timeoutMs: profile === "Full scan" ? 600 : 250 })
-            });
-            const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "None";
-            closeOverlay("toolOverlay");
-            showToast("Port scan complete", `${devName} • Open: ${ports || "None"}`);
-            pushHistory({ when: nowLabel(), title: `Port scan: ${devName}`, detail: `Open ports: ${ports || "None"}`, undo: null });
-          } catch (_){
-            showToast("Port scan failed", "Backend unavailable.");
-          }
-        };
-        $("#toolBody").innerHTML = toolTemplate(
-          "Check which ports are open on a device.",
-          [
-            { label: "Device", type: "select", id: "psDevice", options: devices.map(x => x.name), value: d ? d.name : devices[0]?.name },
-            { label: "Profile", type: "select", id: "psProfile", options: ["Quick scan", "Full scan", "Custom"], value: "Quick scan" }
-          ],
-          "Run port scan",
-          onPrimary
-        );
-        wireToolPrimary(onPrimary);
-      } else if(kind === "security"){
-        const onPrimary = async () => {
-          try{
-            const res = await fetchJson("/api/v1/actions/security", { method: "POST" });
-            closeOverlay("toolOverlay");
-            showToast("Security check complete", `Unknown: ${res.unknownDevices ?? 0}, Blocked: ${res.blockedDevices ?? 0}`);
-            pushHistory({ when: nowLabel(), title: "Security check complete", detail: `Unknown: ${res.unknownDevices ?? 0}, Blocked: ${res.blockedDevices ?? 0}`, undo: null });
-          } catch (_){
-            showToast("Security check failed", "Backend unavailable.");
-          }
-        };
-        $("#toolBody").innerHTML = toolTemplate(
-          "Look for weak security on your network.",
-          [
-            { label: "Include router checks", type: "select", id: "scRouter", options: ["Off", "On"], value: "Off" },
-            { label: "Depth", type: "select", id: "scDepth", options: ["Quick", "Balanced", "Thorough"], value: "Quick" }
-          ],
-          "Run security check",
-          onPrimary
-        );
-        wireToolPrimary(onPrimary);
-      } else if(kind === "reports"){
-        const onPrimary = async () => {
-          const fmt = $("#rpFmt")?.value || "CSV";
-          const include = $("#rpInc")?.value || "Devices";
-          try{
-            const data = await fetchJson("/api/v1/export/devices");
-            const normalized = Array.isArray(data) ? data.map(mergeDevice).filter(Boolean) : [];
-            closeOverlay("toolOverlay");
-            const content = fmt === "CSV"
-              ? makeDevicesCsv(normalized, include)
-              : fmt === "HTML"
-                ? makeDevicesHtml(normalized, include)
-                : fmt === "TXT"
-                  ? makeDevicesTxt(normalized, include)
-                  : JSON.stringify({ devices: data }, null, 2);
-            const mime = fmt === "CSV" ? "text/csv" : (fmt === "HTML" ? "text/html" : "text/plain");
-            const name = fmt === "CSV" ? "report.csv" : (fmt === "HTML" ? "report.html" : "report.txt");
-            downloadText(content, name, mime);
-            pushHistory({ when: nowLabel(), title: "Report generated", detail: name + " downloaded", undo: null });
-            showToast("Report generated", name + " downloaded");
-          } catch (_){
-            showToast("Report failed", "Backend unavailable.");
-          }
-        };
-        $("#toolBody").innerHTML = toolTemplate(
-          "Export devices, activity, and scan results.",
-          [
-            { label: "Format", type: "select", id: "rpFmt", options: ["HTML", "CSV", "TXT"], value: "CSV" },
-            { label: "Include", type: "select", id: "rpInc", options: ["Devices", "Devices + activity", "Everything"], value: "Devices" }
-          ],
-          "Generate report",
-          onPrimary
-        );
-        wireToolPrimary(onPrimary);
-      } else if(kind === "schedule"){
-        const onPrimary = async () => {
-          const freq = $("#schFreq")?.value || "Weekly";
-          const act = $("#schAct")?.value || "Scan my network";
-          const subnet = cachedNetworkInfo?.cidr || "";
-          try{
-            if(act === "Auto‑block unknown devices"){
-              await fetchJson("/api/v1/rules", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ match: "new_device", action: "block" })
-              });
-              closeOverlay("toolOverlay");
-              pushHistory({ when: nowLabel(), title: "Rule created", detail: "Auto-block new devices enabled", undo: null });
-              showToast("Rule enabled", "Auto-block new devices enabled.");
-            } else {
-              if(!subnet){
-                showToast("Schedule failed", "Network info unavailable.");
-                return;
-              }
-              await fetchJson("/api/v1/schedules", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ subnet, freq: freq.toLowerCase() })
-              });
-              closeOverlay("toolOverlay");
-              pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} • ${freq}`, undo: null });
-              showToast("Scheduled", `${act} • ${freq}`);
-            }
-          } catch (_){
-            showToast("Schedule failed", "Backend unavailable.");
-          }
-        };
-        $("#toolBody").innerHTML = toolTemplate(
-          "Schedule scans or auto‑block unknown devices.",
-          [
-            { label: "Schedule", type: "select", id: "schFreq", options: ["Daily", "Weekly", "Monthly"], value: "Weekly" },
-            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Auto‑block unknown devices"], value: "Scan my network" }
-          ],
-          "Create schedule",
-          onPrimary
-        );
-        wireToolPrimary(onPrimary);
-      }
-
-      openOverlay("toolOverlay");
-    }
-
-    function wireToolPrimary(onPrimary){
-      const btn = $("#toolPrimaryBtn");
-      if(!btn) return;
-      btn.addEventListener("click", () => onPrimary?.());
-    }
-
-    function toolTemplate(desc, fields, primaryLabel, onPrimary){
-      const fieldsHtml = fields.map(f => {
-        const id = escapeHtml(f.id);
-        if(f.type === "select"){
-          return `
-            <div class="field">
-              <label for="${id}">${escapeHtml(f.label)}</label>
-              <select id="${id}">
-                ${f.options.map(o => `<option ${o === f.value ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}
-              </select>
-            </div>
-          `;
-        }
-        return "";
-      }).join("");
-
-      // Basic "Advanced options" expander
-      return `
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Overview</div>
-            <div class="pill">Simple</div>
-          </div>
-          <div class="muted">${escapeHtml(desc)}</div>
-        </div>
-
-        <div style="height:12px;"></div>
-
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Options</div>
-            <div class="pill">2–3 controls</div>
-          </div>
-          ${fieldsHtml}
-
-          <details style="margin-top:10px;">
-            <summary style="cursor:pointer; color: rgba(255,255,255,0.78);">Advanced options</summary>
-            <div class="muted" style="margin-top:8px;">Advanced options apply when supported by the backend.</div>
-          </details>
-
-          <div class="card-actions" style="margin-top: 12px;">
-            <button class="btn btn-primary" id="toolPrimaryBtn">${escapeHtml(primaryLabel)}</button>
-          </div>
-        </div>
-      `;
-    }
-
-    // wire tool dialog openers
-    $$("[data-open-dialog]").forEach(b => {
-      b.addEventListener("click", (e) => {
-        e.stopPropagation();
-        openToolDialog(b.dataset.openDialog);
-      });
-    });
-
-    // ---- Global buttons ----
-    async function runScan(){
-      if(scanInFlight){
-        showToast("Scan already running", "Please wait for the current scan to finish.");
-        return;
-      }
-
-      scanInFlight = true;
-      const prevIds = new Set(devices.map(d => d.id));
-
-      state.lastScanAt = nowLabel();
-      $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
-      $("#changeText").textContent = "Scan requested. Live progress will update below.";
-      showToast("Scan started", "Scan queued. Live progress will update below.");
-      pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
-
-      try{
-        await refreshNetworkInfo();
-        const subnet = cachedNetworkInfo?.cidr || "";
-        const payload = { subnet };
-        await fetchJson("/api/v1/discovery/scan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          timeoutMs: 30_000
-        });
-
-        await refreshDiscoveryResults();
-        state.lastChangeCount = devices.filter(d => !prevIds.has(d.id)).length;
-        renderDashboard();
-        renderDevices();
-        renderNetworks();
-
-        window.applyScanData?.({
-          progress: 5,
-          phase: "SCANNING",
-          networks: 1,
-          devices: devices.length,
-          rssiDbm: NaN,
-          ssid: cachedNetworkInfo?.name || "--",
-          bssid: "--",
-          subnet: cachedNetworkInfo?.cidr || "--",
-          gateway: cachedNetworkInfo?.gateway || "--",
-          linkUp: true
-        });
-
-        const unknown = devices.find(d => d.trust === "Unknown");
-        if(unknown){
-          pushNotification({
-            when: nowLabel(),
-            title: `New device detected: ${unknown.name}`,
-            detail: "Tap Review to inspect and trust/block."
-          });
-        }
-
-        window.nnUpdateDiscoveryMap?.();
-      } catch (err){
-        showToast("Scan failed", "Backend unavailable or scan blocked.");
-      } finally {
-        scanInFlight = false;
-      }
-    }
-
-    window.nnRunScan = runScan;
-
-    async function stopScan(){
-      scanInFlight = false;
-      try{
-        await fetchJson("/api/v1/discovery/stop", { method: "POST" });
-        window.applyScanData?.({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
-        showToast("Scan stopped", "Discovery scan canceled.");
-      } catch (_){
-        showToast("Stop failed", "Unable to stop scan.");
-      } finally {
-        refreshDiscoveryResults();
-      }
-    }
-
-    window.nnStopScan = stopScan;
-
-    $("#scanNowBtn").addEventListener("click", () => runScan());
-    $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan(); });
-    $("#btnNetworksScanMy").addEventListener("click", () => runScan());
-
-    $("#btnViewOnlineDevices").addEventListener("click", (e) => {
-      e.stopPropagation();
-      setTab("devices");
-      setFilter("online");
-    });
-
-    $("#btnReviewUnknown").addEventListener("click", (e) => {
-      e.stopPropagation();
-      setTab("devices");
-      setFilter("unknown");
-    });
-
-    $("#btnPauseInternet").addEventListener("click", (e) => {
-      e.stopPropagation();
-      setTab("devices");
-      showToast("Pick a device", "Select a device to set its status.");
-    });
-
-    $("#btnBlockNew").addEventListener("click", (e) => {
-      e.stopPropagation();
-      fetchJson("/api/v1/rules", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ match: "new_device", action: "block" })
-      }).then(() => {
-        pushHistory({ when: nowLabel(), title: "Auto-block new devices", detail: "Auto-block unknown devices enabled.", undo: null });
-        showToast("Enabled", "Auto-block unknown devices enabled.");
-      }).catch(() => {
-        showToast("Enable failed", "Unable to create auto-block rule.");
-      });
-    });
-
-    $("#btnShareWifi").addEventListener("click", (e) => {
-      e.stopPropagation();
-      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} • ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wi‑Fi (SSID) • WPA2";
-      navigator.clipboard?.writeText(text).then(() => {
-        showToast("Copied", "Wi‑Fi details copied to clipboard.");
-        pushHistory({ when: nowLabel(), title: "Shared Wi‑Fi details", detail: "Copied to clipboard", undo: null });
-      }).catch(() => {
-        showToast("Share", "Clipboard not available here.");
-      });
-    });
-
-    function wireCardButton(id, handler){
-      const el = document.getElementById(id);
-      if(!el) return;
-      el.addEventListener("click", handler);
-      el.addEventListener("keydown", (e) => {
-        if(e.key === "Enter" || e.key === " "){
-          e.preventDefault();
-          handler();
-        }
-      });
-    }
-
-    // clickable cards
-    wireCardButton("cardMyNetwork", () => setTab("networks"));
-    wireCardButton("cardWhosOnline", () => { setTab("devices"); setFilter("online"); });
-    wireCardButton("cardUnknown", () => { setTab("devices"); setFilter("unknown"); });
-    wireCardButton("cardQuickActions", () => setTab("tools"));
-    wireCardButton("cardStatus", () => openOverlay("historyOverlay"));
-
-    function setFilter(filter){
-      state.deviceFilter = filter;
-      $$("#trustChips .chip").forEach(x => x.classList.toggle("active", x.dataset.filter === filter));
-      renderDevices();
-    }
-
-    // ---- History & Notifications ----
-    function renderHistory(){
-      const list = $("#historyList");
-      if(state.history.length === 0){
-        list.innerHTML = `<div class="muted">No actions yet. Someone has to click something first.</div>`;
-        return;
-      }
-      list.innerHTML = state.history.map((h, idx) => {
-        const undo = h.undo ? `<button class="btn btn-ghost purple" data-undo="${idx}">Undo</button>` : "";
-        return `
-          <div class="list-item">
-            <div class="line1"><span>${escapeHtml(h.title)}</span><span style="color:rgba(255,255,255,0.62);">${escapeHtml(h.when)}</span></div>
-            <div class="line2">${escapeHtml(h.detail || "")}</div>
-            ${undo ? `<div class="action">${undo}</div>` : ``}
-          </div>
-        `;
-      }).join("");
-
-      $$("[data-undo]").forEach(b => {
-        b.addEventListener("click", () => {
-          const i = Number(b.dataset.undo);
-          const item = state.history[i];
-          if(item?.undo){
-            item.undo();
-            // keep it in history but mark as undone
-            state.history[i] = { ...item, title: "Undone: " + item.title, undo: null };
-            renderHistory();
-          }
-        });
-      });
-    }
-
-    function undoLast(){
-      const item = state.history.find(h => typeof h.undo === "function");
-      if(item?.undo){
-        item.undo();
-        item.undo = null;
-        item.title = "Undone: " + item.title;
-        renderHistory();
-      } else {
-        showToast("Nothing to undo", "No reversible action found.");
-      }
-    }
-
-    function renderNotifications(){
-      const list = $("#notifList");
-      if(state.notifications.length === 0){
-        list.innerHTML = `<div class="muted">No notifications. Enjoy the quiet while it lasts.</div>`;
-        return;
-      }
-      list.innerHTML = state.notifications.map((n, idx) => {
-        const isNewDevice = n.title.startsWith("New device detected:");
-        const action = isNewDevice ? `<button class="btn btn-ghost purple" data-review="${idx}">Review</button>` : "";
-        return `
-          <div class="list-item">
-            <div class="line1"><span>${escapeHtml(n.title)}</span><span style="color:rgba(255,255,255,0.62);">${escapeHtml(n.when)}</span></div>
-            <div class="line2">${escapeHtml(n.detail || "")}</div>
-            ${action ? `<div class="action">${action}</div>` : ``}
-          </div>
-        `;
-      }).join("");
-
-      $$("[data-review]").forEach(b => {
-        b.addEventListener("click", () => {
-          closeOverlay("notifOverlay");
-          setTab("devices");
-          setFilter("unknown");
-        });
-      });
-    }
-
-    // ---- Overlays wiring ----
-    $("#historyBtn").addEventListener("click", () => openOverlay("historyOverlay"));
-    $("#notifBtn").addEventListener("click", () => openOverlay("notifOverlay"));
-    $("#settingsBtn").addEventListener("click", () => openOverlay("settingsOverlay"));
-
-    // close buttons
-    $$("[data-close]").forEach(b => b.addEventListener("click", () => closeOverlay(b.dataset.close)));
-
-    // overlay click-out
-    $$(".overlay").forEach(ov => {
-      ov.addEventListener("click", (e) => {
-        if(e.target === ov) closeOverlay(ov.id);
-      });
-    });
-
-    // ---- Utility renderers ----
-    function kvLines(pairs){
-      return pairs.map(([k,v]) => `
-        <div class="line"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v ?? "—"))}</span></div>
-      `).join("");
-    }
-
-    function escapeHtml(s){
-      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-      }[c]));
-    }
-
-    function typeIcon(type){
-      const map = { Phone:"📱", PC:"💻", TV:"📺", Printer:"🖨️", IoT:"🔌" };
-      return map[type] || "🔸";
-    }
-
-    function selectOptions(options, value){
-      return options.map(o => {
-        const label = o === "" ? "None" : o;
-        return `<option value="${escapeHtml(o)}" ${o === value ? "selected" : ""}>${escapeHtml(label)}</option>`;
-      }).join("");
-    }
-
-    function downloadText(text, filename, mime){
-      const blob = new Blob([text], { type: mime || "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename || "download.txt";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-    }
-
-    function reportColumns(include){
-      if(include === "Devices + activity"){
-        return ["name","owner","type","status","ip","mac","vendor","lastSeen","activityToday","traffic","trust"];
-      }
-      if(include === "Everything"){
-        return ["name","owner","type","status","ip","mac","vendor","os","lastSeen","activityToday","traffic","trust"];
-      }
-      return ["name","owner","type","status","ip","mac","vendor","lastSeen","trust"];
-    }
-
-    function makeDevicesCsv(list = devices, include = "Devices"){
-      const headers = reportColumns(include);
-      const lines = [headers.join(",")];
-      list.forEach(d => {
-        lines.push(headers.map(h => csvCell(d[h])).join(","));
-      });
-      return lines.join("\n");
-    }
-    function csvCell(v){
-      const s = String(v ?? "");
-      if(/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
-      return s;
-    }
-
-    function makeDevicesHtml(list = devices, include = "Devices"){
-      const headers = reportColumns(include);
-      const headerRow = headers.map(h => `<th>${escapeHtml(h)}</th>`).join("");
-      const rows = list.map(d => `
-        <tr>
-          ${headers.map(h => `<td>${escapeHtml(String(d[h] ?? ""))}</td>`).join("")}
-        </tr>
-      `).join("");
-      return `<!doctype html>
-<html><head><meta charset="utf-8"><title>Net Ninja Report</title></head>
-<body><table border="1" cellspacing="0" cellpadding="4">
-<thead><tr>${headerRow}</tr></thead>
-<tbody>${rows}</tbody>
-</table></body></html>`;
-    }
-
-    function makeDevicesTxt(list = devices, include = "Devices"){
-      const headers = reportColumns(include);
-      return list.map(d => {
-        const parts = headers.map(h => `${h}: ${d[h] ?? ""}`);
-        return parts.join(" | ");
-      }).join("\n");
-    }
-
-    // ---- Settings / initial state ----
-    function init(){
-      // initial notification
-      pushNotification({ when: nowLabel(), title: "Welcome", detail: "Scan your network to start discovering devices." });
-
-      // initial dashboard rendering
-      renderDashboard();
-      renderDevices();
-      renderNetworks();
-      renderHistory();
-      renderNotifications();
-
-      // default text while loading
-      $("#myNetText").textContent = "Loading network…";
-      $("#brandSub").textContent = "Loading network…";
-
-      // Devices: sidepanel tabs default (already summary)
-      renderSidePanel();
-
-      // Basic "settings icon instead of a tab" is already top-right.
-
-      // hydrate from backend if available
-      refreshNetworkInfo();
-      refreshDiscoveryResults();
-      refreshPermissionStatus();
-      setupPermissionControls();
-      setupDebugPanel();
-      refreshDebugState();
-
-      // live scan progress + periodic refresh
-      window.__nnScanPollConfig = { url: "/api/v1/discovery/progress", intervalMs: 600 };
-      if(window.startPolling && !window.__nnScanPollStarted){
-        window.startPolling(window.__nnScanPollConfig.url, window.__nnScanPollConfig.intervalMs);
-        window.__nnScanPollStarted = true;
-      }
-      setInterval(() => {
-        refreshNetworkInfo();
-        refreshDiscoveryResults();
-        refreshPermissionStatus();
-        refreshDebugState();
-      }, 20_000);
-    }
-
-    init();
-  </script>
+  }, 10000);
+})();
+</script>
 
   <script>
   // =========================
@@ -3489,6 +3559,7 @@
 
 
     // ---------- Discovery Map wiring (holo_map.html behavior, embedded) ----------
+    if(!document.getElementById("nnThemePanel")){
     const stage = document.getElementById("nnStage");
     const hudStatus = document.getElementById("nnHudStatus");
     const card = document.getElementById("nnMapCard");
@@ -3566,7 +3637,7 @@
       // Try to reuse the app's device list if it exists; otherwise keep whatever's there.
       const list = Array.isArray(window.devices) ? window.devices : (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
       if(!Array.isArray(list) || list.length === 0){
-        hudStatus.textContent = "0 devices • idle";
+        hudStatus.textContent = "0 devices â€¢ idle";
         clearGraph();
         return;
       }
@@ -3599,7 +3670,7 @@
         createLink(nodeEls[0], nodeEls[i]);
       }
 
-      hudStatus.textContent = `${mapped.length} devices • live`;
+      hudStatus.textContent = `${mapped.length} devices â€¢ live`;
     };
 
     let trafficMode = false;
@@ -3611,9 +3682,9 @@
       }
       try{
         const metrics = await fetchJson("/api/v1/metrics");
-        hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online • metrics`;
+        hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online â€¢ metrics`;
       } catch (_){
-        hudStatus.textContent = `${nodeEls.length} devices • live`;
+        hudStatus.textContent = `${nodeEls.length} devices â€¢ live`;
       }
     }
 
@@ -3666,8 +3737,10 @@
     setTimeout(() => {
       window.nnUpdateDiscoveryMap?.();
     }, 60);
+    }
   })();
   </script>
 
 </body>
 </html>
+
