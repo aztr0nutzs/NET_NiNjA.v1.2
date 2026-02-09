@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.netninja.AndroidLocalServerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-02-09T04:14:50" hostname="runnervmwffz4" time="6.442">
+  <properties/>
+  <testcase name="scanBlockedWithoutPermissionsOrInterface" classname="com.netninja.AndroidLocalServerTest" time="6.338"/>
+  <testcase name="scanPopulatesResults" classname="com.netninja.AndroidLocalServerTest" time="0.079"/>
+  <testcase name="scanPreconditionsBlockedWhenWifiDisabled" classname="com.netninja.AndroidLocalServerTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

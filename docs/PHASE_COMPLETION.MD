@@ -1,6 +1,6 @@
 # Phase Completion Ledger
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Phase 2 - Background Execution Survival
 
@@ -17,7 +17,11 @@ Receipts:
   - NotificationController: `android-app/src/main/java/com/netninja/NotificationController.kt` (`ensureChannel`, `buildEngineNotification`).
 
 Risks remaining:
-- CI artifacts require a successful run of the workflow to populate receipts.
+- None. CI receipts workflow has a successful run with uploaded artifacts.
 
 Checklist:
-- [ ] Run the `phase2-receipts` workflow on main to capture artifacts.
+- [x] Run the `phase2-receipts` workflow on main to capture artifacts. (Run 21812041723)
+
+Receipts captured:
+- GitHub Actions run: `https://github.com/aztr0nutzs/NET_NiNjA.v1.2/actions/runs/21812041723`
+- Local archive: `docs/gates/phase2-receipts-21812041723/`

@@ -1,0 +1,12 @@
+﻿2026-02-09T04:10:25.2330105Z ##[group]Run set -euo pipefail
+2026-02-09T04:10:25.2330436Z [36;1mset -euo pipefail[0m
+2026-02-09T04:10:25.2330913Z [36;1m# `yes` exits with SIGPIPE once sdkmanager closes stdin; avoid failing the step under `pipefail`.[0m
+2026-02-09T04:10:25.2331445Z [36;1myes | sdkmanager --licenses >/dev/null || true[0m
+2026-02-09T04:10:25.2366415Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-02-09T04:10:25.2366748Z env:
+2026-02-09T04:10:25.2367023Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+2026-02-09T04:10:25.2367510Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+2026-02-09T04:10:25.2367905Z   ANDROID_HOME: /usr/local/lib/android/sdk
+2026-02-09T04:10:25.2368189Z   ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+2026-02-09T04:10:25.2368766Z ##[endgroup]
+2026-02-09T04:10:26.9189063Z yes: standard output: Broken pipe

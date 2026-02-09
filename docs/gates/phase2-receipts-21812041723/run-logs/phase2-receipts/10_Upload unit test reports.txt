@@ -1,0 +1,27 @@
+﻿2026-02-09T04:28:09.1614729Z ##[group]Run actions/upload-artifact@v4
+2026-02-09T04:28:09.1615016Z with:
+2026-02-09T04:28:09.1615194Z   name: unit-test-reports
+2026-02-09T04:28:09.1615473Z   path: build/android-app/reports/tests/testDebugUnitTest
+
+2026-02-09T04:28:09.1615795Z   if-no-files-found: warn
+2026-02-09T04:28:09.1616000Z   compression-level: 6
+2026-02-09T04:28:09.1616183Z   overwrite: false
+2026-02-09T04:28:09.1616370Z   include-hidden-files: false
+2026-02-09T04:28:09.1616758Z env:
+2026-02-09T04:28:09.1617026Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+2026-02-09T04:28:09.1617473Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+2026-02-09T04:28:09.1617841Z   ANDROID_HOME: /usr/local/lib/android/sdk
+2026-02-09T04:28:09.1618110Z   ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+2026-02-09T04:28:09.1618681Z   ANDROID_AVD_HOME: /home/runner/.android/avd
+2026-02-09T04:28:09.1618953Z ##[endgroup]
+2026-02-09T04:28:09.4144203Z With the provided path, there will be 6 files uploaded
+2026-02-09T04:28:09.4151028Z Artifact name is valid!
+2026-02-09T04:28:09.4152458Z Root directory input is valid!
+2026-02-09T04:28:09.6454705Z Beginning upload of artifact content to blob storage
+2026-02-09T04:28:09.8770576Z Uploaded bytes 5574
+2026-02-09T04:28:09.9365559Z Finished uploading artifact content to blob storage!
+2026-02-09T04:28:09.9368705Z SHA256 digest of uploaded artifact zip is 781441db8e7b4eb1027e9e9758224cf9c111175f54072c3183914c8f27802690
+2026-02-09T04:28:09.9370451Z Finalizing artifact upload
+2026-02-09T04:28:10.0599385Z Artifact unit-test-reports.zip successfully finalized. Artifact ID 5426964548
+2026-02-09T04:28:10.0601406Z Artifact unit-test-reports has been successfully uploaded! Final size is 5574 bytes. Artifact ID is 5426964548
+2026-02-09T04:28:10.0607780Z Artifact download URL: https://github.com/aztr0nutzs/NET_NiNjA.v1.2/actions/runs/21812041723/artifacts/5426964548

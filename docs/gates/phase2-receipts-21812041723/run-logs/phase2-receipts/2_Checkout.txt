@@ -1,0 +1,72 @@
+﻿2026-02-09T04:10:04.5427737Z ##[group]Run actions/checkout@v4
+2026-02-09T04:10:04.5428747Z with:
+2026-02-09T04:10:04.5428995Z   repository: aztr0nutzs/NET_NiNjA.v1.2
+2026-02-09T04:10:04.5429405Z   token: ***
+2026-02-09T04:10:04.5429593Z   ssh-strict: true
+2026-02-09T04:10:04.5429786Z   ssh-user: git
+2026-02-09T04:10:04.5429986Z   persist-credentials: true
+2026-02-09T04:10:04.5430205Z   clean: true
+2026-02-09T04:10:04.5430394Z   sparse-checkout-cone-mode: true
+2026-02-09T04:10:04.5430646Z   fetch-depth: 1
+2026-02-09T04:10:04.5430821Z   fetch-tags: false
+2026-02-09T04:10:04.5431007Z   show-progress: true
+2026-02-09T04:10:04.5431192Z   lfs: false
+2026-02-09T04:10:04.5431364Z   submodules: false
+2026-02-09T04:10:04.5431558Z   set-safe-directory: true
+2026-02-09T04:10:04.5432043Z ##[endgroup]
+2026-02-09T04:10:04.6526431Z Syncing repository: aztr0nutzs/NET_NiNjA.v1.2
+2026-02-09T04:10:04.6528762Z ##[group]Getting Git version info
+2026-02-09T04:10:04.6529568Z Working directory is '/home/runner/work/NET_NiNjA.v1.2/NET_NiNjA.v1.2'
+2026-02-09T04:10:04.6530718Z [command]/usr/bin/git version
+2026-02-09T04:10:04.6611612Z git version 2.52.0
+2026-02-09T04:10:04.6637358Z ##[endgroup]
+2026-02-09T04:10:04.6652778Z Temporarily overriding HOME='/home/runner/work/_temp/964c6f17-e36b-4d09-a92e-559f7fcdacdb' before making global git config changes
+2026-02-09T04:10:04.6654334Z Adding repository directory to the temporary git global config as a safe directory
+2026-02-09T04:10:04.6665630Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/NET_NiNjA.v1.2/NET_NiNjA.v1.2
+2026-02-09T04:10:04.6702449Z Deleting the contents of '/home/runner/work/NET_NiNjA.v1.2/NET_NiNjA.v1.2'
+2026-02-09T04:10:04.6706070Z ##[group]Initializing the repository
+2026-02-09T04:10:04.6710913Z [command]/usr/bin/git init /home/runner/work/NET_NiNjA.v1.2/NET_NiNjA.v1.2
+2026-02-09T04:10:04.6800209Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-02-09T04:10:04.6801234Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-02-09T04:10:04.6801848Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-02-09T04:10:04.6802233Z hint: call:
+2026-02-09T04:10:04.6802507Z hint:
+2026-02-09T04:10:04.6803004Z hint: 	git config --global init.defaultBranch <name>
+2026-02-09T04:10:04.6803604Z hint:
+2026-02-09T04:10:04.6803952Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-02-09T04:10:04.6804453Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-02-09T04:10:04.6805049Z hint:
+2026-02-09T04:10:04.6805403Z hint: 	git branch -m <name>
+2026-02-09T04:10:04.6805823Z hint:
+2026-02-09T04:10:04.6806421Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-02-09T04:10:04.6807589Z Initialized empty Git repository in /home/runner/work/NET_NiNjA.v1.2/NET_NiNjA.v1.2/.git/
+2026-02-09T04:10:04.6816197Z [command]/usr/bin/git remote add origin https://github.com/aztr0nutzs/NET_NiNjA.v1.2
+2026-02-09T04:10:04.6849269Z ##[endgroup]
+2026-02-09T04:10:04.6849931Z ##[group]Disabling automatic garbage collection
+2026-02-09T04:10:04.6854320Z [command]/usr/bin/git config --local gc.auto 0
+2026-02-09T04:10:04.6881764Z ##[endgroup]
+2026-02-09T04:10:04.6882424Z ##[group]Setting up auth
+2026-02-09T04:10:04.6889197Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-02-09T04:10:04.6917192Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-02-09T04:10:04.7278154Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-02-09T04:10:04.7306216Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-02-09T04:10:04.7517649Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-02-09T04:10:04.7546083Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-02-09T04:10:04.7772431Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-02-09T04:10:04.7805293Z ##[endgroup]
+2026-02-09T04:10:04.7805918Z ##[group]Fetching the repository
+2026-02-09T04:10:04.7813351Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +c0940cfca6811a923c4a3999fed0d889385cee69:refs/remotes/origin/main
+2026-02-09T04:10:06.8123490Z From https://github.com/aztr0nutzs/NET_NiNjA.v1.2
+2026-02-09T04:10:06.8124625Z  * [new ref]         c0940cfca6811a923c4a3999fed0d889385cee69 -> origin/main
+2026-02-09T04:10:06.8157919Z ##[endgroup]
+2026-02-09T04:10:06.8158772Z ##[group]Determining the checkout info
+2026-02-09T04:10:06.8160283Z ##[endgroup]
+2026-02-09T04:10:06.8165704Z [command]/usr/bin/git sparse-checkout disable
+2026-02-09T04:10:06.8206987Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-02-09T04:10:06.8233827Z ##[group]Checking out the ref
+2026-02-09T04:10:06.8238511Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-02-09T04:10:07.5726864Z Switched to a new branch 'main'
+2026-02-09T04:10:07.5727902Z branch 'main' set up to track 'origin/main'.
+2026-02-09T04:10:07.5763813Z ##[endgroup]
+2026-02-09T04:10:07.5802627Z [command]/usr/bin/git log -1 --format=%H
+2026-02-09T04:10:07.5824672Z c0940cfca6811a923c4a3999fed0d889385cee69
