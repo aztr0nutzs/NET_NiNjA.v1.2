@@ -53,6 +53,9 @@ data class ScheduleRequest(val subnet: String? = null, val freq: String? = null)
 data class RuleRequest(val match: String? = null, val action: String? = null)
 
 @Serializable
+data class DeviceActionRequest(val action: String? = null)
+
+@Serializable
 data class RuleEntry(val match: String, val action: String)
 
 @Serializable
@@ -219,6 +222,10 @@ fun startServer(
             val id = mac ?: ip
 
             val old = devices.get(id)
+            val via = old?.via ?: netInfo["iface"]?.toString() ?: netInfo["name"]?.toString()
+            val trust = old?.trust ?: "Unknown"
+            val status = old?.status ?: if (reachable) "Online" else "Offline"
+            val type = old?.type ?: guessDeviceType(os, vendor, openPorts, banners, hostname)
             val dev = Device(
               id = id,
               ip = ip,
@@ -234,10 +241,10 @@ fun startServer(
               owner = old?.owner,
               room = old?.room,
               note = old?.note,
-              trust = old?.trust,
-              type = old?.type,
-              status = old?.status,
-              via = old?.via,
+              trust = trust,
+              type = type,
+              status = status,
+              via = via,
               signal = old?.signal,
               activityToday = old?.activityToday,
               traffic = old?.traffic
@@ -536,6 +543,21 @@ fun startServer(
         call.respond(updated)
       }
 
+      post("/api/v1/devices/{id}/actions") {
+        val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+        val req = runCatching { call.receive<DeviceActionRequest>() }.getOrNull() ?: DeviceActionRequest()
+        val action = req.action?.trim()?.lowercase()
+        if (action.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
+        val d = deviceCache[id] ?: devices.get(id) ?: return@post call.respond(HttpStatusCode.NotFound)
+        val updated = applyDeviceAction(d, action) ?: return@post call.respond(HttpStatusCode.BadRequest)
+        devices.upsert(updated)
+        deviceCache[id] = updated
+        val ts = System.currentTimeMillis()
+        events.insert(DeviceEvent(id, ts, "ACTION_${action.uppercase()}"))
+        log("device action $action id=$id")
+        call.respond(updated)
+      }
+
       get("/api/v1/devices/{id}/history") {
         val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
         call.respond(events.history(id))
@@ -714,11 +736,50 @@ fun startServer(
   return engine
 }
 
+private fun applyDeviceAction(device: Device, action: String): Device? {
+  return when (action.lowercase()) {
+    "block" -> device.copy(status = "Blocked", trust = "Blocked")
+    "unblock" -> device.copy(
+      status = if (device.online) "Online" else "Offline",
+      trust = if (device.trust == "Blocked") "Unknown" else device.trust
+    )
+    "pause" -> device.copy(status = "Paused")
+    "unpause" -> device.copy(status = if (device.online) "Online" else "Offline")
+    "trust" -> device.copy(trust = "Trusted")
+    "untrust" -> device.copy(trust = "Unknown")
+    else -> null
+  }
+}
+
 private fun resolveHostname(ip: String): String? {
   return runCatching {
     val host = InetAddress.getByName(ip).canonicalHostName
     if (host == ip) null else host
   }.getOrNull()
+}
+
+private fun guessDeviceType(
+  os: String?,
+  vendor: String?,
+  openPorts: List<Int>,
+  banners: Map<Int, String>,
+  hostname: String?
+): String? {
+  val vend = vendor?.lowercase().orEmpty()
+  val host = hostname?.lowercase().orEmpty()
+  val bannerText = banners.values.joinToString(" ").lowercase()
+  return when {
+    openPorts.contains(554) || bannerText.contains("rtsp") -> "Camera"
+    openPorts.contains(9100) || vend.contains("hp") || vend.contains("brother") -> "Printer"
+    openPorts.contains(53) || openPorts.contains(67) -> "Router"
+    (openPorts.contains(80) || openPorts.contains(443)) &&
+      (vend.contains("ubiquiti") || vend.contains("netgear") || vend.contains("linksys")) -> "Gateway"
+    vend.contains("apple") || host.contains("iphone") || host.contains("ipad") -> "Mobile"
+    vend.contains("samsung") || host.contains("android") -> "Mobile"
+    vend.contains("microsoft") || os == "Windows" -> "PC"
+    vend.contains("raspberry") || host.contains("pi") -> "IoT"
+    else -> os
+  }
 }
 
 private fun guessOs(openPorts: List<Int>, banners: Map<Int, String>, hostname: String?, vendor: String?): String? {
@@ -798,11 +859,51 @@ private fun localNetworkInfo(): Map<String, Any?> {
   val ip = addr?.address?.hostAddress
   val prefix = addr?.networkPrefixLength?.toInt()
   val cidr = if (ip != null && prefix != null) "${ip.substringBeforeLast(".")}.0/$prefix" else null
+  val gateway = resolveDefaultGateway()
+  val dns = resolveDnsServers()
+  val mac = iface?.hardwareAddress?.toList()?.joinToString(":") { b -> "%02x".format(b) }
+  val linkUp = ip != null && cidr != null
   return mapOf(
     "name" to (iface?.displayName ?: "Network"),
     "ip" to ip,
     "cidr" to cidr,
-    "gateway" to null
+    "gateway" to gateway,
+    "dns" to dns,
+    "iface" to iface?.name,
+    "mac" to mac,
+    "linkUp" to linkUp
   )
 }
 
+private fun resolveDefaultGateway(): String? {
+  val routeFile = File("/proc/net/route")
+  if (!routeFile.exists()) return null
+  return runCatching {
+    routeFile.readLines().drop(1).mapNotNull { line ->
+      val parts = line.trim().split(Regex("\\s+"))
+      if (parts.size <= 2) return@mapNotNull null
+      val dest = parts[1]
+      val gateway = parts[2]
+      if (dest != "00000000") return@mapNotNull null
+      val gwInt = gateway.toLong(16)
+      val b1 = (gwInt and 0xFF).toInt()
+      val b2 = ((gwInt shr 8) and 0xFF).toInt()
+      val b3 = ((gwInt shr 16) and 0xFF).toInt()
+      val b4 = ((gwInt shr 24) and 0xFF).toInt()
+      "$b1.$b2.$b3.$b4"
+    }.firstOrNull()
+  }.getOrNull()
+}
+
+private fun resolveDnsServers(): String? {
+  val resolv = File("/etc/resolv.conf")
+  if (!resolv.exists()) return null
+  val servers = runCatching {
+    resolv.readLines().mapNotNull { line ->
+      val trimmed = line.trim()
+      if (!trimmed.startsWith("nameserver")) return@mapNotNull null
+      trimmed.split(Regex("\\s+")).getOrNull(1)
+    }.filter { it.isNotBlank() }
+  }.getOrDefault(emptyList())
+  return servers.takeIf { it.isNotEmpty() }?.joinToString(", ")
+}
