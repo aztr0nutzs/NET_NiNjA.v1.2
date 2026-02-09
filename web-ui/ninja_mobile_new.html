@@ -3769,36 +3769,51 @@
       const res = await fetch(resolveApiUrl(url), { ...fetchOptions, headers, signal: controller.signal });
       if(timeout) clearTimeout(timeout);
       if(res.status === 401){
-        showToast("Unauthorized", "Access rejected by the local engine.");
-        throw new Error("Unauthorized");
-      }
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    }
-
-    function applyDevicesFromBackend(rawList){
-      if(!Array.isArray(rawList)) return;
-      const next = rawList.map(mergeDevice).filter(Boolean);
-      devices = next;
-      window.devices = devices;
-    }
-
-    function upsertDeviceFromBackend(raw){
-      const next = mergeDevice(raw);
-      if(!next) return;
-      const idx = devices.findIndex(d => d.id === next.id);
-      if(idx >= 0){
-        devices[idx] = next;
-      } else {
-        devices.unshift(next);
-      }
-      window.devices = devices;
-    }
-
     async function updateDeviceMeta(id, patch){
       const updated = await fetchJson(`/api/v1/devices/${encodeURIComponent(id)}/meta`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch)
+      });
+      upsertDeviceFromBackend(updated);
+      renderDashboard();
+      renderDevices();
+      renderNetworks();
+      window.nnUpdateDiscoveryMap?.();
+      return updated;
+    }
+
+    async function runDeviceAction(id, action){
+      const updated = await fetchJson(`/api/v1/devices/${encodeURIComponent(id)}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      upsertDeviceFromBackend(updated);
+      renderDashboard();
+      renderDevices();
+      renderNetworks();
+      window.nnUpdateDiscoveryMap?.();
+      return updated;
+    }
+
+    function updateNetworkUi(info){
+      if(!info || typeof info !== "object") return;
+      cachedNetworkInfo = info;
+
+      const name = info.name || "Network";
+      const ip = info.ip || "â€”";
+      const cidr = info.cidr || "â€”";
+      const gateway = info.gateway || "â€”";
+      const dns = info.dns || "â€”";
+        n1.details.ssid = name;
+        n1.details.gateway = gateway;
+        n1.details.yourIp = ip;
+        n1.details.dns = dns;
+        n1.details.security = n1.details.security || "â€”";
+        n1.details.openPorts = "â€”";
+        n1.devices = devices.length;
+      }
         body: JSON.stringify(patch)
       });
       upsertDeviceFromBackend(updated);
@@ -4292,92 +4307,86 @@
 
         <div style="height:12px;"></div>
 
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Notes & labels</div>
-            <div class="pill">Optional</div>
-          </div>
-          <div class="field">
-            <label for="mNote">Add a noteâ€¦</label>
-            <textarea id="mNote" placeholder="Add a noteâ€¦">${escapeHtml(d.note || "")}</textarea>
-          </div>
-          <div class="field">
-            <label for="mRoom">Room</label>
-            <select id="mRoom">
-              ${selectOptions(["", "Office", "Living Room", "Bedroom", "Kitchen", "Garage"], d.room || "")}
-            </select>
-          </div>
-          <div class="field">
-            <label for="mOwner">Owner</label>
-            <select id="mOwner">
-              ${selectOptions(["", "Me", "Guest", "Child", "Work"], d.owner || "")}
-            </select>
-          </div>
-          <button class="btn btn-ghost purple" id="mSave">Save</button>
-        </div>
-      `;
-
-      // Wire actions
       $("#mPause").addEventListener("click", () => pauseDevice(d.id));
-      $("#mBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
-      $("#mTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
-      $("#mPort").addEventListener("click", () => doAction("Run port scan", d, () => openToolDialog("portScan", d.id)));
-
-      $("#mSave").addEventListener("click", async () => {
-        const patch = {
-          note: $("#mNote").value,
-          room: $("#mRoom").value || "",
-          owner: $("#mOwner").value || ""
-        };
-        try{
-          await updateDeviceMeta(d.id, patch);
-          pushHistory({ when: nowLabel(), title: `Saved notes for ${d.name}`, detail: "Notes / labels updated", undo: null });
-          showToast("Saved", "Notes and labels updated.");
-        } catch (_){
-          showToast("Save failed", "Unable to update device notes.");
-        }
-      });
-
-      openOverlay("deviceOverlay");
-    }
-
-    function openDeviceActions(id){
+      $("#mBlock").addEventListener("click", () => blockDevice(d.id));
+      $("#mTrust").addEventListener("click", () => toggleTrust(d.id));
+      $("#mPort").addEventListener("click", () => openToolDialog("portScan", d.id));
+          </div>
+      $("#aPause").addEventListener("click", () => pauseDevice(d.id));
+      $("#aBlock").addEventListener("click", () => blockDevice(d.id));
+      $("#aTrust").addEventListener("click", () => toggleTrust(d.id));
+    async function blockDevice(id){
       const d = devices.find(x => x.id === id);
       if(!d) return;
+      const prev = { status: d.status, trust: d.trust };
+      try{
+        await runDeviceAction(d.id, "block");
+        pushHistory({
+          when: nowLabel(),
+          title: `Blocked ${d.name}`,
+          detail: "Device status set to Blocked.",
+          undo: () => {
+            updateDeviceMeta(d.id, { status: prev.status, trust: prev.trust }).then(() => {
+              showToast("Unblocked", `${d.name} restored.`);
+            }).catch(() => showToast("Undo failed", "Unable to restore device."));
+          }
+        });
+        pushNotification({
+          when: nowLabel(),
+          title: `Device blocked: ${d.name}`,
+          detail: "Tap Undo in Recent actions to revert."
+        });
+        showToast("Status updated", `${d.name} marked as Blocked.`, [{ label: "Undo", onClick: () => undoLast() }]);
+      } catch (_){
+        showToast("Block failed", "Unable to block device.");
+      }
+    }
 
-      $("#devSheetTitle").textContent = "Device actions";
-      const body = $("#devSheetBody");
-      body.innerHTML = `
-        <div class="card" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">${escapeHtml(d.name)}</div>
-            <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
-          </div>
-          <div class="muted">${escapeHtml(d.type)} â€¢ ${escapeHtml(d.ip)} â€¢ ${escapeHtml(d.trust)}</div>
-          <div class="card-actions" style="margin-top: 12px;">
-            <button class="btn btn-ghost" id="aView">View details</button>
-            <button class="btn btn-ghost" id="aPause">Set status: Paused</button>
-            <button class="btn btn-danger" id="aBlock">Set status: Blocked</button>
-            <button class="btn btn-ghost purple" id="aTrust">${d.trust === "Trusted" ? "Mark as unknown" : "Mark as trusted"}</button>
-            <button class="btn btn-ghost" id="aRename">Rename device</button>
-            <button class="btn btn-ghost purple" id="aOwner">Assign owner / room</button>
-          </div>
-        </div>
-      `;
+    async function pauseDevice(id){
+      const d = devices.find(x => x.id === id);
+      if(!d) return;
+      const prev = d.status;
+      try{
+        await runDeviceAction(d.id, "pause");
+        pushHistory({
+          when: nowLabel(),
+          title: `Paused ${d.name}`,
+          detail: `${d.ip} status set to Paused`,
+          undo: () => {
+            updateDeviceMeta(d.id, { status: prev }).then(() => {
+              showToast("Status updated", `${d.name} restored.`);
+            }).catch(() => showToast("Undo failed", "Unable to restore device."));
+          }
+        });
+        showToast("Status updated", `${d.name} marked as Paused.`);
+      } catch (_){
+        showToast("Pause failed", "Unable to pause device.");
+      }
+    }
 
-      $("#aView").addEventListener("click", () => { closeOverlay("deviceOverlay"); openDeviceDetails(d.id); });
-      $("#aPause").addEventListener("click", () => pauseDevice(d.id));
-      $("#aBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
-      $("#aTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
-      $("#aRename").addEventListener("click", () => {
-        const next = prompt("Rename device:", d.name);
-        if(next && next.trim()){
-          const prev = d.name;
-          const nextName = next.trim();
-          updateDeviceMeta(d.id, { name: nextName }).then(() => {
-            pushHistory({
-              when: nowLabel(),
-              title: `Renamed device`,
+    async function toggleTrust(id){
+      const d = devices.find(x => x.id === id);
+      if(!d) return;
+      const prev = d.trust;
+      const next = (d.trust === "Trusted") ? "Unknown" : "Trusted";
+      const action = (next === "Trusted") ? "trust" : "untrust";
+      try{
+        await runDeviceAction(d.id, action);
+        pushHistory({
+          when: nowLabel(),
+          title: `Trust changed: ${d.name}`,
+          detail: `${prev} â†’ ${next}`,
+          undo: () => {
+            updateDeviceMeta(d.id, { trust: prev }).then(() => {
+              showToast("Undone", "Trust reverted.");
+            }).catch(() => showToast("Undo failed", "Unable to revert trust."));
+          }
+        });
+        showToast("Updated", `${d.name} is now ${next}.`);
+      } catch (_){
+        showToast("Update failed", "Unable to change trust.");
+      }
+    }
               detail: `${prev} â†’ ${nextName}`,
               undo: () => {
                 updateDeviceMeta(d.id, { name: prev }).then(() => {

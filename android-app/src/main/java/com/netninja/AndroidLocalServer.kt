@@ -96,6 +96,7 @@ import android.database.sqlite.SQLiteDatabase
   val activityToday: String? = null,
   val traffic: String? = null
 )
+@Serializable data class DeviceActionRequest(val action: String? = null)
 @Serializable data class PortScanRequest(val ip: String? = null, val timeoutMs: Int? = null)
 @Serializable data class PermissionSnapshot(
   val nearbyWifi: Boolean? = null,
@@ -507,6 +508,23 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(updated)
       }
 
+      post("/api/v1/devices/{id}/actions") {
+        val id = call.parameters["id"]?.lowercase() ?: return@post call.respond(HttpStatusCode.BadRequest)
+        val req = runCatching { call.receive<DeviceActionRequest>() }.getOrNull() ?: DeviceActionRequest()
+        val action = req.action?.trim()?.lowercase()
+        if (action.isNullOrBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing action"))
+          return@post
+        }
+        val d = devices[id] ?: return@post call.respond(HttpStatusCode.NotFound)
+        val updated = applyDeviceAction(d, action) ?: return@post call.respond(HttpStatusCode.BadRequest)
+        devices[id] = updated
+        saveDevice(updated)
+        recordDeviceEvent(id, "ACTION_${action.uppercase()}")
+        log("device action $action id=$id")
+        call.respond(updated)
+      }
+
       get("/api/v1/devices/{id}/history") {
         val id = call.parameters["id"]?.lowercase() ?: return@get call.respond(HttpStatusCode.BadRequest)
         call.respond(deviceEvents[id].orEmpty())
@@ -822,14 +840,17 @@ class AndroidLocalServer(private val ctx: Context) {
 
               if (!reachable && mac == null) return@withPermit
 
-              val hostname = if (reachable) resolveHostname(ip) else null
-              val vendor = lookupVendor(mac)
-              val os = guessOs(ip, timeout, hostname, vendor)
-
               val id = (mac ?: ip).lowercase()
               val now = System.currentTimeMillis()
 
               val prev = devices[id]
+              val hostname = if (reachable) resolveHostname(ip) else null
+              val vendor = lookupVendor(mac)
+              val os = guessOs(ip, timeout, hostname, vendor)
+              val type = prev?.type ?: guessDeviceType(os, vendor, hostname)
+              val via = prev?.via ?: netInfo["iface"]?.toString() ?: netInfo["name"]?.toString()
+              val trust = prev?.trust ?: "Unknown"
+              val status = prev?.status ?: if (reachable) "Online" else "Offline"
               val newDev = Device(
                 id = id,
                 ip = ip,
@@ -843,10 +864,10 @@ class AndroidLocalServer(private val ctx: Context) {
                 owner = prev?.owner,
                 room = prev?.room,
                 note = prev?.note,
-                trust = prev?.trust,
-                type = prev?.type,
-                status = prev?.status,
-                via = prev?.via,
+                trust = trust,
+                type = type,
+                status = status,
+                via = via,
                 signal = prev?.signal,
                 activityToday = prev?.activityToday,
                 traffic = prev?.traffic
@@ -899,6 +920,21 @@ class AndroidLocalServer(private val ctx: Context) {
     }
   }
 
+  private fun applyDeviceAction(device: Device, action: String): Device? {
+    return when (action.lowercase()) {
+      "block" -> device.copy(status = "Blocked", trust = "Blocked")
+      "unblock" -> device.copy(
+        status = if (device.online) "Online" else "Offline",
+        trust = if (device.trust == "Blocked") "Unknown" else device.trust
+      )
+      "pause" -> device.copy(status = "Paused")
+      "unpause" -> device.copy(status = if (device.online) "Online" else "Offline")
+      "trust" -> device.copy(trust = "Trusted")
+      "untrust" -> device.copy(trust = "Unknown")
+      else -> null
+    }
+  }
+
   private fun evaluateRules(old: Device?, now: Device) {
     val wentOnline = old?.online == false && now.online
     val wentOffline = old?.online == true && !now.online
@@ -932,15 +968,8 @@ class AndroidLocalServer(private val ctx: Context) {
 
   private fun emitEvents(old: Device?, now: Device) {
     val id = now.id.lowercase()
-    val list = deviceEvents.getOrPut(id) { mutableListOf() }
-
     fun add(event: String) {
-      val e = DeviceEvent(deviceId = id, ts = System.currentTimeMillis(), event = event)
-      list.add(e)
-      saveEvent(e)
-      if (list.size > maxEventsPerDevice) {
-        list.subList(0, list.size - maxEventsPerDevice).clear()
-      }
+      recordDeviceEvent(id, event)
     }
 
     if (old == null) {
@@ -950,6 +979,16 @@ class AndroidLocalServer(private val ctx: Context) {
     }
     if (old.online != now.online) add(if (now.online) "DEVICE_ONLINE" else "DEVICE_OFFLINE")
     if (old.ip != now.ip) add("IP_CHANGED")
+  }
+
+  private fun recordDeviceEvent(id: String, event: String) {
+    val list = deviceEvents.getOrPut(id) { mutableListOf() }
+    val e = DeviceEvent(deviceId = id, ts = System.currentTimeMillis(), event = event)
+    list.add(e)
+    saveEvent(e)
+    if (list.size > maxEventsPerDevice) {
+      list.subList(0, list.size - maxEventsPerDevice).clear()
+    }
   }
 
   private fun uptimePct(events: List<DeviceEvent>, windowMs: Long, nowMs: Long = System.currentTimeMillis()): Double {
@@ -1203,6 +1242,9 @@ class AndroidLocalServer(private val ctx: Context) {
       val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
       val gw = dhcp?.let { Formatter.formatIpAddress(it.gateway) }
       val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
+      val dns1 = dhcp?.let { Formatter.formatIpAddress(it.dns1) }
+      val dns2 = dhcp?.let { Formatter.formatIpAddress(it.dns2) }
+      val dns = listOfNotNull(dns1, dns2).filter { it != "0.0.0.0" }.joinToString(", ").ifBlank { null }
       val cidr = if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0" && mask != "0.0.0.0") {
         val prefix = maskToPrefix(mask)
         val base = ipToInt(ip) and if (prefix == 0) 0 else -1 shl (32 - prefix)
@@ -1212,7 +1254,15 @@ class AndroidLocalServer(private val ctx: Context) {
       }
       val linkUp = ip != null && ip != "0.0.0.0" && cidr != null
       if (linkUp) {
-        return mapOf("name" to "Wi-Fi", "ip" to ip, "cidr" to cidr, "gateway" to gw, "linkUp" to true)
+        return mapOf(
+          "name" to "Wi-Fi",
+          "ip" to ip,
+          "cidr" to cidr,
+          "gateway" to gw,
+          "dns" to dns,
+          "iface" to "Wi-Fi",
+          "linkUp" to true
+        )
       }
     }
 
@@ -1226,6 +1276,8 @@ class AndroidLocalServer(private val ctx: Context) {
       "ip" to iface.ip,
       "cidr" to "${intToIp(base)}/${iface.prefix}",
       "gateway" to null,
+      "dns" to null,
+      "iface" to iface.name,
       "linkUp" to true
     )
   }
@@ -1648,6 +1700,19 @@ class AndroidLocalServer(private val ctx: Context) {
       ports.contains(22) -> "Linux"
       vend.contains("apple") || host.contains("mac") -> "macOS"
       else -> null
+    }
+  }
+
+  private fun guessDeviceType(os: String?, vendor: String?, hostname: String?): String? {
+    val vend = vendor?.lowercase().orEmpty()
+    val host = hostname?.lowercase().orEmpty()
+    return when {
+      vend.contains("raspberry") || host.contains("pi") -> "IoT"
+      vend.contains("apple") || host.contains("iphone") || host.contains("ipad") -> "Mobile"
+      vend.contains("samsung") || host.contains("android") -> "Mobile"
+      vend.contains("microsoft") || os == "Windows" -> "PC"
+      vend.contains("cisco") || vend.contains("netgear") || vend.contains("linksys") -> "Gateway"
+      else -> os
     }
   }
 
