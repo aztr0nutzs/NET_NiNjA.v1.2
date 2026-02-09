@@ -119,7 +119,6 @@ class ApiContractTest {
     assertTrue(get(URI("$base/api/v1/discovery/progress")).first == 200)
     assertTrue(postJson(URI("$base/api/v1/discovery/scan"), """{"subnet":"127.0.0.0/30","timeoutMs":80}""").first == 200)
     assertTrue(get(URI("$base/api/v1/discovery/results")).first == 200)
-    assertTrue(postJson(URI("$base/api/v1/discovery/stop"), """{}""").first == 200)
 
     // Ensure at least one device is present so /api/v1/devices/* can return 200.
     val resultsUri = URI("$base/api/v1/discovery/results")
@@ -135,6 +134,10 @@ class ApiContractTest {
       Thread.sleep(200)
     }
     assertTrue(!deviceId.isNullOrBlank(), "Expected at least one device in $resultsUri within timeout.")
+
+    // Stop any active scan after we have deterministic data for the remaining endpoints.
+    assertTrue(postJson(URI("$base/api/v1/discovery/stop"), """{}""").first == 200)
+
     val encodedId = java.net.URLEncoder.encode(deviceId!!, Charsets.UTF_8)
     val deviceUri = URI("$base/api/v1/devices/$encodedId")
     val (deviceCode, deviceBody) = get(deviceUri)

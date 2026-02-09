@@ -1,38 +1,45 @@
 # INTEGRITY_AUDIT.md
 
 PROJECT: NET_NiNjA.v1.2
-DATE: 2026-02-06T17:39:56-05:00
+DATE: 2026-02-09T01:44:08-05:00
 
 SUMMARY:
 - Changes Since Delivery:
-  - FCP-01 regression receipts captured under `docs/gates/` (Gradle + environment logs).
-  - Documentation updates to clarify Gradle wrapper invocation on Windows PowerShell (`.\gradlew`) vs bash (`./gradlew`):
-    - `BUILD_INSTRUCTIONS.md`
-    - `FINAL_DELIVERABLE_CHECKLIST.md`
-    - `INSPECTION_REPORT.md`
-    - `docs/gates/README.md`
-  - Unexplained working-tree drift detected in `web-ui/openclaw_dash.html` (large rewrite) that is not yet reconciled with the delivery baseline.
-- Rebuild Status: SUCCESS
+  - Added on-device ONVIF WS-Discovery (multicast probe) and unified `/api/v1/onvif/discover` DTO shape across desktop and Android.
+  - Moved the GitHub Actions workflow from repo-root `ci.yml` to `.github/workflows/ci.yml`.
+  - Updated the server API contract test to stop the scan only after a deterministic device ID is available (reduces flakiness in full gates).
+  - `web-ui/openclaw_dash.html` drift is still present relative to other repository copies; see "Action Items" for measured state.
+- Rebuild Status: SUCCESS (FV-02)
   - Command: `.\gradlew clean assembleDebug assembleRelease test lint --no-daemon --console=plain --warning-mode all`
-  - Exit code: 0 (see `docs/gates/FCP-01_gradle_clean_assemble_test_lint.exit.txt`)
-  - Warnings: 22 Kotlin warnings (deprecations + one always-true condition) observed in build output (see `docs/gates/FCP-01_gradle_clean_assemble_test_lint.log`).
+  - Exit code: 0 (see `docs/gates/FV-02_gradle_clean_assemble_test_lint.exit.txt`)
+  - Log: `docs/gates/FV-02_gradle_clean_assemble_test_lint.log`
+- CI Workflow Lint: PASS
+  - Tool: `actionlint` (local run)
+  - Exit code: 0 (see `docs/gates/FV-02_actionlint.exit.txt`)
+  - Log: `docs/gates/FV-02_actionlint.log`
 - Security Audit Results: PASS (no hardcoded secrets detected in app/server build sources)
   - Notes: Placeholder token strings exist in example configs/docs under `claw-sync/` and `mission-control/` (expected; not real secrets).
   - No insecure Gradle repository URLs (`http://`) detected in build scripts.
 - Documentation Consistency: PARTIAL
-  - The five FV-01 documents exist and are being updated for correct Windows wrapper usage.
-  - `docs/REPOSITORY_ORGANIZATION.md` required an update because repository root now includes delivery verification artifacts (FV-01/FCP-01), not just the 6 GitHub-standard markdown files.
+  - The FV-01 "delivery truth" documents exist and are being re-issued with updated dates/evidence.
+  - `docs/REPOSITORY_ORGANIZATION.md` may need revisiting if any additional build artifacts or verification receipts are added at repo root.
 
 ACTION ITEMS:
-- HIGH: Decide disposition of `web-ui/openclaw_dash.html` drift.
-  - Root cause: Unexplained local modification relative to `HEAD` (likely an uncommitted change set).
-  - Required corrective action: either revert to `HEAD` for continuity, or accept the new dashboard and re-run the full regression gate after reconciliation.
+- HIGH: Decide disposition of `web-ui/openclaw_dash.html` drift (measured, current state).
+  - `web-ui/openclaw_dash.html` SHA256: `D1B3956E0A3606B74029C6C49F54E0C926F83907CEBE18B7AB4EB61B4E334C8C`
+  - The following copies match each other but DO NOT match `web-ui/openclaw_dash.html` (all SHA256 `7DB5CC78D85883C59DFEB7552CD909372766354A75B25063A9BE0CE0FFD5848B`):
+    - `web-ui/new_assets/openclaw_dash.html`
+    - `android-app/openclaw/openclaw-gateway/openclaw_dash.html`
+    - `skills/skills-folders/openclaw/openclaw-gateway/openclaw_dash.html`
+    - `skills/skills-folders/app/openclaw/openclaw-gateway/openclaw_dash.html`
+  - Required corrective action: declare the canonical dashboard copy and either sync or remove the other copies to prevent future untracked drift.
 - MEDIUM: Environment continuity on Windows.
-  - Root cause: `java` was not available on PATH in PowerShell; FCP-01 ran with `JAVA_HOME` set to `C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot`.
+  - Root cause: `java` may not be available on PATH in PowerShell; gates were executed with `JAVA_HOME` pointing at a local JDK.
   - Required corrective action: document this explicitly for operators, or ensure Java is discoverable in the intended shells.
 - LOW: Reduce warnings for long-term signal-to-noise.
   - Root cause: deprecated Android/Java APIs and one static-analysis always-true condition.
   - Required corrective action: refactor to non-deprecated equivalents and remove the always-true branch condition.
 
 FINAL RECOMMENDATION:
-Patch Required. Resolve `web-ui/openclaw_dash.html` drift (accept or revert) and then re-run the FCP-01 regression gate to restore a “clean” continuity baseline. Consider re-audit in 30 days or at the next dependency/toolchain upgrade.
+Patch required. Resolve `web-ui/openclaw_dash.html` drift (sync or remove duplicates) and then re-run the FV-02 regression gate to restore a clean continuity baseline. Consider re-audit in 30 days or at the next dependency/toolchain upgrade.
+

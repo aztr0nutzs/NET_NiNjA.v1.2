@@ -47,8 +47,11 @@ This document summarizes the repository organization completed on 2026-02-06.
 
 ### 2. Kotlin Source Files Organization
 **Moved to android-app/src/main/java/com/netninja/openclaw/:**
-- OpenClawGatewayService.kt (Android service)
-- OpenClawWebSocketServer.kt (Android WebSocket implementation)
+- NodeSession.kt (Android node transport wrapper)
+- OpenClawGatewayState.kt (shared node registry/state model)
+- OpenClawMessage.kt (protocol DTOs)
+
+**Note:** The OpenClaw gateway now runs inside `AndroidLocalServer` (HTTP + WebSocket on the main local server). The previous Android service + stub WebSocket server were removed to avoid running a separate port/server.
 
 **Moved to server/src/test/kotlin/server/:**
 - HealthTest.kt (server test)

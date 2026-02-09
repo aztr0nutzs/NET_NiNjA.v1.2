@@ -23,7 +23,7 @@ NET NiNjA is a local-first network dashboard that combines a Ktor-based server, 
 - **Android app**: WebView wrapper that syncs `web-ui/` assets into internal storage and then loads the local server URLs.
 
 ## Ninja CAM (IP camera viewer tab)
-![Ninja CAM header](ninja_cam_header.png)
+![Ninja CAM header](web-ui/ninja_cam_header.png)
 
 The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that loads the IP camera viewer via `net_ninja_cam.html` and keeps it isolated from the rest of the dashboard UI. The tab is wired into the primary bottom navigation and rendered as an embedded view so it feels native to the app shell.
 
@@ -33,7 +33,7 @@ The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that lo
 - **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
 
 ## OpenClaw Android Companion integration
-![OpenClaw Companion header](ninja_claw.png)
+![OpenClaw Companion header](web-ui/ninja_claw.png)
 
 The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
 
