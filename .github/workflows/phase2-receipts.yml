@@ -23,6 +23,13 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The hosted runner image currently includes additional preview licenses (e.g. Google TV / Android XR)
+          # that cause `sdkmanager --licenses` to block if invoked without stdin. We handle license acceptance
+          # explicitly in a following step using `yes | ...`.
+          accept-android-sdk-licenses: false
+          log-accepted-android-sdk-licenses: false
+          packages: tools platform-tools
 
       - name: Accept Android SDK licenses (non-interactive)
         shell: bash
