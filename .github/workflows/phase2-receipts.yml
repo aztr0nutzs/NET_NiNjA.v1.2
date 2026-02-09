@@ -60,7 +60,8 @@ jobs:
           api-level: 34
           arch: x86_64
           script: |
-            set -euo pipefail
+            # `android-emulator-runner` executes this via `/usr/bin/sh`, so explicitly run bash for `pipefail`.
+            bash -euo pipefail <<'BASH'
             adb logcat -c
             # App build outputs are rooted under `build/android-app` (see android-app/build.gradle.kts).
             mkdir -p build/android-app/outputs/logs
@@ -69,6 +70,7 @@ jobs:
             trap 'adb logcat -d >> build/android-app/outputs/logs/logcat-instrumentation.txt; kill $LOGCAT_PID || true' EXIT
             # Tee output so we can inspect failures even if the job ends early.
             ./gradlew :app:connectedDebugAndroidTest --console=plain --stacktrace 2>&1 | tee build/android-app/outputs/logs/connectedDebugAndroidTest.log
+            BASH
 
       - name: Upload unit test reports
         uses: actions/upload-artifact@v4
