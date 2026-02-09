@@ -44,6 +44,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -103,4 +104,9 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.robolectric)
+
+    androidTestImplementation(libs.junit4)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
