@@ -10,10 +10,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
 :root{
-  --bg1:#050012;
-  --neon-pink:#ff00ff;
-  --neon-blue:#00f0ff;
-  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  --bg1:#120000;
+  --neon-pink:#ff2b2b;
+  --neon-blue:#ffe5e5;
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
 
   --side-w: 300px;
   --top-h: 64px;
@@ -21,19 +21,19 @@
   /* Sidebar look closer to screenshot */
   --side-bg: linear-gradient(180deg, rgba(0,0,0,0.86), rgba(0,0,0,0.58));
   --side-border: rgba(255,255,255,0.06);
-  --side-text: #e8e6ff;
-  --side-muted: rgba(232,230,255,0.70);
+  --side-text: #ffecec;
+  --side-muted: rgba(255,236,236,0.70);
 
-  --active-bg: rgba(210, 118, 94, 0.85); /* orange-ish highlight like screenshot */
-  --active-bg2: rgba(210, 118, 94, 0.55);
+  --active-bg: rgba(255, 60, 60, 0.85);
+  --active-bg2: rgba(255, 130, 130, 0.55);
   --active-text: #ffffff;
 }
 
 *{box-sizing:border-box}
 html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
 body{
-  background: radial-gradient(circle at 30% 20%, #120023 0%, #04000a 60%, #000 100%);
-  color:#e8e6ff;
+  background: radial-gradient(circle at 30% 20%, #240000 0%, #080000 60%, #000 100%);
+  color:#ffecec;
   overflow:hidden;
   position:relative;
 }
@@ -47,8 +47,8 @@ body{
   border: 1px solid rgba(255,255,255,0.06);
   box-shadow:
     0 8px 40px rgba(0,0,0,0.6),
-    0 0 35px rgba(255,0,255,0.08),
-    0 0 80px rgba(0,240,255,0.06);
+    0 0 35px rgba(255,43,43,0.18),
+    0 0 80px rgba(255,229,229,0.08);
   backdrop-filter: blur(10px) saturate(140%);
   color:#fff;
   overflow:visible;
@@ -63,13 +63,13 @@ body{
   animation: neonFlicker 2.5s infinite alternate;
 }
 @keyframes neonFlicker {
-  0%,100%{ text-shadow:0 0 10px #ff00ff,0 0 40px #00f0ff,0 0 90px #ff00ff; }
-  25%{ text-shadow:0 0 15px #ff00ff,0 0 50px #00f0ff,0 0 100px #ff00ff; }
-  50%{ text-shadow:0 0 12px #ff00ff,0 0 45px #00f0ff,0 0 95px #ff00ff; }
-  75%{ text-shadow:0 0 18px #ff00ff,0 0 55px #00f0ff,0 0 105px #ff00ff; }
+  0%,100%{ text-shadow:0 0 10px #ff2b2b,0 0 40px #ffe5e5,0 0 90px #ff2b2b; }
+  25%{ text-shadow:0 0 15px #ff2b2b,0 0 50px #ffe5e5,0 0 100px #ff2b2b; }
+  50%{ text-shadow:0 0 12px #ff2b2b,0 0 45px #ffe5e5,0 0 95px #ff2b2b; }
+  75%{ text-shadow:0 0 18px #ff2b2b,0 0 55px #ffe5e5,0 0 105px #ff2b2b; }
 }
 
-.subtitle{ color:#bcb7df; margin:0 0 12px; font-size:0.95rem; }
+.subtitle{ color:#f1dede; margin:0 0 12px; font-size:0.95rem; }
 
 .controls{ display:flex; flex-direction:column; gap:12px; }
 textarea{
@@ -87,10 +87,10 @@ button{
   background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
   background-size:200% 200%;
   color:#000; cursor:pointer;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,0,255,0.06);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,43,43,0.18);
   animation: buttonGlow 4s ease infinite;
 }
-button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,0,255,0.12); }
+button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,43,43,0.28); }
 @keyframes buttonGlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -103,20 +103,20 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   border-radius:10px;
   padding:10px;
   border:1px solid rgba(255,255,255,0.03);
-  color:#dfefff;
+  color:#ffecec;
   line-height:1.45;
-  box-shadow: 0 0 8px #00f0ff, 0 0 24px #ff00ff, 0 0 48px #00f0ff;
+  box-shadow: 0 0 8px #ff2b2b, 0 0 24px #ffe5e5, 0 0 48px #ff2b2b;
   animation: panelPulse 3s infinite alternate;
 }
 @keyframes panelPulse {
-  0%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
-  50%{box-shadow:0 0 12px #00f0ff,0 0 30px #ff00ff,0 0 60px #00f0ff;}
-  100%{box-shadow:0 0 8px #00f0ff,0 0 24px #ff00ff,0 0 48px #00f0ff;}
+  0%{box-shadow:0 0 8px #ff2b2b,0 0 24px #ffe5e5,0 0 48px #ff2b2b;}
+  50%{box-shadow:0 0 12px #ff2b2b,0 0 30px #ffe5e5,0 0 60px #ff2b2b;}
+  100%{box-shadow:0 0 8px #ff2b2b,0 0 24px #ffe5e5,0 0 48px #ff2b2b;}
 }
 .output-glass h2{ margin:0 0 8px; color:var(--neon-blue); font-size:1rem; }
-.output-text{ color:#dfefff; font-size:0.98rem; min-height:36px; }
+.output-text{ color:#ffecec; font-size:0.98rem; min-height:36px; }
 
-.arc { position: fixed; width:6px; height:6px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 24px var(--neon-blue); pointer-events:none; animation: arcfade 280ms ease-out forwards; }
+.arc { position: fixed; width:6px; height:6px; border-radius:50%; background: var(--neon-pink); box-shadow: 0 0 24px var(--neon-pink); pointer-events:none; animation: arcfade 280ms ease-out forwards; }
 @keyframes arcfade { to { transform: scale(2); opacity:0; } }
 
 @media (max-width:1100px) { }
@@ -125,9 +125,9 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
 .cybr-btn{
   --btn-bg: rgba(0,0,0,0.55);
   --btn-border: rgba(255,255,255,0.10);
-  --btn-text: #e8e6ff;
-  --btn-glow1: var(--neon-blue);
-  --btn-glow2: var(--neon-pink);
+  --btn-text: #ffecec;
+  --btn-glow1: var(--neon-pink);
+  --btn-glow2: var(--neon-blue);
 
   position: relative;
   display: inline-flex;
@@ -139,7 +139,7 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
 
   border-radius: 12px;
   border: 1px solid var(--btn-border);
-  background: linear-gradient(90deg, rgba(255,0,255,0.22), rgba(0,240,255,0.18)) , var(--btn-bg);
+  background: linear-gradient(90deg, rgba(255,43,43,0.28), rgba(255,229,229,0.18)) , var(--btn-bg);
   color: var(--btn-text);
   font-family: inherit;
   font-weight: 900;
@@ -150,16 +150,16 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
 
   box-shadow:
     0 10px 26px rgba(0,0,0,0.55),
-    0 0 18px rgba(0,240,255,0.16),
-    0 0 18px rgba(255,0,255,0.14);
+    0 0 18px rgba(255,43,43,0.24),
+    0 0 18px rgba(255,229,229,0.16);
   backdrop-filter: blur(10px) saturate(140%);
 }
 .cybr-btn:active{ transform: translateY(1px); }
 .cybr-btn:hover{
   box-shadow:
     0 16px 34px rgba(0,0,0,0.62),
-    0 0 26px rgba(0,240,255,0.22),
-    0 0 26px rgba(255,0,255,0.18);
+    0 0 26px rgba(255,43,43,0.30),
+    0 0 26px rgba(255,229,229,0.20);
 }
 .cybr-btn__glitch{
   position: absolute;
@@ -174,7 +174,7 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   display:flex;
   opacity: 0.12;
   filter: blur(0.4px);
-  text-shadow: 0 0 10px var(--neon-blue), 0 0 14px var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 14px var(--neon-blue);
   animation: cybrFlicker 420ms steps(2,end) 1;
 }
 @keyframes cybrFlicker{
@@ -204,8 +204,8 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   background: var(--side-bg);
   border-right: 1px solid var(--side-border);
   box-shadow: 0 18px 60px rgba(0,0,0,0.70),
-              0 0 32px rgba(0,240,255,0.10),
-              0 0 32px rgba(255,0,255,0.10);
+              0 0 32px rgba(255,43,43,0.20),
+              0 0 32px rgba(255,229,229,0.08);
   backdrop-filter: blur(12px) saturate(140%);
   overflow:auto;
 }
@@ -222,8 +222,8 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
 .nn-logo{
   width: 26px; height: 26px;
   border-radius: 6px;
-  background: linear-gradient(135deg, rgba(0,240,255,0.95), rgba(255,0,255,0.85));
-  box-shadow: 0 0 18px rgba(0,240,255,0.18), 0 0 18px rgba(255,0,255,0.18);
+  background: linear-gradient(135deg, rgba(255,43,43,0.95), rgba(255,229,229,0.85));
+  box-shadow: 0 0 18px rgba(255,43,43,0.28), 0 0 18px rgba(255,229,229,0.18);
 }
 .nn-side-title{
   font-size: 1.05rem;
@@ -277,7 +277,7 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   color: var(--active-text);
   box-shadow:
     0 10px 26px rgba(0,0,0,0.55),
-    0 0 18px rgba(255, 150, 90, 0.15);
+    0 0 18px rgba(255, 90, 90, 0.22);
 }
 .nn-ico{
   width: 22px;
@@ -302,7 +302,7 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   backdrop-filter: blur(10px) saturate(140%);
 }
 .nn-topbar .left, .nn-topbar .right{ display:flex; align-items:center; gap:10px; }
-.nn-brand{ font-weight: 900; letter-spacing: 1px; color:#dfefff; }
+.nn-brand{ font-weight: 900; letter-spacing: 1px; color:#ffecec; }
 .nn-chip{
   display:inline-flex; align-items:center; gap:8px;
   padding: 8px 10px;
@@ -322,15 +322,15 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   cursor:pointer;
   display:flex; align-items:center; justify-content:center;
   box-shadow: 0 10px 26px rgba(0,0,0,0.55),
-              0 0 18px rgba(0,240,255,0.10),
-              0 0 18px rgba(255,0,255,0.10);
+              0 0 18px rgba(255,43,43,0.18),
+              0 0 18px rgba(255,229,229,0.12);
 }
 .nn-hamburger:hover{ transform: translateY(-1px); }
 .nn-hamburger .bars{ display:flex; flex-direction:column; gap:6px; }
 .nn-hamburger .bar{
   width: 18px; height: 2px; border-radius: 2px;
   background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue));
-  box-shadow: 0 0 12px rgba(0,240,255,0.18), 0 0 12px rgba(255,0,255,0.18);
+  box-shadow: 0 0 12px rgba(255,43,43,0.22), 0 0 12px rgba(255,229,229,0.18);
 }
 
 .nn-main{
@@ -342,6 +342,37 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   padding-bottom: 18px;
   max-width: 1300px;
   margin: 0 auto;
+}
+
+.nn-header-banner{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 12px 16px;
+  margin: 0 0 14px;
+  border-radius: 16px;
+  background: rgba(15,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6),
+              0 0 30px rgba(255,43,43,0.25);
+}
+.nn-header-banner img{
+  width: min(520px, 90%);
+  height: auto;
+  display:block;
+  filter: drop-shadow(0 0 16px rgba(255,43,43,0.5));
+}
+
+.chat-bot-art{
+  display:flex;
+  justify-content:flex-end;
+  margin-top: 8px;
+}
+.chat-bot-art img{
+  width: 140px;
+  max-width: 45%;
+  height: auto;
+  filter: drop-shadow(0 0 16px rgba(255,43,43,0.45));
 }
 
 .nn-grid{
@@ -358,8 +389,8 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   background: var(--glass-bg);
   border: 1px solid rgba(255,255,255,0.06);
   box-shadow: 0 8px 40px rgba(0,0,0,0.6),
-              0 0 35px rgba(255,0,255,0.08),
-              0 0 80px rgba(0,240,255,0.06);
+              0 0 35px rgba(255,43,43,0.16),
+              0 0 80px rgba(255,229,229,0.08);
   backdrop-filter: blur(10px) saturate(140%);
   padding: 16px;
   overflow:hidden;
@@ -374,7 +405,7 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   grid-template-columns: 160px 1fr;
   gap: 8px 12px;
   font-size: 12.5px;
-  color:#dfefff;
+  color:#ffecec;
 }
 .kv b{ color: var(--neon-pink); }
 
@@ -388,8 +419,8 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   font-size: 12px;
   font-weight: 900;
 }
-.badge .dot{ width:8px; height:8px; border-radius:50%; background: var(--neon-blue); box-shadow: 0 0 16px rgba(0,240,255,.55); }
-.badge.warn .dot{ background: var(--neon-pink); box-shadow: 0 0 16px rgba(255,0,255,.55); }
+.badge .dot{ width:8px; height:8px; border-radius:50%; background: var(--neon-pink); box-shadow: 0 0 16px rgba(255,43,43,.55); }
+.badge.warn .dot{ background: var(--neon-blue); box-shadow: 0 0 16px rgba(255,229,229,.55); }
 
 .table{
   width:100%;
@@ -398,7 +429,7 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   font-size: 12.5px;
 }
 .table td, .table th{ text-align:left; padding: 10px 10px; }
-.table th{ color:#bcb7df; font-weight: 900; font-size: 12px; }
+.table th{ color:#f1dede; font-weight: 900; font-size: 12px; }
 .row-glass{
   background: rgba(0,0,0,0.42);
   border: 1px solid rgba(255,255,255,0.05);
@@ -572,7 +603,7 @@ input, .mono{
     <div class="nn-brand">OPENCLAW GATEWAY DASHBOARD</div>
 
     <div class="nn-chip" title="Quick status">
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-blue);box-shadow:0 0 16px rgba(0,240,255,.55)"></span>
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-pink);box-shadow:0 0 16px rgba(255,43,43,.55)"></span>
       <span id="quickStatus">DISCONNECTED</span>
     </div>
   </div>
@@ -596,6 +627,10 @@ input, .mono{
 </header>
 
 <main class="nn-main">
+  <section class="nn-header-banner" aria-label="OpenClaw header">
+    <img src="../claw_cntrl.png" alt="OpenClaw control header" />
+  </section>
+
   <section class="glass-panel" style="position:relative; width:auto; margin:0 0 14px; max-width:none;">
     <div class="neon-title" style="font-size:2.0rem" id="titleText">OPENCLAW</div>
     <p class="subtitle" id="subText">Gateway dashboard connected to the local OpenClaw service.</p>
@@ -630,6 +665,9 @@ input, .mono{
           </div>
 
           <textarea id="msgBody" placeholder="Message text"></textarea>
+          <div class="chat-bot-art">
+            <img src="../clawbot.png" alt="Clawbot companion" />
+          </div>
 
           <div class="row" style="justify-content:flex-end;">
             <button class="cybr-btn" type="button" id="btnMsgSend">
@@ -1032,8 +1070,8 @@ input, .mono{
     ctx.clearRect(0,0,w,h);
 
     const g = ctx.createRadialGradient(w*0.35, h*0.2, 0, w*0.5, h*0.5, Math.max(w,h)*0.7);
-    g.addColorStop(0, 'rgba(18,0,35,0.55)');
-    g.addColorStop(0.6, 'rgba(4,0,10,0.82)');
+    g.addColorStop(0, 'rgba(36,0,0,0.65)');
+    g.addColorStop(0.6, 'rgba(8,0,0,0.9)');
     g.addColorStop(1, 'rgba(0,0,0,1)');
     ctx.fillStyle = g;
     ctx.fillRect(0,0,w,h);
@@ -1051,11 +1089,11 @@ input, .mono{
 
       const r = 1.2 * dpr * (1.2 / p.z);
       const a = 0.45;
-      const isPink = (p.z > 0.82 && Math.random() < 0.02);
+      const isHighlight = (p.z > 0.82 && Math.random() < 0.02);
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI*2);
-      ctx.fillStyle = isPink ? `rgba(255,0,255,${a})` : `rgba(0,240,255,${a})`;
+      ctx.fillStyle = isHighlight ? `rgba(255,229,229,${a})` : `rgba(255,43,43,${a})`;
       ctx.fill();
     }
 
