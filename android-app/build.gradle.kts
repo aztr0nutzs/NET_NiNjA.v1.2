@@ -5,10 +5,18 @@
 // does not exist. We use API 34 (Android 14) to ensure the project
 // builds against a stable SDK.
 
+import org.gradle.api.tasks.Sync
+
 plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("plugin.serialization")
+}
+
+val syncWebUiAssets by tasks.registering(Sync::class) {
+    // Single source of truth for the UI bundle lives at repo root `web-ui/`.
+    from(rootProject.file("web-ui"))
+    into(layout.buildDirectory.dir("generated/assets/web-ui"))
 }
 
 android {
@@ -17,6 +25,14 @@ android {
 
     // Required by AGP 8+. Keep aligned with the manifest package.
     namespace = "com.netninja"
+
+    sourceSets {
+        named("main") {
+            // Package a generated `web-ui/` asset directory so runtime code can use
+            // `file:///android_asset/web-ui/...` and `AssetManager.list("web-ui")`.
+            assets.setSrcDirs(listOf(layout.buildDirectory.dir("generated/assets").get().asFile))
+        }
+    }
 
     defaultConfig {
         applicationId = "com.netninja"
@@ -60,6 +76,10 @@ kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
+}
+
+tasks.named("preBuild") {
+    dependsOn(syncWebUiAssets)
 }
 
 dependencies {
