@@ -3,42 +3,126 @@ package com.netninja.cam
 import android.content.Context
 import android.net.wifi.WifiManager
 import kotlinx.serialization.Serializable
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.SocketTimeoutException
+import java.net.URI
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
-/**
- * Service responsible for discovering ONVIF devices on the local network. The original
- * implementation attempted to acquire a multicast lock without handling SecurityException,
- * which caused a crash on devices lacking the CHANGE_WIFI_MULTICAST_STATE permission.
- * This version guards the lock acquisition using runCatching and releases the lock
- * only if acquisition succeeds.
- */
-class OnvifDiscoveryService(private val context: Context) {
+@Serializable
+data class CameraDevice(
+    val name: String,
+    val xaddr: String,
+    val ip: String,
+)
 
-    @Serializable
-    data class OnvifDevice(val host: String, val port: Int, val name: String)
+class OnvifDiscoveryService(
+    private val context: Context,
+    private val timeoutMs: Int = 2000,
+    private val maxResponses: Int = 32,
+) {
 
     /**
      * Perform a multicast discovery and return a list of discovered ONVIF devices.
      */
-    fun discover(): List<OnvifDevice> {
+    fun discover(): List<CameraDevice> {
+        val message = buildProbe()
+        val address = InetAddress.getByName(MULTICAST_ADDRESS)
+        val results = mutableListOf<CameraDevice>()
+
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val lock = wifiManager.createMulticastLock("onvif-discovery")
-        var acquired = false
+        val lock = wifiManager.createMulticastLock("onvif-discovery").apply { setReferenceCounted(false) }
+        val acquired = runCatching {
+            lock.acquire()
+            true
+        }.getOrDefault(false)
+
         try {
-            // Acquire the multicast lock. runCatching will catch SecurityException if the
-            // CHANGE_WIFI_MULTICAST_STATE permission is missing. We record success before
-            // performing any network operations.
-            runCatching {
-                lock.acquire()
-            }.onSuccess {
-                acquired = true
+            DatagramSocket().use { socket ->
+                socket.soTimeout = timeoutMs
+                socket.send(DatagramPacket(message, message.size, address, MULTICAST_PORT))
+
+                val buffer = ByteArray(8192)
+                val deadline = System.currentTimeMillis() + timeoutMs
+                while (System.currentTimeMillis() < deadline && results.size < maxResponses) {
+                    try {
+                        val packet = DatagramPacket(buffer, buffer.size)
+                        socket.receive(packet)
+                        val payload = String(packet.data, 0, packet.length, StandardCharsets.UTF_8)
+                        results.addAll(parseResponse(payload))
+                    } catch (_: SocketTimeoutException) {
+                        break
+                    }
+                }
             }
-            // ONVIF discovery is currently not implemented in this build; return an empty list rather than failing.
-            return emptyList()
         } finally {
             // Release the multicast lock only if it was successfully acquired.
             if (acquired) {
                 runCatching { lock.release() }
             }
+        }
+
+        return results
+            .filter { it.xaddr.isNotBlank() && it.ip.isNotBlank() }
+            .distinctBy { it.xaddr }
+    }
+
+    private fun buildProbe(): ByteArray {
+        val uuid = UUID.randomUUID()
+        val body =
+            """
+      |<?xml version="1.0" encoding="UTF-8"?>
+      |<e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope"
+      |  xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+      |  xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery"
+      |  xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
+      |  <e:Header>
+      |    <w:MessageID>uuid:$uuid</w:MessageID>
+      |    <w:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To>
+      |    <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</w:Action>
+      |  </e:Header>
+      |  <e:Body>
+      |    <d:Probe>
+      |      <d:Types>dn:NetworkVideoTransmitter</d:Types>
+      |    </d:Probe>
+      |  </e:Body>
+      |</e:Envelope>
+            """.trimMargin()
+        return body.toByteArray(StandardCharsets.UTF_8)
+    }
+
+    private fun parseResponse(payload: String): List<CameraDevice> = parseProbeMatches(payload)
+
+    companion object {
+        private const val MULTICAST_ADDRESS = "239.255.255.250"
+        private const val MULTICAST_PORT = 3702
+
+        internal fun parseProbeMatches(payload: String): List<CameraDevice> {
+            // Some devices include namespace prefixes (e.g. <d:XAddrs>); accept either.
+            val xaddrMatches =
+                Regex("<(?:\\w+:)?XAddrs>(.*?)</(?:\\w+:)?XAddrs>", RegexOption.DOT_MATCHES_ALL)
+                    .findAll(payload)
+                    .flatMap { match ->
+                        match.groupValues[1].trim().split(Regex("\\s+")).asSequence()
+                    }
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .toList()
+
+            return xaddrMatches.mapNotNull { xaddr ->
+                val ip = extractIp(xaddr) ?: return@mapNotNull null
+                val name = "ONVIF Camera $ip"
+                CameraDevice(name = name, xaddr = xaddr, ip = ip)
+            }
+        }
+
+        private fun extractIp(xaddr: String): String? {
+            return runCatching {
+                val uri = URI(xaddr)
+                uri.host?.takeIf { it.isNotBlank() }
+            }.getOrNull()
         }
     }
 }

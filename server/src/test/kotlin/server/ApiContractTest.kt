@@ -162,7 +162,12 @@ class ApiContractTest {
       }
     }
 
-    assertTrue(get(URI("$base/api/v1/onvif/discover")).first == 200)
+    run {
+      val (code, body) = get(URI("$base/api/v1/onvif/discover"))
+      assertTrue(code == 200)
+      val trimmed = body.trim()
+      assertTrue(trimmed.startsWith("["), "Expected /api/v1/onvif/discover to return a JSON array, got: $trimmed")
+    }
     assertTrue(get(URI("$base/api/openclaw/nodes")).first == 200)
     assertTrue(get(URI("$base/api/openclaw/stats")).first == 200)
 

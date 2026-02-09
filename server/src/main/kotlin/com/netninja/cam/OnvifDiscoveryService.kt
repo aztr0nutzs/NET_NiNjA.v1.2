@@ -72,7 +72,8 @@ class OnvifDiscoveryService(
   }
 
   private fun parseResponse(payload: String): List<CameraDevice> {
-    val xaddrMatches = Regex("<XAddrs>(.*?)</XAddrs>", RegexOption.DOT_MATCHES_ALL)
+    // Some devices include namespace prefixes (e.g. <d:XAddrs>); accept either.
+    val xaddrMatches = Regex("<(?:\\w+:)?XAddrs>(.*?)</(?:\\w+:)?XAddrs>", RegexOption.DOT_MATCHES_ALL)
       .findAll(payload)
       .flatMap { match ->
         match.groupValues[1].trim().split(Regex("\\s+")).asSequence()

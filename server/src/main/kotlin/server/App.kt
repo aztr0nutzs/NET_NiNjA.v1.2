@@ -468,7 +468,8 @@ fun startServer(
 
       get("/api/v1/onvif/discover") {
         val devices = runCatching {
-          val service = OnvifDiscoveryService()
+          // Keep the probe timeout below the endpoint timeout so blocked UDP reads cannot linger past the HTTP request.
+          val service = OnvifDiscoveryService(timeoutMs = 1200)
           withTimeoutOrNull(1500) {
             withContext(Dispatchers.IO) { service.discover() }
           } ?: emptyList()

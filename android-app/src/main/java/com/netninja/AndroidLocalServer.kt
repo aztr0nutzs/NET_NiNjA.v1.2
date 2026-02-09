@@ -12,6 +12,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.text.format.Formatter
 import androidx.core.content.ContextCompat
+import com.netninja.cam.CameraDevice
 import com.netninja.cam.OnvifDiscoveryService
 import com.netninja.openclaw.OpenClawGatewayState
 import com.netninja.openclaw.OpenClawNodeSnapshot
@@ -219,6 +220,7 @@ class AndroidLocalServer(private val ctx: Context) {
   internal var wifiEnabledOverride: (() -> Boolean)? = null
   internal var locationEnabledOverride: (() -> Boolean)? = null
   internal var permissionSnapshotOverride: (() -> PermissionSnapshot)? = null
+  internal var onvifDiscoverOverride: (suspend () -> List<CameraDevice>)? = null
 
   internal fun scheduleScanForTest(subnet: String) {
     scheduleScan(subnet, reason = "test")
@@ -360,10 +362,15 @@ class AndroidLocalServer(private val ctx: Context) {
 
       get("/api/v1/onvif/discover") {
         val devices = runCatching {
-          val service = OnvifDiscoveryService(ctx)
-          withTimeoutOrNull(1500) {
-            withContext(Dispatchers.IO) { service.discover() }
-          } ?: emptyList()
+          onvifDiscoverOverride?.let { override ->
+            withTimeoutOrNull(1500) { override() } ?: emptyList()
+          } ?: run {
+            // Keep the probe timeout below the endpoint timeout so blocked UDP reads cannot linger past the HTTP request.
+            val service = OnvifDiscoveryService(ctx, timeoutMs = 1200)
+            withTimeoutOrNull(1500) {
+              withContext(Dispatchers.IO) { service.discover() }
+            } ?: emptyList()
+          }
         }.getOrDefault(emptyList())
         call.respond(devices)
       }

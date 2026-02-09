@@ -45,6 +45,7 @@ class AndroidLocalServerApiContractTest {
           permissionPermanentlyDenied = false
         )
       }
+      onvifDiscoverOverride = { emptyList() }
     }
 
     // Ensure a device exists so /api/v1/devices/* endpoints can return 200.
@@ -158,7 +159,12 @@ class AndroidLocalServerApiContractTest {
         }
       }
 
-      assertEquals(200, get(URI("$base/api/v1/onvif/discover")).first)
+      run {
+        val (code, body) = get(URI("$base/api/v1/onvif/discover"))
+        assertEquals(200, code)
+        val trimmed = body.trim()
+        assertTrue("Expected /api/v1/onvif/discover to return a JSON array, got: $trimmed", trimmed.startsWith("["))
+      }
       assertEquals(200, get(URI("$base/api/openclaw/nodes")).first)
       assertEquals(200, get(URI("$base/api/openclaw/stats")).first)
 
