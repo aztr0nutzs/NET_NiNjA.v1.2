@@ -24,6 +24,22 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android SDK licenses (non-interactive)
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null
+
+      - name: Install emulator + system image
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install \
+            "platforms;android-34" \
+            "emulator" \
+            "system-images;android-34;google_apis;x86_64"
+          yes | sdkmanager --licenses >/dev/null
+
       - name: Build debug
         run: ./gradlew :app:assembleDebug
 
