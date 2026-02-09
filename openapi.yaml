@@ -1,5 +1,4 @@
-
-openapi: 3.0.3
+﻿openapi: 3.0.3
 info:
   title: Net-Ninja Local API
   version: 1.0.0
@@ -9,6 +8,13 @@ paths:
   /api/v1/system/info:
     get:
       summary: System info
+      responses:
+        '200': { description: OK }
+
+  # Discovery (network scan)
+  /api/v1/discovery/preconditions:
+    get:
+      summary: Scan preconditions (readiness)
       responses:
         '200': { description: OK }
   /api/v1/discovery/scan:
@@ -30,6 +36,25 @@ paths:
       summary: Scan results
       responses:
         '200': { description: Device list }
+  /api/v1/discovery/progress:
+    get:
+      summary: Scan progress
+      responses:
+        '200': { description: OK }
+  /api/v1/discovery/stop:
+    post:
+      summary: Stop active scan
+      responses:
+        '200': { description: OK }
+
+  # Cameras
+  /api/v1/onvif/discover:
+    get:
+      summary: Discover ONVIF cameras
+      responses:
+        '200': { description: OK }
+
+  # Devices
   /api/v1/devices/{id}:
     get:
       parameters:
@@ -39,6 +64,31 @@ paths:
           schema: { type: string }
       responses:
         '200': { description: Device }
+  /api/v1/devices/{id}/meta:
+    get:
+      summary: Device metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update device metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: OK }
   /api/v1/devices/{id}/history:
     get:
       parameters:
@@ -62,8 +112,27 @@ paths:
       summary: Export devices
       responses:
         '200': { description: Export }
+
+  # Metrics + logs
+  /api/v1/metrics:
+    get:
+      summary: Server metrics
+      responses:
+        '200': { description: OK }
   /api/v1/logs/stream:
     get:
       summary: SSE log stream
       responses:
         '200': { description: Stream }
+
+  # OpenClaw gateway (HTTP). WebSocket `/openclaw/ws` is documented separately.
+  /api/openclaw/nodes:
+    get:
+      summary: OpenClaw nodes (connected clients)
+      responses:
+        '200': { description: OK }
+  /api/openclaw/stats:
+    get:
+      summary: OpenClaw gateway stats
+      responses:
+        '200': { description: OK }

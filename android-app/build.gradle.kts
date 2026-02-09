@@ -1,4 +1,4 @@
-// Top-level build file for the Android application module.
+﻿// Top-level build file for the Android application module.
 // This file configures the Android Gradle Plugin (AGP) and Kotlin
 // settings. The primary change here is to use a valid compileSdk
 // version. Previously the project referenced API level 36, which
@@ -100,7 +100,7 @@ dependencies {
     implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
-
+    implementation(libs.ktor.server.websockets)
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.robolectric)
@@ -110,3 +110,4 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
 }
+

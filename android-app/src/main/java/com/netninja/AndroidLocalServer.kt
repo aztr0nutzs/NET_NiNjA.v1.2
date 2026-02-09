@@ -14,6 +14,8 @@ import android.text.format.Formatter
 import androidx.core.content.ContextCompat
 import com.netninja.cam.OnvifDiscoveryService
 import com.netninja.openclaw.OpenClawGatewayState
+import com.netninja.openclaw.OpenClawNodeSnapshot
+import com.netninja.openclaw.NodeSession
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -25,12 +27,16 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -38,6 +44,7 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.Socket
 import java.net.URL
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
@@ -132,6 +139,20 @@ data class PermissionsActionResponse(
 )
 @Serializable data class OpenClawStatus(val nodes: Int, val uptimeMs: Long)
 
+@Serializable
+data class OpenClawWsMessage(
+  val type: String,
+  val nodeId: String? = null,
+  val capabilities: List<String> = emptyList(),
+  val payload: String? = null
+)
+
+@Serializable
+data class OpenClawGatewaySnapshot(
+  val nodes: List<OpenClawNodeSnapshot>,
+  val updatedAt: Long = System.currentTimeMillis()
+)
+
 class AndroidLocalServer(private val ctx: Context) {
 
   private val db = LocalDatabase(ctx)
@@ -164,6 +185,10 @@ class AndroidLocalServer(private val ctx: Context) {
   private var engine: ApplicationEngine? = null
 
   private val scanMutex = Mutex()
+
+  // OpenClaw gateway: keep a set of active websocket sessions so we can broadcast snapshots on updates.
+  private val openClawWsSessions = ConcurrentHashMap<String, DefaultWebSocketServerSession>()
+  private val openClawJson = Json { ignoreUnknownKeys = true }
 
   // Test hooks (override network/environment behavior).
   internal var canAccessWifiDetailsOverride: (() -> Boolean)? = null
@@ -210,6 +235,11 @@ class AndroidLocalServer(private val ctx: Context) {
         try {
           engine = embeddedServer(CIO, host = host, port = port) {
             install(ContentNegotiation) { json() }
+            install(WebSockets) {
+              pingPeriod = Duration.ofSeconds(15)
+              timeout = Duration.ofSeconds(30)
+              maxFrameSize = 1_048_576
+            }
 
             // Localhost-only (permit file-scheme origins used by WebView bootstrap)
             install(CORS) {
@@ -245,6 +275,14 @@ class AndroidLocalServer(private val ctx: Context) {
     runCatching { scanScope.cancel() }
     runCatching { watchdogScope.cancel() }
     runCatching { engine?.stop(500, 1000) }
+  }
+
+  private suspend fun broadcastOpenClawSnapshot() {
+    val snapshot = OpenClawGatewaySnapshot(nodes = OpenClawGatewayState.listNodes())
+    val payload = openClawJson.encodeToString(snapshot)
+    openClawWsSessions.values.forEach { session ->
+      runCatching { session.send(payload) }
+    }
   }
 
   private fun Application.setupRoutes(uiDir: File) {
@@ -305,17 +343,89 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/onvif/discover") {
-        val service = OnvifDiscoveryService(ctx)
-        val devices = withContext(Dispatchers.IO) { service.discover() }
+        val devices = runCatching {
+          val service = OnvifDiscoveryService(ctx)
+          withTimeoutOrNull(1500) {
+            withContext(Dispatchers.IO) { service.discover() }
+          } ?: emptyList()
+        }.getOrDefault(emptyList())
         call.respond(devices)
       }
 
+      // --- OpenClaw gateway (HTTP + WebSocket) ---
+      // Back-compat aliases (legacy paths without /api prefix).
       get("/openclaw/status") {
         call.respond(OpenClawStatus(OpenClawGatewayState.nodeCount(), OpenClawGatewayState.uptimeMs()))
       }
 
       get("/openclaw/nodes") {
         call.respond(OpenClawGatewayState.listNodes())
+      }
+
+      // Desktop/server contract paths (used by UI bundle).
+      get("/api/openclaw/nodes") {
+        call.respond(OpenClawGatewayState.listNodes())
+      }
+
+      get("/api/openclaw/stats") {
+        call.respond(
+          mapOf(
+            "uptimeMs" to OpenClawGatewayState.uptimeMs(),
+            "nodeCount" to OpenClawGatewayState.nodeCount()
+          )
+        )
+      }
+
+      webSocket("/openclaw/ws") {
+        var nodeId: String? = null
+        try {
+          for (frame in incoming) {
+            val text = (frame as? Frame.Text)?.readText() ?: continue
+            val msg = runCatching { openClawJson.decodeFromString(OpenClawWsMessage.serializer(), text) }.getOrNull()
+              ?: continue
+
+            when (msg.type.trim().uppercase(java.util.Locale.ROOT)) {
+              "HELLO" -> {
+                val resolvedId = msg.nodeId?.trim().orEmpty()
+                if (resolvedId.isBlank()) {
+                  close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Missing nodeId"))
+                  return@webSocket
+                }
+                nodeId = resolvedId
+                openClawWsSessions[resolvedId] = this
+
+                val session = NodeSession(resolvedId) { payload ->
+                  runCatching { outgoing.trySend(Frame.Text(payload)) }
+                  Unit
+                }
+                OpenClawGatewayState.register(resolvedId, msg.capabilities, session)
+                broadcastOpenClawSnapshot()
+              }
+
+              "HEARTBEAT" -> {
+                val resolvedId = nodeId ?: msg.nodeId?.trim()
+                if (!resolvedId.isNullOrBlank()) {
+                  OpenClawGatewayState.updateHeartbeat(resolvedId)
+                  broadcastOpenClawSnapshot()
+                }
+              }
+
+              "RESULT" -> {
+                val resolvedId = nodeId ?: msg.nodeId?.trim()
+                if (!resolvedId.isNullOrBlank()) {
+                  OpenClawGatewayState.updateResult(resolvedId, msg.payload)
+                  broadcastOpenClawSnapshot()
+                }
+              }
+            }
+          }
+        } finally {
+          val id = nodeId
+          if (id != null) {
+            openClawWsSessions.remove(id)
+            broadcastOpenClawSnapshot()
+          }
+        }
       }
 
       get("/api/v1/discovery/progress") {
@@ -534,7 +644,8 @@ class AndroidLocalServer(private val ctx: Context) {
         val all = devices.values.toList()
         call.respond(
           mapOf(
-            "uptimeMs" to SystemClock.elapsedRealtime(),
+            // Robolectric/host JVM environments may not fully implement Android clock APIs.
+            "uptimeMs" to runCatching { SystemClock.elapsedRealtime() }.getOrElse { System.nanoTime() / 1_000_000L },
             "memTotal" to memTotal,
             "memUsed" to memUsed,
             "devicesTotal" to all.size,

@@ -1,4 +1,4 @@
-
+﻿
 package server
 
 import com.netninja.cam.OnvifDiscoveryService
@@ -96,6 +96,18 @@ data class ScheduleEntry(val subnet: String, val freqMs: Long, val nextRunAt: Lo
 
 @Serializable
 data class SystemInfo(val os: String? = null, val arch: String? = null, val timeMs: Long = System.currentTimeMillis())
+
+@Serializable
+data class MetricsResponse(
+  val uptimeMs: Long,
+  val cpuLoad: Double? = null,
+  val memTotal: Long? = null,
+  val memUsed: Long? = null,
+  val devicesTotal: Int? = null,
+  val devicesOnline: Int? = null,
+  val lastScanAt: Long? = null,
+  val error: String? = null
+)
 
 fun main() {
   val config = resolveServerConfig()
@@ -420,6 +432,17 @@ fun startServer(
         call.respond(localNetworkInfo())
       }
 
+      // Desktop builds do not have Android-style permission gates, but the UI expects a stable endpoint.
+      get("/api/v1/discovery/preconditions") {
+        call.respond(
+          mapOf(
+            "ready" to true,
+            "blocker" to null,
+            "reason" to null,
+            "fixAction" to null
+          )
+        )
+      }
       post("/api/v1/discovery/scan") {
         val req = runCatching { call.receive<ScanRequest>() }.getOrNull() ?: ScanRequest()
         val subnet = req.subnet?.trim().orEmpty()
@@ -444,8 +467,12 @@ fun startServer(
       }
 
       get("/api/v1/onvif/discover") {
-        val service = OnvifDiscoveryService()
-        val devices = withContext(Dispatchers.IO) { service.discover() }
+        val devices = runCatching {
+          val service = OnvifDiscoveryService()
+          withTimeoutOrNull(1500) {
+            withContext(Dispatchers.IO) { service.discover() }
+          } ?: emptyList()
+        }.getOrDefault(emptyList())
         call.respond(devices)
       }
 
@@ -630,22 +657,36 @@ fun startServer(
       }
 
       get("/api/v1/metrics") {
-        val osBean = ManagementFactory.getOperatingSystemMXBean()
-        val load = (osBean as? com.sun.management.OperatingSystemMXBean)?.systemCpuLoad ?: -1.0
-        val memTotal = Runtime.getRuntime().totalMemory()
-        val memFree = Runtime.getRuntime().freeMemory()
-        val memUsed = memTotal - memFree
-        val all = devices.all()
-        val online = all.count { it.online }
-        call.respond(mapOf(
-          "uptimeMs" to ManagementFactory.getRuntimeMXBean().uptime,
-          "cpuLoad" to if (load >= 0) load else null,
-          "memTotal" to memTotal,
-          "memUsed" to memUsed,
-          "devicesTotal" to all.size,
-          "devicesOnline" to online,
-          "lastScanAt" to lastScanAt.get()
-        ))
+        val payload = runCatching {
+          val osBean = ManagementFactory.getOperatingSystemMXBean()
+          val load = (osBean as? com.sun.management.OperatingSystemMXBean)?.systemCpuLoad ?: -1.0
+          val memTotal = Runtime.getRuntime().totalMemory()
+          val memFree = Runtime.getRuntime().freeMemory()
+          val memUsed = memTotal - memFree
+          val all = runCatching { devices.all() }.getOrElse { deviceCache.values.toList() }
+          val online = all.count { it.online }
+          MetricsResponse(
+            uptimeMs = ManagementFactory.getRuntimeMXBean().uptime,
+            cpuLoad = if (load >= 0) load else null,
+            memTotal = memTotal,
+            memUsed = memUsed,
+            devicesTotal = all.size,
+            devicesOnline = online,
+            lastScanAt = lastScanAt.get()
+          )
+        }.getOrElse { err ->
+          MetricsResponse(
+            uptimeMs = ManagementFactory.getRuntimeMXBean().uptime,
+            cpuLoad = null,
+            memTotal = Runtime.getRuntime().totalMemory(),
+            memUsed = null,
+            devicesTotal = deviceCache.size,
+            devicesOnline = null,
+            lastScanAt = lastScanAt.get(),
+            error = err.message ?: err::class.simpleName
+          )
+        }
+        call.respond(payload)
       }
 
 
@@ -760,3 +801,5 @@ private fun localNetworkInfo(): Map<String, Any?> {
     "gateway" to null
   )
 }
+
+
