@@ -28,7 +28,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null
+          # `yes` exits with SIGPIPE once sdkmanager closes stdin; avoid failing the step under `pipefail`.
+          yes | sdkmanager --licenses >/dev/null || true
 
       - name: Install emulator + system image
         shell: bash
@@ -38,7 +39,7 @@ jobs:
             "platforms;android-34" \
             "emulator" \
             "system-images;android-34;google_apis;x86_64"
-          yes | sdkmanager --licenses >/dev/null
+          yes | sdkmanager --licenses >/dev/null || true
 
       - name: Build debug
         run: ./gradlew :app:assembleDebug
