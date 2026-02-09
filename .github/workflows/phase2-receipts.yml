@@ -33,7 +33,7 @@ jobs:
       - name: Run instrumentation tests (emulator)
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 34
           arch: x86_64
           script: |
             set -euo pipefail
@@ -43,10 +43,12 @@ jobs:
             adb logcat -v time > build/android-app/outputs/logs/logcat-instrumentation.txt &
             LOGCAT_PID=$!
             trap 'adb logcat -d >> build/android-app/outputs/logs/logcat-instrumentation.txt; kill $LOGCAT_PID || true' EXIT
-            ./gradlew :app:connectedDebugAndroidTest
+            # Tee output so we can inspect failures even if the job ends early.
+            ./gradlew :app:connectedDebugAndroidTest --console=plain --stacktrace 2>&1 | tee build/android-app/outputs/logs/connectedDebugAndroidTest.log
 
       - name: Upload unit test reports
         uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: unit-test-reports
           path: |
@@ -54,6 +56,7 @@ jobs:
 
       - name: Upload unit test results
         uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: unit-test-results
           path: |
@@ -61,6 +64,7 @@ jobs:
 
       - name: Upload instrumentation test reports
         uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: android-test-reports
           path: |
@@ -68,13 +72,22 @@ jobs:
 
       - name: Upload instrumentation test results
         uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: android-test-results
           path: |
             build/android-app/outputs/androidTest-results/connected
 
+      - name: Upload instrumentation output
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: android-test-output
+          path: build/android-app/outputs/logs/connectedDebugAndroidTest.log
+
       - name: Upload instrumentation logcat
         uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: instrumentation-logcat
           path: build/android-app/outputs/logs/logcat-instrumentation.txt
