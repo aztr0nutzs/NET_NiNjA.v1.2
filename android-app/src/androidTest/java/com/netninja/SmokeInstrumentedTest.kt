@@ -11,6 +11,6 @@ class SmokeInstrumentedTest {
   @Test
   fun appContextHasExpectedPackage() {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
-    assertEquals("com.netninja.debug", context.packageName)
+    assertEquals("com.netninja", context.packageName)
   }
 }
