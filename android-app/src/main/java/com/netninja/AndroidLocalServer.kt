@@ -74,7 +74,8 @@ import android.database.sqlite.SQLiteDatabase
   val via: String? = null,
   val signal: String? = null,
   val activityToday: String? = null,
-  val traffic: String? = null
+  val traffic: String? = null,
+  val openPorts: List<Int> = emptyList()
 )
 
 @Serializable data class DeviceEvent(val deviceId: String, val ts: Long, val event: String)
@@ -128,6 +129,17 @@ import android.database.sqlite.SQLiteDatabase
   val gateway: String? = null,
   val linkUp: Boolean = true,
   val updatedAt: Long = System.currentTimeMillis()
+)
+
+@Serializable
+data class RouterInfo(
+  val ok: Boolean,
+  val gatewayIp: String? = null,
+  val mac: String? = null,
+  val vendor: String? = null,
+  val openTcpPorts: List<Int> = emptyList(),
+  val adminUrls: List<String> = emptyList(),
+  val note: String? = null
 )
 @Serializable data class PermissionsActionRequest(val action: String? = null, val context: String? = null)
 
@@ -318,6 +330,41 @@ class AndroidLocalServer(private val ctx: Context) {
       // --- AUTH REMOVED (LOCAL-ONLY UI) ---
       get("/api/v1/network/info") {
         call.respond(localNetworkInfo())
+      }
+
+      get("/api/v1/router/info") {
+        val net = localNetworkInfo()
+        val gatewayIp = net["gateway"]?.toString()?.trim()
+          ?.takeIf { it.isNotBlank() && it != "0.0.0.0" }
+        if (gatewayIp == null) {
+          call.respond(RouterInfo(ok = false, gatewayIp = null, note = "Gateway unavailable"))
+          return@get
+        }
+
+        val routerMac = runCatching { readArpTable().firstOrNull { it.ip == gatewayIp }?.mac }.getOrNull()
+        val vendor = lookupVendor(routerMac)
+        val ports = withContext(Dispatchers.IO) {
+          scanTcpPorts(
+            gatewayIp,
+            timeoutMs = 250,
+            ports = listOf(80, 443, 8080, 8443, 7547, 22, 23, 53)
+          )
+        }
+        val urls = buildList {
+          if (ports.contains(443) || ports.contains(8443)) add("https://$gatewayIp")
+          if (ports.contains(80) || ports.contains(8080)) add("http://$gatewayIp")
+        }
+
+        call.respond(
+          RouterInfo(
+            ok = true,
+            gatewayIp = gatewayIp,
+            mac = routerMac,
+            vendor = vendor,
+            openTcpPorts = ports.sorted(),
+            adminUrls = urls
+          )
+        )
       }
 
       get("/api/v1/discovery/preconditions") {
@@ -824,7 +871,8 @@ class AndroidLocalServer(private val ctx: Context) {
 
               val hostname = if (reachable) resolveHostname(ip) else null
               val vendor = lookupVendor(mac)
-              val os = guessOs(ip, timeout, hostname, vendor)
+              val openPorts = if (reachable) scanPorts(ip, timeout.coerceAtMost(450)) else emptyList()
+              val os = guessOs(openPorts, hostname, vendor)
 
               val id = (mac ?: ip).lowercase()
               val now = System.currentTimeMillis()
@@ -849,7 +897,8 @@ class AndroidLocalServer(private val ctx: Context) {
                 via = prev?.via,
                 signal = prev?.signal,
                 activityToday = prev?.activityToday,
-                traffic = prev?.traffic
+                traffic = prev?.traffic,
+                openPorts = openPorts
               )
 
               val old = devices.put(id, newDev)
@@ -1000,13 +1049,41 @@ class AndroidLocalServer(private val ctx: Context) {
     }
   }
 
+  private fun columnsFor(table: String): Set<String> {
+    val cols = mutableSetOf<String>()
+    runCatching {
+      db.readableDatabase.rawQuery("PRAGMA table_info($table);", null).use { c ->
+        val nameIdx = c.getColumnIndex("name").takeIf { it >= 0 } ?: 1
+        while (c.moveToNext()) {
+          cols += c.getString(nameIdx)
+        }
+      }
+    }
+    return cols
+  }
+
+  private val deviceTableColumns: Set<String> by lazy { columnsFor("devices") }
+
+  private fun hasDeviceColumn(name: String): Boolean = deviceTableColumns.contains(name)
+
   private fun loadPersistedState() {
     val r = db.readableDatabase
 
     runCatching {
-      r.rawQuery("SELECT id, ip, name, online, lastSeen, mac, hostname, vendor, os, owner, room, note, trust, type, status, via, signal, activityToday, traffic FROM devices", null).use { c ->
+      val hasOpenPorts = hasDeviceColumn("openPorts")
+      val sql = if (hasOpenPorts) {
+        "SELECT id, ip, name, online, lastSeen, mac, hostname, vendor, os, owner, room, note, trust, type, status, via, signal, activityToday, traffic, openPorts FROM devices"
+      } else {
+        "SELECT id, ip, name, online, lastSeen, mac, hostname, vendor, os, owner, room, note, trust, type, status, via, signal, activityToday, traffic FROM devices"
+      }
+      r.rawQuery(sql, null).use { c ->
         while (c.moveToNext()) {
           val id = c.getString(0)
+          val openPortsRaw = if (hasOpenPorts) c.getString(19) else null
+          val openPorts = openPortsRaw
+            ?.split(",")
+            ?.mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() }?.toIntOrNull() }
+            ?: emptyList()
           devices[id] = Device(
             id = id,
             ip = c.getString(1),
@@ -1026,7 +1103,8 @@ class AndroidLocalServer(private val ctx: Context) {
             via = c.getString(15),
             signal = c.getString(16),
             activityToday = c.getString(17),
-            traffic = c.getString(18)
+            traffic = c.getString(18),
+            openPorts = openPorts
           )
         }
       }
@@ -1083,6 +1161,9 @@ class AndroidLocalServer(private val ctx: Context) {
       put("signal", d.signal)
       put("activityToday", d.activityToday)
       put("traffic", d.traffic)
+      if (hasDeviceColumn("openPorts")) {
+        put("openPorts", d.openPorts.joinToString(","))
+      }
     }
     w.insertWithOnConflict("devices", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
   }
@@ -1311,6 +1392,22 @@ class AndroidLocalServer(private val ctx: Context) {
         } catch (_: Exception) {
           if (attempt == 0) Thread.sleep(25)
         }
+      }
+    }
+    return open
+  }
+
+  private fun scanTcpPorts(ip: String, timeoutMs: Int, ports: List<Int>): List<Int> {
+    val timeout = timeoutMs.coerceIn(80, 2_000)
+    val open = ArrayList<Int>(4)
+    for (p in ports.distinct()) {
+      try {
+        Socket().use { s ->
+          s.connect(InetSocketAddress(ip, p), timeout)
+          open += p
+        }
+      } catch (_: Exception) {
+        // closed/unreachable
       }
     }
     return open
@@ -1638,14 +1735,13 @@ class AndroidLocalServer(private val ctx: Context) {
     return vendors[key]
   }
 
-  private fun guessOs(ip: String, timeoutMs: Int, hostname: String?, vendor: String?): String? {
+  private fun guessOs(openPorts: List<Int>, hostname: String?, vendor: String?): String? {
     val host = hostname?.lowercase().orEmpty()
     val vend = vendor?.lowercase().orEmpty()
-    val ports = scanPorts(ip, timeoutMs.coerceAtMost(450))
     return when {
-      ports.contains(445) || ports.contains(3389) -> "Windows"
-      ports.contains(5555) || host.contains("android") -> "Android"
-      ports.contains(22) -> "Linux"
+      openPorts.contains(445) || openPorts.contains(3389) -> "Windows"
+      openPorts.contains(5555) || host.contains("android") -> "Android"
+      openPorts.contains(22) -> "Linux"
       vend.contains("apple") || host.contains("mac") -> "macOS"
       else -> null
     }

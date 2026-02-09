@@ -229,7 +229,7 @@ class MainActivity : AppCompatActivity() {
       locationPrompted = true
       AlertDialog.Builder(this)
         .setTitle("Enable location services")
-        .setMessage("Wi‑Fi scanning requires location services to be enabled. Turn on Location to discover devices.")
+        .setMessage("Wi-Fi scanning requires location services to be enabled. Turn on Location to discover devices.")
         .setPositiveButton("Open Settings") { _, _ ->
           startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
         }

@@ -4,7 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 2) {
+class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 3) {
 
   override fun onCreate(db: SQLiteDatabase) {
     db.execSQL(
@@ -27,7 +27,8 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 2
         via TEXT,
         signal TEXT,
         activityToday TEXT,
-        traffic TEXT
+        traffic TEXT,
+        openPorts TEXT
       )"""
     )
 
@@ -78,6 +79,9 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 2
       columns.forEach { col ->
         runCatching { db.execSQL("ALTER TABLE devices ADD COLUMN $col TEXT") }
       }
+    }
+    if (oldVersion < 3) {
+      runCatching { db.execSQL("ALTER TABLE devices ADD COLUMN openPorts TEXT") }
     }
   }
 }

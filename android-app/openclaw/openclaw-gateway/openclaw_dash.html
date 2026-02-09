@@ -747,7 +747,7 @@ input, .mono{
   <section class="view" id="view-channels">
     <div class="card">
       <h2>Channels</h2>
-      <p class="subtitle" style="margin-top:-6px;">Gateway channels live here. (This is your â€œChannelsâ€ tab from the screenshot.)</p>
+      <p class="subtitle" style="margin-top:-6px;">Gateway channels live here. (This is your \"Channels\" tab from the screenshot.)</p>
 
       <table class="table" aria-label="Channels table">
         <thead>
@@ -1378,7 +1378,7 @@ input, .mono{
     const ch = el('msgChannel').value.trim();
     const body = el('msgBody').value.trim();
     if(!ch || !body){ log('Message rejected: missing channel/body.'); return; }
-    const line = `SEND: ${gw}:${ch} -> ${body.slice(0,140)}${body.length>140?'â€¦':''}`;
+    const line = `SEND: ${gw}:${ch} -> ${body.slice(0,140)}${body.length>140?'...':''}`;
     log(line);
     const stream = el('chatStream');
     if(stream){

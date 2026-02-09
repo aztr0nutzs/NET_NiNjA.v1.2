@@ -34,11 +34,13 @@ html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font
 body{
   background: radial-gradient(circle at 30% 20%, #240000 0%, #080000 60%, #000 100%);
   color:#ffecec;
-  overflow:hidden;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling: touch;
   position:relative;
 }
 
-#bg { position:fixed; inset:0; z-index:0; display:block; }
+#bg { position:fixed; inset:0; z-index:0; display:block; pointer-events:none; }
 
 .glass-panel{
   position:absolute; z-index:2;
@@ -758,7 +760,7 @@ input, .mono{
   <section class="view" id="view-channels">
     <div class="card">
       <h2>Channels</h2>
-      <p class="subtitle" style="margin-top:-6px;">Gateway channels live here. (This is your â€œChannelsâ€ tab from the screenshot.)</p>
+      <p class="subtitle" style="margin-top:-6px;">Gateway channels live here. (This is your \"Channels\" tab from the screenshot.)</p>
 
       <table class="table" aria-label="Channels table">
         <thead>
@@ -1483,6 +1485,37 @@ input, .mono{
       refreshHttp();
       log(`Settings saved: host=${state.baseUrl}`);
       if(window.__ocui && window.__ocui.closeModal) window.__ocui.closeModal('settings');
+    });
+  }
+
+  // Chat UI: keep it functional even without a backend route.
+  const chatStream = el('chatStream');
+  function appendChat(line){
+    if(!chatStream) return;
+    const prev = (chatStream.textContent || '').trim();
+    chatStream.textContent = (prev === '' || prev === '(no messages)') ? line : `${prev}\n${line}`;
+  }
+
+  const btnMsgSend = el('btnMsgSend');
+  if(btnMsgSend){
+    btnMsgSend.addEventListener('click', async ()=> {
+      const gw = (el('msgGateway') && el('msgGateway').value) ? el('msgGateway').value : 'gateway';
+      const ch = (el('msgChannel') && el('msgChannel').value) ? el('msgChannel').value.trim() : '';
+      const body = (el('msgBody') && el('msgBody').value) ? el('msgBody').value.trim() : '';
+      if(!body){
+        log('No message body.');
+        return;
+      }
+      appendChat(`[${new Date().toLocaleTimeString()}] ${gw}${ch ? `:${ch}` : ''} -> ${body}`);
+      if(el('msgBody')) el('msgBody').value = '';
+
+      // Best-effort: if a compatible backend exists, try sending.
+      try{
+        await postJson('/api/openclaw/chat/send', { gateway: gw, channel: ch, body });
+        log('Chat send: backend accepted.');
+      } catch(e){
+        log('Chat send: no backend route (local echo only).');
+      }
     });
   }
 

@@ -40,7 +40,7 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
 
       --tabbar-h: 74px;
-      --topbar-h: 96px;
+      --topbar-h: 124px;
     }
 
     *{ box-sizing:border-box; margin:0; padding:0; }
@@ -118,7 +118,7 @@
     .header-media video{
       width:100%;
       height:100%;
-      object-fit:contain;
+      object-fit:cover;
       object-position:center;
       display:block;
       background: #020205;
@@ -678,7 +678,8 @@
       background: rgba(0,240,255,0.10);
       box-shadow: 0 0 16px rgba(0,240,255,0.12);
     }
-    .tabbtn .ticon{ font-size: 18px; line-height: 1; }
+    .tabbtn .ticon{ display:flex; align-items:center; justify-content:center; }
+    .tabbtn .ticon svg{ width:20px; height:20px; display:block; }
     .tabbtn .tlabel{
       font-size: 11px;
       text-transform: uppercase;
@@ -805,7 +806,7 @@
     }
     #scanNowBtn{ font-size: 0.95rem; }
 
-    /* Replace â€œdangerâ€ red/pink with purple (requirement: cyan/purple/mint only) */
+    /* Replace "danger" red/pink with purple (requirement: cyan/purple/mint only) */
     .btn-danger{
       background: rgba(0,0,0,0.45) !important;
       border: 1px solid rgba(185,103,255,0.55) !important;
@@ -911,7 +912,7 @@
     /* Embedded Discovery Map (scoped so it doesn't hijack the whole app) */
     .nn-mapHost{
       position: relative;
-      height: 420px;
+      height: min(420px, 52dvh);
       border-radius: 16px;
       overflow:hidden;
       border: 1px solid rgba(0,240,255,0.22);
@@ -931,7 +932,7 @@
         inset 0 0 40px rgba(120,255,220,0.12),
         inset 0 0 70px rgba(185,103,255,0.10);
       overflow:hidden;
-      touch-action:none;
+      touch-action: pan-y pinch-zoom;
     }
     .nn-mapCard::before, .nn-mapCard::after{
       content:"";
@@ -1143,7 +1144,7 @@
           <div class="brand-badge" id="brandBadge">MN</div>
           <div style="min-width:0;">
             <div class="brand-title">My Network Control</div>
-            <div class="brand-sub" id="brandSub">Home Wiâ€‘Fi (SSID) â€¢ secure</div>
+            <div class="brand-sub" id="brandSub">Home Wi-Fi (SSID) | secure</div>
           </div>
         </div>
 
@@ -1192,7 +1193,7 @@
               <div class="card-title">My Network</div>
               <div class="pill ok" id="myNetPill">Secure</div>
             </div>
-            <div class="muted" id="myNetText">Home Wiâ€‘Fi (SSID) â€“ Secure</div>
+            <div class="muted" id="myNetText">Home Wi-Fi (SSID) - Secure</div>
             <div class="card-actions">
               <button class="btn btn-primary" id="btnScanMyNetwork">Scan my network</button>
             </div>
@@ -1200,7 +1201,7 @@
 
           <div class="card" id="cardWhosOnline" role="button" tabindex="0">
             <div class="card-head">
-              <div class="card-title">Whoâ€™s Online</div>
+              <div class="card-title">Who's Online</div>
               <div class="pill" id="onlineDeltaPill">Changed: 0</div>
             </div>
             <div class="big" id="onlineCount">0</div>
@@ -1229,8 +1230,8 @@
             <div class="muted">Keep it simple: no nested menus here.</div>
             <div class="card-actions">
               <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
-              <button class="btn btn-danger" id="btnBlockNew">Autoâ€‘block new devices</button>
-              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wiâ€‘Fi details</button>
+              <button class="btn btn-danger" id="btnBlockNew">Auto-block new devices</button>
+              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi-Fi details</button>
             </div>
           </div>
         </div>
@@ -1295,19 +1296,19 @@
             <div class="pill warn" id="permSummaryPill">Needs review</div>
           </div>
           <div class="muted">
-            Android requires Location or Nearby Wiâ€‘Fi access to read SSID/BSSID and scan your network.
-            Background scans are rateâ€‘limited and will pause if Wiâ€‘Fi is disconnected or permissions are denied.
+            Android requires Location or Nearby Wi-Fi access to read SSID/BSSID and scan your network.
+            Background scans are rate-limited and will pause if Wi-Fi is disconnected or permissions are denied.
           </div>
           <div class="nn-permList" aria-live="polite">
-            <span>Nearby Wiâ€‘Fi</span><span id="permNearbyWifi">Unknown</span>
+            <span>Nearby Wi-Fi</span><span id="permNearbyWifi">Unknown</span>
             <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
-            <span>Wiâ€‘Fi state</span><span id="permWifiState">Unknown</span>
+            <span>Wi-Fi state</span><span id="permWifiState">Unknown</span>
             <span>Network state</span><span id="permNetworkState">Unknown</span>
           </div>
           <div class="card-actions" style="margin-top:12px;">
             <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
             <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
-            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wiâ€‘Fi settings</button>
+            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi-Fi settings</button>
             <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
           </div>
           <div class="muted" style="margin-top:10px;">
@@ -1338,7 +1339,7 @@
                 <path d="M21 21l-4.35-4.35"/>
                 <circle cx="11" cy="11" r="7"/>
               </svg>
-              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MACâ€¦" autocomplete="off" />
+              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MAC..." autocomplete="off" />
             </div>
             <button class="btn btn-ghost" id="btnRescanDevices">Scan devices again</button>
             <button class="btn btn-ghost purple" id="btnExportDevices">Export list</button>
@@ -1388,7 +1389,7 @@
                 <div class="side-title" id="spTitle">Select a device</div>
                 <div class="side-sub" id="spSub">Pick a row to view details.</div>
               </div>
-              <div class="pill" id="spStatus">â€”</div>
+              <div class="pill" id="spStatus">-</div>
             </div>
 
             <div class="row" style="margin-bottom: 10px;">
@@ -1417,7 +1418,7 @@
             <div id="spSectionNotes" style="display:none;">
               <div class="notes">
                 <div class="field">
-                  <label for="spNote">Add a noteâ€¦</label>
+                  <label for="spNote">Add a note...</label>
                   <textarea id="spNote" placeholder="Example: Guest device, allow 2 hours."></textarea>
                 </div>
                 <div class="field">
@@ -1448,7 +1449,7 @@
         </div>
 
         <div class="muted" style="margin-top: 10px;">
-          Tip: doubleâ€‘click a device row to open the detailed view.
+          Tip: double-click a device row to open the detailed view.
         </div>
       </section>
 
@@ -3476,7 +3477,7 @@
               <div class="card-title">Automation / Schedules</div>
               <div class="pill">Optional</div>
             </div>
-            <div class="muted">Schedule scans or autoâ€‘block unknown devices.</div>
+            <div class="muted">Schedule scans or auto-block unknown devices.</div>
             <div class="card-actions">
               <button class="btn btn-primary" data-open-dialog="schedule">Create schedule</button>
             </div>
@@ -3484,7 +3485,7 @@
         </div>
 
         <div class="muted" style="margin-top: 10px;">
-          Each tool dialog keeps only 2â€“3 core controls plus an â€œAdvanced optionsâ€ expander. Because humans love clicking things.
+          Each tool dialog keeps only 2-3 core controls plus an "Advanced options" expander. Because humans love clicking things.
         </div>
       </section>
       <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
@@ -3503,29 +3504,41 @@
     <nav class="tabbar" aria-label="Primary navigation">
       <div class="tabbar-inner">
         <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
-          <div class="ticon">ðŸ“Š</div>
+          <div class="ticon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 17v-6"/><path d="M12 17V9"/><path d="M16 17v-3"/></svg>
+          </div>
           <div class="tlabel">Dashboard</div>
         </button>
         <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
-          <div class="ticon">ðŸ“±</div>
+          <div class="ticon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M7 2h10"/><path d="M7 22h10"/><path d="M8 2v20"/><path d="M16 2v20"/></svg>
+          </div>
           <div class="tlabel">Devices</div>
         </button>
         <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
-          <div class="ticon">ðŸ“¡</div>
+          <div class="ticon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M2 12a10 10 0 0 1 20 0"/><path d="M5 12a7 7 0 0 1 14 0"/><path d="M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="16" r="1.8" fill="rgba(255,255,255,0.92)" stroke="none"/></svg>
+          </div>
           <div class="tlabel">Networks</div>
         </button>
         <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
-          <div class="ticon">ðŸ§°</div>
+          <div class="ticon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4L15 12"/></svg>
+          </div>
           <div class="tlabel">Tools</div>
         </button>
         <!-- OpenClaw tab button -->
         <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
-          <div class="ticon">ðŸ¤–</div>
+          <div class="ticon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2v4"/><path d="M7 6h10"/><path d="M6 10v4"/><path d="M18 10v4"/><path d="M8 14v6"/><path d="M16 14v6"/><path d="M9 20h6"/></svg>
+          </div>
           <div class="tlabel">OpenClaw</div>
         </button>
         <!-- Cameras tab button -->
         <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
-          <div class="ticon">ðŸ“·</div>
+          <div class="ticon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 7v12"/><path d="M20 7v12"/><path d="M4 19h16"/><circle cx="12" cy="13" r="3"/></svg>
+          </div>
           <div class="tlabel">Cameras</div>
         </button>
       </div>
@@ -3686,7 +3699,7 @@
     let cachedNetworkInfo = null;
 
     function formatSeen(ms){
-      if(!ms) return "â€”";
+      if(!ms) return "-";
       const now = Date.now();
       const delta = now - ms;
       if(delta < 120000) return "Now";
@@ -3724,18 +3737,19 @@
         owner: raw?.owner || "",
         type: raw?.type || inferType(raw),
         status,
-        ip: raw?.ip || "â€”",
-        mac: raw?.mac || "â€”",
-        vendor: raw?.vendor || "â€”",
+        ip: raw?.ip || "-",
+        mac: raw?.mac || "-",
+        vendor: raw?.vendor || "-",
         firstSeen: formatSeen(firstSeenMap.get(id)),
         lastSeen: formatSeen(raw?.lastSeen),
         trust,
-        os: raw?.os || "â€”",
+        os: raw?.os || "-",
         via: raw?.via || "LAN",
-        signal: raw?.signal || "â€”",
-        iface: raw?.iface || "â€”",
-        activityToday: raw?.activityToday || "â€”",
-        traffic: raw?.traffic || "â€”",
+        signal: raw?.signal || "-",
+        iface: raw?.iface || "-",
+        activityToday: raw?.activityToday || "-",
+        traffic: raw?.traffic || "-",
+        openPorts: Array.isArray(raw?.openPorts) ? raw.openPorts : [],
         note: raw?.note || "",
         room: raw?.room || ""
       };
@@ -3814,12 +3828,12 @@
       cachedNetworkInfo = info;
 
       const name = info.name || "Network";
-      const ip = info.ip || "â€”";
-      const cidr = info.cidr || "â€”";
-      const gateway = info.gateway || "â€”";
+      const ip = info.ip || "-";
+      const cidr = info.cidr || "-";
+      const gateway = info.gateway || "-";
 
       $("#myNetText").textContent = `${name} (${cidr})`;
-      $("#brandSub").textContent = `${name} â€¢ ${cidr}`;
+      $("#brandSub").textContent = `${name} | ${cidr}`;
 
       const n1 = networks.find(n => n.id === "n1");
       if(n1){
@@ -3827,9 +3841,11 @@
         n1.details.ssid = name;
         n1.details.gateway = gateway;
         n1.details.yourIp = ip;
-        n1.details.dns = "â€”";
-        n1.details.security = n1.details.security || "â€”";
-        n1.details.openPorts = "â€”";
+        n1.details.dns = "-";
+        n1.details.security = n1.details.security || "-";
+        n1.details.openPorts = "-";
+        n1.details.routerVendor = "-";
+        n1.details.adminUrl = "-";
         n1.devices = devices.length;
       }
 
@@ -3842,21 +3858,38 @@
 
       renderNetworks();
 
-      if(gateway && gateway !== "â€”"){
-        fetchJson("/api/v1/actions/portscan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ip: gateway, timeoutMs: 250 })
-        }).then((res) => {
-          const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "â€”";
-          if(n1){
-            n1.details.openPorts = ports || "â€”";
+      if(gateway && gateway !== "-"){
+        fetchJson("/api/v1/router/info", { timeoutMs: 2500 }).then((res) => {
+          if(!n1) return;
+          if(res?.ok !== true){
+            n1.details.openPorts = "-";
+            n1.details.routerVendor = "-";
+            n1.details.adminUrl = "-";
             renderNetworks();
+            return;
           }
+          const ports = Array.isArray(res.openTcpPorts) ? res.openTcpPorts.join(", ") : "-";
+          n1.details.openPorts = ports || "-";
+          n1.details.routerVendor = res.vendor || "-";
+          n1.details.adminUrl = Array.isArray(res.adminUrls) ? (res.adminUrls[0] || "-") : "-";
+          renderNetworks();
         }).catch(() => {
-          if(n1){
-            n1.details.openPorts = "â€”";
-          }
+          // Back-compat fallback (older engines): portscan the gateway directly.
+          fetchJson("/api/v1/actions/portscan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ip: gateway, timeoutMs: 250 })
+          }).then((res) => {
+            const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "-";
+            if(n1){
+              n1.details.openPorts = ports || "-";
+              renderNetworks();
+            }
+          }).catch(() => {
+            if(n1){
+              n1.details.openPorts = "-";
+            }
+          });
         });
       }
     }
@@ -3979,20 +4012,22 @@
         id: "n1",
         name: "Network",
         type: "LAN",
-        security: "â€”",
-        signal: "â€”",
+        security: "-",
+        signal: "-",
         devices: 0,
         status: "My network",
         details: {
           ssid: "Network",
-          gateway: "â€”",
-          yourIp: "â€”",
-          dns: "â€”",
-          security: "â€”",
-          openPorts: "â€”"
-        }
+          gateway: "-",
+          yourIp: "-",
+          dns: "-",
+          security: "-",
+          openPorts: "-",
+          routerVendor: "-",
+          adminUrl: "-"
       }
-    ];
+    }
+  ];
 
     // ---- Helpers ----
     const $ = (sel) => document.querySelector(sel);
@@ -4073,7 +4108,7 @@
       } else {
         $("#unknownPill").textContent = `${unknown.length} to review`;
         $("#unknownPill").className = "pill warn";
-        $("#unknownList").innerHTML = unknown.map(d => `â€¢ ${escapeHtml(d.name)} <span style="color:rgba(255,255,255,0.65)">(${escapeHtml(d.trust)})</span>`).join("<br>");
+        $("#unknownList").innerHTML = unknown.map(d => `- ${escapeHtml(d.name)} <span style="color:rgba(255,255,255,0.65)">(${escapeHtml(d.trust)})</span>`).join("<br>");
       }
 
       const last = state.lastScanAt ? `Last scan: ${state.lastScanAt}` : "Last scan: never";
@@ -4130,17 +4165,17 @@
         const isSel = d.id === state.selectedDeviceId;
         return `
           <tr data-id="${d.id}" class="${isSel ? "selected" : ""}">
-            <td title="Doubleâ€‘click to open">${escapeHtml(d.name)}</td>
-            <td>${escapeHtml(d.owner || "â€”")}</td>
-            <td>${typeIcon(d.type)} ${escapeHtml(d.type)}</td>
+            <td title="Double-click to open">${escapeHtml(d.name)}</td>
+            <td>${escapeHtml(d.owner || "-")}</td>
+            <td><span class="ticon" aria-hidden="true">${typeIcon(d.type)}</span> ${escapeHtml(d.type)}</td>
             <td><span class="status ${statusClass(d.status)}"><span class="dot"></span>${escapeHtml(d.status)}</span></td>
             <td>${escapeHtml(d.ip)}</td>
             <td>${escapeHtml(d.mac)}</td>
-            <td>${escapeHtml(d.vendor || "â€”")}</td>
-            <td>${escapeHtml(d.firstSeen || "â€”")}</td>
-            <td>${escapeHtml(d.lastSeen || "â€”")}</td>
+            <td>${escapeHtml(d.vendor || "-")}</td>
+            <td>${escapeHtml(d.firstSeen || "-")}</td>
+            <td>${escapeHtml(d.lastSeen || "-")}</td>
             <td>${escapeHtml(d.trust)}</td>
-            <td><button class="kebab" data-menu="${d.id}" title="Actions">â‹®</button></td>
+            <td><button class="kebab" data-menu="${d.id}" title="Actions">⋮</button></td>
           </tr>
         `;
       }).join("");
@@ -4177,7 +4212,7 @@
       if(!d){
         $("#spTitle").textContent = "Select a device";
         $("#spSub").textContent = "Pick a row to view details.";
-        $("#spStatus").textContent = "â€”";
+      $("#spStatus").textContent = "-";
         $("#spSummaryKv").innerHTML = "";
         $("#spNetworkKv").innerHTML = "";
         $("#spActivityKv").innerHTML = "";
@@ -4188,8 +4223,8 @@
         return;
       }
 
-      $("#spTitle").textContent = `${d.name} â€“ ${d.type}`;
-      $("#spSub").textContent = `${d.owner || "No owner"} â€¢ ${d.vendor || "Unknown vendor"}`;
+      $("#spTitle").textContent = `${d.name} - ${d.type}`;
+      $("#spSub").textContent = `${d.owner || "No owner"} | ${d.vendor || "Unknown vendor"}`;
       $("#spStatus").textContent = d.status.toUpperCase();
       $("#spStatus").className = "pill " + (d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : ""));
       $("#spPause").disabled = false;
@@ -4201,23 +4236,24 @@
         ["Status", d.status],
         ["Trust", d.trust],
         ["Type", d.type],
-        ["Owner", d.owner || "â€”"]
+        ["Owner", d.owner || "-"]
       ]);
 
       $("#spNetworkKv").innerHTML = kvLines([
         ["IP", d.ip],
         ["MAC", d.mac],
-        ["Vendor", d.vendor || "â€”"],
-        ["OS (detected)", d.os || "â€”"],
-        ["Connected via", d.via || "â€”"],
-        ["Signal", d.signal || "â€”"],
-        ["Interface", d.iface || "â€”"]
+        ["Vendor", d.vendor || "-"],
+        ["OS (detected)", d.os || "-"],
+        ["Connected via", d.via || "-"],
+        ["Signal", d.signal || "-"],
+        ["Interface", d.iface || "-"],
+        ["Open ports", Array.isArray(d.openPorts) && d.openPorts.length ? d.openPorts.join(", ") : "-"]
       ]);
 
       $("#spActivityKv").innerHTML = kvLines([
-        ["Last seen", d.lastSeen || "â€”"],
-        ["Online time today", d.activityToday || "â€”"],
-        ["Traffic", d.traffic || "â€”"]
+        ["Last seen", d.lastSeen || "-"],
+        ["Online time today", d.activityToday || "-"],
+        ["Traffic", d.traffic || "-"]
       ]);
 
       // keep form fields in sync
@@ -4240,12 +4276,12 @@
             <div class="card-title">Summary</div>
             <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
           </div>
-          <div class="muted" style="margin-top:4px;"><strong style="color:rgba(255,255,255,0.95);">${escapeHtml(d.name)}</strong> â€“ ${escapeHtml(d.type)}</div>
+          <div class="muted" style="margin-top:4px;"><strong style="color:rgba(255,255,255,0.95);">${escapeHtml(d.name)}</strong> - ${escapeHtml(d.type)}</div>
           <div class="kv" style="margin-top:10px;">
             ${kvLines([
               ["Trust state", d.trust],
-              ["Owner", d.owner || "â€”"],
-              ["Vendor", d.vendor || "â€”"]
+              ["Owner", d.owner || "-"],
+              ["Vendor", d.vendor || "-"]
             ])}
           </div>
           <div class="card-actions">
@@ -4267,11 +4303,31 @@
             ${kvLines([
               ["IP", d.ip],
               ["MAC", d.mac],
-              ["OS (detected)", d.os || "â€”"],
-              ["Connected via", d.via || "â€”"],
-              ["Signal strength", d.signal || "â€”"]
+              ["Vendor", d.vendor || "-"],
+              ["OS (detected)", d.os || "-"],
+              ["Connected via", d.via || "-"],
+              ["Signal strength", d.signal || "-"],
+              ["Open ports", Array.isArray(d.openPorts) && d.openPorts.length ? d.openPorts.join(", ") : "-"]
             ])}
           </div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <div class="card" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Diagnostics</div>
+            <div class="pill">Probes</div>
+          </div>
+          <div class="muted">Quick, safe checks from the local engine to this device.</div>
+          <div class="card-actions" style="margin-top: 10px;">
+            <button class="btn btn-ghost" id="mPing">Ping</button>
+            <button class="btn btn-ghost" id="mHttp">HTTP</button>
+            <button class="btn btn-ghost" id="mSsh">SSH</button>
+            <button class="btn btn-ghost" id="mSnmp">SNMP</button>
+            <button class="btn btn-ghost purple" id="mWol" ${d.mac ? "" : "disabled"}>Wake-on-LAN</button>
+          </div>
+          <div class="kv" id="mDiagKv" style="margin-top: 10px;"></div>
         </div>
 
         <div style="height:12px;"></div>
@@ -4283,9 +4339,9 @@
           </div>
           <div class="kv">
             ${kvLines([
-              ["Last seen", d.lastSeen || "â€”"],
-              ["Total online time today", d.activityToday || "â€”"],
-              ["Traffic", d.traffic || "â€”"]
+              ["Last seen", d.lastSeen || "-"],
+              ["Total online time today", d.activityToday || "-"],
+              ["Traffic", d.traffic || "-"]
             ])}
           </div>
         </div>
@@ -4298,8 +4354,8 @@
             <div class="pill">Optional</div>
           </div>
           <div class="field">
-            <label for="mNote">Add a noteâ€¦</label>
-            <textarea id="mNote" placeholder="Add a noteâ€¦">${escapeHtml(d.note || "")}</textarea>
+            <label for="mNote">Add a note...</label>
+            <textarea id="mNote" placeholder="Add a note...">${escapeHtml(d.note || "")}</textarea>
           </div>
           <div class="field">
             <label for="mRoom">Room</label>
@@ -4322,6 +4378,98 @@
       $("#mBlock").addEventListener("click", () => doAction("Set status: Blocked", d, () => blockDevice(d.id)));
       $("#mTrust").addEventListener("click", () => doAction("Trust toggle", d, () => toggleTrust(d.id)));
       $("#mPort").addEventListener("click", () => doAction("Run port scan", d, () => openToolDialog("portScan", d.id)));
+
+      const diag = $("#mDiagKv");
+      const setDiag = (pairs) => {
+        if(!diag) return;
+        diag.innerHTML = kvLines(pairs);
+      };
+      setDiag([
+        ["IP", d.ip],
+        ["MAC", d.mac || "-"],
+        ["Open ports", Array.isArray(d.openPorts) && d.openPorts.length ? d.openPorts.join(", ") : "-"]
+      ]);
+
+      $("#mPing").addEventListener("click", async () => {
+        try{
+          const res = await fetchJson("/api/v1/actions/ping", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ip: d.ip }),
+            timeoutMs: 1500
+          });
+          setDiag([["Ping", res?.ok ? "Reachable" : "No response"], ["RTT (ms)", String(res?.rttMs ?? "-")]]);
+          pushHistory({ when: nowLabel(), title: `Ping: ${d.name}`, detail: res?.ok ? "Reachable" : "No response", undo: null });
+        } catch (_){
+          setDiag([["Ping", "Failed"], ["Error", "Backend unavailable"]]);
+        }
+      });
+
+      $("#mSsh").addEventListener("click", async () => {
+        try{
+          const res = await fetchJson("/api/v1/actions/ssh", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ip: d.ip }),
+            timeoutMs: 1500
+          });
+          setDiag([["SSH (22)", res?.ok ? "Open" : "Closed"], ["Note", res?.note || "-"]]);
+          pushHistory({ when: nowLabel(), title: `SSH probe: ${d.name}`, detail: res?.ok ? "Open" : "Closed", undo: null });
+        } catch (_){
+          setDiag([["SSH (22)", "Failed"], ["Error", "Backend unavailable"]]);
+        }
+      });
+
+      $("#mSnmp").addEventListener("click", async () => {
+        try{
+          const res = await fetchJson("/api/v1/actions/snmp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ip: d.ip }),
+            timeoutMs: 1500
+          });
+          setDiag([["SNMP (161)", res?.ok ? "Reachable" : "No response"]]);
+          pushHistory({ when: nowLabel(), title: `SNMP probe: ${d.name}`, detail: res?.ok ? "Reachable" : "No response", undo: null });
+        } catch (_){
+          setDiag([["SNMP (161)", "Failed"], ["Error", "Backend unavailable"]]);
+        }
+      });
+
+      $("#mHttp").addEventListener("click", async () => {
+        const candidates = [`http://${d.ip}`, `https://${d.ip}`];
+        for(const url of candidates){
+          try{
+            const res = await fetchJson("/api/v1/actions/http", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url }),
+              timeoutMs: 1500
+            });
+            setDiag([["HTTP", res?.ok ? "OK" : "No"], ["Status", String(res?.status ?? "-")], ["URL", url]]);
+            pushHistory({ when: nowLabel(), title: `HTTP probe: ${d.name}`, detail: `${url} -> ${res?.status ?? "?"}`, undo: null });
+            return;
+          } catch (_){
+            // try next URL
+          }
+        }
+        setDiag([["HTTP", "Failed"], ["Error", "No response"]]);
+      });
+
+      $("#mWol").addEventListener("click", async () => {
+        if(!d.mac) return;
+        try{
+          const res = await fetchJson("/api/v1/actions/wol", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mac: d.mac }),
+            timeoutMs: 1500
+          });
+          setDiag([["WOL", res?.ok ? "Packet sent" : "Failed"], ["MAC", d.mac]]);
+          pushHistory({ when: nowLabel(), title: `WOL: ${d.name}`, detail: res?.ok ? "Packet sent" : "Failed", undo: null });
+        } catch (_){
+          setDiag([["WOL", "Failed"], ["Error", "Backend unavailable"]]);
+        }
+      });
 
       $("#mSave").addEventListener("click", async () => {
         const patch = {
@@ -4353,7 +4501,7 @@
             <div class="card-title">${escapeHtml(d.name)}</div>
             <div class="pill ${d.status === "Online" ? "ok" : (d.status === "Blocked" ? "bad" : "")}">${escapeHtml(d.status)}</div>
           </div>
-          <div class="muted">${escapeHtml(d.type)} â€¢ ${escapeHtml(d.ip)} â€¢ ${escapeHtml(d.trust)}</div>
+          <div class="muted">${escapeHtml(d.type)} | ${escapeHtml(d.ip)} | ${escapeHtml(d.trust)}</div>
           <div class="card-actions" style="margin-top: 12px;">
             <button class="btn btn-ghost" id="aView">View details</button>
             <button class="btn btn-ghost" id="aPause">Set status: Paused</button>
@@ -4378,7 +4526,7 @@
             pushHistory({
               when: nowLabel(),
               title: `Renamed device`,
-              detail: `${prev} â†’ ${nextName}`,
+              detail: `${prev} -> ${nextName}`,
               undo: () => {
                 updateDeviceMeta(d.id, { name: prev }).then(() => {
                   showToast("Undone", "Rename reverted.");
@@ -4401,7 +4549,7 @@
       pushHistory({
         when: nowLabel(),
         title: `${label}: ${device.name}`,
-        detail: `${device.ip} â€¢ ${device.trust}`,
+        detail: `${device.ip} | ${device.trust}`,
         undo: null
       });
     }
@@ -4462,7 +4610,7 @@
         pushHistory({
           when: nowLabel(),
           title: `Trust changed: ${d.name}`,
-          detail: `${prev} â†’ ${next}`,
+          detail: `${prev} -> ${next}`,
           undo: () => {
             updateDeviceMeta(d.id, { trust: prev }).then(() => {
               showToast("Undone", "Trust reverted.");
@@ -4562,7 +4710,7 @@
             <td>${escapeHtml(String(n.signal))}</td>
             <td>${escapeHtml(String(n.devices))}</td>
             <td>${escapeHtml(n.status)}</td>
-            <td><button class="kebab" data-net="${n.id}" title="Actions">â‹®</button></td>
+            <td><button class="kebab" data-net="${n.id}" title="Actions">⋮</button></td>
           </tr>
         `;
       }).join("");
@@ -4605,7 +4753,9 @@
         ["Your IP", n.details.yourIp],
         ["DNS", n.details.dns],
         ["Security", n.details.security],
-        ["Open ports on gateway", n.details.openPorts]
+        ["Open ports on gateway", n.details.openPorts],
+        ["Router vendor", n.details.routerVendor],
+        ["Router admin", n.details.adminUrl]
       ]);
     }
 
@@ -4619,7 +4769,7 @@
             <div class="card-title">${escapeHtml(n.name)}</div>
             <div class="pill">${escapeHtml(n.status)}</div>
           </div>
-          <div class="muted">${escapeHtml(n.type)} â€¢ ${escapeHtml(n.security)}</div>
+          <div class="muted">${escapeHtml(n.type)} | ${escapeHtml(n.security)}</div>
           <div class="card-actions" style="margin-top: 12px;">
             <button class="btn btn-ghost" id="naViewDevices">View devices on this network</button>
             <button class="btn btn-ghost purple" id="naScan">Scan this network</button>
@@ -4686,9 +4836,14 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ip: device.ip, timeoutMs: profile === "Full scan" ? 600 : 250 })
             });
+            if(Array.isArray(res.openPorts)){
+              device.openPorts = res.openPorts;
+              renderSidePanel();
+              renderDevices();
+            }
             const ports = Array.isArray(res.openPorts) ? res.openPorts.join(", ") : "None";
             closeOverlay("toolOverlay");
-            showToast("Port scan complete", `${devName} â€¢ Open: ${ports || "None"}`);
+            showToast("Port scan complete", `${devName} | Open: ${ports || "None"}`);
             pushHistory({ when: nowLabel(), title: `Port scan: ${devName}`, detail: `Open ports: ${ports || "None"}`, undo: null });
           } catch (_){
             showToast("Port scan failed", "Backend unavailable.");
@@ -4765,7 +4920,7 @@
           const act = $("#schAct")?.value || "Scan my network";
           const subnet = cachedNetworkInfo?.cidr || "";
           try{
-            if(act === "Autoâ€‘block unknown devices"){
+            if(act === "Auto-block unknown devices"){
               await fetchJson("/api/v1/rules", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -4785,18 +4940,18 @@
                 body: JSON.stringify({ subnet, freq: freq.toLowerCase() })
               });
               closeOverlay("toolOverlay");
-              pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} â€¢ ${freq}`, undo: null });
-              showToast("Scheduled", `${act} â€¢ ${freq}`);
+              pushHistory({ when: nowLabel(), title: "Schedule created", detail: `${act} | ${freq}`, undo: null });
+              showToast("Scheduled", `${act} | ${freq}`);
             }
           } catch (_){
             showToast("Schedule failed", "Backend unavailable.");
           }
         };
         $("#toolBody").innerHTML = toolTemplate(
-          "Schedule scans or autoâ€‘block unknown devices.",
+          "Schedule scans or auto-block unknown devices.",
           [
             { label: "Schedule", type: "select", id: "schFreq", options: ["Daily", "Weekly", "Monthly"], value: "Weekly" },
-            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Autoâ€‘block unknown devices"], value: "Scan my network" }
+            { label: "Action", type: "select", id: "schAct", options: ["Scan my network", "Auto-block unknown devices"], value: "Scan my network" }
           ],
           "Create schedule",
           onPrimary
@@ -4844,7 +4999,7 @@
         <div class="card" style="cursor:default;">
           <div class="card-head">
             <div class="card-title">Options</div>
-            <div class="pill">2â€“3 controls</div>
+            <div class="pill">2-3 controls</div>
           </div>
           ${fieldsHtml}
 
@@ -4986,10 +5141,10 @@
 
     $("#btnShareWifi").addEventListener("click", (e) => {
       e.stopPropagation();
-      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} â€¢ ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wiâ€‘Fi (SSID) â€¢ WPA2";
+      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} | ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wi-Fi (SSID) | WPA2";
       navigator.clipboard?.writeText(text).then(() => {
-        showToast("Copied", "Wiâ€‘Fi details copied to clipboard.");
-        pushHistory({ when: nowLabel(), title: "Shared Wiâ€‘Fi details", detail: "Copied to clipboard", undo: null });
+        showToast("Copied", "Wi-Fi details copied to clipboard.");
+        pushHistory({ when: nowLabel(), title: "Shared Wi-Fi details", detail: "Copied to clipboard", undo: null });
       }).catch(() => {
         showToast("Share", "Clipboard not available here.");
       });
@@ -5109,7 +5264,7 @@
     // ---- Utility renderers ----
     function kvLines(pairs){
       return pairs.map(([k,v]) => `
-        <div class="line"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v ?? "â€”"))}</span></div>
+        <div class="line"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v ?? "-"))}</span></div>
       `).join("");
     }
 
@@ -5120,8 +5275,13 @@
     }
 
     function typeIcon(type){
-      const map = { Phone:"ðŸ“±", PC:"ðŸ’»", TV:"ðŸ“º", Printer:"ðŸ–¨ï¸", IoT:"ðŸ”Œ" };
-      return map[type] || "ðŸ”¸";
+      const safe = String(type || "").toLowerCase();
+      if (safe.includes("phone") || safe.includes("mobile")) return "<svg class=\"icon\" viewBox=\"0 0 24 24\"><path d=\"M7 2h10\"/><path d=\"M7 22h10\"/><path d=\"M8 2v20\"/><path d=\"M16 2v20\"/></svg>";
+      if (safe.includes("pc") || safe.includes("laptop") || safe.includes("desktop")) return "<svg class=\"icon\" viewBox=\"0 0 24 24\"><path d=\"M4 5h16v10H4z\"/><path d=\"M8 19h8\"/><path d=\"M10 15v4\"/><path d=\"M14 15v4\"/></svg>";
+      if (safe.includes("tv") || safe.includes("chromecast")) return "<svg class=\"icon\" viewBox=\"0 0 24 24\"><path d=\"M3 7h18v10H3z\"/><path d=\"M8 21h8\"/></svg>";
+      if (safe.includes("printer")) return "<svg class=\"icon\" viewBox=\"0 0 24 24\"><path d=\"M7 7V3h10v4\"/><path d=\"M6 17h12\"/><path d=\"M6 10h12v7H6z\"/><path d=\"M7 21h10v-4H7z\"/></svg>";
+      if (safe.includes("iot") || safe.includes("plug") || safe.includes("camera")) return "<svg class=\"icon\" viewBox=\"0 0 24 24\"><path d=\"M12 2v6\"/><path d=\"M8 8h8\"/><path d=\"M7 8v6a5 5 0 0 0 10 0V8\"/></svg>";
+      return "<svg class=\"icon\" viewBox=\"0 0 24 24\"><path d=\"M12 2v4\"/><path d=\"M7 6h10\"/><path d=\"M6 10v4\"/><path d=\"M18 10v4\"/><path d=\"M9 18h6\"/></svg>";
     }
 
     function selectOptions(options, value){
@@ -5204,8 +5364,8 @@
       renderNotifications();
 
       // default text while loading
-      $("#myNetText").textContent = "Loading networkâ€¦";
-      $("#brandSub").textContent = "Loading networkâ€¦";
+      $("#myNetText").textContent = "Loading network...";
+      $("#brandSub").textContent = "Loading network...";
 
       // Devices: sidepanel tabs default (already summary)
       renderSidePanel();
@@ -5453,7 +5613,7 @@
       // Try to reuse the app's device list if it exists; otherwise keep whatever's there.
       const list = Array.isArray(window.devices) ? window.devices : (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
       if(!Array.isArray(list) || list.length === 0){
-        hudStatus.textContent = "0 devices â€¢ idle";
+        hudStatus.textContent = "0 devices | idle";
         clearGraph();
         return;
       }
@@ -5486,7 +5646,7 @@
         createLink(nodeEls[0], nodeEls[i]);
       }
 
-      hudStatus.textContent = `${mapped.length} devices â€¢ live`;
+      hudStatus.textContent = `${mapped.length} devices | live`;
     };
 
     let trafficMode = false;
@@ -5498,9 +5658,9 @@
       }
       try{
         const metrics = await fetchJson("/api/v1/metrics");
-        hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online â€¢ metrics`;
+        hudStatus.textContent = `${metrics.devicesOnline ?? 0}/${metrics.devicesTotal ?? 0} online | metrics`;
       } catch (_){
-        hudStatus.textContent = `${nodeEls.length} devices â€¢ live`;
+        hudStatus.textContent = `${nodeEls.length} devices | live`;
       }
     }
 
