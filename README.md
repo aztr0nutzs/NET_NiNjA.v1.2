@@ -32,6 +32,22 @@ The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that lo
 - **Bulk import**: Paste a multi-line list of cameras using the `Name | URL` format for quick onboarding.
 - **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
 
+## 3D Discovery Map (Ninja Nodes)
+![Ninja Nodes 3D Map](web-ui/new_assets/ninja_nodes.png)
+
+The Discovery Map is an interactive **3D network visualization** embedded directly in the dashboard's Networks tab. It renders every discovered device as a floating node in a fully rotatable, zoomable 3D space with real-time link animations, data-beam effects, and threat highlighting — all running on a pure HTML5 Canvas engine (no WebGL library required).
+
+### Highlights
+- **Six color themes**: Cyber, Matrix, Aurora, Solar, Ice, and Ghost — switch on the fly via the toolbar or theme swatches.
+- **Five layout modes**: Star, Ring, Mesh, Tree, and Cluster topologies arrange nodes automatically based on the active device list.
+- **HUD overlay system**: Draggable, minimizable panels for Activity Feed, Compass, Zoom indicator, Device Legend, and Map Coordinates.
+- **Visual effects toolbar**: Toggle particles, data beams, heatmap overlays, device labels, and background grid independently.
+- **Touch-first interaction**: Drag to orbit, pinch to zoom, tap a node for a detailed tooltip (IP, MAC, vendor, trust level), and momentum-based inertia after release.
+- **Live scan integration**: The Scan button triggers a radar-sweep animation and the map auto-refreshes when new devices appear.
+- **External API**: Call `window.nnUpdateDiscoveryMap(deviceList)` from any script to feed live device data into the visualization.
+
+The standalone page lives at `web-ui/new_assets/ninja_nodes.html` and is loaded into the dashboard via an iframe for full isolation and zero CSS/JS conflicts.
+
 ## OpenClaw Android Companion integration
 ![OpenClaw Companion header](web-ui/ninja_claw.png)
 
