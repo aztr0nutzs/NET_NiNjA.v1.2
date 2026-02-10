@@ -57,6 +57,14 @@ docker-compose up --build
 ```
 Then open: `http://localhost:8787/ui/ninja_mobile_new.html`
 
+## Deployment (Desktop/server)
+See `docs/DEPLOYMENT.md` for:
+- environment variables
+- database migrations
+- backup/restore
+- monitoring/alerting notes
+- performance tuning notes
+
 ## Web UI entry points
 - Dashboard: `http://127.0.0.1:8787/ui/ninja_mobile_new.html`
 

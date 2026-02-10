@@ -2,6 +2,13 @@ const API_BASE = location.origin;
 
 function getToken() {
   try {
+    // Prefer `?token=...` when present (Android app injects this), then persist it.
+    const u = new URL(String(location.href));
+    const t = (u.searchParams.get("token") || u.searchParams.get("t") || "").trim();
+    if (t) {
+      try { localStorage.setItem("nn_token", t); } catch {}
+      return t;
+    }
     return localStorage.getItem("nn_token") || "";
   } catch {
     return "";

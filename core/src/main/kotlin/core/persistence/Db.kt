@@ -30,28 +30,37 @@ object Db {
           traffic TEXT
       )"""
     )
-    // Lightweight migration for existing installs
-    runCatching {
-      c.createStatement().execute("ALTER TABLE devices ADD COLUMN os TEXT")
-    }
-    val deviceColumns = listOf(
-      "name",
-      "owner",
-      "room",
-      "note",
-      "trust",
-      "type",
-      "status",
-      "via",
-      "signal",
-      "activityToday",
-      "traffic"
-    )
-    deviceColumns.forEach { col ->
-      runCatching {
-        c.createStatement().execute("ALTER TABLE devices ADD COLUMN $col TEXT")
+
+    fun ensureColumn(table: String, column: String, ddlType: String) {
+      val present = c.createStatement().executeQuery("PRAGMA table_info($table);").use { rs ->
+        var found = false
+        while (rs.next()) {
+          if (rs.getString("name") == column) {
+            found = true
+            break
+          }
+        }
+        found
+      }
+      if (!present) {
+        c.createStatement().execute("ALTER TABLE $table ADD COLUMN $column $ddlType")
       }
     }
+
+    // Lightweight migration for existing installs: add new columns only if absent.
+    ensureColumn("devices", "os", "TEXT")
+    ensureColumn("devices", "name", "TEXT")
+    ensureColumn("devices", "owner", "TEXT")
+    ensureColumn("devices", "room", "TEXT")
+    ensureColumn("devices", "note", "TEXT")
+    ensureColumn("devices", "trust", "TEXT")
+    ensureColumn("devices", "type", "TEXT")
+    ensureColumn("devices", "status", "TEXT")
+    ensureColumn("devices", "via", "TEXT")
+    ensureColumn("devices", "signal", "TEXT")
+    ensureColumn("devices", "activityToday", "TEXT")
+    ensureColumn("devices", "traffic", "TEXT")
+
     c.createStatement().execute(
       """CREATE TABLE IF NOT EXISTS events(
           deviceId TEXT,

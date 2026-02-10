@@ -25,6 +25,7 @@ class AndroidLocalServerApiContractTest {
   @Test
   fun requiredEndpointsExistAndReturn200() = runBlocking {
     val context = ApplicationProvider.getApplicationContext<Context>()
+    val token = LocalApiAuth.getOrCreateToken(context)
     val server = AndroidLocalServer(context).apply {
       ipListOverride = { listOf("192.168.1.10") }
       reachabilityOverride = { _, _ -> true }
@@ -59,6 +60,7 @@ class AndroidLocalServerApiContractTest {
     fun get(uri: URI): Pair<Int, String> {
       val conn = (uri.toURL().openConnection() as HttpURLConnection).apply {
         requestMethod = "GET"
+        setRequestProperty(LocalApiAuth.HEADER_TOKEN, token)
         connectTimeout = 1500
         readTimeout = 1500
       }
@@ -76,6 +78,7 @@ class AndroidLocalServerApiContractTest {
       val conn = (uri.toURL().openConnection() as HttpURLConnection).apply {
         requestMethod = "POST"
         doOutput = true
+        setRequestProperty(LocalApiAuth.HEADER_TOKEN, token)
         setRequestProperty("Content-Type", "application/json")
         connectTimeout = 1500
         readTimeout = 1500
@@ -95,6 +98,7 @@ class AndroidLocalServerApiContractTest {
       val conn = (uri.toURL().openConnection() as HttpURLConnection).apply {
         requestMethod = "PUT"
         doOutput = true
+        setRequestProperty(LocalApiAuth.HEADER_TOKEN, token)
         setRequestProperty("Content-Type", "application/json")
         connectTimeout = 1500
         readTimeout = 1500
@@ -149,6 +153,7 @@ class AndroidLocalServerApiContractTest {
       run {
         val conn = (URI("$base/api/v1/logs/stream").toURL().openConnection() as HttpURLConnection).apply {
           requestMethod = "GET"
+          setRequestProperty(LocalApiAuth.HEADER_TOKEN, token)
           connectTimeout = 1500
           readTimeout = 500
         }

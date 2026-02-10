@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -45,6 +46,19 @@ class MainActivity : AppCompatActivity() {
     startForegroundService(Intent(this, EngineService::class.java))
     ensureRuntimePermissions()
     ensureLocationServicesEnabled()
+
+    val localApiToken = LocalApiAuth.getOrCreateToken(applicationContext)
+    val serverDashboardUrl = Uri.parse("http://127.0.0.1:8787/ui/ninja_mobile_new.html")
+      .buildUpon()
+      .appendQueryParameter(LocalApiAuth.QUERY_PARAM, localApiToken)
+      .build()
+      .toString()
+    val assetDashboardUrl = Uri.parse("file:///android_asset/web-ui/ninja_mobile_new.html")
+      .buildUpon()
+      .appendQueryParameter("bootstrap", "1")
+      .appendQueryParameter(LocalApiAuth.QUERY_PARAM, localApiToken)
+      .build()
+      .toString()
 
     web = WebView(this)
     web.settings.javaScriptEnabled = true
@@ -107,7 +121,7 @@ class MainActivity : AppCompatActivity() {
           if (isLocalServerUrl && withinBootstrapWindow && !serverFallbackTriggered) {
             serverFallbackTriggered = true
             Log.w(logTag, "Local server not ready; falling back to asset bootstrap page.")
-            view.loadUrl("file:///android_asset/web-ui/ninja_mobile_new.html?bootstrap=1")
+            view.loadUrl(assetDashboardUrl)
           }
         }
       }
@@ -129,9 +143,6 @@ class MainActivity : AppCompatActivity() {
         )
       }
     }
-
-    val serverDashboardUrl = "http://127.0.0.1:8787/ui/ninja_mobile_new.html"
-    val assetDashboardUrl = "file:///android_asset/web-ui/ninja_mobile_new.html?bootstrap=1"
 
     // Prefer serving everything from the local server. If it's not ready yet, WebViewClient will fall back to assets.
     web.loadUrl(serverDashboardUrl)
@@ -263,10 +274,12 @@ class MainActivity : AppCompatActivity() {
 
   private fun isServerReady(): Boolean {
     return runCatching {
+      val token = LocalApiAuth.getOrCreateToken(applicationContext)
       val conn = (URL("http://127.0.0.1:8787/api/v1/system/info").openConnection() as HttpURLConnection).apply {
         connectTimeout = 500
         readTimeout = 500
         requestMethod = "GET"
+        setRequestProperty(LocalApiAuth.HEADER_TOKEN, token)
       }
       conn.inputStream.use { }
       conn.responseCode in 200..399

@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
 import android.text.format.Formatter
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.netninja.cam.CameraDevice
 import com.netninja.cam.OnvifDiscoveryService
@@ -39,6 +40,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Inet4Address
@@ -121,6 +124,8 @@ import android.database.sqlite.SQLiteDatabase
 @Serializable data class ScanProgress(
   val progress: Int = 0,
   val phase: String = "IDLE",
+  val message: String? = null,
+  val fixAction: String? = null,
   val networks: Int = 0,
   val devices: Int = 0,
   val rssiDbm: Double? = null,
@@ -131,6 +136,9 @@ import android.database.sqlite.SQLiteDatabase
   val linkUp: Boolean = true,
   val updatedAt: Long = System.currentTimeMillis()
 )
+
+@Serializable
+data class ApiError(val ok: Boolean = false, val error: String)
 
 @Serializable
 data class RouterInfo(
@@ -185,7 +193,81 @@ data class MetricsResponse(
 
 class AndroidLocalServer(private val ctx: Context) {
 
+  private companion object {
+    private const val TAG = "AndroidLocalServer"
+  }
+
+  private fun logException(where: String, t: Throwable, fields: Map<String, Any?> = emptyMap()) {
+    if (t is CancellationException) throw t
+    // Logcat for developers + `/api/v1/logs/stream` for UI diagnostics.
+    Log.e(TAG, "$where failed: ${t.message}", t)
+    logEvent(
+      "error",
+      mapOf(
+        "where" to where,
+        "errorType" to t::class.java.simpleName,
+        "message" to t.message
+      ) + fields
+    )
+  }
+
+  private inline fun <T> catching(where: String, fields: Map<String, Any?> = emptyMap(), block: () -> T): Result<T> {
+    return runCatching(block).onFailure { t -> logException(where, t, fields) }
+  }
+
+  private inline fun <T> catchingOrNull(where: String, fields: Map<String, Any?> = emptyMap(), block: () -> T): T? {
+    return catching(where, fields, block).getOrNull()
+  }
+
+  private inline fun <T> catchingOrDefault(
+    where: String,
+    default: T,
+    fields: Map<String, Any?> = emptyMap(),
+    block: () -> T
+  ): T {
+    return catching(where, fields, block).getOrElse { default }
+  }
+
+  private suspend fun <T> retryTransientOrNull(
+    where: String,
+    attempts: Int,
+    initialDelayMs: Long,
+    maxDelayMs: Long,
+    fields: Map<String, Any?> = emptyMap(),
+    isTransient: (Throwable) -> Boolean,
+    block: suspend () -> T
+  ): T? {
+    require(attempts >= 1) { "attempts must be >= 1" }
+    var delayMs = initialDelayMs.coerceAtLeast(0)
+    repeat(attempts) { idx ->
+      try {
+        return block()
+      } catch (t: Throwable) {
+        if (t is CancellationException) throw t
+        val lastAttempt = idx == attempts - 1
+        if (lastAttempt || !isTransient(t)) {
+          logException(where, t, fields + mapOf("attempt" to (idx + 1), "attempts" to attempts))
+          return null
+        }
+      }
+      if (delayMs > 0) delay(delayMs)
+      delayMs = (delayMs * 2).coerceAtMost(maxDelayMs)
+    }
+    return null
+  }
+
   private val db = LocalDatabase(ctx)
+  private val localApiToken = LocalApiAuth.getOrCreateToken(ctx)
+
+  private data class DbNotice(
+    val atMs: Long,
+    val level: String, // info | warn | error
+    val action: String, // ok | repaired | rebuild
+    val message: String,
+    val backupPath: String? = null
+  )
+
+  private val dbNotice = AtomicReference<DbNotice?>(null)
 
   private val devices = ConcurrentHashMap<String, Device>()
   private val deviceEvents = ConcurrentHashMap<String, MutableList<DeviceEvent>>()
@@ -209,7 +291,9 @@ class AndroidLocalServer(private val ctx: Context) {
   private val schedulerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
   private var schedulerJob: Job? = null
   private var schedulerPaused = false
-  private val minScanIntervalMs = 60_000L
+  private val minScanIntervalMsDefault = 60_000L
+  internal var minScanIntervalMsOverride: Long? = null
+  private fun minScanIntervalMs(): Long = minScanIntervalMsOverride ?: minScanIntervalMsDefault
 
   private val watchdogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
   private var engine: ApplicationEngine? = null
@@ -250,6 +334,66 @@ class AndroidLocalServer(private val ctx: Context) {
   internal fun scanPreconditionsForTest(subnet: String? = null): ScanPreconditions =
     scanPreconditions(subnet)
 
+  private fun Application.configure(uiDir: File) {
+    install(ContentNegotiation) { json() }
+    install(WebSockets) {
+      pingPeriod = Duration.ofSeconds(15)
+      timeout = Duration.ofSeconds(30)
+      maxFrameSize = 1_048_576
+    }
+
+    // Localhost-only (permit file-scheme origins used by WebView bootstrap)
+    install(CORS) {
+      allowMethod(HttpMethod.Get)
+      allowMethod(HttpMethod.Post)
+      allowMethod(HttpMethod.Put)
+      allowHeader(HttpHeaders.ContentType)
+      allowHeader(HttpHeaders.Authorization)
+      allowHeader(LocalApiAuth.HEADER_TOKEN)
+      allowOrigins { origin ->
+        origin == "null" ||
+          origin.startsWith("file://") ||
+          origin.startsWith("http://127.0.0.1") ||
+          origin.startsWith("http://localhost")
+      }
+    }
+
+    // Require a shared-secret token for all API calls, and reject non-loopback callers.
+    intercept(ApplicationCallPipeline.Plugins) {
+      if (call.request.httpMethod == HttpMethod.Options) return@intercept
+
+      val path = call.request.path()
+      if (!path.startsWith("/api/v1/")) return@intercept
+
+      val bearer = call.request.headers[HttpHeaders.Authorization]
+        ?.removePrefix("Bearer")
+        ?.trim()
+      val provided = call.request.headers[LocalApiAuth.HEADER_TOKEN]
+        ?: bearer
+        ?: call.request.queryParameters[LocalApiAuth.QUERY_PARAM]
+
+      if (provided != localApiToken) {
+        call.respond(HttpStatusCode.Unauthorized, ApiError(error = "unauthorized"))
+        finish()
+        return@intercept
+      }
+
+      val remoteHost = call.request.local.remoteHost
+      val rh = remoteHost.trim().lowercase()
+      val isLoopback = rh == "localhost" ||
+        rh == "::1" ||
+        rh == "0:0:0:0:0:0:0:1" ||
+        rh.startsWith("127.")
+      if (!isLoopback) {
+        call.respond(HttpStatusCode.Forbidden, ApiError(error = "forbidden"))
+        finish()
+        return@intercept
+      }
+    }
+
+    setupRoutes(uiDir)
+  }
+
   fun start(host: String = "127.0.0.1", port: Int = 8787) {
     // UI assets -> internal storage (atomic copy)
     val uiDir = File(ctx.filesDir, "web-ui").apply { mkdirs() }
@@ -265,28 +409,7 @@ class AndroidLocalServer(private val ctx: Context) {
       while (isActive) {
         try {
           engine = embeddedServer(CIO, host = host, port = port) {
-            install(ContentNegotiation) { json() }
-            install(WebSockets) {
-              pingPeriod = Duration.ofSeconds(15)
-              timeout = Duration.ofSeconds(30)
-              maxFrameSize = 1_048_576
-            }
-
-            // Localhost-only (permit file-scheme origins used by WebView bootstrap)
-            install(CORS) {
-              anyHost()
-              allowMethod(HttpMethod.Get)
-              allowMethod(HttpMethod.Post)
-              allowHeader(HttpHeaders.ContentType)
-              allowOrigins { origin ->
-                origin == "null" ||
-                  origin.startsWith("file://") ||
-                  origin.startsWith("http://127.0.0.1") ||
-                  origin.startsWith("http://localhost")
-              }
-            }
-
-            setupRoutes(uiDir)
+            configure(uiDir)
           }
           engine?.start(wait = true)
         } catch (t: Throwable) {
@@ -299,20 +422,40 @@ class AndroidLocalServer(private val ctx: Context) {
     log("engine boot requested on $host:$port")
   }
 
+  internal fun startForTest(host: String = "127.0.0.1", port: Int = 0): Int {
+    val uiDir = File(ctx.filesDir, "web-ui-test").apply { mkdirs() }
+
+    verifyDatabase()
+    loadPersistedState()
+
+    val actualPort = if (port == 0) {
+      java.net.ServerSocket(0).use { s -> s.localPort }
+    } else {
+      port
+    }
+
+    engine = embeddedServer(CIO, host = host, port = actualPort) {
+      configure(uiDir)
+    }
+    engine?.start(wait = false)
+    return actualPort
+  }
+
   fun stop() {
-    runCatching { schedulerJob?.cancel() }
-    runCatching { schedulerScope.cancel() }
-    runCatching { scanJob?.cancel() }
-    runCatching { scanScope.cancel() }
-    runCatching { watchdogScope.cancel() }
-    runCatching { engine?.stop(500, 1000) }
+    // Shutdown should be best-effort, but failures must be visible for diagnostics.
+    catching("stop:schedulerJob.cancel") { schedulerJob?.cancel() }
+    catching("stop:schedulerScope.cancel") { schedulerScope.cancel() }
+    catching("stop:scanJob.cancel") { scanJob?.cancel() }
+    catching("stop:scanScope.cancel") { scanScope.cancel() }
+    catching("stop:watchdogScope.cancel") { watchdogScope.cancel() }
+    catching("stop:engine.stop") { engine?.stop(500, 1000) }
   }
 
   private suspend fun broadcastOpenClawSnapshot() {
     val snapshot = OpenClawGatewaySnapshot(nodes = OpenClawGatewayState.listNodes())
     val payload = openClawJson.encodeToString(snapshot)
     openClawWsSessions.values.forEach { session ->
-      runCatching { session.send(payload) }
+      catching("openclaw:broadcast.send") { session.send(payload) }
     }
   }
 
@@ -328,7 +471,7 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(SystemInfo(platform = "android", timeMs = System.currentTimeMillis()))
       }
 
-      // --- AUTH REMOVED (LOCAL-ONLY UI) ---
+      // Auth is enforced globally for `/api/v1/*` via the shared-secret token interceptor.
       get("/api/v1/network/info") {
         call.respond(localNetworkInfo())
       }
@@ -342,7 +485,9 @@ class AndroidLocalServer(private val ctx: Context) {
           return@get
         }
 
-        val routerMac = runCatching { readArpTable().firstOrNull { it.ip == gatewayIp }?.mac }.getOrNull()
+        val routerMac = catchingOrNull("routerInfo:readArpTable", fields = mapOf("gatewayIp" to gatewayIp)) {
+          readArpTable().firstOrNull { it.ip == gatewayIp }?.mac
+        }
         val vendor = lookupVendor(routerMac)
         val ports = withContext(Dispatchers.IO) {
           scanTcpPorts(
@@ -373,11 +518,12 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/discovery/scan") {
-        val req = runCatching { call.receive<ScanRequest>() }.getOrNull() ?: ScanRequest()
+        val req = catchingOrDefault("scan:receive", ScanRequest()) { call.receive<ScanRequest>() }
         val subnet = req.subnet?.trim().takeUnless { it.isNullOrBlank() } ?: deriveSubnetCidr()
         val preconditions = scanPreconditions(subnet)
         if (!preconditions.ready) {
           val msg = preconditions.reason ?: "scan blocked: prerequisites not met"
+          lastScanError.set(msg)
           logEvent(
             "SCAN_START_BLOCKED",
             mapOf(
@@ -386,20 +532,23 @@ class AndroidLocalServer(private val ctx: Context) {
               "subnet" to subnet
             )
           )
-          updateScanProgress("PRECONDITION_BLOCKED", message = msg)
+          updateScanProgress("PRECONDITION_BLOCKED", message = msg, fixAction = preconditions.fixAction)
           call.respond(cachedResults())
           return@post
         }
         if (subnet == null) {
           val msg = "scan blocked: missing subnet (permission or network unavailable)"
+          lastScanError.set(msg)
           logEvent(
             "SCAN_START_BLOCKED",
             mapOf("reason" to "missing_subnet", "androidVersion" to Build.VERSION.SDK_INT)
           )
-          updateScanProgress("PERMISSION_BLOCKED", message = msg)
+          updateScanProgress("PERMISSION_BLOCKED", message = msg, fixAction = preconditions.fixAction ?: "app_settings")
           call.respond(cachedResults())
           return@post
         }
+        // Clear any previous blocker message once we accept a scan request.
+        updateScanProgress("QUEUED", message = null, fixAction = null)
         scheduleScan(subnet, reason = "manual")
         call.respond(cachedResults())
       }
@@ -409,7 +558,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/onvif/discover") {
-        val devices = runCatching {
+        val devices = catching("onvif:discover") {
           onvifDiscoverOverride?.let { override ->
             withTimeoutOrNull(1500) { override() } ?: emptyList()
           } ?: run {
@@ -444,11 +593,21 @@ class AndroidLocalServer(private val ctx: Context) {
 
       webSocket("/openclaw/ws") {
         var nodeId: String? = null
+        var parseErrors = 0
         try {
           for (frame in incoming) {
             val text = (frame as? Frame.Text)?.readText() ?: continue
-            val msg = runCatching { openClawJson.decodeFromString(OpenClawWsMessage.serializer(), text) }.getOrNull()
-              ?: continue
+            val msg = catchingOrNull("openclaw:parseMessage", fields = mapOf("payloadLen" to text.length)) {
+              openClawJson.decodeFromString(OpenClawWsMessage.serializer(), text)
+            }
+            if (msg == null) {
+              // Avoid log spam if a client sends garbage in a loop.
+              parseErrors++
+              if (parseErrors <= 3) {
+                logEvent("openclaw_parse_failed", mapOf("payloadLen" to text.length, "count" to parseErrors))
+              }
+              continue
+            }
 
             when (msg.type.trim().uppercase(java.util.Locale.ROOT)) {
               "HELLO" -> {
@@ -461,7 +620,9 @@ class AndroidLocalServer(private val ctx: Context) {
                 openClawWsSessions[resolvedId] = this
 
                 val session = NodeSession(resolvedId) { payload ->
-                  runCatching { outgoing.trySend(Frame.Text(payload)) }
+                  catching("openclaw:outgoing.trySend", fields = mapOf("nodeId" to resolvedId)) {
+                    outgoing.trySend(Frame.Text(payload))
+                  }
                   Unit
                 }
                 OpenClawGatewayState.register(resolvedId, msg.capabilities, session)
@@ -502,7 +663,9 @@ class AndroidLocalServer(private val ctx: Context) {
         scanCancel.set(true)
         scanJob?.cancel()
         val scanId = activeScanId.get()
-        emitScanCancelled("user_stop")
+        if (!scanId.isNullOrBlank()) {
+          emitScanCancelled(scanId, "user_stop")
+        }
         logEvent("scan_cancelled", mapOf("reason" to "user_stop", "scanId" to scanId))
         call.respond(mapOf("ok" to true))
       }
@@ -535,7 +698,7 @@ class AndroidLocalServer(private val ctx: Context) {
 
       put("/api/v1/devices/{id}/meta") {
         val id = call.parameters["id"]?.lowercase() ?: return@put call.respond(HttpStatusCode.BadRequest)
-        val patch = runCatching { call.receive<DeviceMetaUpdate>() }.getOrNull() ?: DeviceMetaUpdate()
+        val patch = catchingOrDefault("deviceMeta:receive", DeviceMetaUpdate(), fields = mapOf("id" to id)) { call.receive<DeviceMetaUpdate>() }
         val d = devices[id] ?: return@put call.respond(HttpStatusCode.NotFound)
         val updated = d.copy(
           name = patch.name ?: d.name,
@@ -557,7 +720,7 @@ class AndroidLocalServer(private val ctx: Context) {
 
       post("/api/v1/devices/{id}/actions") {
         val id = call.parameters["id"]?.lowercase() ?: return@post call.respond(HttpStatusCode.BadRequest)
-        val req = runCatching { call.receive<DeviceActionRequest>() }.getOrNull() ?: DeviceActionRequest()
+        val req = catchingOrDefault("deviceAction:receive", DeviceActionRequest(), fields = mapOf("id" to id)) { call.receive<DeviceActionRequest>() }
         val action = req.action?.trim()?.lowercase()
         if (action.isNullOrBlank()) {
           call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing action"))
@@ -592,7 +755,7 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(schedules.toList())
       }
       post("/api/v1/schedules") {
-        val req = runCatching { call.receive<ScheduleRequest>() }.getOrNull() ?: ScheduleRequest()
+        val req = catchingOrDefault("schedules:receive", ScheduleRequest()) { call.receive<ScheduleRequest>() }
         val subnet = req.subnet?.trim().orEmpty()
         val freq = req.freq?.trim().orEmpty()
         if (subnet.isBlank() || freq.isBlank()) {
@@ -615,7 +778,7 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(rules.toList())
       }
       post("/api/v1/rules") {
-        val req = runCatching { call.receive<RuleRequest>() }.getOrNull() ?: RuleRequest()
+        val req = catchingOrDefault("rules:receive", RuleRequest()) { call.receive<RuleRequest>() }
         val match = req.match?.trim().orEmpty()
         val action = req.action?.trim().orEmpty()
         if (match.isBlank() || action.isBlank()) {
@@ -631,7 +794,7 @@ class AndroidLocalServer(private val ctx: Context) {
 
       // Actions
       post("/api/v1/actions/ping") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingOrDefault("action:ping.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
         val start = System.currentTimeMillis()
@@ -641,11 +804,11 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/http") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingOrDefault("action:http.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val urlStr = req.url?.trim().orEmpty()
         if (urlStr.isBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing url"))
 
-        val url = runCatching { URL(urlStr) }.getOrNull()
+        val url = catchingOrNull("action:http.parseUrl", fields = mapOf("url" to urlStr.take(256))) { URL(urlStr) }
         if (url == null || (url.protocol != "http" && url.protocol != "https")) {
           return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "invalid url"))
         }
@@ -654,7 +817,7 @@ class AndroidLocalServer(private val ctx: Context) {
           return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "localhost target blocked"))
         }
 
-        val status = runCatching {
+        val status = catching("action:http.head", fields = mapOf("host" to host)) {
           val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
             connectTimeout = 800
             readTimeout = 800
@@ -669,7 +832,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/portscan") {
-        val req = runCatching { call.receive<PortScanRequest>() }.getOrNull() ?: PortScanRequest()
+        val req = catchingOrDefault("action:portscan.receive", PortScanRequest()) { call.receive<PortScanRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
         val timeout = req.timeoutMs ?: 250
@@ -678,26 +841,26 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/actions/wol") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingOrDefault("action:wol.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val mac = req.mac?.trim()
         if (mac.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing mac"))
-        val ok = runCatching { sendMagicPacket(mac) }.isSuccess
+        val ok = catching("action:wol.send", fields = mapOf("mac" to mac)) { sendMagicPacket(mac) }.isSuccess
         call.respond(mapOf("ok" to ok, "mac" to mac))
       }
 
       post("/api/v1/actions/snmp") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingOrDefault("action:snmp.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
-        val ok = runCatching { scanPorts(ip, 350).contains(161) }.getOrDefault(false)
+        val ok = catchingOrDefault("action:snmp.portProbe", false, fields = mapOf("ip" to ip)) { scanPorts(ip, 350).contains(161) }
         call.respond(mapOf("ok" to ok, "ip" to ip))
       }
 
       post("/api/v1/actions/ssh") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingOrDefault("action:ssh.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "missing ip"))
-        val ok = runCatching { scanPorts(ip, 350).contains(22) }.getOrDefault(false)
+        val ok = catchingOrDefault("action:ssh.portProbe", false, fields = mapOf("ip" to ip)) { scanPorts(ip, 350).contains(22) }
         call.respond(mapOf("ok" to ok, "ip" to ip, "note" to "SSH port probe only"))
       }
 
@@ -728,7 +891,7 @@ class AndroidLocalServer(private val ctx: Context) {
         call.respond(
           MetricsResponse(
             // Robolectric/host JVM environments may not fully implement Android clock APIs.
-            uptimeMs = runCatching { SystemClock.elapsedRealtime() }.getOrElse { System.nanoTime() / 1_000_000L },
+            uptimeMs = catchingOrDefault("metrics:elapsedRealtime", System.nanoTime() / 1_000_000L) { SystemClock.elapsedRealtime() },
             memTotal = memTotal,
             memUsed = memUsed,
             devicesTotal = all.size,
@@ -743,8 +906,8 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       post("/api/v1/system/permissions/action") {
-        val req = runCatching { call.receive<PermissionsActionRequest>() }.getOrNull()
-        val resp = runCatching { handlePermissionAction(req?.action, req?.context) }
+        val req = catchingOrNull("permissionsAction:receive") { call.receive<PermissionsActionRequest>() }
+        val resp = catching("permissionsAction:handle") { handlePermissionAction(req?.action, req?.context) }
           .getOrElse { e ->
             PermissionsActionResponse(
               ok = false,
@@ -756,6 +919,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
 
       get("/api/v1/system/state") {
+        val notice = dbNotice.get()
         call.respond(
           mapOf(
             "scanInProgress" to (scanJob?.isActive == true),
@@ -763,8 +927,17 @@ class AndroidLocalServer(private val ctx: Context) {
             "lastScanRequestedAt" to lastScanRequestedAt.get(),
             "lastScanError" to lastScanError.get(),
             "cachedResults" to cachedResults().size,
-            "rateLimitMs" to minScanIntervalMs,
-            "permissions" to permissionSummary()
+            "rateLimitMs" to minScanIntervalMs(),
+            "permissions" to permissionSummary(),
+            "dbNotice" to notice?.let {
+              mapOf(
+                "atMs" to it.atMs,
+                "level" to it.level,
+                "action" to it.action,
+                "message" to it.message,
+                "backupPath" to it.backupPath
+              )
+            }
           )
         )
       }
@@ -808,7 +981,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private suspend fun runScheduledScans() {
     val now = System.currentTimeMillis()
     val last = lastScanAt.get() ?: 0L
-    if (now - last < minScanIntervalMs) return
+    if (now - last < minScanIntervalMs()) return
 
     for (entry in schedules) {
       val parts = entry.split("@")
@@ -821,11 +994,9 @@ class AndroidLocalServer(private val ctx: Context) {
   }
 
   private suspend fun performScan(subnet: String) {
-    // Prevent overlapping scans
-    if (!scanMutex.tryLock()) {
-      logEvent("scan_skipped", mapOf("reason" to "already_running"))
-      return
-    }
+    // Prevent overlapping scans, but don't drop a user-requested scan.
+    // scheduleScan() cancels stale scans, so waiting here is safe and avoids races where a follow-up scan is skipped.
+    scanMutex.lock()
     try {
       val scanId = ensureActiveScanId()
       scanCancel.set(false)
@@ -839,10 +1010,13 @@ class AndroidLocalServer(private val ctx: Context) {
 
       val netInfo = localNetworkInfo()
       fun setProgress(progress: Int, phase: String, devices: Int) {
+        if (activeScanId.get() != scanId) return
         scanProgress.set(
           ScanProgress(
             progress = progress.coerceIn(0, 100),
             phase = phase,
+            message = null,
+            fixAction = null,
             networks = 1,
             devices = devices,
             rssiDbm = null,
@@ -873,13 +1047,14 @@ class AndroidLocalServer(private val ctx: Context) {
         )
       )
 
-      warmUpArp(ips, timeout, netInfo, subnet)
+      warmUpArp(ips, timeout, netInfo, subnet, scanId)
       val arp = readArpTable()
 
       coroutineScope {
         ips.map { ip ->
           async(Dispatchers.IO) {
             sem.withPermit {
+              if (activeScanId.get() != scanId) return@withPermit
               if (scanCancel.get()) return@withPermit
               val arpDev = arp.firstOrNull { it.ip == ip }
               val mac = arpDev?.mac
@@ -893,7 +1068,8 @@ class AndroidLocalServer(private val ctx: Context) {
               val prev = devices[id]
               val hostname = if (reachable) resolveHostname(ip) else null
               val vendor = lookupVendor(mac)
-              val os = guessOs(ip, timeout, hostname, vendor)
+              val openPorts = if (reachable) scanPorts(ip, timeout) else emptyList()
+              val os = guessOs(openPorts, hostname, vendor)
               val type = prev?.type ?: guessDeviceType(os, vendor, hostname)
               val via = prev?.via ?: netInfo["iface"]?.toString() ?: netInfo["name"]?.toString()
               val trust = prev?.trust ?: "Unknown"
@@ -932,37 +1108,46 @@ class AndroidLocalServer(private val ctx: Context) {
 
               val done = completed.incrementAndGet()
               val pct = ((done.toDouble() / total.toDouble()) * 90.0).toInt().coerceIn(0, 90)
-              setProgress(pct + 10, if (pct >= 90) "COMPLETE" else "SCANNING", foundCount.get())
+              // Do not emit COMPLETE until the scan is actually finalized (see end-of-scan block below).
+              setProgress(pct + 10, "SCANNING", foundCount.get())
             }
           }
         }.awaitAll()
       }
 
+      if (activeScanId.get() != scanId) {
+        return
+      }
       lastScanAt.set(System.currentTimeMillis())
       if (scanCancel.get()) {
         scanProgress.set(
           scanProgress.get().copy(
             phase = "CANCELLED",
+            message = "Scan cancelled.",
+            fixAction = null,
             updatedAt = System.currentTimeMillis()
           )
         )
-        emitScanCancelled("cancel_flag", mapOf("subnet" to subnet))
+        emitScanCancelled(scanId, "cancel_flag", mapOf("subnet" to subnet))
         return
       }
       scanProgress.set(
         scanProgress.get().copy(
           progress = 100,
           phase = "COMPLETE",
+          message = null,
+          fixAction = null,
           devices = foundCount.get(),
           updatedAt = System.currentTimeMillis()
         )
       )
       lastScanResults.set(devices.values.toList())
       logEvent("scan_complete", mapOf("devices" to devices.size, "subnet" to subnet, "scanId" to scanId))
-      emitScanCompleted(mapOf("devices" to devices.size, "subnet" to subnet))
+      emitScanCompleted(scanId, mapOf("devices" to devices.size, "subnet" to subnet))
     } catch (t: Throwable) {
       lastScanError.set(t.message)
       logEvent("scan_failed", mapOf("error" to t.message, "subnet" to subnet))
+      updateScanProgress("ERROR", message = t.message ?: "Scan failed.")
     } finally {
       scanMutex.unlock()
     }
@@ -1001,7 +1186,7 @@ class AndroidLocalServer(private val ctx: Context) {
     log("rule fired: ${rule.match} -> ${rule.action} (${device.id})")
     when (rule.action.lowercase()) {
       "log" -> log("rule log: ${device.id}")
-      "wol" -> device.mac?.let { runCatching { sendMagicPacket(it) } }
+      "wol" -> device.mac?.let { mac -> catching("rule:wol.send", fields = mapOf("deviceId" to device.id, "mac" to mac)) { sendMagicPacket(mac) } }
       "block" -> {
         val updated = device.copy(trust = "Blocked", status = "Blocked")
         devices[device.id] = updated
@@ -1073,23 +1258,111 @@ class AndroidLocalServer(private val ctx: Context) {
 
   // ----------------- Persistence -----------------
 
+  private fun integrityCheck(db: SQLiteDatabase): String? {
+    return db.rawQuery("PRAGMA integrity_check;", null).use { c ->
+      if (!c.moveToFirst()) return@use null
+      c.getString(0)
+    }
+  }
+
+  private fun attemptDatabaseRepair(db: SQLiteDatabase) {
+    // Best-effort only; SQLite doesn't provide a guaranteed in-place repair API.
+    // These can fix some issues (stale WAL, index corruption) when the file isn't fully malformed.
+    runCatching { db.execSQL("PRAGMA wal_checkpoint(TRUNCATE);") }
+    runCatching { db.execSQL("PRAGMA optimize;") }
+    runCatching { db.execSQL("REINDEX;") }
+    runCatching { db.execSQL("VACUUM;") }
+  }
+
+  private fun backupDatabaseFiles(reason: String): File? {
+    val dbFile = ctx.getDatabasePath("netninja.db")
+    val walFile = File(dbFile.absolutePath + "-wal")
+    val shmFile = File(dbFile.absolutePath + "-shm")
+
+    if (!dbFile.exists() && !walFile.exists() && !shmFile.exists()) return null
+
+    val outRoot = File(ctx.filesDir, "db-backups").apply { mkdirs() }
+    val stamp = System.currentTimeMillis().toString()
+    val outDir = File(outRoot, "netninja.db.$stamp").apply { mkdirs() }
+
+    fun copyIfExists(src: File, destName: String) {
+      if (!src.exists()) return
+      val dest = File(outDir, destName)
+      FileInputStream(src).use { input ->
+        FileOutputStream(dest).use { output ->
+          input.copyTo(output)
+        }
+      }
+    }
+
+    copyIfExists(dbFile, "netninja.db")
+    copyIfExists(walFile, "netninja.db-wal")
+    copyIfExists(shmFile, "netninja.db-shm")
+
+    logEvent("db_backup_created", mapOf("reason" to reason, "path" to outDir.absolutePath))
+    return outDir
+  }
+
   private fun verifyDatabase() {
     try {
-      db.writableDatabase.rawQuery("PRAGMA integrity_check;", null).use { c ->
-        if (c.moveToFirst() && c.getString(0) != "ok") {
-          log("DB corruption detected, rebuilding")
-          ctx.deleteDatabase("netninja.db")
+      val w = db.writableDatabase
+      val first = integrityCheck(w)
+      if (first != null && first != "ok") {
+        log("DB corruption detected (integrity_check='$first'), attempting repair")
+        logEvent("db_integrity_failed", mapOf("result" to first))
+
+        attemptDatabaseRepair(w)
+        val second = integrityCheck(w)
+        if (second == "ok") {
+          log("DB repair succeeded")
+          dbNotice.set(
+            DbNotice(
+              atMs = System.currentTimeMillis(),
+              level = "warn",
+              action = "repaired",
+              message = "Database issues were detected and repaired. If you notice missing history, export your data."
+            )
+          )
+          return
         }
+
+        log("DB repair failed (integrity_check='$second'), backing up and rebuilding")
+        val backupDir = runCatching { backupDatabaseFiles("integrity_check_failed") }.getOrNull()
+        dbNotice.set(
+          DbNotice(
+            atMs = System.currentTimeMillis(),
+            level = "error",
+            action = "rebuild",
+            message = "Database corruption detected. Local history/schedules/rules were reset. A backup was created before rebuild.",
+            backupPath = backupDir?.absolutePath
+          )
+        )
+        logEvent("db_rebuild", mapOf("reason" to "integrity_check_failed", "backupPath" to backupDir?.absolutePath))
+
+        runCatching { db.close() }
+        ctx.deleteDatabase("netninja.db")
       }
     } catch (e: Exception) {
       log("DB failure, recreating: ${e.message}")
+      val backupDir = runCatching { backupDatabaseFiles("open_failed") }.getOrNull()
+      dbNotice.set(
+        DbNotice(
+          atMs = System.currentTimeMillis(),
+          level = "error",
+          action = "rebuild",
+          message = "Database could not be opened. Local history/schedules/rules were reset. A backup was created before rebuild.",
+          backupPath = backupDir?.absolutePath
+        )
+      )
+      logEvent("db_rebuild", mapOf("reason" to "open_failed", "backupPath" to backupDir?.absolutePath, "error" to e.message))
+      runCatching { db.close() }
       ctx.deleteDatabase("netninja.db")
     }
   }
 
   private fun columnsFor(table: String): Set<String> {
     val cols = mutableSetOf<String>()
-    runCatching {
+    catching("db:columnsFor", fields = mapOf("table" to table)) {
       db.readableDatabase.rawQuery("PRAGMA table_info($table);", null).use { c ->
         val nameIdx = c.getColumnIndex("name").takeIf { it >= 0 } ?: 1
         while (c.moveToNext()) {
@@ -1107,7 +1380,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private fun loadPersistedState() {
     val r = db.readableDatabase
 
-    runCatching {
+    catching("db:load:devices") {
       val hasOpenPorts = hasDeviceColumn("openPorts")
       val sql = if (hasOpenPorts) {
         "SELECT id, ip, name, online, lastSeen, mac, hostname, vendor, os, owner, room, note, trust, type, status, via, signal, activityToday, traffic, openPorts FROM devices"
@@ -1148,7 +1421,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
     }
 
-    runCatching {
+    catching("db:load:rules") {
       r.rawQuery("SELECT match, action FROM rules", null).use { c ->
         while (c.moveToNext()) {
           rules += RuleEntry(c.getString(0), c.getString(1))
@@ -1156,7 +1429,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
     }
 
-    runCatching {
+    catching("db:load:schedules") {
       r.rawQuery("SELECT entry FROM schedules", null).use { c ->
         while (c.moveToNext()) {
           schedules += c.getString(0)
@@ -1164,7 +1437,7 @@ class AndroidLocalServer(private val ctx: Context) {
       }
     }
 
-    runCatching {
+    catching("db:load:events") {
       r.rawQuery("SELECT deviceId, ts, event FROM events", null).use { c ->
         while (c.moveToNext()) {
           val id = c.getString(0)
@@ -1272,16 +1545,16 @@ class AndroidLocalServer(private val ctx: Context) {
     return newId
   }
 
-  private fun emitScanCancelled(reason: String, extra: Map<String, Any?> = emptyMap()) {
-    val scanId = activeScanId.get() ?: return
+  private fun emitScanCancelled(scanId: String, reason: String, extra: Map<String, Any?> = emptyMap()) {
     logEvent("SCAN_CANCELLED", mapOf("scanId" to scanId, "reason" to reason) + extra)
-    activeScanId.set(null)
+    // Do not clear a newer scanId if a stale scan finishes/cancels late.
+    activeScanId.compareAndSet(scanId, null)
   }
 
-  private fun emitScanCompleted(extra: Map<String, Any?> = emptyMap()) {
-    val scanId = activeScanId.get() ?: return
+  private fun emitScanCompleted(scanId: String, extra: Map<String, Any?> = emptyMap()) {
     logEvent("SCAN_COMPLETED", mapOf("scanId" to scanId) + extra)
-    activeScanId.set(null)
+    // Do not clear a newer scanId if a stale scan completes late.
+    activeScanId.compareAndSet(scanId, null)
   }
 
   private fun saveLog(msg: String) {
@@ -1292,8 +1565,9 @@ class AndroidLocalServer(private val ctx: Context) {
         put("msg", msg)
       }
       w.insert("logs", null, cv)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
       // Logging must never crash the engine.
+      Log.e(TAG, "saveLog failed: ${e.message}", e)
     }
   }
 
@@ -1302,7 +1576,7 @@ class AndroidLocalServer(private val ctx: Context) {
   private fun deriveSubnetCidr(): String? {
     if (canAccessWifiDetails()) {
       val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-      val dhcp = runCatching { wm.dhcpInfo }.getOrNull()
+      val dhcp = catchingOrNull("wifi:dhcpInfo") { wm.dhcpInfo }
       val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
       val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
       if (!ip.isNullOrBlank() && !mask.isNullOrBlank() && ip != "0.0.0.0" && mask != "0.0.0.0") {
@@ -1318,7 +1592,7 @@ class AndroidLocalServer(private val ctx: Context) {
     localNetworkInfoOverride?.let { return it() }
     if (canAccessWifiDetails()) {
       val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-      val dhcp = runCatching { wm.dhcpInfo }.getOrNull()
+      val dhcp = catchingOrNull("wifi:dhcpInfo") { wm.dhcpInfo }
       val ip = dhcp?.let { Formatter.formatIpAddress(it.ipAddress) }
       val gw = dhcp?.let { Formatter.formatIpAddress(it.gateway) }
       val mask = dhcp?.let { Formatter.formatIpAddress(it.netmask) }
@@ -1366,7 +1640,7 @@ class AndroidLocalServer(private val ctx: Context) {
     arpTableOverride?.let { return it() }
     val arpFile = File("/proc/net/arp")
     if (!arpFile.exists() || !arpFile.canRead()) return emptyList()
-    val lines = runCatching { arpFile.readLines() }.getOrDefault(emptyList())
+    val lines = catchingOrDefault("arp:readLines", emptyList(), fields = mapOf("path" to arpFile.absolutePath)) { arpFile.readLines() }
     if (lines.size <= 1) return emptyList()
 
     val out = mutableListOf<Device>()
@@ -1469,7 +1743,9 @@ class AndroidLocalServer(private val ctx: Context) {
     val timeout = timeoutMs.coerceIn(80, 1_000)
     val probePorts = intArrayOf(80, 443, 22)
     repeat(retries.coerceAtLeast(1)) { attempt ->
-      val pingOk = runCatching { InetAddress.getByName(ip).isReachable(timeout) }.getOrDefault(false)
+      val pingOk = catchingOrDefault("reachability:isReachable", false, fields = mapOf("ip" to ip, "timeoutMs" to timeout)) {
+        InetAddress.getByName(ip).isReachable(timeout)
+      }
       if (pingOk) return true
       for (p in probePorts) {
         try {
@@ -1545,10 +1821,10 @@ class AndroidLocalServer(private val ctx: Context) {
 
   private fun wifiEnabled(): Boolean {
     wifiEnabledOverride?.let { return it() }
-    return runCatching {
+    return catchingOrDefault("wifi:isWifiEnabled", false) {
       val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
       wm.isWifiEnabled
-    }.getOrDefault(false)
+    }
   }
 
   private fun locationServicesEnabled(): Boolean {
@@ -1574,7 +1850,7 @@ class AndroidLocalServer(private val ctx: Context) {
       val reason = if (permissions.permissionPermanentlyDenied) {
         "Scan blocked: permission permanently denied. Open app settings to grant access."
       } else {
-        "Scan blocked: Wi‑Fi scan permission missing."
+        "Scan blocked: Wi-Fi scan permission missing."
       }
       return ScanPreconditions(
         ready = false,
@@ -1603,7 +1879,7 @@ class AndroidLocalServer(private val ctx: Context) {
       return ScanPreconditions(
         ready = false,
         blocker = "wifi_disabled",
-        reason = "Scan blocked: Wi‑Fi is disabled.",
+        reason = "Scan blocked: Wi-Fi is disabled.",
         fixAction = "wifi_settings",
         wifiEnabled = false,
         locationEnabled = true,
@@ -1663,7 +1939,7 @@ class AndroidLocalServer(private val ctx: Context) {
         details = mapOf("action" to action, "context" to context)
       )
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      return runCatching {
+      return catching("permissions:openSettings", fields = mapOf("action" to legacy, "context" to context)) {
         ctx.startActivity(intent)
         PermissionsActionResponse(ok = true, message = "Opened system settings.", details = mapOf("action" to legacy))
       }.getOrElse { e ->
@@ -1705,7 +1981,7 @@ class AndroidLocalServer(private val ctx: Context) {
     return if (current.isNotEmpty()) current else lastScanResults.get()
   }
 
-  private fun updateScanProgress(phase: String, message: String? = null) {
+  private fun updateScanProgress(phase: String, message: String? = null, fixAction: String? = null) {
     val now = System.currentTimeMillis()
     val current = scanProgress.get()
     val nextProgress = if (phase == "PERMISSION_BLOCKED" || phase == "RATE_LIMITED") 0 else current.progress
@@ -1713,6 +1989,8 @@ class AndroidLocalServer(private val ctx: Context) {
       current.copy(
         progress = nextProgress,
         phase = phase,
+        message = message,
+        fixAction = fixAction,
         updatedAt = now
       )
     )
@@ -1725,6 +2003,7 @@ class AndroidLocalServer(private val ctx: Context) {
     val preconditions = scanPreconditions(subnet)
     if (!preconditions.ready) {
       val msg = preconditions.reason ?: "scan blocked: prerequisites not met"
+      lastScanError.set(msg)
       logEvent(
         "SCAN_START_BLOCKED",
         mapOf(
@@ -1734,14 +2013,15 @@ class AndroidLocalServer(private val ctx: Context) {
           "source" to reason
         )
       )
-      updateScanProgress("PRECONDITION_BLOCKED", message = msg)
+      updateScanProgress("PRECONDITION_BLOCKED", message = msg, fixAction = preconditions.fixAction)
       return
     }
     val now = System.currentTimeMillis()
     val lastReq = lastScanRequestedAt.get() ?: 0L
-    if (now - lastReq < minScanIntervalMs) {
+    if (now - lastReq < minScanIntervalMs()) {
       logEvent("scan_rate_limited", mapOf("sinceMs" to (now - lastReq), "subnet" to subnet))
-      updateScanProgress("RATE_LIMITED", message = "Scan rate-limited to protect battery.")
+      lastScanError.set("Scan rate-limited to protect battery.")
+      updateScanProgress("RATE_LIMITED", message = "Scan rate-limited to protect battery.", fixAction = null)
       return
     }
     lastScanRequestedAt.set(now)
@@ -1749,7 +2029,9 @@ class AndroidLocalServer(private val ctx: Context) {
       val previousScanId = activeScanId.get()
       scanCancel.set(true)
       scanJob?.cancel()
-      emitScanCancelled("stale_job", mapOf("subnet" to subnet, "source" to reason))
+      if (!previousScanId.isNullOrBlank()) {
+        emitScanCancelled(previousScanId, "stale_job", mapOf("subnet" to subnet, "source" to reason))
+      }
       logEvent(
         "scan_cancelled",
         mapOf(
@@ -1768,11 +2050,22 @@ class AndroidLocalServer(private val ctx: Context) {
     }
   }
 
-  private fun resolveHostname(ip: String): String? =
-    hostnameOverride?.invoke(ip) ?: runCatching {
+  private suspend fun resolveHostname(ip: String): String? {
+    hostnameOverride?.let { return it(ip) }
+    return retryTransientOrNull(
+      where = "resolveHostname",
+      attempts = 2,
+      initialDelayMs = 40,
+      maxDelayMs = 200,
+      fields = mapOf("ip" to ip),
+      isTransient = { t ->
+        t is java.net.SocketTimeoutException || (t is java.io.IOException && t !is java.net.UnknownHostException)
+      }
+    ) {
       val host = InetAddress.getByName(ip).canonicalHostName
       if (host == ip) null else host
-    }.getOrNull()
+    }
+  }
 
   private fun lookupVendor(mac: String?): String? {
     vendorLookupOverride?.let { return it(mac) }
@@ -1832,7 +2125,7 @@ class AndroidLocalServer(private val ctx: Context) {
 
   private fun selectInterfaceInfo(): InterfaceInfo? {
     interfaceInfoOverride?.let { return it() }
-    return runCatching {
+    return catching("iface:selectInterfaceInfo") {
       val candidates = NetworkInterface.getNetworkInterfaces().toList()
         .asSequence()
         .filter { it.isUp && !it.isLoopback }
@@ -1864,26 +2157,37 @@ class AndroidLocalServer(private val ctx: Context) {
     return "${intToIp(base)}/${iface.prefix}"
   }
 
-  private suspend fun warmUpArp(ips: List<String>, timeoutMs: Int, netInfo: Map<String, Any?>, subnet: String) {
+  private suspend fun warmUpArp(
+    ips: List<String>,
+    timeoutMs: Int,
+    netInfo: Map<String, Any?>,
+    subnet: String,
+    scanId: String
+  ) {
     if (ips.isEmpty()) return
     val payload = byteArrayOf(0x1)
     val total = ips.size
-    val socket = runCatching { java.net.DatagramSocket() }.getOrNull() ?: return
+    val socket = catchingOrNull("arpWarmup:DatagramSocket") { java.net.DatagramSocket() } ?: return
     socket.use { s ->
       s.broadcast = true
       s.soTimeout = timeoutMs.coerceIn(80, 800)
+      var sendErrors = 0
       ips.forEachIndexed { idx, ip ->
+        if (!coroutineContext.isActive) return
+        if (activeScanId.get() != scanId) return
         if (scanCancel.get()) return
-        runCatching {
+        catching("arpWarmup:send", fields = mapOf("ip" to ip)) {
           val packet = java.net.DatagramPacket(payload, payload.size, InetAddress.getByName(ip), 9)
           s.send(packet)
-        }
+        }.onFailure { if (sendErrors < 3) sendErrors++ }
         if (idx % 64 == 0 || idx == total - 1) {
           val pct = ((idx + 1).toDouble() / total.toDouble() * 10.0).toInt().coerceIn(0, 10)
           scanProgress.set(
             ScanProgress(
               progress = pct,
               phase = "ARP_WARMUP",
+              message = null,
+              fixAction = null,
               networks = 1,
               devices = 0,
               rssiDbm = null,
@@ -1896,6 +2200,10 @@ class AndroidLocalServer(private val ctx: Context) {
             )
           )
         }
+      }
+      if (sendErrors > 0) {
+        // Summary entry to avoid per-IP spam (errors themselves are already logged with context).
+        logEvent("arp_warmup_send_errors", mapOf("count" to sendErrors))
       }
     }
   }

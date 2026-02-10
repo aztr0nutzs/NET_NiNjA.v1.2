@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.time.Duration
+import org.slf4j.LoggerFactory
 import server.openclaw.OpenClawGatewayRegistry
 import server.openclaw.OpenClawGatewayState
 import server.openclaw.openClawRoutes
@@ -83,6 +84,8 @@ data class PortScanRequest(val ip: String? = null, val timeoutMs: Int? = null)
 data class ScanProgress(
   val progress: Int = 0,
   val phase: String = "IDLE",
+  val message: String? = null,
+  val fixAction: String? = null,
   val networks: Int = 0,
   val devices: Int = 0,
   val rssiDbm: Double? = null,
@@ -111,6 +114,8 @@ data class MetricsResponse(
   val lastScanAt: Long? = null,
   val error: String? = null
 )
+
+private val LOGGER = LoggerFactory.getLogger("server.App")
 
 fun main() {
   val config = resolveServerConfig()
@@ -148,6 +153,104 @@ fun startServer(
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
 
+  fun logException(where: String, t: Throwable, fields: Map<String, Any?> = emptyMap()) {
+    if (t is CancellationException) throw t
+    val suffix = if (fields.isEmpty()) "" else " fields=$fields"
+    LOGGER.error("$where failed: ${t.message}$suffix", t)
+    log("ERROR where=$where msg=${t.message ?: t::class.simpleName}")
+  }
+
+  fun <T> catching(where: String, fields: Map<String, Any?> = emptyMap(), block: () -> T): Result<T> {
+    return runCatching(block).onFailure { t -> logException(where, t, fields) }
+  }
+
+  fun <T> catchingOrNull(where: String, fields: Map<String, Any?> = emptyMap(), block: () -> T): T? {
+    return catching(where, fields, block).getOrNull()
+  }
+
+  fun <T> catchingOrDefault(where: String, default: T, fields: Map<String, Any?> = emptyMap(), block: () -> T): T {
+    return catching(where, fields, block).getOrElse { default }
+  }
+
+  suspend fun <T> catchingSuspend(where: String, fields: Map<String, Any?> = emptyMap(), block: suspend () -> T): Result<T> {
+    return try {
+      Result.success(block())
+    } catch (t: Throwable) {
+      logException(where, t, fields)
+      Result.failure(t)
+    }
+  }
+
+  suspend fun <T> catchingSuspendOrNull(where: String, fields: Map<String, Any?> = emptyMap(), block: suspend () -> T): T? {
+    return catchingSuspend(where, fields, block).getOrNull()
+  }
+
+  suspend fun <T> catchingSuspendOrDefault(
+    where: String,
+    default: T,
+    fields: Map<String, Any?> = emptyMap(),
+    block: suspend () -> T
+  ): T {
+    return catchingSuspend(where, fields, block).getOrElse { default }
+  }
+
+  suspend fun <T> retryTransientOrNull(
+    where: String,
+    attempts: Int,
+    initialDelayMs: Long,
+    maxDelayMs: Long,
+    fields: Map<String, Any?> = emptyMap(),
+    isTransient: (Throwable) -> Boolean,
+    block: suspend () -> T
+  ): T? {
+    require(attempts >= 1) { "attempts must be >= 1" }
+    var delayMs = initialDelayMs.coerceAtLeast(0)
+    repeat(attempts) { idx ->
+      try {
+        return block()
+      } catch (t: Throwable) {
+        if (t is CancellationException) throw t
+        val lastAttempt = idx == attempts - 1
+        if (lastAttempt || !isTransient(t)) {
+          logException(where, t, fields + mapOf("attempt" to (idx + 1), "attempts" to attempts))
+          return null
+        }
+      }
+      if (delayMs > 0) delay(delayMs)
+      delayMs = (delayMs * 2).coerceAtMost(maxDelayMs)
+    }
+    return null
+  }
+
+  suspend fun isReachableWithRetry(ip: String, timeoutMs: Int, attempts: Int): Boolean {
+    return retryTransientOrNull(
+      where = "isReachable",
+      attempts = attempts,
+      initialDelayMs = 40,
+      maxDelayMs = 200,
+      fields = mapOf("ip" to ip, "timeoutMs" to timeoutMs),
+      isTransient = { t -> t is java.net.SocketTimeoutException || t is java.io.IOException }
+    ) {
+      InetAddress.getByName(ip).isReachable(timeoutMs)
+    } ?: false
+  }
+
+  suspend fun resolveHostnameWithRetry(ip: String): String? {
+    return retryTransientOrNull(
+      where = "resolveHostname",
+      attempts = 2,
+      initialDelayMs = 40,
+      maxDelayMs = 200,
+      fields = mapOf("ip" to ip),
+      isTransient = { t ->
+        t is java.net.SocketTimeoutException || (t is java.io.IOException && t !is java.net.UnknownHostException)
+      }
+    ) {
+      val host = InetAddress.getByName(ip).canonicalHostName
+      if (host == ip) null else host
+    }
+  }
+
   val schedulerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
   fun scheduleFrequencyMs(freq: String): Long? = when (freq.lowercase()) {
@@ -173,6 +276,8 @@ fun startServer(
       ScanProgress(
         progress = 0,
         phase = "DISCOVERY",
+        message = null,
+        fixAction = null,
         networks = 1,
         devices = 0,
         rssiDbm = null,
@@ -190,6 +295,8 @@ fun startServer(
         ScanProgress(
           progress = 0,
           phase = "NO_NETWORK",
+          message = "Scan blocked: no network interface/subnet detected.",
+          fixAction = null,
           networks = 0,
           devices = 0,
           rssiDbm = null,
@@ -210,12 +317,12 @@ fun startServer(
           sem.withPermit {
             if (scanCancel.get()) return@withPermit
             val mac = arp[ip]
-            val reachable = try { InetAddress.getByName(ip).isReachable(timeoutMs) } catch (_: Exception) { false }
+            val reachable = isReachableWithRetry(ip, timeoutMs, attempts = 2)
             val openPorts = if (reachable) TcpScanner.scan(ip, timeoutMs) else emptyList()
             val banners = if (openPorts.isNotEmpty()) openPorts.mapNotNull { p ->
               BannerGrabber.grab(ip, p)?.let { p to it.trim() }
             }.toMap() else emptyMap()
-            val hostname = if (reachable) resolveHostname(ip) else null
+            val hostname = if (reachable) resolveHostnameWithRetry(ip) else null
             val vendor = OuiDb.lookup(mac)
             val os = guessOs(openPorts, banners, hostname, vendor)
             val now = System.currentTimeMillis()
@@ -277,7 +384,10 @@ fun startServer(
             scanProgress.set(
               ScanProgress(
                 progress = pct,
-                phase = if (pct >= 100) "COMPLETE" else "SCANNING",
+                // Do not emit COMPLETE until the scan is actually finalized (see end-of-scan block below).
+                phase = "SCANNING",
+                message = null,
+                fixAction = null,
                 networks = 1,
                 devices = foundCount.get(),
                 rssiDbm = null,
@@ -298,6 +408,8 @@ fun startServer(
       scanProgress.set(
         scanProgress.get().copy(
           phase = "CANCELLED",
+          message = "Scan cancelled.",
+          fixAction = null,
           updatedAt = System.currentTimeMillis()
         )
       )
@@ -307,6 +419,8 @@ fun startServer(
       scanProgress.get().copy(
         progress = 100,
         phase = "COMPLETE",
+        message = null,
+        fixAction = null,
         devices = foundCount.get(),
         updatedAt = System.currentTimeMillis()
       )
@@ -335,12 +449,16 @@ fun startServer(
           val due = scheduleEntries.filter { it.nextRunAt <= now }
           due.forEach { entry ->
             log("scheduled scan subnet=${entry.subnet}")
-            val found = runCatching { performScan(entry.subnet, 300) }.getOrDefault(emptyList())
+            val found = catchingSuspend("scheduler:performScan", fields = mapOf("subnet" to entry.subnet)) {
+              performScan(entry.subnet, 300)
+            }.getOrDefault(emptyList())
             log("scheduled scan complete devices=${found.size}")
             scheduleEntries.remove(entry)
             scheduleEntries += entry.copy(nextRunAt = now + entry.freqMs)
           }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+          logException("scheduler:loop", e)
+        }
         delay(15_000)
       }
     }
@@ -357,7 +475,7 @@ fun startServer(
     }
     install(CORS) {
       allowedOrigins
-        .mapNotNull { origin -> runCatching { java.net.URI(origin) }.getOrNull() }
+        .mapNotNull { origin -> catchingOrNull("cors:parseOrigin", fields = mapOf("origin" to origin)) { java.net.URI(origin) } }
         .filter { it.scheme != null && !it.host.isNullOrBlank() && !it.host.contains('*') }
         .forEach { uri ->
           val hostPort = if (uri.port == -1) uri.host else "${uri.host}:${uri.port}"
@@ -390,9 +508,9 @@ fun startServer(
       }
 
       get("/api/v1/system/permissions") {
-        val ifaceUp = runCatching {
+        val ifaceUp = catchingOrDefault("systemPermissions:ifaceUp", false) {
           java.util.Collections.list(NetworkInterface.getNetworkInterfaces()).any { it.isUp && !it.isLoopback }
-        }.getOrDefault(false)
+        }
         call.respond(
           mapOf(
             "nearbyWifi" to null,
@@ -405,7 +523,7 @@ fun startServer(
       }
 
       post("/api/v1/system/permissions/action") {
-        val req = runCatching { call.receive<PermissionActionRequest>() }.getOrNull() ?: PermissionActionRequest()
+        val req = catchingSuspendOrDefault("permissionAction:receive", PermissionActionRequest()) { call.receive<PermissionActionRequest>() }
         val action = req.action?.trim().orEmpty()
         if (action.isBlank()) {
           call.respond(
@@ -452,7 +570,7 @@ fun startServer(
         )
       }
       post("/api/v1/discovery/scan") {
-        val req = runCatching { call.receive<ScanRequest>() }.getOrNull() ?: ScanRequest()
+        val req = catchingSuspendOrDefault("scan:receive", ScanRequest()) { call.receive<ScanRequest>() }
         val subnet = req.subnet?.trim().orEmpty()
         log("scan requested subnet=$subnet")
         val timeout = req.timeoutMs ?: 300
@@ -463,8 +581,9 @@ fun startServer(
         }
         scanJob.set(
           schedulerScope.launch {
-            runCatching { performScan(subnet, timeout) }
-              .onFailure { err -> log("scan failed subnet=$subnet error=${err.message}") }
+            catchingSuspend("scan:performScan", fields = mapOf("subnet" to subnet, "timeoutMs" to timeout)) {
+              performScan(subnet, timeout)
+            }.onFailure { err -> log("scan failed subnet=$subnet error=${err.message}") }
           }
         )
         call.respond(currentResults())
@@ -475,7 +594,7 @@ fun startServer(
       }
 
       get("/api/v1/onvif/discover") {
-        val devices = runCatching {
+        val devices = catchingSuspend("onvif:discover") {
           // Keep the probe timeout below the endpoint timeout so blocked UDP reads cannot linger past the HTTP request.
           val service = OnvifDiscoveryService(timeoutMs = 1200)
           withTimeoutOrNull(1500) {
@@ -523,7 +642,7 @@ fun startServer(
 
       put("/api/v1/devices/{id}/meta") {
         val id = call.parameters["id"] ?: return@put call.respond(HttpStatusCode.BadRequest)
-        val patch = runCatching { call.receive<DeviceMetaUpdate>() }.getOrNull() ?: DeviceMetaUpdate()
+        val patch = catchingSuspendOrDefault("deviceMeta:receive", DeviceMetaUpdate(), fields = mapOf("id" to id)) { call.receive<DeviceMetaUpdate>() }
         val d = deviceCache[id] ?: devices.get(id) ?: return@put call.respond(HttpStatusCode.NotFound)
         val updated = d.copy(
           name = patch.name ?: d.name,
@@ -545,7 +664,7 @@ fun startServer(
 
       post("/api/v1/devices/{id}/actions") {
         val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
-        val req = runCatching { call.receive<DeviceActionRequest>() }.getOrNull() ?: DeviceActionRequest()
+        val req = catchingSuspendOrDefault("deviceAction:receive", DeviceActionRequest(), fields = mapOf("id" to id)) { call.receive<DeviceActionRequest>() }
         val action = req.action?.trim()?.lowercase()
         if (action.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
         val d = deviceCache[id] ?: devices.get(id) ?: return@post call.respond(HttpStatusCode.NotFound)
@@ -578,7 +697,7 @@ fun startServer(
       }
 
       post("/api/v1/schedules") {
-        val req = runCatching { call.receive<ScheduleRequest>() }.getOrNull() ?: ScheduleRequest()
+        val req = catchingSuspendOrDefault("schedules:receive", ScheduleRequest()) { call.receive<ScheduleRequest>() }
         val subnet = req.subnet?.trim().orEmpty()
         val freq = req.freq?.trim().orEmpty()
         if (subnet.isBlank() || freq.isBlank()) return@post call.respond(HttpStatusCode.BadRequest)
@@ -596,7 +715,7 @@ fun startServer(
       }
 
       post("/api/v1/rules") {
-        val req = runCatching { call.receive<RuleRequest>() }.getOrNull() ?: RuleRequest()
+        val req = catchingSuspendOrDefault("rules:receive", RuleRequest()) { call.receive<RuleRequest>() }
         val match = req.match?.trim().orEmpty()
         val action = req.action?.trim().orEmpty()
         if (match.isBlank() || action.isBlank()) return@post call.respond(HttpStatusCode.BadRequest)
@@ -605,29 +724,29 @@ fun startServer(
       }
 
       post("/api/v1/actions/ping") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingSuspendOrDefault("action:ping.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
         val start = System.currentTimeMillis()
-        val reachable = try { InetAddress.getByName(ip).isReachable(350) } catch (_: Exception) { false }
+        val reachable = isReachableWithRetry(ip, 350, attempts = 2)
         val rtt = if (reachable) (System.currentTimeMillis() - start) else null
         call.respond(mapOf("ok" to reachable, "ip" to ip, "rttMs" to rtt))
       }
 
       post("/api/v1/actions/http") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingSuspendOrDefault("action:http.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val url = req.url?.trim()
         if (url.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
-        val status = runCatching {
+        val status = catchingOrDefault("action:http.request", 0, fields = mapOf("url" to url.take(256))) {
           java.net.URL(url).openConnection().apply { connectTimeout = 800; readTimeout = 800 }.let { conn ->
             (conn as? java.net.HttpURLConnection)?.responseCode ?: 0
           }
-        }.getOrDefault(0)
+        }
         call.respond(mapOf("ok" to (status in 200..399), "status" to status))
       }
 
       post("/api/v1/actions/portscan") {
-        val req = runCatching { call.receive<PortScanRequest>() }.getOrNull() ?: PortScanRequest()
+        val req = catchingSuspendOrDefault("action:portscan.receive", PortScanRequest()) { call.receive<PortScanRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
         val timeout = req.timeoutMs ?: 250
@@ -657,37 +776,37 @@ fun startServer(
       }
 
       post("/api/v1/actions/wol") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingSuspendOrDefault("action:wol.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val mac = req.mac?.trim()
         if (mac.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
-        val ok = runCatching { sendMagicPacket(mac) }.isSuccess
+        val ok = catching("action:wol.send", fields = mapOf("mac" to mac)) { sendMagicPacket(mac) }.isSuccess
         call.respond(mapOf("ok" to ok, "mac" to mac))
       }
 
       post("/api/v1/actions/snmp") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingSuspendOrDefault("action:snmp.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
-        val reachable = runCatching { TcpScanner.scan(ip, 300).contains(161) }.getOrDefault(false)
+        val reachable = catchingOrDefault("action:snmp.portProbe", false, fields = mapOf("ip" to ip)) { TcpScanner.scan(ip, 300).contains(161) }
         call.respond(mapOf("ok" to reachable, "ip" to ip))
       }
 
       post("/api/v1/actions/ssh") {
-        val req = runCatching { call.receive<ActionRequest>() }.getOrNull() ?: ActionRequest()
+        val req = catchingSuspendOrDefault("action:ssh.receive", ActionRequest()) { call.receive<ActionRequest>() }
         val ip = req.ip?.trim()
         if (ip.isNullOrBlank()) return@post call.respond(HttpStatusCode.BadRequest)
-        val reachable = runCatching { TcpScanner.scan(ip, 400).contains(22) }.getOrDefault(false)
+        val reachable = catchingOrDefault("action:ssh.portProbe", false, fields = mapOf("ip" to ip)) { TcpScanner.scan(ip, 400).contains(22) }
         call.respond(mapOf("ok" to reachable, "ip" to ip, "note" to "SSH port probe only"))
       }
 
       get("/api/v1/metrics") {
-        val payload = runCatching {
+        val payload = catching("metrics:build") {
           val osBean = ManagementFactory.getOperatingSystemMXBean()
           val load = (osBean as? com.sun.management.OperatingSystemMXBean)?.systemCpuLoad ?: -1.0
           val memTotal = Runtime.getRuntime().totalMemory()
           val memFree = Runtime.getRuntime().freeMemory()
           val memUsed = memTotal - memFree
-          val all = runCatching { devices.all() }.getOrElse { deviceCache.values.toList() }
+          val all = catching("metrics:devices.all") { devices.all() }.getOrElse { deviceCache.values.toList() }
           val online = all.count { it.online }
           MetricsResponse(
             uptimeMs = ManagementFactory.getRuntimeMXBean().uptime,
@@ -749,13 +868,6 @@ private fun applyDeviceAction(device: Device, action: String): Device? {
     "untrust" -> device.copy(trust = "Unknown")
     else -> null
   }
-}
-
-private fun resolveHostname(ip: String): String? {
-  return runCatching {
-    val host = InetAddress.getByName(ip).canonicalHostName
-    if (host == ip) null else host
-  }.getOrNull()
 }
 
 private fun guessDeviceType(
@@ -878,7 +990,7 @@ private fun localNetworkInfo(): Map<String, Any?> {
 private fun resolveDefaultGateway(): String? {
   val routeFile = File("/proc/net/route")
   if (!routeFile.exists()) return null
-  return runCatching {
+  return try {
     routeFile.readLines().drop(1).mapNotNull { line ->
       val parts = line.trim().split(Regex("\\s+"))
       if (parts.size <= 2) return@mapNotNull null
@@ -892,18 +1004,24 @@ private fun resolveDefaultGateway(): String? {
       val b4 = ((gwInt shr 24) and 0xFF).toInt()
       "$b1.$b2.$b3.$b4"
     }.firstOrNull()
-  }.getOrNull()
+  } catch (t: Throwable) {
+    LOGGER.warn("resolveDefaultGateway failed: ${t.message}", t)
+    null
+  }
 }
 
 private fun resolveDnsServers(): String? {
   val resolv = File("/etc/resolv.conf")
   if (!resolv.exists()) return null
-  val servers = runCatching {
+  val servers = try {
     resolv.readLines().mapNotNull { line ->
       val trimmed = line.trim()
       if (!trimmed.startsWith("nameserver")) return@mapNotNull null
       trimmed.split(Regex("\\s+")).getOrNull(1)
     }.filter { it.isNotBlank() }
-  }.getOrDefault(emptyList())
+  } catch (t: Throwable) {
+    LOGGER.warn("resolveDnsServers failed: ${t.message}", t)
+    emptyList()
+  }
   return servers.takeIf { it.isNotEmpty() }?.joinToString(", ")
 }

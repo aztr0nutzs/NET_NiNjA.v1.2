@@ -3751,6 +3751,22 @@
       return "http://127.0.0.1:8787";
     })();
 
+    // Local engine auth token:
+    // - Android app appends `?token=...` when loading the UI.
+    // - Persist in localStorage so subsequent navigations still work.
+    const NN_TOKEN = (() => {
+      try {
+        const u = new URL(String(location.href));
+        const t = (u.searchParams.get("token") || u.searchParams.get("t") || "").trim();
+        if (t) {
+          try { localStorage.setItem("nn_token", t); } catch (_) {}
+          return t;
+        }
+      } catch (_) {}
+      try { return (localStorage.getItem("nn_token") || "").trim(); } catch (_) {}
+      return "";
+    })();
+
     function resolveApiUrl(url){
       if (typeof url !== "string") return url;
       if (url.startsWith("/")) return API_BASE + url;
@@ -3762,6 +3778,7 @@
         "Accept": "application/json",
         ...(options.headers || {})
       };
+      if (NN_TOKEN) headers["Authorization"] = `Bearer ${NN_TOKEN}`;
       const { timeoutMs, ...fetchOptions } = options || {};
       const controller = new AbortController();
       const timeoutBudget = Number.isFinite(timeoutMs) ? timeoutMs : 8000;
@@ -5200,6 +5217,24 @@
       }).join("\n");
     }
 
+    async function checkDbNotice(){
+      try{
+        const state = await fetchJson("/api/v1/system/state", { cache: "no-store", timeoutMs: 2500 });
+        const notice = state?.dbNotice;
+        if(!notice || !notice.atMs) return;
+
+        const key = "nn_db_notice_seen_" + String(notice.atMs);
+        try {
+          if(localStorage.getItem(key)) return;
+          localStorage.setItem(key, "1");
+        } catch(_) {}
+
+        const title = notice.level === "error" ? "Data reset" : "Database notice";
+        showToast(title, String(notice.message || "Database notice."));
+        pushNotification({ when: nowLabel(), title, detail: String(notice.message || "") });
+      } catch (_) {}
+    }
+
     // ---- Settings / initial state ----
     function init(){
       // initial notification
@@ -5225,6 +5260,7 @@
       refreshNetworkInfo();
       refreshDiscoveryResults();
       refreshPermissionStatus();
+      checkDbNotice();
       setupPermissionControls();
       setupDebugPanel();
       refreshDebugState();
@@ -5359,6 +5395,13 @@
     window.connectWebSocket = function connectWebSocket(wsUrl){
       stopAll();
       try{
+        if (NN_TOKEN) {
+          try {
+            const u = new URL(wsUrl, API_BASE);
+            u.searchParams.set("token", NN_TOKEN);
+            wsUrl = u.toString();
+          } catch (_) {}
+        }
         ws = new WebSocket(wsUrl);
         ws.onmessage = (ev) => {
           try{
