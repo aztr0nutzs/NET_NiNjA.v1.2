@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.SystemClock
 import com.netninja.cam.OnvifDiscoveryService
 import com.netninja.openclaw.NodeSession
+import com.netninja.openclaw.OpenClawDashboardState
 import com.netninja.openclaw.OpenClawGatewayState
 import io.ktor.http.CacheControl
 import io.ktor.http.ContentType
@@ -174,8 +175,296 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         call.respond(OpenClawStatsResponse(uptimeMs = OpenClawGatewayState.uptimeMs(), nodeCount = OpenClawGatewayState.nodeCount()))
       }
 
+      // ── OpenClaw Dashboard routes ──────────────────────────────────────
+
+      get("/api/openclaw/dashboard") {
+        call.respond(openClawDashboard.snapshot())
+      }
+
+      post("/api/openclaw/connect") {
+        @Serializable data class Req(val host: String? = null)
+        val req = call.receive<Req>()
+        call.respond(openClawDashboard.connect(req.host))
+      }
+
+      post("/api/openclaw/disconnect") {
+        call.respond(openClawDashboard.disconnect())
+      }
+
+      post("/api/openclaw/refresh") {
+        call.respond(openClawDashboard.refresh())
+      }
+
+      post("/api/openclaw/panic") {
+        call.respond(openClawDashboard.panic())
+      }
+
+      get("/api/openclaw/gateways") {
+        call.respond(openClawDashboard.listGateways())
+      }
+
+      post("/api/openclaw/gateways/{key}/restart") {
+        val key = call.parameters["key"]?.trim().orEmpty()
+        val updated = openClawDashboard.restartGateway(key)
+        if (updated == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown gateway"))
+        } else {
+          call.respond(updated)
+        }
+      }
+
+      post("/api/openclaw/gateways/{key}/ping") {
+        val key = call.parameters["key"]?.trim().orEmpty()
+        val result = openClawDashboard.pingGateway(key)
+        if (result == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown gateway"))
+        } else {
+          call.respond(result)
+        }
+      }
+
+      get("/api/openclaw/instances") {
+        call.respond(openClawDashboard.listInstances())
+      }
+
+      post("/api/openclaw/instances") {
+        @Serializable data class Req(
+          val name: String? = null,
+          val profile: String? = null,
+          val workspace: String? = null,
+          val sandbox: Boolean? = null,
+          val access: String? = null
+        )
+        val req = call.receive<Req>()
+        val name = req.name?.trim().orEmpty()
+        if (name.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Instance name required"))
+          return@post
+        }
+        val instance = openClawDashboard.addInstance(name, req.profile, req.workspace, req.sandbox, req.access)
+        if (instance == null) {
+          call.respond(HttpStatusCode.Conflict, mapOf("error" to "Instance already exists"))
+        } else {
+          call.respond(instance)
+        }
+      }
+
+      post("/api/openclaw/instances/{name}/select") {
+        val name = call.parameters["name"]?.trim().orEmpty()
+        val instance = openClawDashboard.selectInstance(name)
+        if (instance == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown instance"))
+        } else {
+          call.respond(instance)
+        }
+      }
+
+      post("/api/openclaw/instances/{name}/activate") {
+        val name = call.parameters["name"]?.trim().orEmpty()
+        val instance = openClawDashboard.activateInstance(name)
+        if (instance == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown instance"))
+        } else {
+          call.respond(instance)
+        }
+      }
+
+      post("/api/openclaw/instances/{name}/stop") {
+        val name = call.parameters["name"]?.trim().orEmpty()
+        val instance = openClawDashboard.stopInstance(name)
+        if (instance == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown instance"))
+        } else {
+          call.respond(instance)
+        }
+      }
+
+      get("/api/openclaw/sessions") {
+        call.respond(openClawDashboard.listSessions())
+      }
+
+      post("/api/openclaw/sessions") {
+        @Serializable data class Req(
+          val type: String? = null,
+          val target: String? = null,
+          val payload: String? = null
+        )
+        val req = call.receive<Req>()
+        val type = req.type?.trim().orEmpty().ifBlank { "session" }
+        val target = req.target?.trim().orEmpty().ifBlank { "default" }
+        call.respond(openClawDashboard.createSession(type, target, req.payload))
+      }
+
+      post("/api/openclaw/sessions/{id}/cancel") {
+        val id = call.parameters["id"]?.trim().orEmpty()
+        val session = openClawDashboard.cancelSession(id)
+        if (session == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown session"))
+        } else {
+          call.respond(session)
+        }
+      }
+
+      get("/api/openclaw/skills") {
+        call.respond(openClawDashboard.listSkills())
+      }
+
+      post("/api/openclaw/skills/refresh") {
+        call.respond(openClawDashboard.refreshSkills())
+      }
+
+      post("/api/openclaw/skills/invoke") {
+        @Serializable data class Req(val name: String? = null)
+        val req = call.receive<Req>()
+        val name = req.name?.trim().orEmpty()
+        if (name.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Skill name required"))
+          return@post
+        }
+        val skill = openClawDashboard.invokeSkill(name, skillExecutor)
+        if (skill == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown skill"))
+        } else {
+          call.respond(skill)
+        }
+      }
+
+      get("/api/openclaw/mode") {
+        call.respond(mapOf("mode" to openClawDashboard.snapshot().mode))
+      }
+
+      post("/api/openclaw/mode") {
+        @Serializable data class Req(val mode: String? = null)
+        val req = call.receive<Req>()
+        val mode = req.mode?.trim().orEmpty().ifBlank { "safe" }
+        call.respond(mapOf("mode" to openClawDashboard.setMode(mode)))
+      }
+
+      get("/api/openclaw/config") {
+        call.respond(openClawDashboard.configSnapshot())
+      }
+
+      post("/api/openclaw/config") {
+        @Serializable data class Req(
+          val host: String? = null,
+          val profile: String? = null,
+          val workspace: String? = null
+        )
+        val req = call.receive<Req>()
+        call.respond(openClawDashboard.updateConfig(req.host, req.profile, req.workspace))
+      }
+
+      get("/api/openclaw/debug") {
+        call.respond(openClawDashboard.debugSnapshot())
+      }
+
+      post("/api/openclaw/debug/dump") {
+        call.respond(openClawDashboard.debugSnapshot())
+      }
+
+      get("/api/openclaw/logs") {
+        call.respond(openClawDashboard.listLogs())
+      }
+
+      post("/api/openclaw/logs/clear") {
+        openClawDashboard.clearLogs()
+        call.respond(mapOf("ok" to true))
+      }
+
+      get("/api/openclaw/messages") {
+        call.respond(openClawDashboard.listMessages())
+      }
+
+      post("/api/openclaw/messages") {
+        @Serializable data class Req(
+          val gateway: String? = null,
+          val channel: String? = null,
+          val body: String? = null
+        )
+        val req = call.receive<Req>()
+        val gateway = req.gateway?.trim().orEmpty()
+        val channel = req.channel?.trim().orEmpty()
+        val body = req.body?.trim().orEmpty()
+        if (gateway.isBlank() || channel.isBlank() || body.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "gateway, channel, and body required"))
+          return@post
+        }
+        call.respond(openClawDashboard.addMessage(gateway, channel, body))
+      }
+
+      post("/api/openclaw/command") {
+        @Serializable data class Req(val command: String? = null)
+        val req = call.receive<Req>()
+        val command = req.command?.trim().orEmpty()
+        if (command.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Command required"))
+          return@post
+        }
+        call.respond(openClawDashboard.runCommand(command, server))
+      }
+
+      post("/api/openclaw/chat/send") {
+        @Serializable data class Req(
+          val gateway: String? = null,
+          val channel: String? = null,
+          val body: String? = null
+        )
+        val req = call.receive<Req>()
+        val gw = req.gateway?.trim().orEmpty().ifBlank { "local" }
+        val ch = req.channel?.trim().orEmpty().ifBlank { "general" }
+        val body = req.body?.trim().orEmpty()
+        if (body.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Message body required"))
+          return@post
+        }
+        call.respond(openClawDashboard.addMessage(gw, ch, body))
+      }
+
+      get("/api/openclaw/cron") {
+        call.respond(openClawDashboard.listCronJobs())
+      }
+
+      post("/api/openclaw/cron") {
+        @Serializable data class Req(
+          val schedule: String? = null,
+          val command: String? = null,
+          val enabled: Boolean? = null
+        )
+        val req = call.receive<Req>()
+        val schedule = req.schedule?.trim().orEmpty()
+        val command = req.command?.trim().orEmpty()
+        if (schedule.isBlank() || command.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "schedule and command required"))
+          return@post
+        }
+        call.respond(openClawDashboard.addCronJob(schedule, command, req.enabled ?: true))
+      }
+
+      post("/api/openclaw/cron/{id}/toggle") {
+        val id = call.parameters["id"]?.trim().orEmpty()
+        val job = openClawDashboard.toggleCronJob(id)
+        if (job == null) {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown cron job"))
+        } else {
+          call.respond(job)
+        }
+      }
+
+      delete("/api/openclaw/cron/{id}") {
+        val id = call.parameters["id"]?.trim().orEmpty()
+        if (openClawDashboard.removeCronJob(id)) {
+          call.respond(mapOf("ok" to true))
+        } else {
+          call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown cron job"))
+        }
+      }
+
+      // ── End OpenClaw Dashboard routes ──────────────────────────────────
+
       webSocket("/openclaw/ws") {
         var nodeId: String? = null
+        var isObserver = false
+        val observerKey = "obs_${System.nanoTime()}"
         var parseErrors = 0
         try {
           for (frame in incoming) {
@@ -212,6 +501,21 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
                 broadcastOpenClawSnapshot()
               }
 
+              // Dashboard observer: no nodeId required, just receives broadcast snapshots.
+              "OBSERVE" -> {
+                isObserver = true
+                openClawWsSessions[observerKey] = this
+                // Send an immediate snapshot so the dashboard has data right away.
+                val snap = openClawJson.encodeToString(
+                  OpenClawGatewaySnapshot.serializer(),
+                  OpenClawGatewaySnapshot(
+                    nodes = OpenClawGatewayState.listNodes(),
+                    uptimeMs = OpenClawGatewayState.uptimeMs()
+                  )
+                )
+                outgoing.trySend(Frame.Text(snap))
+              }
+
               "HEARTBEAT" -> {
                 val resolvedId = nodeId ?: msg.nodeId?.trim()
                 if (!resolvedId.isNullOrBlank()) {
@@ -234,6 +538,9 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           if (id != null) {
             openClawWsSessions.remove(id)
             broadcastOpenClawSnapshot()
+          }
+          if (isObserver) {
+            openClawWsSessions.remove(observerKey)
           }
         }
       }

@@ -4,7 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 3) {
+class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 4) {
 
   override fun onCreate(db: SQLiteDatabase) {
     db.execSQL(
@@ -59,6 +59,13 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 3
         msg TEXT
       )"""
     )
+
+    db.execSQL(
+      """CREATE TABLE IF NOT EXISTS openclaw_kv(
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )"""
+    )
   }
 
   override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -82,6 +89,16 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 3
     }
     if (oldVersion < 3) {
       runCatching { db.execSQL("ALTER TABLE devices ADD COLUMN openPorts TEXT") }
+    }
+    if (oldVersion < 4) {
+      runCatching {
+        db.execSQL(
+          """CREATE TABLE IF NOT EXISTS openclaw_kv(
+            key TEXT PRIMARY KEY,
+            value TEXT
+          )"""
+        )
+      }
     }
   }
 }

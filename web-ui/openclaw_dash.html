@@ -1240,7 +1240,15 @@ input, .mono{
     wsOpen: false,
     nodes: [],
     stats: { uptimeMs: 0, nodeCount: 0 },
-    logs: []
+    logs: [],
+    gateways: [],
+    instances: [],
+    selectedInstance: null,
+    sessions: [],
+    skills: [],
+    mode: 'safe',
+    config: {},
+    debug: {}
   };
 
   const settings = loadSettings();
@@ -1333,6 +1341,119 @@ input, .mono{
     });
   }
 
+  function renderGateways(){
+    const tb = el('gwRows');
+    if(!tb) return;
+    tb.innerHTML = '';
+    const gws = Array.isArray(state.gateways) ? state.gateways : [];
+    if(gws.length === 0){
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      tr.innerHTML = '<td colspan=\"4\" class=\"mono\">(no gateways)</td>';
+      tb.appendChild(tr);
+      return;
+    }
+    gws.forEach(gw => {
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      const key = String(gw.key || gw.name || '');
+      const status = String(gw.status || 'unknown');
+      const sessions = gw.sessions != null ? String(gw.sessions) : '-';
+      tr.innerHTML = `
+        <td class=\"mono\">${key}</td>
+        <td>${status}</td>
+        <td class=\"mono\">${sessions}</td>
+        <td>
+          <button class="cybr-btn" type="button" onclick="window.__ocDash.restartGw('${key}')">Restart</button>
+          <button class="cybr-btn" type="button" onclick="window.__ocDash.pingGw('${key}')">Ping</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderInstances(){
+    const tb = el('agentRows');
+    if(!tb) return;
+    tb.innerHTML = '';
+    const items = Array.isArray(state.instances) ? state.instances : [];
+    if(items.length === 0){
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      tr.innerHTML = '<td colspan=\"4\" class=\"mono\">(no instances)</td>';
+      tb.appendChild(tr);
+      return;
+    }
+    items.forEach(inst => {
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      const name = String(inst.name || '');
+      const prof = String(inst.profile || '-');
+      const ws = String(inst.workspace || '-');
+      tr.innerHTML = `
+        <td class=\"mono\">${name}</td>
+        <td class=\"mono\">${prof}</td>
+        <td class=\"mono\">${ws}</td>
+        <td>
+          <button class="cybr-btn" type="button" onclick="window.__ocDash.selectInst('${name}')">Select</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderSelectedInstance(){
+    const inst = state.selectedInstance;
+    const nameEl = el('agName');
+    const wsEl = el('agWs');
+    const sbEl = el('agSandbox');
+    const accEl = el('agAccess');
+    if(nameEl) nameEl.textContent = inst ? String(inst.name || 'none') : 'none';
+    if(wsEl) wsEl.textContent = inst ? String(inst.workspace || '-') : '-';
+    if(sbEl) sbEl.textContent = inst ? (inst.sandbox ? 'enabled' : 'disabled') : 'disabled';
+    if(accEl) accEl.textContent = inst ? String(inst.access || 'rw') : 'rw';
+  }
+
+  function renderSessions(){
+    const tb = el('taskRows');
+    if(!tb) return;
+    tb.innerHTML = '';
+    const items = Array.isArray(state.sessions) ? state.sessions : [];
+    if(items.length === 0){
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      tr.innerHTML = '<td colspan=\"5\" class=\"mono\">(no sessions)</td>';
+      tb.appendChild(tr);
+      return;
+    }
+    items.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.className = 'row-glass';
+      const id = String(s.id || '');
+      const type = String(s.type || '-');
+      const target = String(s.target || '-');
+      const st = String(s.state || s.status || 'pending');
+      tr.innerHTML = `
+        <td class=\"mono\">${id.slice(0,8)}</td>
+        <td>${type}</td>
+        <td class=\"mono\">${target}</td>
+        <td>${st}</td>
+        <td>
+          <button class="cybr-btn" type="button" onclick="window.__ocDash.cancelSession('${id}')">Cancel</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderSkills(){
+    const out = el('skillsOut');
+    if(!out) return;
+    const items = Array.isArray(state.skills) ? state.skills : [];
+    if(items.length === 0){ out.textContent = 'No skills loaded.'; return; }
+    out.textContent = items.map(s => `${s.name||'?'} [${s.status||'idle'}] ${s.lastResult||''}`).join('\n');
+  }
+
   async function fetchJson(path){
     const url = (state.baseUrl || '').replace(/\/+$/,'') + path;
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -1345,14 +1466,40 @@ input, .mono{
 
   async function refreshHttp(){
     try {
-      const nodes = await fetchJson('/api/openclaw/nodes').catch(()=> null);
-      const stats = await fetchJson('/api/openclaw/stats').catch(()=> null);
+      const [nodes, stats, dashboard] = await Promise.all([
+        fetchJson('/api/openclaw/nodes').catch(()=> null),
+        fetchJson('/api/openclaw/stats').catch(()=> null),
+        fetchJson('/api/openclaw/dashboard').catch(()=> null)
+      ]);
       if(Array.isArray(nodes)) state.nodes = nodes;
       if(stats && typeof stats === 'object') state.stats = stats;
+      if(dashboard && typeof dashboard === 'object'){
+        if(Array.isArray(dashboard.gateways)) state.gateways = dashboard.gateways;
+        if(Array.isArray(dashboard.instances)) state.instances = dashboard.instances;
+        if(Array.isArray(dashboard.sessions)) state.sessions = dashboard.sessions;
+        if(Array.isArray(dashboard.skills)) state.skills = dashboard.skills;
+        if(dashboard.mode) state.mode = dashboard.mode;
+        if(dashboard.host){
+          const h = el('stHost'); if(h) h.textContent = dashboard.host;
+        }
+        if(dashboard.profile){
+          const p = el('stProfile'); if(p) p.textContent = dashboard.profile;
+        }
+        if(dashboard.workspace){
+          const w = el('stWorkspace'); if(w) w.textContent = dashboard.workspace;
+        }
+      }
       const st = el('stSync');
       if(st) st.textContent = new Date().toLocaleString();
       updateTop();
       renderNodes();
+      renderGateways();
+      renderInstances();
+      renderSelectedInstance();
+      renderSessions();
+      renderSkills();
+      const mo = el('modeOut');
+      if(mo) mo.textContent = state.mode;
     } catch(e){
       log(`Refresh failed: ${e && e.message ? e.message : String(e)}`);
     }
@@ -1386,6 +1533,8 @@ input, .mono{
       state.wsOpen = true;
       updateTop();
       log(`WS connected: ${url}`);
+      // Register as dashboard observer so we receive broadcast snapshots.
+      try { ws.send(JSON.stringify({ type: 'OBSERVE' })); } catch(_) {}
     };
     ws.onclose = ()=>{
       state.wsOpen = false;
@@ -1518,6 +1667,250 @@ input, .mono{
       }
     });
   }
+
+  // ── Overview shortcut buttons ──────────────────────────────────────
+  const btnStatus = el('btnStatus');
+  if(btnStatus){
+    btnStatus.addEventListener('click', async ()=>{
+      try {
+        const out = await postJson('/api/openclaw/command', { command: '/status' });
+        const c = el('overviewConsole');
+        if(c) c.textContent = JSON.stringify(out, null, 2);
+        log('Command: /status OK');
+      } catch(e){ log(`/status: ${e.message}`); }
+    });
+  }
+
+  const btnConfigCmd = el('btnConfigCmd');
+  if(btnConfigCmd){
+    btnConfigCmd.addEventListener('click', async ()=>{
+      try {
+        const out = await postJson('/api/openclaw/command', { command: '/config' });
+        const c = el('overviewConsole');
+        if(c) c.textContent = JSON.stringify(out, null, 2);
+        log('Command: /config OK');
+      } catch(e){ log(`/config: ${e.message}`); }
+    });
+  }
+
+  const btnDebugCmd = el('btnDebugCmd');
+  if(btnDebugCmd){
+    btnDebugCmd.addEventListener('click', async ()=>{
+      try {
+        const out = await postJson('/api/openclaw/command', { command: '/debug' });
+        const c = el('overviewConsole');
+        if(c) c.textContent = JSON.stringify(out, null, 2);
+        log('Command: /debug OK');
+      } catch(e){ log(`/debug: ${e.message}`); }
+    });
+  }
+
+  // ── Instances buttons ──────────────────────────────────────────────
+  const btnAddAgent = el('btnAddAgent');
+  if(btnAddAgent){
+    btnAddAgent.addEventListener('click', async ()=>{
+      const name = prompt('Instance name:');
+      if(!name || !name.trim()) return;
+      try {
+        const inst = await postJson('/api/openclaw/instances', { name: name.trim() });
+        log(`Instance added: ${inst.name}`);
+        refreshHttp();
+      } catch(e){ log(`Add instance failed: ${e.message}`); }
+    });
+  }
+
+  const btnAgentActivate = el('btnAgentActivate');
+  if(btnAgentActivate){
+    btnAgentActivate.addEventListener('click', async ()=>{
+      const name = state.selectedInstance && state.selectedInstance.name;
+      if(!name){ log('Select an instance first.'); return; }
+      try {
+        await postJson(`/api/openclaw/instances/${encodeURIComponent(name)}/activate`, {});
+        log(`Instance activated: ${name}`);
+        refreshHttp();
+      } catch(e){ log(`Activate failed: ${e.message}`); }
+    });
+  }
+
+  const btnAgentStop = el('btnAgentStop');
+  if(btnAgentStop){
+    btnAgentStop.addEventListener('click', async ()=>{
+      const name = state.selectedInstance && state.selectedInstance.name;
+      if(!name){ log('Select an instance first.'); return; }
+      try {
+        await postJson(`/api/openclaw/instances/${encodeURIComponent(name)}/stop`, {});
+        log(`Instance stopped: ${name}`);
+        refreshHttp();
+      } catch(e){ log(`Stop failed: ${e.message}`); }
+    });
+  }
+
+  // ── Sessions buttons ───────────────────────────────────────────────
+  const btnCreateTask = el('btnCreateTask');
+  if(btnCreateTask){
+    btnCreateTask.addEventListener('click', async ()=>{
+      const type = (el('taskType') && el('taskType').value) ? el('taskType').value.trim() : 'session';
+      const target = (el('taskTarget') && el('taskTarget').value) ? el('taskTarget').value.trim() : 'default';
+      const payload = (el('taskPayload') && el('taskPayload').value) ? el('taskPayload').value.trim() : '';
+      try {
+        const sess = await postJson('/api/openclaw/sessions', { type, target, payload: payload || null });
+        log(`Session created: ${sess.id || '?'}`);
+        if(el('taskType')) el('taskType').value = '';
+        if(el('taskTarget')) el('taskTarget').value = '';
+        if(el('taskPayload')) el('taskPayload').value = '';
+        refreshHttp();
+      } catch(e){ log(`Create session failed: ${e.message}`); }
+    });
+  }
+
+  // ── Cron / Log buttons ─────────────────────────────────────────────
+  const btnClearLogs = el('btnClearLogs');
+  if(btnClearLogs){
+    btnClearLogs.addEventListener('click', async ()=>{
+      try {
+        await postJson('/api/openclaw/logs/clear', {});
+        state.logs = [];
+        const ls = el('logStream');
+        if(ls) ls.textContent = '(no events)';
+        log('Logs cleared.');
+      } catch(e){ log(`Clear logs failed: ${e.message}`); }
+    });
+  }
+
+  // ── Skills buttons ─────────────────────────────────────────────────
+  const btnSkillRefresh = el('btnSkillRefresh');
+  if(btnSkillRefresh){
+    btnSkillRefresh.addEventListener('click', async ()=>{
+      try {
+        const skills = await postJson('/api/openclaw/skills/refresh', {});
+        if(Array.isArray(skills)) state.skills = skills;
+        renderSkills();
+        const c = el('skillsConsole');
+        if(c) c.textContent = `Refreshed ${state.skills.length} skill(s)`;
+        log('Skills refreshed.');
+      } catch(e){ log(`Skill refresh failed: ${e.message}`); }
+    });
+  }
+
+  const btnSkillInvoke = el('btnSkillInvoke');
+  if(btnSkillInvoke){
+    btnSkillInvoke.addEventListener('click', async ()=>{
+      const name = prompt('Skill name to invoke:');
+      if(!name || !name.trim()) return;
+      try {
+        const result = await postJson('/api/openclaw/skills/invoke', { name: name.trim() });
+        const c = el('skillsConsole');
+        if(c) c.textContent = JSON.stringify(result, null, 2);
+        log(`Skill invoked: ${name.trim()}`);
+        refreshHttp();
+      } catch(e){ log(`Invoke skill failed: ${e.message}`); }
+    });
+  }
+
+  // ── Mode buttons ───────────────────────────────────────────────────
+  const btnModeSafe = el('btnModeSafe');
+  if(btnModeSafe){
+    btnModeSafe.addEventListener('click', async ()=>{
+      try {
+        const r = await postJson('/api/openclaw/mode', { mode: 'safe' });
+        state.mode = r.mode || 'safe';
+        const mo = el('modeOut'); if(mo) mo.textContent = state.mode;
+        const mc = el('modeConsole'); if(mc) mc.textContent = 'Switched to SAFE mode.';
+        log('Mode: safe');
+      } catch(e){ log(`Mode switch failed: ${e.message}`); }
+    });
+  }
+
+  const btnModePower = el('btnModePower');
+  if(btnModePower){
+    btnModePower.addEventListener('click', async ()=>{
+      try {
+        const r = await postJson('/api/openclaw/mode', { mode: 'power' });
+        state.mode = r.mode || 'power';
+        const mo = el('modeOut'); if(mo) mo.textContent = state.mode;
+        const mc = el('modeConsole'); if(mc) mc.textContent = 'Switched to POWER mode.';
+        log('Mode: power');
+      } catch(e){ log(`Mode switch failed: ${e.message}`); }
+    });
+  }
+
+  // ── Config buttons ─────────────────────────────────────────────────
+  const btnConfigFetch = el('btnConfigFetch');
+  if(btnConfigFetch){
+    btnConfigFetch.addEventListener('click', async ()=>{
+      try {
+        const cfg = await fetchJson('/api/openclaw/config');
+        state.config = cfg;
+        const co = el('configOut');
+        if(co) co.textContent = JSON.stringify(cfg, null, 2);
+        const cc = el('configConsole');
+        if(cc) cc.textContent = 'Config fetched.';
+        log('Config fetched.');
+      } catch(e){ log(`Config fetch failed: ${e.message}`); }
+    });
+  }
+
+  // ── Debug buttons ──────────────────────────────────────────────────
+  const btnDebugFetch = el('btnDebugFetch');
+  if(btnDebugFetch){
+    btnDebugFetch.addEventListener('click', async ()=>{
+      try {
+        const dbg = await fetchJson('/api/openclaw/debug');
+        state.debug = dbg;
+        const d = el('debugOut');
+        if(d) d.textContent = JSON.stringify(dbg, null, 2);
+        const dc = el('debugConsole');
+        if(dc) dc.textContent = 'Debug data fetched.';
+        log('Debug fetched.');
+      } catch(e){ log(`Debug fetch failed: ${e.message}`); }
+    });
+  }
+
+  const btnDebugDump = el('btnDebugDump');
+  if(btnDebugDump){
+    btnDebugDump.addEventListener('click', async ()=>{
+      try {
+        const dump = await postJson('/api/openclaw/debug/dump', {});
+        const d = el('debugOut');
+        if(d) d.textContent = JSON.stringify(dump, null, 2);
+        const dc = el('debugConsole');
+        if(dc) dc.textContent = 'State dump complete.';
+        log('Debug dump received.');
+      } catch(e){ log(`Debug dump failed: ${e.message}`); }
+    });
+  }
+
+  // ── Global handler object for inline onclick in rendered tables ────
+  window.__ocDash = {
+    restartGw: async (key) => {
+      try {
+        await postJson(`/api/openclaw/gateways/${encodeURIComponent(key)}/restart`, {});
+        log(`Gateway restarted: ${key}`);
+        refreshHttp();
+      } catch(e){ log(`Restart gw failed: ${e.message}`); }
+    },
+    pingGw: async (key) => {
+      try {
+        const r = await postJson(`/api/openclaw/gateways/${encodeURIComponent(key)}/ping`, {});
+        log(`Ping ${key}: ${r.latencyMs != null ? r.latencyMs + 'ms' : JSON.stringify(r)}`);
+      } catch(e){ log(`Ping gw failed: ${e.message}`); }
+    },
+    selectInst: async (name) => {
+      try {
+        const inst = await postJson(`/api/openclaw/instances/${encodeURIComponent(name)}/select`, {});
+        state.selectedInstance = inst;
+        renderSelectedInstance();
+        log(`Instance selected: ${name}`);
+      } catch(e){ log(`Select instance failed: ${e.message}`); }
+    },
+    cancelSession: async (id) => {
+      try {
+        await postJson(`/api/openclaw/sessions/${encodeURIComponent(id)}/cancel`, {});
+        log(`Session cancelled: ${id}`);
+        refreshHttp();
+      } catch(e){ log(`Cancel session failed: ${e.message}`); }
+    }
+  };
 
   updateTop();
   renderNodes();

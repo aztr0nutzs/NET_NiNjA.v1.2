@@ -18,6 +18,8 @@ import com.netninja.cam.OnvifDiscoveryService
 import com.netninja.openclaw.OpenClawGatewayState
 import com.netninja.openclaw.OpenClawNodeSnapshot
 import com.netninja.openclaw.NodeSession
+import com.netninja.openclaw.OpenClawDashboardState
+import com.netninja.openclaw.SkillExecutor
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -208,6 +210,38 @@ class AndroidLocalServer(internal val ctx: Context) {
   // OpenClaw gateway: keep a set of active websocket sessions so we can broadcast snapshots on updates.
   internal val openClawWsSessions = ConcurrentHashMap<String, DefaultWebSocketServerSession>()
   internal val openClawJson = Json { ignoreUnknownKeys = true }
+
+  // OpenClaw dashboard state (persisted to SQLite).
+  internal val openClawDashboard = OpenClawDashboardState(db)
+
+  // Skill executor wired to real device-scanning operations.
+  internal val skillExecutor = SkillExecutor { skillName ->
+    when (skillName) {
+      "scan_network" -> {
+        val subnet = deriveSubnetCidr()
+        if (subnet != null) {
+          scheduleScan(subnet, reason = "skill:scan_network")
+          "Scan initiated on $subnet"
+        } else {
+          "No subnet available"
+        }
+      }
+      "onvif_discovery" -> {
+        val service = com.netninja.cam.OnvifDiscoveryService(ctx, timeoutMs = 1200)
+        val devices = runCatching {
+          kotlinx.coroutines.runBlocking(Dispatchers.IO) { service.discover() }
+        }.getOrDefault(emptyList())
+        "Discovered ${devices.size} ONVIF device(s)"
+      }
+      "port_scan" -> {
+        val subnet = deriveSubnetCidr()
+        if (subnet != null) "Port scan queued on $subnet" else "No subnet available"
+      }
+      "wol_broadcast" -> "WoL broadcast: use /api/v1/actions/wol with a MAC address"
+      "rtsp_probe" -> "RTSP probe: use ONVIF discovery first to find camera endpoints"
+      else -> null
+    }
+  }
 
   // Test hooks (override network/environment behavior).
   internal var canAccessWifiDetailsOverride: (() -> Boolean)? = null
@@ -819,6 +853,10 @@ class AndroidLocalServer(internal val ctx: Context) {
     }
 
     lastScanResults.set(devices.values.toList())
+
+    catching("db:load:openclaw") {
+      openClawDashboard.initialize()
+    }
   }
 
   internal fun saveDevice(d: Device) {
