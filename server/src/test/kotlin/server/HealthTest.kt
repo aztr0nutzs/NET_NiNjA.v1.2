@@ -7,13 +7,16 @@ import java.net.HttpURLConnection
 import java.net.ServerSocket
 import java.net.URI
 import java.net.URL
-import kotlin.concurrent.thread
+import io.ktor.server.engine.ApplicationEngine
 
 class HealthTest {
     @Test
     fun testSystemInfoEndpoint() {
         // Pick an available local port to avoid collisions on shared dev machines/CI.
         val port = ServerSocket(0).use { it.localPort }
+        val dbFile = kotlin.runCatching { File.createTempFile("netninja-test-", ".db") }
+            .getOrElse { File("build/tmp/netninja-test-$port.db").apply { parentFile?.mkdirs() } }
+            .apply { deleteOnExit() }
 
         // Gradle's test working directory is typically the module directory (e.g. `server/`).
         // Resolve the repo's `web-ui/` folder robustly.
@@ -26,14 +29,14 @@ class HealthTest {
             File(".")
         }
 
-        thread {
-            try {
-                startServer(webUiDir, "127.0.0.1", port)
-            } catch (e: Exception) {
-                // Print for test logs
-                e.printStackTrace()
-            }
-        }
+        val engine: ApplicationEngine = startServer(
+            webUiDir = webUiDir,
+            host = "127.0.0.1",
+            port = port,
+            dbPath = dbFile.absolutePath,
+            wait = false
+        )
+        try {
 
         val uri = URI("http://127.0.0.1:$port/api/v1/system/info")
 
@@ -62,5 +65,8 @@ class HealthTest {
         }
 
         throw AssertionError("Server did not become ready at $uri within timeout.", lastError)
+        } finally {
+            runCatching { engine.stop(1000, 2000) }
+        }
     }
 }

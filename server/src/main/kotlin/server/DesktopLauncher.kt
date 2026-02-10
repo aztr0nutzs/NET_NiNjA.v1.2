@@ -24,6 +24,7 @@ fun main(args: Array<String>) {
     port = config.port,
     dbPath = config.dbPath,
     allowedOrigins = config.allowedOrigins,
+    authToken = config.authToken,
     wait = false
   )
 
@@ -31,7 +32,8 @@ fun main(args: Array<String>) {
     shutdownEngine(engine)
   })
 
-  val baseUrl = "http://${config.host}:${config.port}/ui/ninja_mobile_new.html"
+  val tokenSuffix = config.authToken?.takeIf { it.isNotBlank() }?.let { "?token=${java.net.URLEncoder.encode(it, Charsets.UTF_8)}" }.orEmpty()
+  val baseUrl = "http://${config.host}:${config.port}/ui/ninja_mobile_new.html$tokenSuffix"
   waitForServerReady(config.host, config.port, Duration.ofSeconds(20))
   openBrowser(baseUrl)
 

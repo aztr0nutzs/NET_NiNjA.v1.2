@@ -6,7 +6,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.ServerSocket
 import java.net.URI
-import kotlin.concurrent.thread
+import io.ktor.server.engine.ApplicationEngine
 
 class PermissionsActionTest {
   @Test
@@ -17,6 +17,9 @@ class PermissionsActionTest {
       System.setProperty("os.name", "Linux")
 
       val port = ServerSocket(0).use { it.localPort }
+      val dbFile = kotlin.runCatching { File.createTempFile("netninja-test-", ".db") }
+        .getOrElse { File("build/tmp/netninja-test-$port.db").apply { parentFile?.mkdirs() } }
+        .apply { deleteOnExit() }
 
       val webUiDir = run {
         val fromModule = File("web-ui")
@@ -26,13 +29,14 @@ class PermissionsActionTest {
         File(".")
       }
 
-      thread {
-        try {
-          startServer(webUiDir, "127.0.0.1", port)
-        } catch (e: Exception) {
-          e.printStackTrace()
-        }
-      }
+      val engine: ApplicationEngine = startServer(
+        webUiDir = webUiDir,
+        host = "127.0.0.1",
+        port = port,
+        dbPath = dbFile.absolutePath,
+        wait = false
+      )
+      try {
 
       val uri = URI("http://127.0.0.1:$port/api/v1/system/permissions/action")
 
@@ -68,6 +72,9 @@ class PermissionsActionTest {
       }
 
       throw AssertionError("Server did not become ready at $uri within timeout.", lastError)
+      } finally {
+        runCatching { engine.stop(1000, 2000) }
+      }
     } finally {
       if (originalOsName == null) System.clearProperty("os.name") else System.setProperty("os.name", originalOsName)
     }

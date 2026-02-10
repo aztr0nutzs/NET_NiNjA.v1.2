@@ -22,6 +22,7 @@ fun main(args: Array<String>) {
     host = config.host,
     port = config.port,
     dbPath = config.dbPath,
-    allowedOrigins = config.allowedOrigins
+    allowedOrigins = config.allowedOrigins,
+    authToken = config.authToken
   )
 }

@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  proxy:
+    image: nginx:stable
+    depends_on:
+      - netninja-server
+    volumes:
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./deploy/nginx/certs:/etc/nginx/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
+

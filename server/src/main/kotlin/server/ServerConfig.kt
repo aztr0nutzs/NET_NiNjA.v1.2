@@ -4,7 +4,8 @@ data class ServerConfig(
   val host: String,
   val port: Int,
   val dbPath: String,
-  val allowedOrigins: List<String>
+  val allowedOrigins: List<String>,
+  val authToken: String?
 )
 
 fun resolveServerConfig(env: Map<String, String> = System.getenv()): ServerConfig {
@@ -12,7 +13,8 @@ fun resolveServerConfig(env: Map<String, String> = System.getenv()): ServerConfi
   val port = env["NET_NINJA_PORT"]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: 8787
   val dbPath = env["NET_NINJA_DB"]?.trim().orEmpty().ifBlank { "netninja.db" }
   val allowedOrigins = parseAllowedOrigins(env["NET_NINJA_ALLOWED_ORIGINS"], host, port)
-  return ServerConfig(host = host, port = port, dbPath = dbPath, allowedOrigins = allowedOrigins)
+  val authToken = env["NET_NINJA_TOKEN"]?.trim()?.takeIf { it.isNotBlank() }
+  return ServerConfig(host = host, port = port, dbPath = dbPath, allowedOrigins = allowedOrigins, authToken = authToken)
 }
 
 private fun parseAllowedOrigins(raw: String?, host: String, port: Int): List<String> {

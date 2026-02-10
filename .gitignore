@@ -3,5 +3,8 @@
 .kotlin/
 local.properties
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 *.iml
 .idea/

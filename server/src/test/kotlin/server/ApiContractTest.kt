@@ -6,6 +6,7 @@ import java.net.ServerSocket
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.WebSocket
+import io.ktor.server.engine.ApplicationEngine
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -16,6 +17,7 @@ class ApiContractTest {
   @Test
   fun requiredEndpointsExistAndReturn200() {
     val port = ServerSocket(0).use { it.localPort }
+    val token = "test-token"
 
     val webUiDir = run {
       val fromModule = File("web-ui")
@@ -29,23 +31,21 @@ class ApiContractTest {
       .getOrElse { File("build/tmp/netninja-test-$port.db").apply { parentFile?.mkdirs() } }
       .apply { deleteOnExit() }
 
-    thread(name = "netninja-server-$port", isDaemon = true) {
-      try {
-        startServer(
-          webUiDir = webUiDir,
-          host = "127.0.0.1",
-          port = port,
-          dbPath = dbFile.absolutePath,
-          allowedOrigins = listOf("http://127.0.0.1:$port", "http://localhost:$port")
-        )
-      } catch (e: Exception) {
-        e.printStackTrace()
-      }
-    }
+    val engine: ApplicationEngine = startServer(
+      webUiDir = webUiDir,
+      host = "127.0.0.1",
+      port = port,
+      dbPath = dbFile.absolutePath,
+      allowedOrigins = listOf("http://127.0.0.1:$port", "http://localhost:$port"),
+      authToken = token,
+      wait = false
+    )
+    try {
 
     fun get(uri: URI): Pair<Int, String> {
       val conn = (uri.toURL().openConnection() as HttpURLConnection).apply {
         requestMethod = "GET"
+        setRequestProperty("Authorization", "Bearer $token")
         connectTimeout = 3000
         readTimeout = 5000
       }
@@ -64,6 +64,7 @@ class ApiContractTest {
         requestMethod = "POST"
         doOutput = true
         setRequestProperty("Content-Type", "application/json")
+        setRequestProperty("Authorization", "Bearer $token")
         connectTimeout = 3000
         readTimeout = 5000
       }
@@ -83,6 +84,7 @@ class ApiContractTest {
         requestMethod = "PUT"
         doOutput = true
         setRequestProperty("Content-Type", "application/json")
+        setRequestProperty("Authorization", "Bearer $token")
         connectTimeout = 3000
         readTimeout = 5000
       }
@@ -154,6 +156,7 @@ class ApiContractTest {
     run {
       val conn = (URI("$base/api/v1/logs/stream").toURL().openConnection() as HttpURLConnection).apply {
         requestMethod = "GET"
+        setRequestProperty("Authorization", "Bearer $token")
         connectTimeout = 1500
         readTimeout = 500
       }
@@ -180,7 +183,9 @@ class ApiContractTest {
       val wsUri = URI("ws://127.0.0.1:$port/openclaw/ws")
       val opened = CompletableFuture<Unit>()
       val client = HttpClient.newHttpClient()
-      val ws = client.newWebSocketBuilder().buildAsync(
+      val ws = client.newWebSocketBuilder()
+        .header("Authorization", "Bearer $token")
+        .buildAsync(
         wsUri,
         object : WebSocket.Listener {
           override fun onOpen(webSocket: WebSocket) {
@@ -211,6 +216,9 @@ class ApiContractTest {
       }
       assertTrue(seen, "Expected node '$nodeId' to appear in $nodesUri within timeout.")
       runCatching { ws.sendClose(WebSocket.NORMAL_CLOSURE, "test").get(1, TimeUnit.SECONDS) }
+    }
+    } finally {
+      runCatching { engine.stop(1000, 2000) }
     }
   }
 }

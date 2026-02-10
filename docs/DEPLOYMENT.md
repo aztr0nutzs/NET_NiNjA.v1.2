@@ -25,6 +25,13 @@ The desktop/server runtime reads configuration from environment variables (see `
   - Default: derived from `NET_NINJA_HOST`/`NET_NINJA_PORT` (localhost + host)
   - Meaning: comma-separated list of allowed CORS origins.
   - Example: `NET_NINJA_ALLOWED_ORIGINS=http://localhost:8787,http://127.0.0.1:8787`
+- `NET_NINJA_TOKEN`
+  - Default: none
+  - Meaning: shared-secret Bearer token used to authenticate API requests.
+  - Required: when binding to a non-loopback host (anything other than `127.0.0.1`/`localhost`/`::1`), the server will refuse to start without this.
+  - Clients:
+    - HTTP: `Authorization: Bearer <token>` (preferred) or `X-NetNinja-Token: <token>`
+    - SSE/Web UI: `?token=<token>`
 
 ## Build And Run
 
@@ -107,3 +114,19 @@ Runtime behavior notes:
 
 If you need explicit tunables (concurrency/timeouts as env vars), add them in a follow-up change so ops can adjust without rebuilds.
 
+## Docker (Optional)
+
+Basic (HTTP, no TLS):
+
+```bash
+docker compose up --build
+```
+
+With Nginx reverse proxy (HTTPS):
+
+1. Provide TLS certs in `deploy/nginx/certs/` (see `deploy/nginx/README.md`).
+2. Run:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.proxy.yml up --build
+```

@@ -3,24 +3,15 @@ services:
   netninja-server:
     build:
       context: .
-      dockerfile: server/Dockerfile
+      dockerfile: Dockerfile
     image: netninja:local
     environment:
       - NET_NINJA_HOST=0.0.0.0
       - NET_NINJA_PORT=8787
       - NET_NINJA_DB=/data/netninja.db
+      - NET_NINJA_TOKEN=${NET_NINJA_TOKEN}
     volumes:
       - ./server/data:/data
     ports:
       - "8787:8787"
     restart: unless-stopped
-
-  proxy:
-    image: nginx:stable
-    volumes:
-      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - netninja-server

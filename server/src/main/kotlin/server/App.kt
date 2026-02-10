@@ -124,7 +124,8 @@ fun main() {
     host = config.host,
     port = config.port,
     dbPath = config.dbPath,
-    allowedOrigins = config.allowedOrigins
+    allowedOrigins = config.allowedOrigins,
+    authToken = config.authToken
   )
 }
 
@@ -134,8 +135,16 @@ fun startServer(
   port: Int = 8787,
   dbPath: String = "netninja.db",
   allowedOrigins: List<String> = listOf("http://127.0.0.1:8787", "http://localhost:8787"),
+  authToken: String? = null,
   wait: Boolean = true
 ): ApplicationEngine {
+  // If the server is reachable beyond loopback, require an explicit token.
+  // This avoids accidentally running unauthenticated when deployed on 0.0.0.0 / public hosts.
+  val isLoopbackBind = host == "127.0.0.1" || host == "localhost" || host == "::1"
+  if (!isLoopbackBind && authToken.isNullOrBlank()) {
+    throw IllegalStateException("NET_NINJA_TOKEN must be set when binding to non-loopback host '$host'.")
+  }
+
   val conn = Db.open(dbPath)
   val devices = DeviceDao(conn)
   val events = EventDao(conn)
@@ -467,6 +476,12 @@ fun startServer(
   startScheduler()
 
   val engine = embeddedServer(Netty, port = port, host = host) {
+    environment.monitor.subscribe(ApplicationStopping) {
+      runCatching { scanJob.get()?.cancel() }
+      runCatching { schedulerScope.cancel() }
+      runCatching { conn.close() }
+    }
+
     install(ContentNegotiation) { json() }
     install(WebSockets) {
       pingPeriod = Duration.ofSeconds(15)
@@ -486,6 +501,38 @@ fun startServer(
       allowMethod(HttpMethod.Get)
       allowMethod(HttpMethod.Post)
       allowMethod(HttpMethod.Put)
+    }
+
+    val expectedToken = authToken?.trim()?.takeIf { it.isNotBlank() }
+    if (!expectedToken.isNullOrBlank()) {
+      intercept(ApplicationCallPipeline.Plugins) {
+        val path = call.request.path()
+        val requiresAuth = when {
+          path == "/api/v1/system/info" -> false // allow health/readiness without auth
+          path.startsWith("/api/") -> true
+          path == "/openclaw/ws" -> true
+          else -> false
+        }
+        if (!requiresAuth) return@intercept
+
+        fun extractToken(): String? {
+          val auth = call.request.headers[HttpHeaders.Authorization]?.trim().orEmpty()
+          if (auth.startsWith("Bearer ", ignoreCase = true)) {
+            val raw = auth.substringAfter("Bearer ", "").trim()
+            if (raw.isNotBlank()) return raw
+          }
+          call.request.headers["X-NetNinja-Token"]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+          call.request.queryParameters["token"]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+          call.request.queryParameters["t"]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+          return null
+        }
+
+        val provided = extractToken()
+        if (provided != expectedToken) {
+          call.respond(HttpStatusCode.Unauthorized, mapOf("ok" to false, "error" to "unauthorized"))
+          finish()
+        }
+      }
     }
 
     routing {
@@ -837,15 +884,22 @@ fun startServer(
       get("/api/v1/logs/stream") {
         call.response.cacheControl(CacheControl.NoCache(null))
         call.respondTextWriter(contentType = ContentType.Text.EventStream) {
-          while (true) {
-            var emitted = 0
+          // Exit cleanly on client disconnect/cancellation to avoid leaking coroutines.
+          try {
             while (true) {
-              val line = logQueue.poll() ?: break
-              write("data: ${line.replace("\n"," ")}\n\n")
-              emitted++
+              var emitted = 0
+              while (true) {
+                val line = logQueue.poll() ?: break
+                write("data: ${line.replace("\n", " ")}\n\n")
+                emitted++
+              }
+              flush()
+              delay(if (emitted == 0) 350 else 50)
             }
-            flush()
-            delay(if (emitted == 0) 350 else 50)
+          } catch (_: CancellationException) {
+            // Normal: client disconnected.
+          } catch (_: Throwable) {
+            // Broken pipe / shutdown. Treat as disconnect.
           }
         }
       }
