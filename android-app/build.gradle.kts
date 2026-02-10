@@ -15,7 +15,8 @@ plugins {
 
 // Keep build outputs out of `android-app/build/` to reduce Windows file-lock contention during `:app:clean`.
 // This makes `.\gradlew clean ...` much more reliable in IDE-heavy environments.
-buildDir = rootProject.layout.buildDirectory.dir("android-app").get().asFile
+// If you hit persistent file locks in this directory, bump the folder name to move outputs.
+buildDir = rootProject.layout.buildDirectory.dir("android-app-out").get().asFile
 
 val syncWebUiAssets by tasks.registering(Sync::class) {
     // Single source of truth for the UI bundle lives at repo root `web-ui/`.

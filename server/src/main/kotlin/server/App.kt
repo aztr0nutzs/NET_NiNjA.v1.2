@@ -138,10 +138,11 @@ fun startServer(
   authToken: String? = null,
   wait: Boolean = true
 ): ApplicationEngine {
-  // If the server is reachable beyond loopback, require an explicit token.
-  // This avoids accidentally running unauthenticated when deployed on 0.0.0.0 / public hosts.
+  // Always enforce token auth. For local dev, a token is auto-created/persisted if NET_NINJA_TOKEN is not set.
+  val expectedToken = ServerApiAuth.loadOrCreate(dbPath = dbPath, envToken = authToken)
   val isLoopbackBind = host == "127.0.0.1" || host == "localhost" || host == "::1"
   if (!isLoopbackBind && authToken.isNullOrBlank()) {
+    // For non-loopback binds, ops must supply a token via NET_NINJA_TOKEN.
     throw IllegalStateException("NET_NINJA_TOKEN must be set when binding to non-loopback host '$host'.")
   }
 
@@ -161,6 +162,7 @@ fun startServer(
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
+  log("auth enabled token=${expectedToken.take(6)}… (source=${if (!authToken.isNullOrBlank()) "env" else "file/generated"})")
 
   fun logException(where: String, t: Throwable, fields: Map<String, Any?> = emptyMap()) {
     if (t is CancellationException) throw t
@@ -477,9 +479,9 @@ fun startServer(
 
   val engine = embeddedServer(Netty, port = port, host = host) {
     environment.monitor.subscribe(ApplicationStopping) {
-      runCatching { scanJob.get()?.cancel() }
-      runCatching { schedulerScope.cancel() }
-      runCatching { conn.close() }
+      catching("shutdown:scanJob.cancel") { scanJob.get()?.cancel() }
+      catching("shutdown:schedulerScope.cancel") { schedulerScope.cancel() }
+      catching("shutdown:conn.close") { conn.close() }
     }
 
     install(ContentNegotiation) { json() }
@@ -503,34 +505,52 @@ fun startServer(
       allowMethod(HttpMethod.Put)
     }
 
-    val expectedToken = authToken?.trim()?.takeIf { it.isNotBlank() }
-    if (!expectedToken.isNullOrBlank()) {
-      intercept(ApplicationCallPipeline.Plugins) {
-        val path = call.request.path()
-        val requiresAuth = when {
-          path == "/api/v1/system/info" -> false // allow health/readiness without auth
-          path.startsWith("/api/") -> true
-          path == "/openclaw/ws" -> true
-          else -> false
-        }
-        if (!requiresAuth) return@intercept
+    val unauthorizedLimiter = RateLimiter(capacity = 15.0, refillTokensPerMs = 15.0 / 60_000.0) // 15/min burst 15
+    val rotateLimiter = RateLimiter(capacity = 2.0, refillTokensPerMs = 2.0 / (10 * 60_000.0)) // 2 per 10 minutes
+    intercept(ApplicationCallPipeline.Plugins) {
+      val path = call.request.path()
+      val requiresAuth = when {
+        path == "/api/v1/system/info" -> false // allow health/readiness without auth
+        path.startsWith("/api/") -> true
+        path == "/openclaw/ws" -> true
+        else -> false
+      }
+      if (!requiresAuth) return@intercept
 
-        fun extractToken(): String? {
-          val auth = call.request.headers[HttpHeaders.Authorization]?.trim().orEmpty()
-          if (auth.startsWith("Bearer ", ignoreCase = true)) {
-            val raw = auth.substringAfter("Bearer ", "").trim()
-            if (raw.isNotBlank()) return raw
-          }
-          call.request.headers["X-NetNinja-Token"]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
-          call.request.queryParameters["token"]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
-          call.request.queryParameters["t"]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
-          return null
+      fun extractToken(): String? {
+        val auth = call.request.headers[HttpHeaders.Authorization]?.trim().orEmpty()
+        if (auth.startsWith("Bearer ", ignoreCase = true)) {
+          val raw = auth.substringAfter("Bearer ", "").trim()
+          if (raw.isNotBlank()) return raw
         }
+        call.request.headers[ServerApiAuth.HEADER_TOKEN]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+        call.request.queryParameters[ServerApiAuth.QUERY_PARAM]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+        call.request.queryParameters["t"]?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+        return null
+      }
 
-        val provided = extractToken()
-        if (provided != expectedToken) {
-          call.respond(HttpStatusCode.Unauthorized, mapOf("ok" to false, "error" to "unauthorized"))
+      val provided = extractToken()
+      if (!ServerApiAuth.validate(provided)) {
+        val remote = call.request.local.remoteHost
+        val key = "${remote}:${path}:${provided?.take(8).orEmpty()}"
+        if (!unauthorizedLimiter.tryConsume(key)) {
+          call.respond(HttpStatusCode.TooManyRequests, mapOf("ok" to false, "error" to "rate_limited"))
           finish()
+          return@intercept
+        }
+        call.respond(HttpStatusCode.Unauthorized, mapOf("ok" to false, "error" to "unauthorized"))
+        finish()
+        return@intercept
+      }
+
+      // Sensitive endpoint throttling (auth already verified).
+      if (path == "/api/v1/system/token/rotate") {
+        val remote = call.request.local.remoteHost
+        val key = "${remote}:${provided?.take(12).orEmpty()}"
+        if (!rotateLimiter.tryConsume(key)) {
+          call.respond(HttpStatusCode.TooManyRequests, mapOf("ok" to false, "error" to "rate_limited"))
+          finish()
+          return@intercept
         }
       }
     }
@@ -552,6 +572,12 @@ fun startServer(
             timeMs = System.currentTimeMillis()
           )
         )
+      }
+
+      post("/api/v1/system/token/rotate") {
+        val rotated = ServerApiAuth.rotate(dbPath = dbPath, graceMs = 5 * 60_000L)
+        log("token rotated previousValidUntilMs=${rotated.previousValidUntilMs}")
+        call.respond(mapOf("ok" to true, "token" to rotated.token, "previousValidUntilMs" to rotated.previousValidUntilMs))
       }
 
       get("/api/v1/system/permissions") {

@@ -37,6 +37,7 @@ class PermissionsActionTest {
         wait = false
       )
       try {
+      val token = ServerApiAuth.loadOrCreate(dbPath = dbFile.absolutePath, envToken = null)
 
       val uri = URI("http://127.0.0.1:$port/api/v1/system/permissions/action")
 
@@ -50,6 +51,7 @@ class PermissionsActionTest {
             requestMethod = "POST"
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Authorization", "Bearer $token")
             connectTimeout = 1500
             readTimeout = 1500
           }

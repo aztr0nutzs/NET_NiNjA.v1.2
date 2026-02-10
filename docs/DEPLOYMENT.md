@@ -26,7 +26,7 @@ The desktop/server runtime reads configuration from environment variables (see `
   - Meaning: comma-separated list of allowed CORS origins.
   - Example: `NET_NINJA_ALLOWED_ORIGINS=http://localhost:8787,http://127.0.0.1:8787`
 - `NET_NINJA_TOKEN`
-  - Default: none
+  - Default: auto-generated and persisted to a token file (`netninja.token`) when binding to localhost
   - Meaning: shared-secret Bearer token used to authenticate API requests.
   - Required: when binding to a non-loopback host (anything other than `127.0.0.1`/`localhost`/`::1`), the server will refuse to start without this.
   - Clients:
@@ -62,6 +62,12 @@ Recommended baseline monitoring:
 - Alert if `GET /api/v1/system/info` fails or returns non-200 for more than N minutes.
 - Alert if `/api/v1/metrics` starts returning an `error` field repeatedly.
 - Capture and ship stderr/stdout logs (Logback + application logs) to your logging backend.
+
+## Token Rotation
+
+- Rotate token: `POST /api/v1/system/token/rotate`
+- Rotation keeps the previous token valid for a short grace period to avoid instantly breaking active clients.
+- The active token is persisted to `netninja.token` next to the DB file.
 
 ## Database And Migrations
 

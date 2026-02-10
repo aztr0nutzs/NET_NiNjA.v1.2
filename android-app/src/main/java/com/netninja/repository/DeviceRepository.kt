@@ -1,34 +1,27 @@
 package com.netninja.repository
 
 import android.content.ContentValues
-import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import com.netninja.Device
 import com.netninja.DeviceEvent
 import com.netninja.LocalDatabase
 import com.netninja.logging.StructuredLogger
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Database operations for devices extracted from AndroidLocalServer.
  * Addresses RISK-01: Refactor into focused modules.
  */
 class DeviceRepository(
-  private val ctx: Context,
+  private val db: LocalDatabase,
   private val logger: StructuredLogger
 ) {
-  
-  private val db = LocalDatabase(ctx)
-  private val devices = ConcurrentHashMap<String, Device>()
-  private val deviceEvents = ConcurrentHashMap<String, MutableList<DeviceEvent>>()
-  private val maxEventsPerDevice = 4000
 
   /**
    * Load all devices from database into memory.
    */
-  fun loadDevices(): Map<String, Device> {
+  fun loadDevices(): List<Device> {
     val r = db.readableDatabase
-    val loaded = mutableMapOf<String, Device>()
+    val loaded = mutableListOf<Device>()
 
     try {
       val hasOpenPorts = hasColumn("devices", "openPorts")
@@ -37,7 +30,7 @@ class DeviceRepository(
       } else {
         "SELECT id, ip, name, online, lastSeen, mac, hostname, vendor, os, owner, room, note, trust, type, status, via, signal, activityToday, traffic FROM devices"
       }
-      
+
       r.rawQuery(sql, null).use { c ->
         while (c.moveToNext()) {
           val id = c.getString(0)
@@ -46,8 +39,8 @@ class DeviceRepository(
             ?.split(",")
             ?.mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() }?.toIntOrNull() }
             ?: emptyList()
-          
-          val device = Device(
+
+          loaded += Device(
             id = id,
             ip = c.getString(1),
             name = c.getString(2),
@@ -69,8 +62,6 @@ class DeviceRepository(
             traffic = c.getString(18),
             openPorts = openPorts
           )
-          loaded[id] = device
-          devices[id] = device
         }
       }
       logger.info("Loaded devices from database", mapOf("count" to loaded.size.toString()))
@@ -94,7 +85,6 @@ class DeviceRepository(
           val id = c.getString(0)
           val event = DeviceEvent(id, c.getLong(1), c.getString(2))
           loaded.getOrPut(id) { mutableListOf() }.add(event)
-          deviceEvents.getOrPut(id) { mutableListOf() }.add(event)
         }
       }
       logger.info("Loaded device events", mapOf("devices" to loaded.size.toString()))
@@ -136,7 +126,6 @@ class DeviceRepository(
         }
       }
       w.insertWithOnConflict("devices", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
-      devices[device.id] = device
     } catch (e: Exception) {
       logger.error("Failed to save device", mapOf("deviceId" to device.id, "error" to e.message.toString()), e)
     }
@@ -147,47 +136,26 @@ class DeviceRepository(
    */
   fun recordEvent(deviceId: String, event: String) {
     try {
-      val e = DeviceEvent(deviceId, System.currentTimeMillis(), event)
-      val list = deviceEvents.getOrPut(deviceId) { mutableListOf() }
-      list.add(e)
-
-      // Trim old events
-      if (list.size > maxEventsPerDevice) {
-        list.subList(0, list.size - maxEventsPerDevice).clear()
-      }
-
-      // Save to database
-      val w = db.writableDatabase
-      val cv = ContentValues().apply {
-        put("deviceId", e.deviceId)
-        put("ts", e.ts)
-        put("event", e.event)
-      }
-      w.insert("events", null, cv)
+      saveEvent(DeviceEvent(deviceId, System.currentTimeMillis(), event))
     } catch (e: Exception) {
       logger.error("Failed to record event", mapOf("deviceId" to deviceId, "event" to event, "error" to e.message.toString()), e)
     }
   }
 
-  /**
-   * Get a device by ID.
-   */
-  fun getDevice(id: String): Device? = devices[id]
-
-  /**
-   * Get all devices.
-   */
-  fun getAllDevices(): List<Device> = devices.values.toList()
-
-  /**
-   * Get events for a device.
-   */
-  fun getEvents(deviceId: String): List<DeviceEvent> = deviceEvents[deviceId].orEmpty()
+  fun saveEvent(e: DeviceEvent) {
+    val w = db.writableDatabase
+    val cv = ContentValues().apply {
+      put("deviceId", e.deviceId)
+      put("ts", e.ts)
+      put("event", e.event)
+    }
+    w.insert("events", null, cv)
+  }
 
   /**
    * Check if a column exists in a table.
    */
-  private fun hasColumn(table: String, column: String): Boolean {
+  fun hasColumn(table: String, column: String): Boolean {
     return try {
       val cols = mutableSetOf<String>()
       db.readableDatabase.rawQuery("PRAGMA table_info($table);", null).use { c ->

@@ -1,11 +1,21 @@
 
 package core.persistence
 
+import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
 
 object Db {
+  private const val CURRENT_SCHEMA_VERSION = 1
+
   fun open(path: String = "netninja.db"): Connection {
+    // sqlite-jdbc extracts native libraries to a temp directory. On Windows this can fail due to
+    // temp path policies/locks. Prefer a repo-local temp dir when not explicitly configured.
+    if (System.getProperty("org.sqlite.tmpdir").isNullOrBlank()) {
+      val tmp = File(System.getProperty("user.dir"), "build/tmp/sqlite").apply { mkdirs() }
+      System.setProperty("org.sqlite.tmpdir", tmp.absolutePath)
+    }
+
     val c = DriverManager.getConnection("jdbc:sqlite:$path")
 
     // Defensive SQLite pragmas for server-side usage.
@@ -19,6 +29,33 @@ object Db {
       // Use a SAVEPOINT so migrations remain atomic even if the driver implicitly wrapped earlier statements
       // in a transaction (SQLite can do this for some PRAGMAs).
       runCatching { c.createStatement().execute("SAVEPOINT netninja_migrate;") }.getOrNull()
+
+      // Fail fast on corruption so ops can restore from backup instead of silently serving partial data.
+      val integrity = c.createStatement().executeQuery("PRAGMA integrity_check;").use { rs ->
+        if (rs.next()) rs.getString(1) else "unknown"
+      }
+      if (integrity != "ok") {
+        throw IllegalStateException("SQLite integrity_check failed: $integrity")
+      }
+
+      // Schema version tracking: one-row table.
+      c.createStatement().execute(
+        """CREATE TABLE IF NOT EXISTS schema_version(
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            version INTEGER NOT NULL,
+            updatedAt INTEGER NOT NULL
+        )"""
+      )
+      val existingVersion = c.createStatement().executeQuery("SELECT version FROM schema_version WHERE id=1;").use { rs ->
+        if (rs.next()) rs.getInt(1) else null
+      }
+      if (existingVersion == null) {
+        val now = System.currentTimeMillis()
+        c.createStatement().execute("INSERT INTO schema_version(id, version, updatedAt) VALUES (1, $CURRENT_SCHEMA_VERSION, $now)")
+      } else if (existingVersion != CURRENT_SCHEMA_VERSION) {
+        val now = System.currentTimeMillis()
+        c.createStatement().execute("UPDATE schema_version SET version=$CURRENT_SCHEMA_VERSION, updatedAt=$now WHERE id=1")
+      }
 
       c.createStatement().execute(
         """CREATE TABLE IF NOT EXISTS devices(

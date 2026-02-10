@@ -17,16 +17,56 @@ object LocalApiAuth {
   const val QUERY_PARAM = "token"
   const val HEADER_TOKEN = "X-NetNinja-Token"
 
+  data class Rotation(val token: String, val previousValidUntilMs: Long?)
+
+  @Volatile private var previousToken: String? = null
+  @Volatile private var previousValidUntilMs: Long? = null
+
+  private fun newToken(): String {
+    val bytes = ByteArray(32)
+    SecureRandom().nextBytes(bytes)
+    return Base64.encodeToString(bytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
+  }
+
   fun getOrCreateToken(ctx: Context): String {
     val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val existing = prefs.getString(KEY_TOKEN, null)?.trim().orEmpty()
     if (existing.length >= 24) return existing
 
-    val bytes = ByteArray(32)
-    SecureRandom().nextBytes(bytes)
-    val token = Base64.encodeToString(bytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
-
+    val token = newToken()
     prefs.edit().putString(KEY_TOKEN, token).apply()
     return token
+  }
+
+  fun validate(ctx: Context, providedRaw: String?): Boolean {
+    val provided = providedRaw?.trim().orEmpty()
+    if (provided.isBlank()) return false
+
+    val current = getOrCreateToken(ctx)
+    if (provided == current) return true
+
+    val prev = previousToken
+    val untilMs = previousValidUntilMs
+    if (prev != null && untilMs != null && System.currentTimeMillis() <= untilMs && provided == prev) return true
+
+    return false
+  }
+
+  fun rotate(ctx: Context, graceMs: Long = 5 * 60_000L): Rotation {
+    val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val current = getOrCreateToken(ctx)
+
+    val next = newToken()
+    prefs.edit().putString(KEY_TOKEN, next).apply()
+
+    if (graceMs > 0) {
+      previousToken = current
+      previousValidUntilMs = System.currentTimeMillis() + graceMs
+    } else {
+      previousToken = null
+      previousValidUntilMs = null
+    }
+
+    return Rotation(token = next, previousValidUntilMs = previousValidUntilMs)
   }
 }
