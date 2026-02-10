@@ -69,12 +69,10 @@ jobs:
 
       - name: Start server and smoke test
         run: |
-          # Build server jar (already built in build-server, but ensure)
-          ./gradlew :server:build --no-daemon
-          # Find jar
-          JAR=$(ls server/build/libs | grep '\.jar$' | head -n1)
-          echo "Starting jar: $JAR"
-          nohup java -jar server/build/libs/$JAR &>/tmp/netninja.log &
+          # Build server fat jar (shadow)
+          ./gradlew :server:shadowJar --no-daemon
+          echo "Starting jar: server/build/libs/server-all.jar"
+          nohup java -jar server/build/libs/server-all.jar &>/tmp/netninja.log &
           sleep 3
           echo "Waiting for server to accept connections..."
           for i in {1..10}; do

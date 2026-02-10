@@ -3,6 +3,7 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
+  id("com.github.johnrengelman.shadow")
 }
 
 application {
@@ -27,4 +28,9 @@ kotlin {
   // Align with the JDK shipped with Android Studio (JBR 21) on this machine.
   // If you need JDK 17 for CI, pin it via toolchain downloads in settings.gradle(.kts).
   jvmToolchain(21)
+}
+
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+  archiveFileName.set("server-all.jar")
+  mergeServiceFiles()
 }
