@@ -3,7 +3,7 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
-  id("com.github.johnrengelman.shadow")
+  id("com.gradleup.shadow")
 }
 
 application {
