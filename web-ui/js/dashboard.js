@@ -379,6 +379,14 @@
 
     $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
 
+    window.addEventListener("message", (event) => {
+      const data = event && event.data;
+      if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
+      const target = String(data.tab || "dashboard");
+      const allowed = new Set(["dashboard", "devices", "networks", "tools", "openclaw", "cameras"]);
+      setTab(allowed.has(target) ? target : "dashboard");
+    });
+
     // ---- Dashboard ----
     function renderDashboard(){
       const onlineCount = devices.filter(d => d.status === "Online").length;

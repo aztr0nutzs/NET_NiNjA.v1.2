@@ -565,6 +565,10 @@
     <div class="spacer"></div>
 
     <div class="actions">
+      <div class="btn" id="btnBackApp" title="Return to app tabs" aria-label="Back to app tabs">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="rgba(0,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </div>
       <div class="btn" id="btnDiscover" title="Hook this to your scan results / ONVIF backend">
         <!-- radar icon -->
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 1 0 10 10" stroke="rgba(0,255,255,.9)" stroke-width="2" stroke-linecap="round"/><path d="M12 12l6-6" stroke="rgba(255,47,164,.9)" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="rgba(58,255,163,.9)"/></svg>
@@ -764,6 +768,7 @@ const state = {
   autoPlay: true,
   muteMode: "all"
 };
+const CAM_STORAGE_KEY = "netninja:cameras:v1";
 
 // demo seeds (good-looking, stable HLS test)
 const DEFAULT_DEMO = {
@@ -783,6 +788,7 @@ const recEl = document.getElementById("reconnects");
 const latencyEl = document.getElementById("latency");
 const gridStatus = document.getElementById("gridStatus");
 
+document.getElementById("btnBackApp").onclick = () => requestAppTab("dashboard");
 document.getElementById("btnAdd").onclick = () => openModal(true);
 document.getElementById("btnCloseModal").onclick = () => openModal(false);
 document.getElementById("btnAddDemo").onclick = () => {
@@ -791,6 +797,24 @@ document.getElementById("btnAddDemo").onclick = () => {
   document.getElementById("camUrl").value = DEFAULT_DEMO.url;
 };
 document.getElementById("btnSaveCam").onclick = addCamFromModal;
+document.getElementById("modalBackdrop").addEventListener("click", (e) => {
+  if(e.target.id === "modalBackdrop") openModal(false);
+});
+
+["camName", "camType", "camUrl", "camUser", "camPass"].forEach((id) => {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      addCamFromModal();
+    }
+  });
+});
+
+window.addEventListener("keydown", (e) => {
+  if(e.key === "Escape") openModal(false);
+});
 
 document.getElementById("btnAllReconnect").onclick = () => {
   document.querySelectorAll(".tile").forEach(tile => {
@@ -836,6 +860,83 @@ function openModal(show){
   document.getElementById("modalBackdrop").style.display = show ? "flex" : "none";
 }
 
+function safeUuid(){
+  if(window.crypto && typeof window.crypto.randomUUID === "function"){
+    return window.crypto.randomUUID();
+  }
+  const now = Date.now().toString(36);
+  const rand = Math.random().toString(36).slice(2, 11);
+  return `cam-${now}-${rand}`;
+}
+
+function normalizeType(type){
+  const value = String(type || "hls").toLowerCase();
+  const allowed = new Set(["hls", "http", "mjpeg", "webrtc", "rtsp"]);
+  return allowed.has(value) ? value : "hls";
+}
+
+function isSupportedCameraUrl(url){
+  const value = String(url || "").trim();
+  if(!value) return false;
+  if(value.startsWith("webrtc://") || value.startsWith("rtsp://")) return true;
+  if(!window.URL) return true;
+  try {
+    const parsed = new URL(value, window.location.href);
+    return ["http:", "https:", "file:", "blob:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function normalizeCamera(input){
+  return {
+    id: input.id || safeUuid(),
+    name: (input.name || "Camera").toString().trim() || "Camera",
+    type: normalizeType(input.type),
+    url: String(input.url || "").trim(),
+    user: input.user ? String(input.user).trim() : null,
+    pass: input.pass ? String(input.pass).trim() : null,
+    source: input.source === "backend" ? "backend" : "manual",
+    lastErr: null,
+    playing: false,
+    lastStart: 0
+  };
+}
+
+function saveManualCameras(){
+  try {
+    const manual = state.cams
+      .filter(c => c.source !== "backend")
+      .map(({ id, name, type, url, user, pass }) => ({ id, name, type, url, user, pass, source: "manual" }));
+    window.localStorage.setItem(CAM_STORAGE_KEY, JSON.stringify(manual));
+  } catch {
+    // Storage may be unavailable in strict WebView modes.
+  }
+}
+
+function loadManualCameras(){
+  try {
+    const raw = window.localStorage.getItem(CAM_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(parsed)) return [];
+    return parsed
+      .map(normalizeCamera)
+      .filter(cam => isSupportedCameraUrl(cam.url));
+  } catch {
+    return [];
+  }
+}
+
+function requestAppTab(tab){
+  try {
+    if(window.parent && window.parent !== window){
+      window.parent.postMessage({ source: "netninja-cam", type: "switch-tab", tab }, "*");
+    }
+  } catch {
+    // noop
+  }
+}
+
 function addCamFromModal(){
   const name = document.getElementById("camName").value.trim() || "Unnamed Cam";
   const type = document.getElementById("camType").value;
@@ -843,22 +944,30 @@ function addCamFromModal(){
   const user = document.getElementById("camUser").value.trim();
   const pass = document.getElementById("camPass").value.trim();
 
-  if(!url){
-    flashStatus("URL required", "warn");
+  if(!isSupportedCameraUrl(url)){
+    flashStatus("Use a valid camera URL", "warn");
     return;
   }
 
-  const cam = {
-    id: crypto.randomUUID(),
+  const duplicate = state.cams.find(c => c.url === url);
+  if(duplicate){
+    state.focusedId = duplicate.id;
+    renderAll();
+    openModal(false);
+    flashStatus("Camera already exists", "warn");
+    return;
+  }
+
+  const cam = normalizeCamera({
+    id: safeUuid(),
     name, type, url,
     user: user || null,
     pass: pass || null,
-    lastErr: null,
-    playing: false,
-    lastStart: 0
-  };
+    source: "manual"
+  });
   state.cams.unshift(cam);
-  if(!state.focusedId) state.focusedId = cam.id;
+  state.focusedId = cam.id;
+  saveManualCameras();
   openModal(false);
   renderAll();
   flashStatus("Camera added", "ok");
@@ -1095,6 +1204,7 @@ function removeCam(id){
   const idx = state.cams.findIndex(c => c.id === id);
   if(idx < 0) return;
   state.cams.splice(idx, 1);
+  saveManualCameras();
   if(state.focusedId === id){
     state.focusedId = state.cams[0]?.id || null;
   }
@@ -1177,38 +1287,41 @@ function escapeHtml(s){
  */
 window.NetNinjaCams = {
   setCameras(list){
-    const cams = (list || []).map(x => ({
-      id: crypto.randomUUID(),
-      name: x.name || "Camera",
-      type: (x.type || "hls").toLowerCase(),
-      url: x.url || "",
-      user: x.user || null,
-      pass: x.pass || null,
-      lastErr: null,
-      playing: false,
-      lastStart: 0
-    })).filter(x => x.url);
-
-    state.cams = cams;
-    state.focusedId = cams[0]?.id || null;
+    const backend = (list || [])
+      .map(x => normalizeCamera({
+        id: safeUuid(),
+        name: x.name,
+        type: x.type,
+        url: x.url,
+        user: x.user,
+        pass: x.pass,
+        source: "backend"
+      }))
+      .filter(x => isSupportedCameraUrl(x.url));
+    const manual = loadManualCameras();
+    const merged = [...manual, ...backend.filter(b => !manual.some(m => m.url === b.url))];
+    state.cams = merged;
+    state.focusedId = merged[0]?.id || null;
     renderAll();
-    flashStatus("Scan feed loaded", "ok");
+    flashStatus("Scan feed loaded", merged.length ? "ok" : "warn");
   }
 };
 
-// Seed with one demo so it looks alive immediately.
-state.cams = [{
-  id: crypto.randomUUID(),
-  name: DEFAULT_DEMO.name,
-  type: DEFAULT_DEMO.type,
-  url: DEFAULT_DEMO.url,
-  user: null,
-  pass: null,
-  lastErr: null,
-  playing: false,
-  lastStart: 0
-}];
-state.focusedId = state.cams[0].id;
+// Seed with persisted cameras, then one demo so it looks alive immediately.
+state.cams = loadManualCameras();
+if(state.cams.length === 0){
+  state.cams = [normalizeCamera({
+    id: safeUuid(),
+    name: DEFAULT_DEMO.name,
+    type: DEFAULT_DEMO.type,
+    url: DEFAULT_DEMO.url,
+    user: null,
+    pass: null,
+    source: "manual"
+  })];
+  saveManualCameras();
+}
+state.focusedId = state.cams[0]?.id || null;
 renderAll();
 </script>
 </body>
