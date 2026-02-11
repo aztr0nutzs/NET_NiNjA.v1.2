@@ -1,4 +1,7 @@
 {
     "kiroAgent.configureMCP": "Disabled",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "redhat.telemetry.enabled": false,
+    "rhda.exhortSnykToken": "",
+    "rhda.enableImageDiagnostics": false
 }
