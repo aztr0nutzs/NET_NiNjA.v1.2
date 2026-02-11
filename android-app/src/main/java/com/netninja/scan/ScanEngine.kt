@@ -5,7 +5,9 @@ import com.netninja.config.ServerConfig
 import com.netninja.logging.StructuredLogger
 import com.netninja.network.RetryPolicy
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -39,6 +41,7 @@ class ScanEngine(
     val total = ips.size.coerceAtLeast(1)
     val completed = AtomicInteger(0)
     val foundCount = AtomicInteger(0)
+    val resultsMutex = Mutex()
     val results = mutableListOf<Device>()
 
     ips.map { ip ->
@@ -46,7 +49,7 @@ class ScanEngine(
         sem.withPermit {
           val device = scanSingleIp(ip)
           if (device != null) {
-            results.add(device)
+            resultsMutex.withLock { results.add(device) }
             foundCount.incrementAndGet()
             onDeviceFound(device)
           }

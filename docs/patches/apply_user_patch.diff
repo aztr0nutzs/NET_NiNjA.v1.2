@@ -28,7 +28,7 @@ index eb8bcbff441a080575d1949b06dd62686c48f870..d8bb2e91cc4b9b7851c9c7da9d983528
 +## OpenClaw Android Companion integration
 +![OpenClaw Companion header](ninja_claw.png)
 +
-+The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
++The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media uses the `ninja_header.mp4` loop as the top hero.
 +
 +### What it supports
 +- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
@@ -37,10 +37,6 @@ index eb8bcbff441a080575d1949b06dd62686c48f870..d8bb2e91cc4b9b7851c9c7da9d983528
 +- **Sessions tracking**: A sessions table for monitoring active task/session entries.
 +- **Command runner modal**: A command dialog is available to run OpenClaw commands (e.g., `openclaw status`) from within the dashboard shell.
 
- diff --git a/ninja_claw.mp4 b/android-app/src/main/assets/web-ui/ninja_claw.mp4
- similarity index 100%
- rename from ninja_claw.mp4
- rename to android-app/src/main/assets/web-ui/ninja_claw.mp4
 
  diff --git a/android-app/src/main/assets/web-ui/ninja_mobile_new.html b/android-app/src/main/assets/web-ui/ninja_mobile_new.html
  index f7957efe9efd5437ff81d636833c92b360e6ef1d..e1e514ce884ccdc2b4dc5f9384296c97e43564c5 100644
@@ -49,7 +45,7 @@ index eb8bcbff441a080575d1949b06dd62686c48f870..d8bb2e91cc4b9b7851c9c7da9d983528
 @@ -1097,7 +1097,7 @@
             <video id="headerVideo" autoplay muted loop playsinline>
 -            <source src="ninja_header.mp4" type="video/mp4" />
-+            <source src="ninja_claw.mp4" type="video/mp4" />
++            <source src="ninja_header.mp4" type="video/mp4" />
             </video>
 @@
  diff --git a/web-ui/ninja_mobile_new.html b/web-ui/ninja_mobile_new.html
@@ -59,7 +55,7 @@ index eb8bcbff441a080575d1949b06dd62686c48f870..d8bb2e91cc4b9b7851c9c7da9d983528
 @@ -1097,7 +1097,7 @@
             <video id="headerVideo" autoplay muted loop playsinline>
 -            <source src="ninja_header.mp4" type="video/mp4" />
-+            <source src="ninja_claw.mp4" type="video/mp4" />
++            <source src="ninja_header.mp4" type="video/mp4" />
             </video>
 @@
  diff --git a/README_PROPOSED.md b/README_PROPOSED.md
@@ -92,7 +88,7 @@ index eb8bcbff441a080575d1949b06dd62686c48f870..d8bb2e91cc4b9b7851c9c7da9d983528
 +## OpenClaw Android Companion integration
 +![OpenClaw Companion header](ninja_claw.png)
 +
-+The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
++The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media uses the `ninja_header.mp4` loop as the top hero.
 +
 +### What it supports
 +- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.

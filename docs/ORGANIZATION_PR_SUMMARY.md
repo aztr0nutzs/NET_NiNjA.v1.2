@@ -28,7 +28,7 @@ User request: "Precisely identify all markdown docs and skills files (openclaw s
   - net_ninja_cam.html
   - openclaw_dash.html
   - ninja_cam_header.mp4/png
-  - ninja_claw.mp4/png
+  - ninja_claw.png
 
 ### Source Code Organization
 - Moved Android-specific Kotlin files to android-app module

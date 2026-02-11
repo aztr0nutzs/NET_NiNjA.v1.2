@@ -26,7 +26,6 @@ This document summarizes the repository organization completed on 2026-02-06.
 - net_ninja_cam.html (duplicate of web-ui/net_ninja_cam.html)
 - openclaw_dash.html (duplicate of web-ui/openclaw_dash.html)
 - ninja_cam_header.mp4 (duplicate of web-ui/ninja_cam_header.mp4)
-- ninja_claw.mp4 (duplicate of web-ui/ninja_claw.mp4)
 - ninja_cam_header.png (duplicate of web-ui/ninja_cam_header.png)
 - ninja_claw.png (duplicate of web-ui/ninja_claw.png)
 

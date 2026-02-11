@@ -23,7 +23,7 @@ The Ninja CAM experience is a dedicated **Cameras** tab inside the dashboard. It
 ## OpenClaw Android Companion integration
 ![OpenClaw Companion header](web-ui/ninja_claw.png)
 
-The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_claw.mp4` loop as the top hero.
+The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media uses the `ninja_header.mp4` loop as the top hero.
 
 ### What it supports
 - **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
