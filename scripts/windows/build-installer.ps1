@@ -2,6 +2,13 @@ param(
   [string]$AppVersion = "1.2.0"
 )
 
+# NOTE: For the full self-contained EXE installer (bundles JRE, desktop icon,
+# start menu, uninstall support), use:
+#   .\scripts\windows\build-full-installer.ps1
+#
+# This script produces a simpler jpackage-based installer that requires
+# JDK 17+ on the user's machine.
+
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 

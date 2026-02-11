@@ -76,9 +76,16 @@ Ensure TLS certificates are placed in deploy/nginx/certs/ (fullchain.pem, privke
 
 ## Windows Installer
 
-Build a Windows .exe installer using jpackage:
+### Full Installer (Recommended) — bundles JRE, desktop icon, start menu
+Requires: JDK 21, [Inno Setup 6](https://jrsoftware.org/isdl.php)
+```powershell
+.\scripts\windows\build-full-installer.ps1
+```
+Output: `build\windows-installer\out\NetNiNjA-v1.2.0-Setup.exe`
+
+### Lightweight Installer — jpackage (requires JDK on target machine)
 ```powershell
 .\scripts\windows\build-installer.ps1
 ```
 
-Requires: JDK 21 with jpackage, and a prior :server:shadowJar build.
+See [docs/WINDOWS_INSTALLER.md](docs/WINDOWS_INSTALLER.md) for full details.
