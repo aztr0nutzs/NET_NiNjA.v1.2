@@ -9,6 +9,8 @@ dependencies {
   implementation(libs.jmdns)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.kotlinx.coroutines.core)
+  testImplementation("org.jetbrains.kotlin:kotlin-test")
+  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
 kotlin {

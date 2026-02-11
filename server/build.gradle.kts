@@ -21,6 +21,8 @@ dependencies {
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logback.classic)
 
+  testImplementation("io.ktor:ktor-server-test-host:2.3.7")
+  testImplementation("io.ktor:ktor-client-content-negotiation:2.3.7")
   testImplementation(kotlin("test"))
 }
 

@@ -90,4 +90,12 @@ class DeviceDao(private val conn: Connection) {
         )
       }
     }
+
+  fun getById(id: String): Device? = get(id)
+
+  fun delete(id: String): Int =
+    conn.prepareStatement("DELETE FROM devices WHERE id=?").use { ps ->
+      ps.setString(1, id)
+      ps.executeUpdate()
+    }
 }

@@ -1068,40 +1068,135 @@ private fun localNetworkInfo(): Map<String, Any?> {
 }
 
 private fun resolveDefaultGateway(): String? {
+  // Linux: parse /proc/net/route
   val routeFile = File("/proc/net/route")
-  if (!routeFile.exists()) return null
-  return try {
-    routeFile.readLines().drop(1).mapNotNull { line ->
-      val parts = line.trim().split(Regex("\\s+"))
-      if (parts.size <= 2) return@mapNotNull null
-      val dest = parts[1]
-      val gateway = parts[2]
-      if (dest != "00000000") return@mapNotNull null
-      val gwInt = gateway.toLong(16)
-      val b1 = (gwInt and 0xFF).toInt()
-      val b2 = ((gwInt shr 8) and 0xFF).toInt()
-      val b3 = ((gwInt shr 16) and 0xFF).toInt()
-      val b4 = ((gwInt shr 24) and 0xFF).toInt()
-      "$b1.$b2.$b3.$b4"
-    }.firstOrNull()
-  } catch (t: Throwable) {
-    LOGGER.warn("resolveDefaultGateway failed: ${t.message}", t)
-    null
+  if (routeFile.exists()) {
+    return try {
+      routeFile.readLines().drop(1).mapNotNull { line ->
+        val parts = line.trim().split(Regex("\\s+"))
+        if (parts.size <= 2) return@mapNotNull null
+        val dest = parts[1]
+        val gateway = parts[2]
+        if (dest != "00000000") return@mapNotNull null
+        val gwInt = gateway.toLong(16)
+        val b1 = (gwInt and 0xFF).toInt()
+        val b2 = ((gwInt shr 8) and 0xFF).toInt()
+        val b3 = ((gwInt shr 16) and 0xFF).toInt()
+        val b4 = ((gwInt shr 24) and 0xFF).toInt()
+        "$b1.$b2.$b3.$b4"
+      }.firstOrNull()
+    } catch (t: Throwable) {
+      LOGGER.warn("resolveDefaultGateway /proc failed: ${t.message}", t)
+      null
+    }
   }
+
+  // Cross-platform fallback: try `ip route` then `netstat -rn`
+  return resolveGatewayViaShell()
+}
+
+/** Shell-based gateway resolution for Windows, macOS, and non-/proc Linux. */
+private fun resolveGatewayViaShell(): String? {
+  val ipPattern = Regex("""(\d+\.\d+\.\d+\.\d+)""")
+  val os = System.getProperty("os.name", "").lowercase()
+
+  val commands: List<List<String>> = when {
+    os.contains("win") -> listOf(
+      listOf("cmd", "/c", "route", "print", "0.0.0.0")
+    )
+    else -> listOf(
+      listOf("ip", "route", "show", "default"),
+      listOf("netstat", "-rn")
+    )
+  }
+
+  for (cmd in commands) {
+    try {
+      val process = ProcessBuilder(cmd)
+        .redirectErrorStream(true)
+        .start()
+      val output = process.inputStream.bufferedReader().readText()
+      process.waitFor()
+      if (process.exitValue() != 0) continue
+
+      for (line in output.lines()) {
+        val lower = line.lowercase().trim()
+        // Linux/macOS: "default via 192.168.1.1 ..."
+        if (lower.startsWith("default")) {
+          val match = ipPattern.find(line)
+          if (match != null) return match.groupValues[1]
+        }
+        // Windows route print: "0.0.0.0  ... 192.168.1.1 ..."
+        if (lower.startsWith("0.0.0.0")) {
+          val ips = ipPattern.findAll(line).map { it.groupValues[1] }.toList()
+          val gw = ips.firstOrNull { it != "0.0.0.0" }
+          if (gw != null) return gw
+        }
+      }
+    } catch (_: Exception) {
+      // command not available – try next
+    }
+  }
+  LOGGER.debug("resolveDefaultGateway: no cross-platform method succeeded")
+  return null
 }
 
 private fun resolveDnsServers(): String? {
+  // Linux / macOS: /etc/resolv.conf
   val resolv = File("/etc/resolv.conf")
-  if (!resolv.exists()) return null
-  val servers = try {
-    resolv.readLines().mapNotNull { line ->
-      val trimmed = line.trim()
-      if (!trimmed.startsWith("nameserver")) return@mapNotNull null
-      trimmed.split(Regex("\\s+")).getOrNull(1)
-    }.filter { it.isNotBlank() }
-  } catch (t: Throwable) {
-    LOGGER.warn("resolveDnsServers failed: ${t.message}", t)
-    emptyList()
+  if (resolv.exists()) {
+    val servers = try {
+      resolv.readLines().mapNotNull { line ->
+        val trimmed = line.trim()
+        if (!trimmed.startsWith("nameserver")) return@mapNotNull null
+        trimmed.split(Regex("\\s+")).getOrNull(1)
+      }.filter { it.isNotBlank() }
+    } catch (t: Throwable) {
+      LOGGER.warn("resolveDnsServers /etc/resolv.conf failed: ${t.message}", t)
+      emptyList()
+    }
+    if (servers.isNotEmpty()) return servers.joinToString(", ")
   }
-  return servers.takeIf { it.isNotEmpty() }?.joinToString(", ")
+
+  // Windows fallback: parse `nslookup` output (universally available)
+  return resolveDnsViaShell()
+}
+
+/** Shell-based DNS server resolution for Windows and fallback. */
+private fun resolveDnsViaShell(): String? {
+  val os = System.getProperty("os.name", "").lowercase()
+  val ipPattern = Regex("""(\d+\.\d+\.\d+\.\d+)""")
+
+  val commands: List<List<String>> = when {
+    os.contains("win") -> listOf(
+      listOf("cmd", "/c", "nslookup", "localhost")
+    )
+    else -> listOf(
+      listOf("nslookup", "localhost")
+    )
+  }
+
+  for (cmd in commands) {
+    try {
+      val process = ProcessBuilder(cmd)
+        .redirectErrorStream(true)
+        .start()
+      val output = process.inputStream.bufferedReader().readText()
+      process.waitFor()
+
+      // nslookup prints "Server:  <ip>" as the first server line
+      for (line in output.lines()) {
+        val trimmed = line.trim()
+        if (trimmed.startsWith("Server:", ignoreCase = true) ||
+            trimmed.startsWith("Address:", ignoreCase = true)) {
+          val match = ipPattern.find(trimmed)
+          if (match != null) return match.groupValues[1]
+        }
+      }
+    } catch (_: Exception) {
+      // command not available
+    }
+  }
+  LOGGER.debug("resolveDnsServers: no cross-platform method succeeded")
+  return null
 }
