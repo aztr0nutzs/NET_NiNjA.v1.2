@@ -26,3 +26,59 @@ On macOS/Linux (or Git Bash), the equivalent is:
 
 ## Notes
 - Android cleartext to localhost is allowed via `android-app/src/main/res/xml/network_security_config.xml` and manifest `android:networkSecurityConfig`.
+
+## Server (JVM Desktop)
+
+Build the fat JAR:
+```powershell
+.\gradlew :server:shadowJar
+```
+
+Run the server directly:
+```powershell
+.\gradlew :server:run
+```
+
+Run the fat JAR:
+```powershell
+java -jar server/build/libs/server-all.jar
+```
+
+The server starts on http://localhost:8787 by default.
+
+### Environment Variables
+| Variable | Default | Description |
+|---|---|---|
+| NET_NINJA_HOST | 0.0.0.0 | Bind address |
+| NET_NINJA_PORT | 8787 | HTTP port |
+| NET_NINJA_DB | netninja.db | SQLite database path |
+| NET_NINJA_TOKEN | (auto-generated) | API auth token (required for non-loopback) |
+| NET_NINJA_ALLOWED_ORIGINS | (none) | CORS allowed origins, comma-separated |
+
+## Docker
+
+Build the image:
+```bash
+docker build -t netninja .
+```
+
+Run with Docker Compose:
+```bash
+docker-compose up -d
+```
+
+Run with the Nginx TLS proxy:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
+```
+
+Ensure TLS certificates are placed in deploy/nginx/certs/ (fullchain.pem, privkey.pem).
+
+## Windows Installer
+
+Build a Windows .exe installer using jpackage:
+```powershell
+.\scripts\windows\build-installer.ps1
+```
+
+Requires: JDK 21 with jpackage, and a prior :server:shadowJar build.

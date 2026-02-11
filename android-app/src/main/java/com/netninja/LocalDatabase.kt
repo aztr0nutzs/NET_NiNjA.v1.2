@@ -4,7 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 4) {
+class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 5) {
 
   override fun onCreate(db: SQLiteDatabase) {
     db.execSQL(
@@ -66,6 +66,8 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 4
         value TEXT
       )"""
     )
+    db.execSQL("CREATE INDEX IF NOT EXISTS idx_events_device_ts ON events(deviceId, ts)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS idx_devices_lastSeen ON devices(lastSeen DESC)")
   }
 
   override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -99,6 +101,10 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 4
           )"""
         )
       }
+    }
+    if (oldVersion < 5) {
+      runCatching { db.execSQL("CREATE INDEX IF NOT EXISTS idx_events_device_ts ON events(deviceId, ts)") }
+      runCatching { db.execSQL("CREATE INDEX IF NOT EXISTS idx_devices_lastSeen ON devices(lastSeen DESC)") }
     }
   }
 }
