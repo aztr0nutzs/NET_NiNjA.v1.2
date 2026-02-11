@@ -1274,8 +1274,7 @@ input, .mono{
     state.logs.push(line);
 
     const ls = el('logStream');
-    if(ls) ls.textContent = state.logs.slice(-200).join('
-');
+    if(ls) ls.textContent = state.logs.slice(-200).join('\n');
 
     const ids = ['consoleOut','overviewConsole','configConsole','debugConsole','modeConsole','skillsConsole'];
     ids.forEach((id)=>{

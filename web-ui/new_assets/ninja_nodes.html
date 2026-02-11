@@ -1590,7 +1590,18 @@ window.addEventListener("load", init);
 
 // Expose for external integration
 window.nnUpdateDiscoveryMap=function(deviceList){
-  if(Array.isArray(deviceList)) S.devices=deviceList;
+  if(Array.isArray(deviceList)){
+    // Normalize type names from dashboard (uppercase) to map keys (lowercase)
+    S.devices = deviceList.map(function(d){
+      var copy = Object.assign({}, d);
+      if(copy.type) copy.type = copy.type.toLowerCase();
+      // Map dashboard trust/status to map expectations
+      if(!copy.online && copy.status){
+        copy.online = (copy.status === "Online");
+      }
+      return copy;
+    });
+  }
   buildGraph(); spawnBeams();
 };
 

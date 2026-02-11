@@ -7,6 +7,7 @@
 $ErrorActionPreference = "Stop"
 
 $appDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = Resolve-Path (Join-Path $appDir "..\..")
 $jreDir   = Join-Path $appDir "jre"
 $libDir   = Join-Path $appDir "lib"
 $webUiDir = Join-Path $appDir "web-ui"
@@ -31,21 +32,55 @@ if (-not (Test-Path $java)) {
   }
 }
 
+# Resolve lib dir across install + staging + repo build layouts
+if (-not (Test-Path (Join-Path $libDir "*.jar"))) {
+  $candidate = Join-Path $appDir "staging\lib"
+  if (Test-Path (Join-Path $candidate "*.jar")) { $libDir = $candidate }
+}
+if (-not (Test-Path (Join-Path $libDir "*.jar"))) {
+  $candidate = Join-Path $repoRoot "server\build\install\server\lib"
+  if (Test-Path (Join-Path $candidate "*.jar")) { $libDir = $candidate }
+}
+if (-not (Test-Path (Join-Path $libDir "*.jar"))) {
+  $candidate = Join-Path $repoRoot "server\build\libs"
+  if (Test-Path (Join-Path $candidate "server-all.jar")) { $libDir = $candidate }
+}
+
+# Resolve web-ui dir across install + staging + repo layouts
+if (-not (Test-Path (Join-Path $webUiDir "ninja_mobile_new.html"))) {
+  $candidate = Join-Path $appDir "staging\web-ui"
+  if (Test-Path (Join-Path $candidate "ninja_mobile_new.html")) { $webUiDir = $candidate }
+}
+if (-not (Test-Path (Join-Path $webUiDir "ninja_mobile_new.html"))) {
+  $candidate = Join-Path $repoRoot "web-ui"
+  if (Test-Path (Join-Path $candidate "ninja_mobile_new.html")) { $webUiDir = $candidate }
+}
+
 # Locate server jar
 $serverJar = Join-Path $libDir "server-all.jar"
 if (-not (Test-Path $serverJar)) {
-  # fallback: find any server*.jar in lib
   $serverJar = Get-ChildItem -Path $libDir -Filter "server*.jar" -ErrorAction SilentlyContinue |
     Sort-Object Length -Descending | Select-Object -First 1 -ExpandProperty FullName
   if (-not $serverJar) {
+    Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.MessageBox]::Show(
-      "server-all.jar not found in:`n$libDir",
+      "Server JAR not found in:`n$libDir`n`nBuild it with:`ngradlew.bat :server:shadowJar",
       "NET NiNjA — Error",
       [System.Windows.Forms.MessageBoxButtons]::OK,
       [System.Windows.Forms.MessageBoxIcon]::Error
     )
     exit 1
   }
+}
+if (-not (Test-Path (Join-Path $webUiDir "ninja_mobile_new.html"))) {
+  Add-Type -AssemblyName System.Windows.Forms
+  [System.Windows.Forms.MessageBox]::Show(
+    "web-ui not found at:`n$webUiDir",
+    "NET NiNjA — Error",
+    [System.Windows.Forms.MessageBoxButtons]::OK,
+    [System.Windows.Forms.MessageBoxIcon]::Error
+  )
+  exit 1
 }
 
 # Set environment variables

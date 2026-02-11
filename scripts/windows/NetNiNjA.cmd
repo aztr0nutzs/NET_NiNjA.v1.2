@@ -9,6 +9,7 @@ set "APP_DIR=%~dp0"
 set "JRE_DIR=%APP_DIR%jre"
 set "LIB_DIR=%APP_DIR%lib"
 set "WEBUI_DIR=%APP_DIR%web-ui"
+set "REPO_ROOT=%APP_DIR%..\.."
 set "DATA_DIR=%LOCALAPPDATA%\NET_NiNjA"
 set "LOG_FILE=%DATA_DIR%\server.log"
 
@@ -29,13 +30,47 @@ if exist "%JRE_DIR%\bin\java.exe" (
   set "JAVA_EXE=java"
 )
 
-REM Find the server JAR
+REM Resolve lib directory across install + staging + repo build layouts.
+if not exist "%LIB_DIR%\*.jar" (
+  if exist "%APP_DIR%staging\lib\*.jar" set "LIB_DIR=%APP_DIR%staging\lib"
+)
+if not exist "%LIB_DIR%\*.jar" (
+  if exist "%REPO_ROOT%\server\build\install\server\lib\*.jar" set "LIB_DIR=%REPO_ROOT%\server\build\install\server\lib"
+)
+if not exist "%LIB_DIR%\*.jar" (
+  if exist "%REPO_ROOT%\server\build\libs\server-all.jar" (
+    set "LIB_DIR=%REPO_ROOT%\server\build\libs"
+  )
+)
+
+REM Resolve web-ui directory across install + staging + repo layouts.
+if not exist "%WEBUI_DIR%\ninja_mobile_new.html" (
+  if exist "%APP_DIR%staging\web-ui\ninja_mobile_new.html" set "WEBUI_DIR=%APP_DIR%staging\web-ui"
+)
+if not exist "%WEBUI_DIR%\ninja_mobile_new.html" (
+  if exist "%REPO_ROOT%\web-ui\ninja_mobile_new.html" set "WEBUI_DIR=%REPO_ROOT%\web-ui"
+)
+
+REM Find the server JAR in the resolved lib directory.
 set "SERVER_JAR="
 for %%f in ("%LIB_DIR%\server-all.jar") do (
   if exist "%%f" set "SERVER_JAR=%%f"
 )
 if "%SERVER_JAR%"=="" (
-  echo ERROR: server-all.jar not found in %LIB_DIR%
+  for %%f in ("%LIB_DIR%\server*.jar") do (
+    if exist "%%f" set "SERVER_JAR=%%f"
+  )
+)
+if "%SERVER_JAR%"=="" (
+  echo ERROR: server JAR not found in %LIB_DIR%
+  echo Checked app/staging/repo build paths.
+  echo Build it with: gradlew.bat :server:shadowJar
+  pause
+  exit /b 1
+)
+if not exist "%WEBUI_DIR%\ninja_mobile_new.html" (
+  echo ERROR: web-ui not found at %WEBUI_DIR%
+  echo Expected ninja_mobile_new.html.
   pause
   exit /b 1
 )
@@ -48,6 +83,9 @@ if not defined NET_NINJA_DB   set "NET_NINJA_DB=%DATA_DIR%\netninja.db"
 echo ============================================================
 echo   NET NiNjA v1.2 — Starting server...
 echo   Dashboard: http://%NET_NINJA_HOST%:%NET_NINJA_PORT%/ui/ninja_mobile_new.html
+echo   Runtime:   %JAVA_EXE%
+echo   Lib dir:   %LIB_DIR%
+echo   Web UI:    %WEBUI_DIR%
 echo   Database:  %NET_NINJA_DB%
 echo   Log:       %LOG_FILE%
 echo ============================================================
