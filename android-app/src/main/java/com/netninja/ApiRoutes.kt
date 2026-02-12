@@ -119,6 +119,7 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         val loggedIn: Boolean,
         val capabilities: G5arCapabilities,
         val gatewayInfo: com.netninja.gateway.g5ar.GatewayInfo? = null,
+        val gatewaySignal: com.netninja.gateway.g5ar.GatewaySignal? = null,
         val clients: List<com.netninja.gateway.g5ar.ClientDevice> = emptyList(),
         val cellTelemetry: com.netninja.gateway.g5ar.CellTelemetry? = null,
         val simInfo: com.netninja.gateway.g5ar.SimInfo? = null,
@@ -149,6 +150,7 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
 
       post("/api/v1/g5ar/logout") {
         g5arSession = null
+        g5arCredentials.clear()
         call.respond(mapOf("ok" to true))
       }
 
@@ -166,12 +168,14 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         }
 
         var info: com.netninja.gateway.g5ar.GatewayInfo? = null
+        var signal: com.netninja.gateway.g5ar.GatewaySignal? = null
         var clients: List<com.netninja.gateway.g5ar.ClientDevice> = emptyList()
         var cell: com.netninja.gateway.g5ar.CellTelemetry? = null
         var sim: com.netninja.gateway.g5ar.SimInfo? = null
         var wifi: WifiApConfig? = null
 
         val canInfo = runCatching { withContext(Dispatchers.IO) { g5arApi.getGatewayInfo(activeSession) } }.onSuccess { info = it }.isSuccess
+        val canSignal = runCatching { withContext(Dispatchers.IO) { g5arApi.getGatewaySignal(activeSession) } }.onSuccess { signal = it }.isSuccess
         val canClients = runCatching { withContext(Dispatchers.IO) { g5arApi.getClients(activeSession) } }.onSuccess { clients = it }.isSuccess
         val canCell = runCatching { withContext(Dispatchers.IO) { g5arApi.getCellTelemetry(activeSession) } }.onSuccess { cell = it }.isSuccess
         val canSim = runCatching { withContext(Dispatchers.IO) { g5arApi.getSimInfo(activeSession) } }.onSuccess { sim = it }.isSuccess
@@ -183,15 +187,16 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
             loggedIn = true,
             capabilities = G5arCapabilities(
               reachable = true,
-              canViewGatewayInfo = canInfo,
+              canViewGatewayInfo = (canInfo || canSignal),
               canViewClients = canClients,
               canViewCellTelemetry = canCell,
               canViewSimInfo = canSim,
               canViewWifiConfig = canWifiRead,
               canSetWifiConfig = canWifiRead,
-              canReboot = canInfo
+              canReboot = (canInfo || canSignal)
             ),
             gatewayInfo = info,
+            gatewaySignal = signal,
             clients = clients,
             cellTelemetry = cell,
             simInfo = sim,

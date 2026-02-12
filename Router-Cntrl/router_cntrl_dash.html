@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Router Control HUD — T-Mobile G5AR</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js"></script>
+
+<style>
+  :root {
+    --bg: #040508;
+    --ink: rgba(240, 245, 255, 0.9);
+    --ink-sub: rgba(240, 245, 255, 0.65);
+    --ink-header: #ffffff;
+    --edge: rgba(220, 225, 235, 0.25);
+    --edge-light: rgba(220, 225, 235, 0.5);
+    --accent: #89f5ff;
+    --accent-glow: rgba(137, 245, 255, 0.25);
+        --neon-pink: #ff00ff;
+    --neon-pink-glow: rgba(255, 0, 255, 0.22);
+--status-online: #33ff99;
+    --status-active: #89f5ff;
+    --status-standby: #607090;
+  }
+
+  /* --- MEJORA: TEMAS POR TECNOLOGÍA --- */
+  .card[data-id="overview"] { --accent: #89f5ff; --accent-glow: rgba(137, 245, 255, 0.25); }
+  .card[data-id="clients"] { --accent: #33ff99; --accent-glow: rgba(51, 255, 153, 0.20); }
+  .card[data-id="cell"] { --accent: #f7df1e; --accent-glow: rgba(247, 223, 30, 0.20); }
+  .card[data-id="wifi"] { --accent: #2496ED; --accent-glow: rgba(36, 150, 237, 0.25); }
+  .card[data-id="actions"] { --accent: #ff6b6b; --accent-glow: rgba(255, 107, 107, 0.18); }
+  .card[data-id="logs"] { --accent: #B8C6E0; --accent-glow: rgba(184, 198, 224, 0.25); }
+
+  * { box-sizing: border-box; user-select: none; outline-offset: 4px; }
+  *:focus-visible { outline: 2px solid var(--accent); }
+
+  html, body {
+    height: 100%; margin: 0;
+    background: var(--bg); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow: hidden; cursor: default;
+  }
+
+  /* --- Escena y Tarjetas --- */
+  .environment-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .floor-grid {
+    position: absolute; width: 200%; height: 200%; left: -50%; top: -50%;
+    transform: rotateX(90deg) translateZ(-280px);
+    background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: flow 25s linear infinite;
+  }
+  @keyframes flow { from { background-position: 0 0; } to { background-position: -600px 0; } }
+
+  .viewport { position: fixed; inset: 0; display: grid; place-items: center; perspective: 1500px; perspective-origin: 50% 45%; z-index: 1; }
+  .scene { position: relative; width: min(1400px, 95vw); height: min(700px, 80vh); transform-style: preserve-3d; transform: rotateX(25deg) rotateY(-20deg); will-change: transform; }
+  .pipeline { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
+
+  .card {
+    position: absolute; width: 280px; height: 400px;
+    background: rgba(15, 18, 25, 0.3); backdrop-filter: blur(12px);
+    border-radius: 12px; border: 1px solid var(--edge);
+    transform-style: preserve-3d; transition: transform 0.4s ease-out, opacity 0.4s ease, filter 0.4s ease, border-color 0.4s ease;
+    cursor: pointer; overflow: hidden; will-change: transform, opacity, filter;
+  }
+  .card-fader { opacity: 0; }
+
+  .scene:not(.is-card-hovered) .card:not(.is-active),
+  .scene.is-card-hovered .card:not(:hover):not(.is-active) { opacity: 0.15; filter: blur(2px) saturate(0.5); }
+  .scene.is-panel-open .card:not(.is-active) { opacity: 0.08; filter: blur(4px) saturate(0); }
+
+  /* --- MEJORA: TILT MAGNÉTICO --- */
+  .card:hover { 
+    transform: translateY(-15px) translateZ(30px) scale(1.05) rotateX(var(--tilt-y, 0)) rotateY(var(--tilt-x, 0)); 
+    z-index: 100; 
+  }
+  .card.is-active { z-index: 50; }
+
+  .card.is-active::before {
+    content: ""; position: absolute; inset: -2px; border-radius: 14px;
+    background: linear-gradient(45deg, var(--accent), transparent, var(--accent));
+    background-size: 200% 200%;
+    animation: pulse-glow 2s ease-in-out infinite; z-index: -1;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { background-position: 0% 50%; opacity: 0.3; }
+    50% { background-position: 100% 50%; opacity: 0.6; }
+  }
+
+  /* --- MEJORA: PULSO SINCRONIZADO CON STATUS --- */
+  .card[data-status="ACTIVE"] .status-ACTIVE,
+  .card[data-status="ACTIVE"].is-active::before { animation-duration: 1.5s; }
+  .card[data-status="STANDBY"].is-active::before { animation-duration: 4s; opacity: 0.2; }
+  .card[data-status="ONLINE"].is-active::before { animation-duration: 2.5s; }
+
+  .card.is-active .status-ACTIVE { animation: status-pulse 1.5s ease-in-out infinite; }
+  @keyframes status-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .progress-ring { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; transform: rotate(-90deg); }
+  .progress-ring-bg { fill: none; stroke: var(--edge); stroke-width: 3; }
+  .progress-ring-fg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease; }
+
+  .card::after {
+    content: ""; position: absolute; inset: 0;
+    border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+    background: conic-gradient(from var(--angle), #E5E9F2, #B8C6E0, #8A9CB8, #B8C6E0, #E5E9F2);
+    mix-blend-mode: overlay; filter: url(#holo-displacement) brightness(1.3) contrast(1.1);
+  }
+  .card:hover { border-color: var(--accent); }
+  .card:hover::after { opacity: 0.6; }
+
+  .card-content { position: relative; padding: 16px; height: 100%; display: flex; flex-direction: column; }
+  .card-header { display: flex; justify-content: space-between; font-family: 'Roboto Mono', monospace; z-index: 2;}
+  .card-id { font-size: 16px; font-weight: 500; color: var(--ink-header); }
+  .card-type { font-size: 14px; color: var(--ink-sub); }
+
+  .card-visuals { position: relative; flex-grow: 1; margin: 16px 0; display: grid; place-items: center; }
+
+  /* --- MEJORA: BLOOM ESPECTRAL Y SCANLINE --- */
+  .tech-icon-container { position: relative; display: grid; place-items: center; }
+  .tech-icon-container img { width: 90px; height: 90px; opacity: 0.6; object-fit: contain; filter: drop-shadow(0 0 15px var(--accent-glow)); transition: opacity 0.3s ease; }
+  .card:hover .tech-icon-container img { opacity: 1; }
+  .tech-icon-container::after { /* Bloom effect */
+    content: ''; position: absolute; width: 100%; height: 100%;
+    background-image: var(--logo-url); background-size: contain; background-position: center; background-repeat: no-repeat;
+    filter: blur(12px); mix-blend-mode: screen; opacity: 0; transition: opacity 0.4s ease;
+  }
+  .card:hover .tech-icon-container::after { opacity: 0.7; }
+  .tech-icon-container::before { /* Holo-scanline */
+    content: ''; position: absolute; left: 0; top: -10%; width: 100%; height: 4px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+    transform: translateY(-50px) scaleX(1.5); opacity: 0;
+    transition: transform 0.8s ease-out, opacity 0.8s ease-out;
+  }
+  .card:hover .tech-icon-container::before { transform: translateY(120px) scaleX(1.5); opacity: 1; transition-delay: 0.1s; }
+
+  /* --- MEJORA: ANILLOS DE ENERGÍA ORBITALES --- */
+  .energy-orbit, .energy-orbit::after {
+    position:absolute; inset: -20px; border-radius:50%;
+    border: 1px dashed var(--accent); opacity:0;
+    animation: orbit 12s linear infinite; transition: opacity 0.5s;
+  }
+  .energy-orbit::after { content:""; border-style: solid; animation-duration: 8s; animation-direction: reverse; }
+  .card:hover .energy-orbit, .card.is-active .energy-orbit { opacity: 0.15; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+
+  .card-footer { font-family: 'Roboto Mono', monospace; font-size: 11px; text-transform: uppercase; z-index: 2; }
+  .card-footer-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .card-footer-row:last-child { border-bottom: none; }
+  .status-value { font-weight: 700 !important; }
+  .status-ONLINE { color: var(--status-online); } .status-ACTIVE { color: var(--status-active); } .status-STANDBY { color: var(--status-standby); }
+
+  /* --- MEJORA: CHIPS DE MÉTRICAS Y SPARKLINE --- */
+  .mini-metrics {
+    position: absolute; bottom: 50px; left: 16px; right: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px; font-family: 'Roboto Mono', monospace;
+  }
+  .mini-metric-chip {
+    font-size: 9px; padding: 2px 4px; border-radius: 3px;
+    background: rgba(0,0,0,0.4); color: var(--ink-sub);
+  }
+  .sparkline {
+    flex-grow: 1; height: 20px;
+  }
+  .sparkline path {
+    fill: none; stroke: var(--accent); stroke-width: 1.5;
+    opacity: 0.4;
+  }
+  .card:hover .sparkline path { opacity: 0.8; }
+
+  /* --- UI Controls --- */
+  .ui { position: fixed; right: 2vw; top: 3vh; z-index: 10; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+  .btn {
+    appearance: none; border: 1px solid var(--edge); border-radius: 6px; padding: 10px 18px;
+    font-size: 12px; font-family: 'Roboto Mono', monospace; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-sub);
+    background: rgba(15, 18, 25, 0.3); backdrop-filter: blur(5px);
+    cursor: pointer; transition: all .2s ease;
+  }
+  .btn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* --- ESTRUCTURA DEL MODAL --- */
+  .holopanel { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; pointer-events: none; opacity: 0; }
+  .holopanel.is-open { pointer-events: auto; opacity: 1; }
+  .holopanel-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+  .holopanel-container {
+    position: relative; width: min(1100px, 95vw); height: min(720px, 90vh);
+    background: rgba(10, 12, 22, 0.6); border: 1px solid var(--edge-light); border-radius: 12px;
+    backdrop-filter: blur(24px); display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3); will-change: transform, opacity;
+  }
+  .holopanel-header { padding: 16px 24px; border-bottom: 1px solid var(--edge); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .holopanel-header h2 { margin: 0; font-size: 20px; font-weight: 500; font-family: 'Roboto Mono', monospace; color: var(--ink-header); }
+  .holopanel-tabs { display: flex; gap: 8px; }
+  .holopanel-tab { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-family: 'Roboto Mono', monospace; color: var(--ink-sub); background: transparent; cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent; }
+  .holopanel-tab.is-active { color: var(--accent); border-color: var(--accent); background: var(--accent-glow); }
+
+  .holopanel-body { flex-grow: 1; position: relative; }
+  .holopanel-page { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; overflow-y: auto; }
+  .holopanel-page.is-active { opacity: 1; visibility: visible; }
+
+  .modal-layout { display: flex; height: 100%; }
+  .modal-sidebar {
+    width: 320px; flex-shrink: 0;
+    padding: 24px; border-right: 1px solid var(--edge);
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  .modal-logo { width: 120px; height: 120px; object-fit: contain; margin-bottom: 24px; }
+  .mastery-ring-container { position: relative; width: 160px; height: 160px; margin-bottom: 24px; }
+  .mastery-ring-svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .mastery-ring-bg, .mastery-ring-fg { fill: none; stroke-width: 10; }
+  .mastery-ring-bg { stroke: var(--edge); }
+  .mastery-ring-fg { stroke: var(--accent); stroke-linecap: round; filter: drop-shadow(0 0 5px var(--accent-glow)); }
+  .mastery-percentage { position: absolute; inset: 0; display: grid; place-items: center; font-size: 36px; font-weight: 700; font-family: 'Roboto Mono', monospace; color: var(--ink-header); }
+  .sidebar-stat { font-family: 'Roboto Mono', monospace; }
+  .sidebar-stat dt { text-transform: uppercase; font-size: 12px; color: var(--ink-sub); margin-bottom: 4px; }
+  .sidebar-stat dd { font-size: 16px; font-weight: 500; margin: 0; word-break: break-word; }
+
+  /* --- MEJORA: CTAs ÚTILES EN EL PANEL LATERAL --- */
+  .sidebar-ctas {
+    margin-top: 18px; display: flex; flex-direction: column; gap: 10px; width: 100%;
+  }
+  .sidebar-cta {
+    font-size: 12px; text-decoration: none; padding: 8px 12px;
+    border-radius: 6px; border: 1px solid var(--edge);
+    color: var(--ink-sub); background: rgba(255,255,255,0.05);
+    transition: all 0.2s ease;
+  }
+  .sidebar-cta:hover { color: var(--accent); border-color: var(--accent); }
+
+  .modal-main-content { flex-grow: 1; padding: 24px; }
+  .modal-section { margin-bottom: 28px; }
+  .modal-section h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sub); margin: 0 0 16px; border-bottom: 1px solid var(--edge); padding-bottom: 8px; }
+  .description-text { font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+  .log-container { height: 100%; font-family: 'Roboto Mono', monospace; font-size: 13px; padding: 24px; scroll-behavior: smooth; }
+  .log-entry { margin-bottom: 8px; opacity: 0; animation: fadeIn 0.3s forwards; }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .holopanel-close { position: absolute; top: 12px; right: 18px; z-index: 5; background: none; border: none; font-size: 28px; color: var(--ink-sub); cursor: pointer; transition: color 0.2s, transform 0.2s; }
+  .holopanel-close:hover { color: var(--ink); transform: scale(1.1); }
+
+  /* --- Partículas y otros efectos --- */
+  .particles-container { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .particle {
+    position: absolute; width: 2px; height: 2px; background: var(--accent); border-radius: 50%;
+    opacity: 0; pointer-events: none;
+  }
+  .card.is-active .particle, .card:hover .particle { animation: particle-float 3s ease-out infinite; }
+  @keyframes particle-float {
+    0% { opacity: 0; transform: translateY(0) scale(0); }
+    20% { opacity: 1; transform: translateY(-20px) scale(1); }
+    80% { opacity: 0.8; transform: translateY(-60px) scale(0.8); }
+    100% { opacity: 0; transform: translateY(-100px) scale(0); }
+  }
+  .card-trail {
+    position: absolute; width: 100%; height: 100%; border-radius: inherit;
+    background: linear-gradient(45deg, transparent, var(--accent-glow), transparent);
+    opacity: 0; pointer-events: none; z-index: -1;
+  }
+  .card.is-active .card-trail { animation: trail-glow 2s ease-in-out infinite; }
+  @keyframes trail-glow {
+    0%, 100% { opacity: 0; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(1.05); }
+  }
+
+  /* --- Panel de Estadísticas --- */
+  .stats-panel {
+    position: fixed; inset: 0; z-index: 150; display: grid; place-items: center;
+    pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+  }
+  .stats-panel.is-open { pointer-events: auto; opacity: 1; }
+  .stats-container {
+    width: min(900px, 95vw); height: min(600px, 85vh); background: rgba(10, 12, 22, 0.8);
+    border: 1px solid var(--edge-light); border-radius: 12px; backdrop-filter: blur(20px);
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .stats-header { padding: 20px 24px; border-bottom: 1px solid var(--edge); display: flex; justify-content: space-between; align-items: center; }
+  .stats-header h3 { margin: 0; font-size: 18px; font-weight: 500; font-family: 'Roboto Mono', monospace; color: var(--ink-header); }
+  .stats-close { background: none; border: none; font-size: 24px; color: var(--ink-sub); cursor: pointer; transition: color 0.2s; }
+  .stats-close:hover { color: var(--ink); }
+  .stats-content { flex-grow: 1; padding: 24px; overflow-y: auto; }
+  .stats-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  .stat-card { background: rgba(15, 18, 25, 0.4); border: 1px solid var(--edge); border-radius: 8px; padding: 20px; text-align: center; transition: all 0.3s ease; }
+  .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .stat-number { font-size: 32px; font-weight: 700; font-family: 'Roboto Mono', monospace; color: var(--accent); margin-bottom: 8px; }
+  .stat-label { font-size: 12px; text-transform: uppercase; color: var(--ink-sub); letter-spacing: 0.1em; }
+  .stats-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .chart-container { background: rgba(15, 18, 25, 0.3); border: 1px solid var(--edge); border-radius: 8px; padding: 20px; }
+  .chart-container h4 { margin: 0 0 16px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--ink-sub); letter-spacing: 0.1em; }
+  .category-chart, .level-chart { height: 200px; display: flex; align-items: end; gap: 8px; }
+  .chart-bar { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; transition: all 0.3s ease; position: relative; }
+  .chart-bar:hover { background: var(--status-online); transform: scaleY(1.1); }
+  .chart-bar::after {
+    content: attr(data-label); position: absolute; bottom: -20px; left: 50%;
+    transform: translateX(-50%); font-size: 10px; color: var(--ink-sub); white-space: nowrap;
+  }
+
+  /* --- Interactividad y otros --- */
+  .data-sync {
+    position: fixed; top: 20px; right: 20px; background: rgba(10, 12, 22, 0.8);
+    border: 1px solid var(--edge); border-radius: 8px; padding: 12px;
+    color: var(--ink-sub); font-family: 'Roboto Mono', monospace;
+    font-size: 11px; opacity: 0; transition: opacity 0.3s ease; z-index: 1000;
+    pointer-events: none;
+  }
+  .data-sync.is-active { opacity: 1; }
+  .data-sync.success { border-color: var(--status-online); color: var(--status-online); }
+  .data-sync.error { border-color: #ff6b6b; color: #ff6b6b; }
+
+  /* Router-specific additions (minimal) */
+  .kv { display: grid; grid-template-columns: 180px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-family: 'Roboto Mono', monospace; }
+  .kv:last-child { border-bottom: none; }
+  .kv .k { color: var(--ink-sub); text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
+  .kv .v { color: var(--ink); font-size: 12px; word-break: break-word; }
+  .table { width: 100%; border-collapse: collapse; font-family: 'Roboto Mono', monospace; font-size: 12px; }
+  .table th, .table td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; }
+  .table th { color: var(--ink-sub); text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--edge); color: var(--ink-sub); font-size: 11px; }
+  .pill.ok { border-color: var(--status-online); color: var(--status-online); }
+  .pill.warn { border-color: #f7df1e; color: #f7df1e; }
+  .pill.bad { border-color: #ff6b6b; color: #ff6b6b; }
+  .form { display: grid; gap: 10px; }
+  .input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--edge);
+    background: rgba(0,0,0,0.35);
+    color: var(--ink);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+  }
+  .row { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+  .hint { color: var(--ink-sub); font-size: 12px; line-height: 1.6; }
+  .danger-note { color: #ff6b6b; font-size: 12px; line-height: 1.6; }
+  @media (max-width: 900px) {
+    .modal-layout { flex-direction: column; }
+    .modal-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--edge); }
+    .kv { grid-template-columns: 1fr; }
+    .row { grid-template-columns: 1fr; }
+  }
+
+  /* --- Soporte para movimiento reducido --- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+    .card:hover { transform: translateY(-5px) scale(1.02); }
+  }
+
+  /* --- NEON PINK ACCENTS (requested) --- */
+  .card {
+    border-color: rgba(255, 0, 255, 0.28);
+    box-shadow:
+      0 0 0 1px rgba(255, 0, 255, 0.14) inset,
+      0 0 22px rgba(255, 0, 255, 0.10);
+  }
+  .card:hover {
+    border-color: var(--neon-pink);
+    box-shadow:
+      0 0 0 1px rgba(255, 0, 255, 0.28) inset,
+      0 0 34px rgba(255, 0, 255, 0.22);
+  }
+  .holopanel-container, .stats-container {
+    border-color: rgba(255, 0, 255, 0.25);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 40px rgba(255,0,255,0.10);
+  }
+  .btn:hover:not(:disabled) { color: var(--neon-pink); border-color: var(--neon-pink); text-shadow: 0 0 10px rgba(255,0,255,0.35); }
+
+  .ui-icon {
+    width: 34px; height: 34px; object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid rgba(255,0,255,0.25);
+    background: rgba(15, 18, 25, 0.25);
+    padding: 6px;
+    box-shadow: 0 0 18px rgba(255,0,255,0.18);
+    cursor: default;
+  }
+
+</style>
+</head>
+<body>
+
+  <svg style="position:absolute; width:0; height:0;">
+    <filter id="holo-displacement">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="3" seed="5" />
+      <feDisplacementMap in="SourceGraphic" scale="10" />
+    </filter>
+  </svg>
+
+  <div class="environment-overlay"></div>
+
+  <div class="ui">
+    <button class="btn" id="prev">PREV</button>
+    <button class="btn" id="next">NEXT</button>
+    <button class="btn" id="connect">CONNECT</button>
+    <button class="btn" id="refresh">REFRESH</button>
+    <button class="btn" id="stats-toggle">STATS</button>
+    <img class="ui-icon" id="ui-wifi-icon" src="wifi_icon.png" alt="Wi‑Fi" />
+  </div>
+
+  <div class="stats-panel" id="stats-panel">
+    <div class="stats-container">
+      <div class="stats-header">
+        <h3>Gateway Telemetry</h3>
+        <button class="stats-close" id="stats-close">&times;</button>
+      </div>
+      <div class="stats-content">
+        <div class="stats-overview">
+          <div class="stat-card">
+            <div class="stat-number" id="kpi-clients">—</div>
+            <div class="stat-label">Clients</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="kpi-rsrp">—</div>
+            <div class="stat-label">RSRP</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="kpi-sinr">—</div>
+            <div class="stat-label">SINR</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="kpi-uptime">—</div>
+            <div class="stat-label">Uptime</div>
+          </div>
+        </div>
+        <div class="stats-charts">
+          <div class="chart-container">
+            <h4>Radio Bars (visual)</h4>
+            <div class="category-chart" id="category-chart"></div>
+          </div>
+          <div class="chart-container">
+            <h4>Clients Mix</h4>
+            <div class="level-chart" id="level-chart"></div>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:18px">
+          If you see errors, you may be blocked by browser CORS when loading this as a file.
+          In an Android WebView you can call the gateway directly or proxy via your app backend.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="viewport">
+    <div class="scene" id="scene">
+      <div class="floor-grid"></div>
+      <div class="pipeline" id="pipeline"></div>
+    </div>
+  </div>
+
+  <div class="holopanel" id="holopanel" aria-hidden="true">
+    <div class="holopanel-backdrop" data-flip-id="backdrop"></div>
+    <div class="holopanel-container" id="holopanel-container"></div>
+  </div>
+
+  <div class="data-sync" id="data-sync"><div id="data-sync-text">Ready.</div></div>
+
+<script>
+(() => {
+  gsap.registerPlugin(Flip);
+
+  const D = (a, b) => Math.random() * (b - a) + a;
+  const R = (a, b) => Math.floor(D(a, b + 1));
+
+  const GAP_X = 150, STEP_Z = -80, BASE_Y = -40;
+  const scene = document.getElementById('scene');
+  const pipeline = document.getElementById('pipeline');
+  const holopanel = document.getElementById('holopanel');
+  const holopanelContainer = document.getElementById('holopanel-container');
+  const backdrop = document.querySelector('.holopanel-backdrop');
+  const statsPanel = document.getElementById('stats-panel');
+  const syncToast = document.getElementById('data-sync');
+  const syncText = document.getElementById('data-sync-text');
+
+  function toast(msg, kind = 'is-active') {
+    syncText.textContent = msg;
+    syncToast.classList.add('is-active');
+    syncToast.classList.remove('success', 'error');
+    if (kind === 'success') syncToast.classList.add('success');
+    if (kind === 'error') syncToast.classList.add('error');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => syncToast.classList.remove('is-active'), 2000);
+  }
+
+  const ROUTER_NODES = [
+    { id: 'overview', name: 'Overview', category: 'Gateway', icon: 'tmobile_gateway.png' },
+    { id: 'clients', name: 'Clients', category: 'LAN', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/chrome/chrome-original.svg' },
+    { id: 'cell', name: 'Cell', category: '5G Radio', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg' },
+    { id: 'wifi', name: 'Wi‑Fi', category: 'Access Point', icon: 'wifi_icon.png' },
+    { id: 'actions', name: 'Actions', category: 'Control', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg' },
+    { id: 'logs', name: 'Logs', category: 'Events', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg' },
+  ];
+
+  const stateStore = {
+    baseUrl: 'http://192.168.12.1',
+    token: null,
+    last: {
+      version: null,
+      gatewayAll: null,
+      gatewaySignal: null,
+      cell: null,
+      clients: [],
+      sim: null,
+      wifi: null,
+    },
+    logs: []
+  };
+
+  const nativeBridge = (typeof window !== 'undefined' && window.NetNinjaRouterBridge) ? window.NetNinjaRouterBridge : null;
+  window.__NET_NINJA__ = window.__NET_NINJA__ || {};
+  window.__NET_NINJA__.setState = function(next) {
+    if (!next || typeof next !== 'object') return;
+    if (typeof next.baseUrl === 'string' && next.baseUrl.trim()) {
+      stateStore.baseUrl = next.baseUrl.trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(next, 'token')) {
+      stateStore.token = next.token || null;
+    }
+    if (next.last && typeof next.last === 'object') {
+      stateStore.last = { ...stateStore.last, ...next.last };
+      if (Array.isArray(next.last.clients)) {
+        stateStore.last.clients = next.last.clients;
+      }
+    }
+    if (Array.isArray(next.logs)) {
+      stateStore.logs = next.logs.slice(0, 200);
+    }
+    if (next.error) {
+      log(`ERROR bridge: ${next.error}`);
+    }
+    updateKpis();
+    buildCards();
+  };
+
+  function log(line) {
+    const ts = new Date().toLocaleTimeString();
+    stateStore.logs.unshift(`${ts} | ${line}`);
+    stateStore.logs = stateStore.logs.slice(0, 200);
+  }
+
+  async function httpJson(path, { method = 'GET', body = null, auth = true, timeoutMs = 5000 } = {}) {
+    if (nativeBridge && typeof nativeBridge.request === 'function') {
+      const raw = nativeBridge.request(JSON.stringify({
+        action: 'http',
+        payload: { path, method, body, auth, timeoutMs },
+        remember: !!(body && body.remember)
+      }));
+      const parsed = raw ? JSON.parse(raw) : { ok: false, error: 'Empty bridge response' };
+      if (parsed.state) window.__NET_NINJA__.setState(parsed.state);
+      if (!parsed.ok) {
+        throw new Error(parsed.error || 'Bridge request failed');
+      }
+      return parsed.data ?? null;
+    }
+
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const headers = { 'Accept': 'application/json' };
+      if (body != null) headers['Content-Type'] = 'application/json';
+      if (auth && stateStore.token) headers['Authorization'] = `Bearer ${stateStore.token}`;
+
+      const res = await fetch(`${stateStore.baseUrl}${path}`, {
+        method,
+        headers,
+        body: body != null ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+        credentials: 'omit'
+      });
+
+      const text = await res.text();
+      let json = null;
+      try { json = text ? JSON.parse(text) : null; } catch(e) { json = { _raw: text }; }
+
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status}`);
+        err.status = res.status;
+        err.body = json;
+        throw err;
+      }
+      return json;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  async function discover() {
+    // TMI devices respond to /TMI/v1/version
+    const version = await httpJson('/TMI/v1/version', { auth: false, timeoutMs: 2500 });
+    stateStore.last.version = version;
+    log('DISCOVER ok: /TMI/v1/version');
+    return true;
+  }
+
+  async function login(username, password) {
+    const resp = await httpJson('/TMI/v1/auth/login', {
+      method: 'POST',
+      auth: false,
+      body: { username, password },
+      timeoutMs: 5000
+    });
+
+    // Many TMI firmwares return { "token": "..." } or similar; accept common keys.
+    const token = resp?.token || resp?.access_token || resp?.accessToken || resp?.jwt || resp?.authorization || null;
+    if (!token) {
+      throw new Error('Login response missing token (unexpected firmware response).');
+    }
+    stateStore.token = token;
+    log('AUTH ok');
+    return token;
+  }
+
+  async function fetchAll() {
+    const gwAll = await httpJson('/TMI/v1/gateway?get=all');
+    const gwSig = await httpJson('/TMI/v1/gateway?get=signal');
+    const cell = await httpJson('/TMI/v1/network/telemetry?get=cell');
+    const clients = await httpJson('/TMI/v1/network/telemetry?get=clients');
+    const sim = await httpJson('/TMI/v1/network/telemetry?get=sim');
+    let wifi = null;
+    try {
+      wifi = await httpJson('/TMI/v1/network/configuration/v2?get=ap');
+    } catch (e) {
+      // some firmwares block this or require different perms
+      wifi = { _error: `Wi‑Fi config not accessible: ${e.message}` };
+    }
+
+    stateStore.last.gatewayAll = gwAll;
+    stateStore.last.gatewaySignal = gwSig;
+    stateStore.last.cell = cell;
+    stateStore.last.clients = Array.isArray(clients?.clients) ? clients.clients : (Array.isArray(clients) ? clients : (clients?.client || []));
+    stateStore.last.sim = sim;
+    stateStore.last.wifi = wifi;
+    log('REFRESH ok');
+  }
+
+  function fmtUptime(sec) {
+    if (!sec && sec !== 0) return '—';
+    const s = Math.max(0, Number(sec));
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return `${d}d ${h}h ${m}m`;
+  }
+
+  function pickFirst(obj, keys) {
+    for (const k of keys) {
+      if (obj && obj[k] != null) return obj[k];
+    }
+    return null;
+  }
+
+  function updateKpis() {
+    const clientsCount = (stateStore.last.clients || []).length;
+    const cell = stateStore.last.cell || {};
+    const uptime = pickFirst(stateStore.last.gatewayAll, ['uptime', 'upTime', 'uptime_seconds', 'uptimeSeconds']);
+    const rsrp = pickFirst(cell, ['rsrp', 'RSRP', 'rsrp_current', 'signal_rsrp']);
+    const sinr = pickFirst(cell, ['sinr', 'SINR', 'sinr_current', 'signal_sinr']);
+
+    document.getElementById('kpi-clients').textContent = clientsCount ? String(clientsCount) : '0';
+    document.getElementById('kpi-rsrp').textContent = rsrp != null ? `${rsrp}` : '—';
+    document.getElementById('kpi-sinr').textContent = sinr != null ? `${sinr}` : '—';
+    document.getElementById('kpi-uptime').textContent = fmtUptime(uptime);
+
+    // Charts (simple visuals)
+    const bars = [
+      { label: 'RSRP', value: normalizeRadio(rsrp, -140, -70) },
+      { label: 'SINR', value: normalizeRadio(sinr, -5, 30) },
+      { label: 'Clients', value: normalizeRadio(clientsCount, 0, 30) },
+      { label: 'Uptime', value: normalizeRadio((uptime||0)/3600, 0, 72) },
+    ];
+    document.getElementById('category-chart').innerHTML = bars.map(b =>
+      `<div class="chart-bar" style="height:0%;" data-height="${b.value}" data-label="${b.label}"></div>`
+    ).join('');
+
+    const mix = computeClientMix(stateStore.last.clients || []);
+    document.getElementById('level-chart').innerHTML = Object.entries(mix).map(([k,v]) =>
+      `<div class="chart-bar" style="height:0%;" data-height="${v}" data-label="${k}"></div>`
+    ).join('');
+
+    gsap.to('.chart-bar', { height: (i, el) => `${el.dataset.height}%`, duration: 0.8, stagger: 0.05, ease: 'power2.out' });
+  }
+
+  function normalizeRadio(val, min, max) {
+    if (val == null || isNaN(Number(val))) return 0;
+    const n = (Number(val) - min) / (max - min);
+    return Math.max(0, Math.min(1, n)) * 100;
+  }
+
+  function computeClientMix(clients) {
+    // crude mix based on presence of "interface" or "band" fields, otherwise bucket "unknown"
+    const buckets = { wifi: 0, ethernet: 0, unknown: 0 };
+    for (const c of clients) {
+      const iface = (c?.interface || c?.ifname || c?.type || '').toString().toLowerCase();
+      if (iface.includes('eth')) buckets.ethernet++;
+      else if (iface.includes('wl') || iface.includes('wifi') || iface.includes('wlan')) buckets.wifi++;
+      else buckets.unknown++;
+    }
+    const total = Math.max(1, clients.length);
+    return {
+      'Wi‑Fi': Math.round((buckets.wifi/total)*100),
+      'Ethernet': Math.round((buckets.ethernet/total)*100),
+      'Unknown': Math.round((buckets.unknown/total)*100),
+    };
+  }
+
+  // Sparkline generator (kept for visual continuity)
+  function generateSparklinePath(seed = 0.7) {
+    const points = Array.from({ length: 20 }, (_, i) => {
+      const y = D(6, 20) * seed + D(0, 5);
+      return `${i * 5},${y}`;
+    }).join(' ');
+    return `M${points}`;
+  }
+
+  // Cards render + scene navigation (kept from your attached JS)
+  const cards = [];
+  let activeModalAnimations = null;
+  let isPanelOpen = false, isStatsOpen = false;
+  let active = 0;
+
+  function buildCards() {
+    pipeline.innerHTML = '';
+    cards.length = 0;
+
+    ROUTER_NODES.forEach((node, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.id = node.id;
+      card.dataset.flipId = `card-${i}`;
+      card.dataset.status = stateStore.token ? 'ONLINE' : 'STANDBY';
+
+      gsap.set(card, { x: i * GAP_X, y: BASE_Y, z: i * STEP_Z });
+
+      const progress = stateStore.token ? 85 : 20;
+      const progressRing = `
+        <svg class="progress-ring" viewBox="0 0 100 100">
+          <circle class="progress-ring-bg" cx="50" cy="50" r="45"></circle>
+          <circle class="progress-ring-fg" cx="50" cy="50" r="45" 
+                  stroke-dasharray="${2 * Math.PI * 45}" 
+                  stroke-dashoffset="${2 * Math.PI * 45 * (1 - progress / 100)}"></circle>
+        </svg>`;
+
+      const particlesContainer = `
+        <div class="particles-container">
+          ${Array.from({length: 8}, (_, j) =>
+            `<div class="particle" style="left: ${20 + j * 8}%; top: ${30 + (j % 3) * 20}%; animation-delay: ${j * 0.2}s;"></div>`
+          ).join('')}
+        </div>`;
+
+      const miniMetrics = (() => {
+        const clientsCount = (stateStore.last.clients || []).length;
+        const cell = stateStore.last.cell || {};
+        const rsrp = pickFirst(cell, ['rsrp','RSRP','rsrp_current','signal_rsrp']);
+        const sinr = pickFirst(cell, ['sinr','SINR','sinr_current','signal_sinr']);
+
+        if (node.id === 'clients') {
+          return `
+            <div class="mini-metrics">
+              <span class="mini-metric-chip">CLIENTS ${clientsCount}</span>
+              <svg class="sparkline" viewBox="0 0 100 24"><path d="${generateSparklinePath(0.85)}"/></svg>
+              <span class="mini-metric-chip">LAN</span>
+            </div>`;
+        }
+        if (node.id === 'cell') {
+          return `
+            <div class="mini-metrics">
+              <span class="mini-metric-chip">RSRP ${rsrp ?? '—'}</span>
+              <svg class="sparkline" viewBox="0 0 100 24"><path d="${generateSparklinePath(0.65)}"/></svg>
+              <span class="mini-metric-chip">SINR ${sinr ?? '—'}</span>
+            </div>`;
+        }
+        return `
+          <div class="mini-metrics">
+            <span class="mini-metric-chip">G5AR</span>
+            <svg class="sparkline" viewBox="0 0 100 24"><path d="${generateSparklinePath(0.6)}"/></svg>
+            <span class="mini-metric-chip">TMI v1</span>
+          </div>`;
+      })();
+
+      card.innerHTML = `
+        ${progressRing}
+        ${particlesContainer}
+        <div class="card-trail"></div>
+        <div class="card-content" data-flip-id="content-${i}">
+          <div class="card-header"><div class="card-id">${node.name}</div><div class="card-type">${node.category}</div></div>
+          <div class="card-visuals">
+            <div class="tech-icon-container" style="--logo-url: url(${node.icon})">
+              <img src="${node.icon}" alt="${node.name} icon" loading="lazy" decoding="async">
+              <div class="energy-orbit"></div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="card-footer-row"><span>STATUS</span><span class="status-value status-${stateStore.token ? 'ONLINE' : 'STANDBY'}">${stateStore.token ? 'ONLINE' : 'STANDBY'}</span></div>
+            <div class="card-footer-row"><span>ENDPOINT</span><span>${node.id}</span></div>
+            <div class="card-footer-row"><span>HOST</span><span>192.168.12.1</span></div>
+          </div>
+        </div>
+        <div class="card-fader" data-flip-id="fader-${i}"></div>
+        ${miniMetrics}
+      `;
+
+      pipeline.appendChild(card);
+      cards.push(card);
+
+      card.addEventListener('mouseenter', () => scene.classList.add('is-card-hovered'));
+      card.addEventListener('mouseleave', () => scene.classList.remove('is-card-hovered'));
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const cardX = e.clientX - rect.left;
+        const cardY = e.clientY - rect.top;
+        card.style.setProperty('--angle', `${Math.atan2(cardY - rect.height/2, cardX - rect.width/2) * (180/Math.PI) + 180}deg`);
+        const tiltX = (cardX / rect.width - 0.5) * 20;
+        const tiltY = (0.5 - cardY / rect.height) * 20;
+        gsap.to(card, { '--tilt-x': `${tiltX}deg`, '--tilt-y': `${tiltY}deg`, duration: 0.5, ease: 'power2.out' });
+      });
+      card.addEventListener('click', () => { if (i !== active) setActive(i); else openPanel(i); });
+    });
+
+    setActive(active, true);
+  }
+
+  function setActive(idx, instant = false) {
+    active = Math.max(0, Math.min(idx, ROUTER_NODES.length - 1));
+    gsap.to(pipeline, { x: -(active * GAP_X), z: -(active * STEP_Z), duration: instant ? 0 : 0.8, ease: 'power3.inOut' });
+    cards.forEach((c, i) => c.classList.toggle('is-active', i === active));
+    document.getElementById('prev').disabled = (active === 0);
+    document.getElementById('next').disabled = (active === ROUTER_NODES.length - 1);
+  }
+
+  function safeJson(obj) {
+    try { return JSON.stringify(obj, null, 2); } catch(e) { return String(obj); }
+  }
+
+  function openPanel(index) {
+    if (isPanelOpen) return;
+    isPanelOpen = true;
+    const card = cards[index];
+    const node = ROUTER_NODES[index];
+
+    holopanelContainer.innerHTML = `
+      <button class="holopanel-close" id="holopanel-close-inner">&times;</button>
+      <div class="holopanel-header">
+        <h2 data-flip-id="id-${index}">${node.name} — ${node.category}</h2>
+        <div class="holopanel-tabs">
+          <button class="holopanel-tab is-active" data-tab="overview">Overview</button>
+          <button class="holopanel-tab" data-tab="details">Details</button>
+          <button class="holopanel-tab" data-tab="raw">Raw</button>
+        </div>
+      </div>
+      <div class="holopanel-body">
+        <div id="page-overview" class="holopanel-page is-active">
+          ${renderOverviewPage(node.id)}
+        </div>
+        <div id="page-details" class="holopanel-page">
+          ${renderDetailsPage(node.id)}
+        </div>
+        <div id="page-raw" class="holopanel-page">
+          <div class="log-container"><pre style="white-space:pre-wrap; margin:0">${escapeHtml(renderRaw(node.id))}</pre></div>
+        </div>
+      </div>
+    `;
+
+    const state = Flip.getState([card, backdrop, card.querySelector('.card-content')]);
+    holopanel.classList.add('is-open');
+    scene.classList.add('is-panel-open');
+    card.classList.add('card-fader');
+
+    Flip.from(state, {
+      duration: 0.6, ease: 'power2.inOut', absolute: true,
+      onComplete: () => {
+        activeModalAnimations = gsap.timeline({ delay: 0.1 });
+        // subtle pulse to indicate active panel
+        gsap.fromTo(holopanelContainer, { opacity: 0.98 }, { opacity: 1, duration: 0.6 });
+      }
+    });
+
+    const tabs = holopanelContainer.querySelectorAll('.holopanel-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const targetPageId = `page-${e.target.dataset.tab}`;
+        holopanelContainer.querySelectorAll('.holopanel-tab').forEach(t => t.classList.remove('is-active'));
+        e.target.classList.add('is-active');
+        holopanelContainer.querySelectorAll('.holopanel-page').forEach(p => p.classList.remove('is-active'));
+        document.getElementById(targetPageId).classList.add('is-active');
+      });
+    });
+
+    document.getElementById('holopanel-close-inner').addEventListener('click', () => closePanel(index));
+
+    // Wire actions if present
+    wirePanelActions(node.id);
+  }
+
+  function closePanel(index) {
+    if (!isPanelOpen) return;
+    isPanelOpen = false;
+    if (activeModalAnimations) activeModalAnimations.kill();
+
+    const card = cards[index];
+    const state = Flip.getState([holopanelContainer, backdrop], { props: "opacity, transform" });
+    holopanel.classList.remove('is-open');
+    Flip.to(state, {
+      duration: 0.4, ease: 'power2.in', scale: true,
+      onComplete: () => {
+        holopanelContainer.innerHTML = '';
+        scene.classList.remove('is-panel-open');
+        card.classList.remove('card-fader');
+      }
+    });
+  }
+
+  function renderOverviewPage(id) {
+    const connected = !!stateStore.token;
+    const version = stateStore.last.version;
+    const gwAll = stateStore.last.gatewayAll || {};
+    const sig = stateStore.last.gatewaySignal || {};
+    const cell = stateStore.last.cell || {};
+    const clients = stateStore.last.clients || [];
+    const wifi = stateStore.last.wifi || {};
+    const nodeMeta = ROUTER_NODES.find(n => n.id === id) || { icon: '' };
+
+    const badge = connected ? `<span class="pill ok">CONNECTED</span>` : `<span class="pill warn">NOT CONNECTED</span>`;
+
+    if (id === 'overview') {
+      return `
+      <div class="modal-layout">
+        <aside class="modal-sidebar">
+          <img src="${nodeMeta.icon}" class="modal-logo" alt="gateway"/>
+          <div class="mastery-ring-container">
+            <svg class="mastery-ring-svg" viewBox="0 0 100 100">
+              <circle class="mastery-ring-bg" cx="50" cy="50" r="45"></circle>
+              <circle class="mastery-ring-fg" cx="50" cy="50" r="45"></circle>
+            </svg>
+            <div class="mastery-percentage">${connected ? 'OK' : '—'}</div>
+          </div>
+          <dl class="sidebar-stat"><dt>Status</dt><dd>${badge}</dd></dl>
+          <dl class="sidebar-stat"><dt>Base URL</dt><dd>${stateStore.baseUrl}</dd></dl>
+          <dl class="sidebar-stat"><dt>Clients</dt><dd>${clients.length}</dd></dl>
+          <div class="sidebar-ctas">
+            <a href="#" class="sidebar-cta" id="cta-connect">Connect / Login</a>
+            <a href="#" class="sidebar-cta" id="cta-refresh">Refresh Now</a>
+          </div>
+        </aside>
+        <main class="modal-main-content">
+          <section class="modal-section">
+            <h3>Gateway</h3>
+            ${kvRow('Version endpoint', version ? 'OK' : '—')}
+            ${kvRow('Uptime', fmtUptime(pickFirst(gwAll,['uptime','uptime_seconds','uptimeSeconds','upTime'])))}
+            ${kvRow('Device name', pickFirst(gwAll,['device_name','deviceName','name']) || '—')}
+            ${kvRow('Firmware', pickFirst(gwAll,['software_version','softwareVersion','firmware','fw']) || '—')}
+          </section>
+          <section class="modal-section">
+            <h3>Signal (summary)</h3>
+            ${kvRow('Status', pickFirst(sig,['connection_status','status']) || '—')}
+            ${kvRow('Bars', pickFirst(sig,['bars','signal_bars','signalBars']) ?? '—')}
+            ${kvRow('RSRP', pickFirst(cell,['rsrp','RSRP','rsrp_current','signal_rsrp']) ?? '—')}
+            ${kvRow('SINR', pickFirst(cell,['sinr','SINR','sinr_current','signal_sinr']) ?? '—')}
+          </section>
+          <section class="modal-section">
+            <h3>Notes</h3>
+            <p class="hint">
+              This dashboard calls the gateway’s local TMI endpoints. If you load it directly from file://, many browsers will block cross-origin
+              requests (CORS). In an Android WebView (inside your app) you can make these calls from native code and pass results into the page.
+            </p>
+          </section>
+        </main>
+      </div>`;
+    }
+
+    if (id === 'clients') {
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Clients</h3>
+          <p class="hint">Connected devices detected by the gateway telemetry endpoint.</p>
+          ${renderClientsTable(clients)}
+        </section>
+      </div>`;
+    }
+
+    if (id === 'cell') {
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Cell Telemetry</h3>
+          <p class="hint">Fields vary by firmware. This view shows common keys and preserves the raw JSON in the “Raw” tab.</p>
+          ${kvRow('Band', pickFirst(cell,['band','nr_band','lte_band']) ?? '—')}
+          ${kvRow('PCI', pickFirst(cell,['pci','PCI']) ?? '—')}
+          ${kvRow('RSRP', pickFirst(cell,['rsrp','RSRP','rsrp_current','signal_rsrp']) ?? '—')}
+          ${kvRow('RSRQ', pickFirst(cell,['rsrq','RSRQ','rsrq_current','signal_rsrq']) ?? '—')}
+          ${kvRow('SINR', pickFirst(cell,['sinr','SINR','sinr_current','signal_sinr']) ?? '—')}
+        </section>
+      </div>`;
+    }
+
+    if (id === 'wifi') {
+      const err = wifi?._error;
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Wi‑Fi Config</h3>
+          ${err ? `<p class="danger-note">${escapeHtml(err)}</p>` : `<p class="hint">Edit SSID/password (if your firmware allows this endpoint). Only changed fields are sent back.</p>`}
+          ${renderWifiForm(wifi)}
+        </section>
+      </div>`;
+    }
+
+    if (id === 'actions') {
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Actions</h3>
+          <p class="danger-note">Reboot will drop your connection. Don’t click it like a bored raccoon.</p>
+          <div class="form">
+            <button class="btn" id="btn-reboot" style="justify-self:start">REBOOT GATEWAY</button>
+            <button class="btn" id="btn-logout" style="justify-self:start">LOG OUT</button>
+          </div>
+        </section>
+        <section class="modal-section">
+          <h3>Connection</h3>
+          ${renderConnectForm()}
+        </section>
+      </div>`;
+    }
+
+    if (id === 'logs') {
+      return `
+      <div class="log-container">
+        ${(stateStore.logs.length ? stateStore.logs : ['(no logs yet)']).map(l => `<div class="log-entry">${escapeHtml(l)}</div>`).join('')}
+      </div>`;
+    }
+
+    return `<div class="content-placeholder">No content</div>`;
+  }
+
+  function renderDetailsPage(id) {
+    const gwAll = stateStore.last.gatewayAll || {};
+    const sig = stateStore.last.gatewaySignal || {};
+    const sim = stateStore.last.sim || {};
+    const wifi = stateStore.last.wifi || {};
+    if (id === 'overview') {
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Gateway Details</h3>
+          ${renderObjectAsKv(gwAll)}
+        </section>
+        <section class="modal-section">
+          <h3>Signal Details</h3>
+          ${renderObjectAsKv(sig)}
+        </section>
+        <section class="modal-section">
+          <h3>SIM Details</h3>
+          ${renderObjectAsKv(sim)}
+        </section>
+      </div>`;
+    }
+    if (id === 'wifi') {
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Wi‑Fi Details</h3>
+          ${renderObjectAsKv(wifi)}
+        </section>
+      </div>`;
+    }
+    if (id === 'clients') {
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Client Fields</h3>
+          <p class="hint">Select a device in your real app to drill in further. This web HUD keeps it simple.</p>
+          ${renderObjectAsKv({ sample: (stateStore.last.clients || [])[0] || null })}
+        </section>
+      </div>`;
+    }
+    if (id === 'logs') {
+      return `
+      <div class="modal-main-content">
+        <section class="modal-section">
+          <h3>Event Log</h3>
+          <p class="hint">Events recorded by this dashboard (connect/refresh/actions). Not your router’s internal logs.</p>
+          <div class="log-container">
+            ${(stateStore.logs.length ? stateStore.logs : ['(no logs yet)']).map(l => `<div class="log-entry">${escapeHtml(l)}</div>`).join('')}
+          </div>
+        </section>
+      </div>`;
+    }
+    return `<div class="modal-main-content"><div class="content-placeholder">No details</div></div>`;
+  }
+
+  function renderRaw(id) {
+    if (id === 'overview') return safeJson({ version: stateStore.last.version, gatewayAll: stateStore.last.gatewayAll, gatewaySignal: stateStore.last.gatewaySignal, sim: stateStore.last.sim });
+    if (id === 'clients') return safeJson({ clients: stateStore.last.clients });
+    if (id === 'cell') return safeJson({ cell: stateStore.last.cell });
+    if (id === 'wifi') return safeJson({ wifi: stateStore.last.wifi });
+    if (id === 'logs') return safeJson({ logs: stateStore.logs });
+    if (id === 'actions') return safeJson({ tokenPresent: !!stateStore.token });
+    return safeJson(stateStore.last);
+  }
+
+  function kvRow(k, v) {
+    return `<div class="kv"><div class="k">${escapeHtml(String(k))}</div><div class="v">${escapeHtml(String(v ?? '—'))}</div></div>`;
+  }
+
+  function renderObjectAsKv(obj) {
+    if (!obj || typeof obj !== 'object') return kvRow('value', obj ?? '—');
+    const entries = Object.entries(obj).slice(0, 60);
+    if (!entries.length) return `<p class="hint">(empty)</p>`;
+    return entries.map(([k,v]) => kvRow(k, typeof v === 'object' ? safeJson(v) : v)).join('');
+  }
+
+  function renderClientsTable(clients) {
+    const rows = (clients || []).slice(0, 100).map(c => {
+      const name = c?.name || c?.hostname || c?.host || c?.device_name || '—';
+      const ip = c?.ip || c?.ipv4 || c?.address || '—';
+      const mac = c?.mac || c?.macaddr || c?.macAddress || '—';
+      const rssi = c?.rssi ?? c?.signal ?? '—';
+      const iface = c?.interface || c?.ifname || c?.type || '—';
+      return `<tr><td>${escapeHtml(String(name))}</td><td>${escapeHtml(String(ip))}</td><td>${escapeHtml(String(mac))}</td><td>${escapeHtml(String(iface))}</td><td>${escapeHtml(String(rssi))}</td></tr>`;
+    }).join('');
+
+    return `
+      <table class="table">
+        <thead><tr><th>Name</th><th>IP</th><th>MAC</th><th>IF</th><th>RSSI</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="5" style="color:var(--ink-sub)">No clients or not connected.</td></tr>`}</tbody>
+      </table>`;
+  }
+
+  function renderConnectForm() {
+    return `
+      <div class="form">
+        <div class="row">
+          <input class="input" id="inp-user" placeholder="Username (often admin)" value="admin" />
+          <input class="input" id="inp-pass" placeholder="Password (from gateway label)" type="password" />
+        </div>
+        <div class="row">
+          <input class="input" id="inp-baseurl" placeholder="Base URL" value="${stateStore.baseUrl}" />
+          <button class="btn" id="btn-login">LOGIN</button>
+        </div>
+        <p class="hint">
+          If login fails in a normal browser, it’s likely CORS. In your Android app, do the HTTP calls natively and inject results into the WebView.
+        </p>
+      </div>`;
+  }
+
+  function renderWifiForm(wifi) {
+    // attempt to find common SSID/password fields in v2 config payload
+    const guess = guessWifi(wifi);
+    const disabled = (!stateStore.token || wifi?._error) ? 'disabled' : '';
+    return `
+      ${renderConnectForm()}
+      <div style="height:16px"></div>
+      <div class="form">
+        <div class="row">
+          <input class="input" id="wifi-ssid" placeholder="SSID" value="${escapeAttr(guess.ssid || '')}" ${disabled}/>
+          <input class="input" id="wifi-pass" placeholder="Password" type="password" value="" ${disabled}/>
+        </div>
+        <div class="row">
+          <button class="btn" id="btn-wifi-apply" ${disabled}>APPLY WIFI</button>
+          <span class="hint">Sends minimal patch. Raw config preserved.</span>
+        </div>
+      </div>`;
+  }
+
+  function guessWifi(wifi) {
+    if (!wifi || typeof wifi !== 'object') return {};
+    // common locations:
+    // wifi.ap.ssid or wifi.ap_24g.ssid etc. We'll just scan for first ssid-like key.
+    const ssid = findDeepKey(wifi, (k, v) => typeof v === 'string' && k.toLowerCase().includes('ssid'));
+    return { ssid };
+  }
+
+  function findDeepKey(obj, pred, depth = 4) {
+    const seen = new Set();
+    function walk(o, d) {
+      if (!o || typeof o !== 'object' || d < 0) return null;
+      if (seen.has(o)) return null;
+      seen.add(o);
+      for (const [k,v] of Object.entries(o)) {
+        try {
+          if (pred(k, v)) return v;
+          const child = walk(v, d - 1);
+          if (child != null) return child;
+        } catch(e) {}
+      }
+      return null;
+    }
+    return walk(obj, depth);
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+  function escapeAttr(str) { return escapeHtml(str).replace(/`/g, '&#96;'); }
+
+  function wirePanelActions(id) {
+    // Some panels contain connect form elements, wire them if present.
+    const btnLogin = document.getElementById('btn-login');
+    if (btnLogin) {
+      btnLogin.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const user = document.getElementById('inp-user').value.trim();
+        const pass = document.getElementById('inp-pass').value;
+        stateStore.baseUrl = document.getElementById('inp-baseurl').value.trim() || stateStore.baseUrl;
+        try {
+          toast('Connecting...');
+          await discover();
+          await login(user, pass);
+          await fetchAll();
+          updateKpis();
+          buildCards();
+          toast('Connected + refreshed', 'success');
+        } catch (err) {
+          log(`ERROR connect: ${err.message}`);
+          toast(`Connect failed: ${err.message}`, 'error');
+        }
+      });
+    }
+
+    const btnReboot = document.getElementById('btn-reboot');
+    if (btnReboot) {
+      btnReboot.addEventListener('click', async () => {
+        try {
+          if (!stateStore.token) throw new Error('Not connected.');
+          toast('Rebooting...');
+          log('ACTION reboot requested');
+          await httpJson('/TMI/v1/gateway/reset?set=reboot', { method: 'POST' });
+          toast('Reboot triggered', 'success');
+        } catch (err) {
+          log(`ERROR reboot: ${err.message}`);
+          toast(`Reboot failed: ${err.message}`, 'error');
+        }
+      });
+    }
+
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', async () => {
+        if (nativeBridge && typeof nativeBridge.request === 'function') {
+          try {
+            const raw = nativeBridge.request(JSON.stringify({ action: 'logout', payload: {} }));
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (parsed && parsed.state) window.__NET_NINJA__.setState(parsed.state);
+          } catch (_) {}
+        }
+        stateStore.token = null;
+        log('AUTH cleared (logout)');
+        buildCards();
+        toast('Logged out', 'success');
+      });
+    }
+
+    const btnWifi = document.getElementById('btn-wifi-apply');
+    if (btnWifi) {
+      btnWifi.addEventListener('click', async () => {
+        try {
+          if (!stateStore.token) throw new Error('Not connected.');
+          const ssid = document.getElementById('wifi-ssid').value.trim();
+          const pass = document.getElementById('wifi-pass').value;
+          if (!ssid) throw new Error('SSID is empty.');
+
+          // Build minimal patch. Firmware schemas vary; safest approach is to re-send
+          // the whole config object with targeted edits. Here we apply a conservative deep patch:
+          const cfg = JSON.parse(JSON.stringify(stateStore.last.wifi || {}));
+          deepSetFirst(cfg, (k, v) => typeof v === 'string' && k.toLowerCase().includes('ssid'), ssid);
+          if (pass) deepSetFirst(cfg, (k, v) => typeof v === 'string' && (k.toLowerCase().includes('pass') || k.toLowerCase().includes('psk')), pass);
+
+          toast('Applying Wi‑Fi...');
+          log('ACTION wifi apply requested');
+          await httpJson('/TMI/v1/network/configuration/v2?set=ap', { method: 'POST', body: cfg });
+          toast('Wi‑Fi applied', 'success');
+          await fetchAll();
+          updateKpis();
+          buildCards();
+        } catch (err) {
+          log(`ERROR wifi apply: ${err.message}`);
+          toast(`Wi‑Fi apply failed: ${err.message}`, 'error');
+        }
+      });
+    }
+  }
+
+  function deepSetFirst(obj, pred, newVal, depth = 5) {
+    const seen = new Set();
+    function walk(o, d) {
+      if (!o || typeof o !== 'object' || d < 0) return false;
+      if (seen.has(o)) return false;
+      seen.add(o);
+      for (const [k,v] of Object.entries(o)) {
+        if (pred(k, v)) { o[k] = newVal; return true; }
+        if (walk(v, d - 1)) return true;
+      }
+      return false;
+    }
+    return walk(obj, depth);
+  }
+
+  function toggleStats() {
+    isStatsOpen = !isStatsOpen;
+    statsPanel.classList.toggle('is-open', isStatsOpen);
+    if (isStatsOpen) updateKpis();
+  }
+
+  // Top UI buttons
+  document.getElementById('next').addEventListener('click', () => setActive(active + 1));
+  document.getElementById('prev').addEventListener('click', () => setActive(active - 1));
+  document.getElementById('stats-toggle').addEventListener('click', toggleStats);
+  document.getElementById('stats-close').addEventListener('click', toggleStats);
+
+  document.getElementById('connect').addEventListener('click', () => {
+    // open actions card and panel (contains login form)
+    const idx = ROUTER_NODES.findIndex(n => n.id === 'actions');
+    if (idx >= 0) { setActive(idx); openPanel(idx); }
+  });
+
+  document.getElementById('refresh').addEventListener('click', async () => {
+    try {
+      if (!stateStore.token) throw new Error('Not connected.');
+      toast('Refreshing...');
+      await fetchAll();
+      updateKpis();
+      buildCards();
+      toast('Refreshed', 'success');
+    } catch (err) {
+      log(`ERROR refresh: ${err.message}`);
+      toast(`Refresh failed: ${err.message}`, 'error');
+    }
+  });
+
+  backdrop.addEventListener('click', () => closePanel(active));
+
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+    if (isPanelOpen) { if (e.key === 'Escape') closePanel(active); return; }
+    if (isStatsOpen) { if (e.key === 'Escape') toggleStats(); return; }
+    if (e.code === 'ArrowRight' && !document.getElementById('next').disabled) setActive(active + 1);
+    if (e.code === 'ArrowLeft' && !document.getElementById('prev').disabled) setActive(active - 1);
+    if (e.key === 'Enter') openPanel(active);
+    if (e.key.toLowerCase() === 's') toggleStats();
+  });
+
+  let mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5); mouseY = (e.clientY / window.innerHeight - 0.5);
+  }, { passive: true });
+
+  gsap.ticker.add(() => {
+    if (!isPanelOpen) {
+      gsap.to(scene, { rotationX: 25 + mouseY * 10, rotationY: -20 + mouseX * 15, duration: 1, ease: 'power1.out' });
+    }
+  });
+
+  // Initial render
+  buildCards();
+  setActive(0, true);
+  toast('Ready. Click CONNECT.', 'success');
+})();
+</script>
+</body>
+</html>

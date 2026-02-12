@@ -25,6 +25,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.netninja.routercontrol.RouterControlActivity
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
@@ -104,6 +105,15 @@ class MainActivity : AppCompatActivity() {
       }
     }
     web.webViewClient = object : WebViewClient() {
+      override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+        val uri = request.url ?: return false
+        if (uri.scheme.equals("netninja", ignoreCase = true) && uri.host.equals("router-control", ignoreCase = true)) {
+          startActivity(Intent(this@MainActivity, RouterControlActivity::class.java))
+          return true
+        }
+        return false
+      }
+
       override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
         Log.d(logTag, "page start: $url")
       }

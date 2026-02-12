@@ -68,6 +68,15 @@ class G5arApiImpl(
     )
   }
 
+  override suspend fun getGatewaySignal(session: G5arSession): GatewaySignal = withAuthRetry(session) {
+    val body = getObject("/TMI/v1/gateway?get=signal", it)
+    GatewaySignal(
+      status = body.getString("status", "connection_status", "connectionStatus"),
+      bars = body.getString("bars", "signal_bars", "signalBars"),
+      raw = body
+    )
+  }
+
   override suspend fun getClients(session: G5arSession): List<ClientDevice> = withAuthRetry(session) {
     val body = getElement("/TMI/v1/network/telemetry?get=clients", it)
     parseClients(body)
