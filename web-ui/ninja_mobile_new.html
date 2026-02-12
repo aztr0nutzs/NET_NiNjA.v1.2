@@ -474,6 +474,72 @@
           Each tool dialog keeps only 2–3 core controls plus an "Advanced options" expander. Because humans love clicking things.
         </div>
       </section>
+
+      <section class="tab-page" id="tab-gateway" aria-labelledby="tabbtn-gateway">
+        <h2>Gateway (G5AR)</h2>
+        <div class="card" id="g5arStatusCard">
+          <div class="card-head">
+            <div class="card-title">Connection</div>
+            <div class="pill" id="g5arReachability">Unknown</div>
+          </div>
+          <div class="muted" id="g5arError">Sign in to load gateway controls.</div>
+          <div class="card-actions" style="margin-top:10px;">
+            <input id="g5arUser" class="input" type="text" value="admin" aria-label="Gateway username" style="max-width:160px;" />
+            <input id="g5arPassword" class="input" type="password" placeholder="Gateway password" aria-label="Gateway password" style="max-width:200px;" />
+            <label><input id="g5arRemember" type="checkbox" /> Remember</label>
+            <button class="btn btn-primary" id="g5arLoginBtn">Login</button>
+            <button class="btn btn-ghost" id="g5arRefreshBtn">Refresh</button>
+          </div>
+        </div>
+
+        <div class="card" id="g5arInfoCard">
+          <div class="card-head"><div class="card-title">Gateway Info</div></div>
+          <div class="kv">
+            <div><b>Firmware</b><span id="g5arFirmware">—</span></div>
+            <div><b>UI Version</b><span id="g5arUiVersion">—</span></div>
+            <div><b>Serial</b><span id="g5arSerial">—</span></div>
+            <div><b>Uptime</b><span id="g5arUptime">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arCellCard">
+          <div class="card-head"><div class="card-title">Cellular</div></div>
+          <div class="kv">
+            <div><b>RSRP</b><span id="g5arRsrp">—</span></div>
+            <div><b>RSRQ</b><span id="g5arRsrq">—</span></div>
+            <div><b>SINR</b><span id="g5arSinr">—</span></div>
+            <div><b>Band</b><span id="g5arBand">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arSimCard">
+          <div class="card-head"><div class="card-title">SIM</div></div>
+          <div class="kv">
+            <div><b>ICCID</b><span id="g5arIccid">—</span></div>
+            <div><b>IMEI</b><span id="g5arImei">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arClientsCard">
+          <div class="card-head"><div class="card-title">Clients</div></div>
+          <div class="muted" id="g5arClients">No client data yet.</div>
+        </div>
+
+        <div class="card" id="g5arWifiCard">
+          <div class="card-head"><div class="card-title">Wi-Fi Settings</div></div>
+          <div class="card-actions" style="margin-top:10px;">
+            <input id="g5arSsid24" class="input" type="text" placeholder="2.4GHz SSID" aria-label="2.4GHz SSID" style="max-width:180px;" />
+            <input id="g5arPass24" class="input" type="password" placeholder="2.4GHz Password" aria-label="2.4GHz Password" style="max-width:200px;" />
+            <label><input id="g5arEnabled24" type="checkbox" /> 2.4GHz Enabled</label>
+            <button class="btn btn-primary" id="g5arSaveWifiBtn">Save Wi-Fi</button>
+          </div>
+        </div>
+
+        <div class="card-actions" style="margin-top:12px;">
+          <button class="btn btn-ghost purple" id="g5arRebootBtn">Reboot Gateway</button>
+        </div>
+      </section>
+
       <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
       <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw">
         <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
@@ -505,6 +571,12 @@
           <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
           <div class="tlabel">Tools</div>
         </button>
+
+        <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
+          <div class="dot"></div>
+          <div class="tlabel">Gateway</div>
+        </button>
+
         <!-- OpenClaw tab button -->
         <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
           <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 14v-2a6 6 0 0 1 12 0v2"/><circle cx="8" cy="18" r="1"/><circle cx="16" cy="18" r="1"/></svg></div>

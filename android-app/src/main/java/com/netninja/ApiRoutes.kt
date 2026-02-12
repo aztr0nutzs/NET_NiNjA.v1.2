@@ -3,6 +3,11 @@
 import android.os.Build
 import android.os.SystemClock
 import com.netninja.cam.OnvifDiscoveryService
+import com.netninja.gateway.g5ar.G5arApiImpl
+import com.netninja.gateway.g5ar.G5arCapabilities
+import com.netninja.gateway.g5ar.G5arCredentialStore
+import com.netninja.gateway.g5ar.G5arSession
+import com.netninja.gateway.g5ar.WifiApConfig
 import com.netninja.openclaw.NodeSession
 import com.netninja.openclaw.OpenClawDashboardState
 import com.netninja.openclaw.OpenClawGatewayState
@@ -39,6 +44,10 @@ import kotlin.coroutines.coroutineContext
 
 internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: File) {
   with(server) {
+    val g5arApi = G5arApiImpl()
+    val g5arCredentials = G5arCredentialStore(ctx)
+    var g5arSession: G5arSession? = null
+
     routing {
       staticFiles("/ui", uiDir, index = "ninja_mobile_new.html")
       get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
@@ -95,6 +104,121 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
             adminUrls = urls
           )
         )
+      }
+
+      @Serializable
+      data class G5arLoginRequest(
+        val username: String = "admin",
+        val password: String,
+        val remember: Boolean = false
+      )
+
+      @Serializable
+      data class G5arScreenData(
+        val reachable: Boolean,
+        val loggedIn: Boolean,
+        val capabilities: G5arCapabilities,
+        val gatewayInfo: com.netninja.gateway.g5ar.GatewayInfo? = null,
+        val clients: List<com.netninja.gateway.g5ar.ClientDevice> = emptyList(),
+        val cellTelemetry: com.netninja.gateway.g5ar.CellTelemetry? = null,
+        val simInfo: com.netninja.gateway.g5ar.SimInfo? = null,
+        val wifiConfig: WifiApConfig? = null,
+        val error: String? = null
+      )
+
+      get("/api/v1/g5ar/discover") {
+        val reachable = withContext(Dispatchers.IO) { g5arApi.discover() }
+        call.respond(mapOf("reachable" to reachable, "baseUrl" to G5arApiImpl.DEFAULT_BASE_URL))
+      }
+
+      post("/api/v1/g5ar/login") {
+        val req = call.receive<G5arLoginRequest>()
+        val user = req.username.trim().ifBlank { "admin" }
+        if (req.password.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Password is required"))
+          return@post
+        }
+        g5arSession = withContext(Dispatchers.IO) { g5arApi.login(user, req.password) }
+        if (req.remember) {
+          g5arCredentials.save(user, req.password)
+        } else {
+          g5arCredentials.clear()
+        }
+        call.respond(mapOf("ok" to true))
+      }
+
+      post("/api/v1/g5ar/logout") {
+        g5arSession = null
+        call.respond(mapOf("ok" to true))
+      }
+
+      get("/api/v1/g5ar/screen") {
+        val reachable = withContext(Dispatchers.IO) { g5arApi.discover() }
+        if (!reachable) {
+          call.respond(G5arScreenData(reachable = false, loggedIn = false, capabilities = G5arCapabilities(reachable = false), error = "Gateway unreachable"))
+          return@get
+        }
+
+        val activeSession = g5arSession ?: g5arCredentials.load()?.let { (u, p) -> withContext(Dispatchers.IO) { g5arApi.login(u, p) } }?.also { g5arSession = it }
+        if (activeSession == null) {
+          call.respond(G5arScreenData(reachable = true, loggedIn = false, capabilities = G5arCapabilities(reachable = true), error = "Login required"))
+          return@get
+        }
+
+        var info: com.netninja.gateway.g5ar.GatewayInfo? = null
+        var clients: List<com.netninja.gateway.g5ar.ClientDevice> = emptyList()
+        var cell: com.netninja.gateway.g5ar.CellTelemetry? = null
+        var sim: com.netninja.gateway.g5ar.SimInfo? = null
+        var wifi: WifiApConfig? = null
+
+        val canInfo = runCatching { withContext(Dispatchers.IO) { g5arApi.getGatewayInfo(activeSession) } }.onSuccess { info = it }.isSuccess
+        val canClients = runCatching { withContext(Dispatchers.IO) { g5arApi.getClients(activeSession) } }.onSuccess { clients = it }.isSuccess
+        val canCell = runCatching { withContext(Dispatchers.IO) { g5arApi.getCellTelemetry(activeSession) } }.onSuccess { cell = it }.isSuccess
+        val canSim = runCatching { withContext(Dispatchers.IO) { g5arApi.getSimInfo(activeSession) } }.onSuccess { sim = it }.isSuccess
+        val canWifiRead = runCatching { withContext(Dispatchers.IO) { g5arApi.getWifiConfig(activeSession) } }.onSuccess { wifi = it }.isSuccess
+
+        call.respond(
+          G5arScreenData(
+            reachable = true,
+            loggedIn = true,
+            capabilities = G5arCapabilities(
+              reachable = true,
+              canViewGatewayInfo = canInfo,
+              canViewClients = canClients,
+              canViewCellTelemetry = canCell,
+              canViewSimInfo = canSim,
+              canViewWifiConfig = canWifiRead,
+              canSetWifiConfig = canWifiRead,
+              canReboot = canInfo
+            ),
+            gatewayInfo = info,
+            clients = clients,
+            cellTelemetry = cell,
+            simInfo = sim,
+            wifiConfig = wifi
+          )
+        )
+      }
+
+      post("/api/v1/g5ar/wifi") {
+        val activeSession = g5arSession
+        if (activeSession == null) {
+          call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Login required"))
+          return@post
+        }
+        val req = call.receive<WifiApConfig>()
+        val updated = withContext(Dispatchers.IO) { g5arApi.setWifiConfig(activeSession, req) }
+        call.respond(updated)
+      }
+
+      post("/api/v1/g5ar/reboot") {
+        val activeSession = g5arSession
+        if (activeSession == null) {
+          call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Login required"))
+          return@post
+        }
+        withContext(Dispatchers.IO) { g5arApi.reboot(activeSession) }
+        call.respond(mapOf("ok" to true))
       }
 
       get("/api/v1/discovery/preconditions") {

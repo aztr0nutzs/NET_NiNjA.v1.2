@@ -375,6 +375,7 @@
       if(tab === "devices"){ renderDevices(); }
       if(tab === "networks"){ renderNetworks(); }
       if(tab === "dashboard"){ renderDashboard(); }
+      if(tab === "gateway"){ renderG5ar(); }
     }
 
     $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
@@ -383,7 +384,7 @@
       const data = event && event.data;
       if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
       const target = String(data.tab || "dashboard");
-      const allowed = new Set(["dashboard", "devices", "networks", "tools", "openclaw", "cameras"]);
+      const allowed = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "cameras"]);
       setTab(allowed.has(target) ? target : "dashboard");
     });
 
@@ -1536,6 +1537,116 @@
       } catch (_) {}
     }
 
+
+    // ---- Gateway (G5AR) ----
+    let g5arScreenState = null;
+
+    function setText(id, value){
+      const el = document.getElementById(id);
+      if(el) el.textContent = (value === null || value === undefined || value === "") ? "—" : String(value);
+    }
+
+    function setVisible(id, visible){
+      const el = document.getElementById(id);
+      if(el) el.style.display = visible ? "" : "none";
+    }
+
+    function renderG5ar(){
+      const data = g5arScreenState || {};
+      const caps = data.capabilities || {};
+      setText("g5arReachability", data.reachable ? "Reachable" : "Unreachable");
+      setText("g5arError", data.error || (data.loggedIn ? "Connected." : "Login required."));
+      setText("g5arFirmware", data.gatewayInfo?.firmware);
+      setText("g5arUiVersion", data.gatewayInfo?.uiVersion);
+      setText("g5arSerial", data.gatewayInfo?.serial);
+      setText("g5arUptime", data.gatewayInfo?.uptime);
+      setText("g5arRsrp", data.cellTelemetry?.rsrp);
+      setText("g5arRsrq", data.cellTelemetry?.rsrq);
+      setText("g5arSinr", data.cellTelemetry?.sinr);
+      setText("g5arBand", data.cellTelemetry?.band);
+      setText("g5arIccid", data.simInfo?.iccid);
+      setText("g5arImei", data.simInfo?.imei);
+
+      const clients = Array.isArray(data.clients) ? data.clients : [];
+      const clientsEl = document.getElementById("g5arClients");
+      if(clientsEl){
+        clientsEl.innerHTML = clients.length
+          ? clients.map((c) => `${escapeHtml(c.name || "Client")} • ${escapeHtml(c.ip || "—")} • ${escapeHtml(c.mac || "—")} • ${escapeHtml(c.signal || "—")}`).join("<br>")
+          : "No clients reported.";
+      }
+
+      const wifi = data.wifiConfig || {};
+      const ssid24 = document.getElementById("g5arSsid24");
+      const pass24 = document.getElementById("g5arPass24");
+      const enabled24 = document.getElementById("g5arEnabled24");
+      if(ssid24 && !ssid24.matches(":focus")) ssid24.value = wifi.ssid24 || "";
+      if(pass24 && !pass24.matches(":focus")) pass24.value = wifi.pass24 || "";
+      if(enabled24) enabled24.checked = !!wifi.enabled24;
+
+      setVisible("g5arInfoCard", !!caps.canViewGatewayInfo);
+      setVisible("g5arClientsCard", !!caps.canViewClients);
+      setVisible("g5arCellCard", !!caps.canViewCellTelemetry);
+      setVisible("g5arSimCard", !!caps.canViewSimInfo);
+      setVisible("g5arWifiCard", !!caps.canViewWifiConfig);
+      setVisible("g5arRebootBtn", !!caps.canReboot);
+      setVisible("g5arSaveWifiBtn", !!caps.canSetWifiConfig);
+    }
+
+    async function refreshG5ar(){
+      try {
+        g5arScreenState = await fetchJson("/api/v1/g5ar/screen", { cache: "no-store", timeoutMs: 5000 });
+        renderG5ar();
+      } catch (e) {
+        showToast("Gateway", `Failed to refresh: ${e.message}`);
+      }
+    }
+
+    function setupG5arControls(){
+      const loginBtn = document.getElementById("g5arLoginBtn");
+      const refreshBtn = document.getElementById("g5arRefreshBtn");
+      const saveWifiBtn = document.getElementById("g5arSaveWifiBtn");
+      const rebootBtn = document.getElementById("g5arRebootBtn");
+      if(loginBtn){
+        loginBtn.addEventListener("click", async () => {
+          const username = document.getElementById("g5arUser")?.value || "admin";
+          const password = document.getElementById("g5arPassword")?.value || "";
+          const remember = !!document.getElementById("g5arRemember")?.checked;
+          if(!password){ showToast("Gateway", "Password is required."); return; }
+          await fetchJson("/api/v1/g5ar/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password, remember })
+          });
+          showToast("Gateway", "Login succeeded.");
+          refreshG5ar();
+        });
+      }
+      if(refreshBtn){ refreshBtn.addEventListener("click", refreshG5ar); }
+      if(saveWifiBtn){
+        saveWifiBtn.addEventListener("click", async () => {
+          await fetchJson("/api/v1/g5ar/wifi", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ssid24: document.getElementById("g5arSsid24")?.value || null,
+              pass24: document.getElementById("g5arPass24")?.value || null,
+              enabled24: !!document.getElementById("g5arEnabled24")?.checked,
+              raw: (g5arScreenState && g5arScreenState.wifiConfig && g5arScreenState.wifiConfig.raw) || {}
+            })
+          });
+          showToast("Gateway", "Wi-Fi settings updated.");
+          refreshG5ar();
+        });
+      }
+      if(rebootBtn){
+        rebootBtn.addEventListener("click", async () => {
+          if(!confirm("Reboot the gateway now?")) return;
+          await fetchJson("/api/v1/g5ar/reboot", { method: "POST" });
+          showToast("Gateway", "Reboot command sent.");
+        });
+      }
+    }
+
     // ---- Settings / initial state ----
     function init(){
       // initial notification
@@ -1562,6 +1673,8 @@
       refreshDiscoveryResults();
       refreshPermissionStatus();
       checkDbNotice();
+      setupG5arControls();
+      refreshG5ar();
       setupPermissionControls();
       setupDebugPanel();
       refreshDebugState();
