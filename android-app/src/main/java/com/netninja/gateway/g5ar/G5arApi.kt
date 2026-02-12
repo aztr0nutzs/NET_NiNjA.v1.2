@@ -4,7 +4,10 @@ interface G5arApi {
   suspend fun discover(): Boolean
   suspend fun login(username: String, password: String): G5arSession
   suspend fun getGatewayInfo(session: G5arSession): GatewayInfo
+<<<<<<< ours
   suspend fun getGatewaySignal(session: G5arSession): GatewaySignal
+=======
+>>>>>>> theirs
   suspend fun getClients(session: G5arSession): List<ClientDevice>
   suspend fun getCellTelemetry(session: G5arSession): CellTelemetry
   suspend fun getSimInfo(session: G5arSession): SimInfo

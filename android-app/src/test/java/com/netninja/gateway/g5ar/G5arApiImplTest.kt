@@ -38,8 +38,11 @@ class G5arApiImplTest {
             .setBody("""{"clients":[{"name":"Pixel","ip":"192.168.12.10","mac":"AA:BB","rssi":"-51","interfaceType":"wifi"}]}""")
           request.path == "/TMI/v1/network/telemetry?get=cell" -> MockResponse().setResponseCode(200)
             .setBody("""{"rsrp":"-95","rsrq":"-11","sinr":"15","band":"n41","pci":"22"}""")
+<<<<<<< ours
           request.path == "/TMI/v1/gateway?get=signal" -> MockResponse().setResponseCode(200)
             .setBody("""{"status":"CONNECTED","bars":"4"}""")
+=======
+>>>>>>> theirs
           request.path == "/TMI/v1/network/configuration/v2?get=ap" -> MockResponse().setResponseCode(200)
             .setBody("""{"ssid24":"Home24","pass24":"secret","enabled24":true,"unknownField":"keep"}""")
           else -> MockResponse().setResponseCode(404)
@@ -50,14 +53,20 @@ class G5arApiImplTest {
     val api = G5arApiImpl(server.url("/").toString().trimEnd('/'), RetryPolicy(maxAttempts = 1))
     val session = api.login("admin", "pw")
     val clients = api.getClients(session)
+<<<<<<< ours
     val signal = api.getGatewaySignal(session)
+=======
+>>>>>>> theirs
     val cell = api.getCellTelemetry(session)
     val wifi = api.getWifiConfig(session)
 
     assertEquals("jwt123", session.token)
     assertEquals(1, clients.size)
     assertEquals("Pixel", clients.first().name)
+<<<<<<< ours
     assertEquals("CONNECTED", signal.status)
+=======
+>>>>>>> theirs
     assertEquals("-95", cell.rsrp)
     assertEquals("Home24", wifi.ssid24)
     assertTrue(wifi.raw.containsKey("unknownField"))
@@ -120,4 +129,53 @@ class G5arApiImplTest {
     assertEquals(2, loginCount)
     assertEquals("RetryClient", clients.first().name)
   }
+<<<<<<< ours
+=======
+
+  @Test
+  fun loginExtractsNestedToken() = runBlocking {
+    server.dispatcher = object : Dispatcher() {
+      override fun dispatch(request: RecordedRequest): MockResponse {
+        return if (request.path == "/TMI/v1/auth/login") {
+          MockResponse().setResponseCode(200).setBody("""{"data":{"auth":{"jwt":"nested-token"}}}""")
+        } else {
+          MockResponse().setResponseCode(404)
+        }
+      }
+    }
+
+    val api = G5arApiImpl(server.url("/").toString().trimEnd('/'), RetryPolicy(maxAttempts = 1))
+    val session = api.login("admin", "pw")
+    assertEquals("nested-token", session.token)
+  }
+
+  @Test
+  fun loginFallsBackToFormEncoded() = runBlocking {
+    var loginAttempt = 0
+    var sawForm = false
+    server.dispatcher = object : Dispatcher() {
+      override fun dispatch(request: RecordedRequest): MockResponse {
+        return if (request.path == "/TMI/v1/auth/login") {
+          loginAttempt += 1
+          val contentType = request.getHeader("Content-Type").orEmpty()
+          if (contentType.startsWith("application/json")) {
+            MockResponse().setResponseCode(415).setBody("unsupported media type")
+          } else {
+            sawForm = true
+            MockResponse().setResponseCode(200).setBody("""{"token":"form-token"}""")
+          }
+        } else {
+          MockResponse().setResponseCode(404)
+        }
+      }
+    }
+
+    val api = G5arApiImpl(server.url("/").toString().trimEnd('/'), RetryPolicy(maxAttempts = 1))
+    val session = api.login("admin", "pw")
+
+    assertTrue("expected a form login attempt", sawForm)
+    assertTrue("expected multiple login payload attempts", loginAttempt > 1)
+    assertEquals("form-token", session.token)
+  }
+>>>>>>> theirs
 }

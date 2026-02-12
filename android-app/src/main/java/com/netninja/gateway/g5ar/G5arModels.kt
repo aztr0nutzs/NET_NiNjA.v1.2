@@ -20,6 +20,7 @@ data class GatewayInfo(
 )
 
 @Serializable
+<<<<<<< ours
 data class GatewaySignal(
   val status: String? = null,
   val bars: String? = null,
@@ -27,6 +28,8 @@ data class GatewaySignal(
 )
 
 @Serializable
+=======
+>>>>>>> theirs
 data class CellTelemetry(
   val rsrp: String? = null,
   val rsrq: String? = null,
