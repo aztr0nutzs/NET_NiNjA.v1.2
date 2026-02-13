@@ -1633,6 +1633,7 @@ input, .mono{
     try { if(ws) ws.close(); } catch(_) {}
     ws = null;
     state.wsOpen = false;
+    state.connected = false;
     updateTop();
   }
 
