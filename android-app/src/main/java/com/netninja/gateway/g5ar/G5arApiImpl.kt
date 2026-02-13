@@ -14,10 +14,7 @@ import kotlinx.serialization.json.put
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
-<<<<<<< ours
-=======
 import java.net.URLEncoder
->>>>>>> theirs
 import java.net.URL
 
 class G5arApiImpl(
@@ -46,21 +43,6 @@ class G5arApiImpl(
   }
 
   override suspend fun login(username: String, password: String): G5arSession = withContext(Dispatchers.IO) {
-<<<<<<< ours
-    val payload = buildJsonObject {
-      put("username", username)
-      put("password", password)
-    }
-    val response = request("POST", "/TMI/v1/auth/login", payload = payload)
-    if (response.code !in 200..299) {
-      throw IOException("Login failed with HTTP ${response.code}")
-    }
-    val body = parseBodyObject(response.body)
-    val token = body.getString("token", "jwt", "access_token")
-      ?: throw IOException("Login succeeded but token was missing")
-    lastLoginCredentials = username to password
-    G5arSession(token = token, issuedAtMs = System.currentTimeMillis())
-=======
     val attempts = listOf(
       LoginAttempt.Json(
         body = buildJsonObject {
@@ -124,7 +106,6 @@ class G5arApiImpl(
     val fail = lastFailure
     val reason = fail?.body?.take(200)?.ifBlank { "<empty>" } ?: "<no response>"
     throw IOException("Login failed: gateway did not return a token (last HTTP ${fail?.code ?: -1}, body=$reason)")
->>>>>>> theirs
   }
 
   override suspend fun getGatewayInfo(session: G5arSession): GatewayInfo = withAuthRetry(session) {
@@ -138,18 +119,6 @@ class G5arApiImpl(
     )
   }
 
-<<<<<<< ours
-  override suspend fun getGatewaySignal(session: G5arSession): GatewaySignal = withAuthRetry(session) {
-    val body = getObject("/TMI/v1/gateway?get=signal", it)
-    GatewaySignal(
-      status = body.getString("status", "connection_status", "connectionStatus"),
-      bars = body.getString("bars", "signal_bars", "signalBars"),
-      raw = body
-    )
-  }
-
-=======
->>>>>>> theirs
   override suspend fun getClients(session: G5arSession): List<ClientDevice> = withAuthRetry(session) {
     val body = getElement("/TMI/v1/network/telemetry?get=clients", it)
     parseClients(body)
@@ -259,9 +228,6 @@ class G5arApiImpl(
     return parseBody(response.body)
   }
 
-<<<<<<< ours
-  private suspend fun request(method: String, path: String, token: String? = null, payload: JsonObject? = null): HttpResult {
-=======
   private suspend fun request(
     method: String,
     path: String,
@@ -270,7 +236,6 @@ class G5arApiImpl(
     rawBody: String? = null,
     contentType: String = "application/json"
   ): HttpResult {
->>>>>>> theirs
     return withContext(Dispatchers.IO) {
       val conn = (URL(baseUrl.trimEnd('/') + path).openConnection() as HttpURLConnection).apply {
         requestMethod = method
@@ -280,20 +245,12 @@ class G5arApiImpl(
         token?.let { setRequestProperty("Authorization", "Bearer $it") }
       }
       try {
-<<<<<<< ours
-        if (payload != null) {
-          conn.doOutput = true
-          conn.setRequestProperty("Content-Type", "application/json")
-          conn.outputStream.use { out ->
-            out.write(json.encodeToString(JsonObject.serializer(), payload).toByteArray())
-=======
         val bodyToWrite = rawBody ?: payload?.let { json.encodeToString(JsonObject.serializer(), it) }
         if (bodyToWrite != null) {
           conn.doOutput = true
           conn.setRequestProperty("Content-Type", contentType)
           conn.outputStream.use { out ->
             out.write(bodyToWrite.toByteArray())
->>>>>>> theirs
           }
         }
         val code = conn.responseCode
@@ -310,14 +267,6 @@ class G5arApiImpl(
     return if (raw.isBlank()) JsonObject(emptyMap()) else json.parseToJsonElement(raw)
   }
 
-<<<<<<< ours
-  private fun parseBodyObject(raw: String): JsonObject {
-    val element = parseBody(raw)
-    return element as? JsonObject ?: JsonObject(emptyMap())
-  }
-
-=======
->>>>>>> theirs
   private fun parseClients(element: JsonElement): List<ClientDevice> {
     val array = when (element) {
       is JsonArray -> element
@@ -342,8 +291,6 @@ class G5arApiImpl(
     }
   }
 
-<<<<<<< ours
-=======
   private fun extractToken(element: JsonElement): String? {
     when (element) {
       is JsonObject -> {
@@ -375,7 +322,6 @@ class G5arApiImpl(
     data class Form(val body: String) : LoginAttempt()
   }
 
->>>>>>> theirs
   private data class HttpResult(val code: Int, val body: String)
 
   private class UnauthorizedException : IOException("Unauthorized")

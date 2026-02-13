@@ -373,7 +373,7 @@
       $$(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
       $$(".tab-page").forEach(p => p.classList.toggle("active", p.id === `tab-${tab}`));
       if(tab === "devices"){ renderDevices(); }
-      if(tab === "networks"){ renderNetworks(); }
+      if(tab === "networks"){ window.nnUpdateDiscoveryMap?.(); }
       if(tab === "dashboard"){ renderDashboard(); }
       if(tab === "gateway"){ renderG5ar(); }
     }
@@ -384,15 +384,7 @@
       const data = event && event.data;
       if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
       const target = String(data.tab || "dashboard");
-<<<<<<< ours
-<<<<<<< ours
       const allowed = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "cameras"]);
-=======
-      const allowed = new Set(["dashboard", "devices", "networks", "tools", "openclaw", "cameras"]);
->>>>>>> theirs
-=======
-      const allowed = new Set(["dashboard", "devices", "networks", "tools", "openclaw", "cameras"]);
->>>>>>> theirs
       setTab(allowed.has(target) ? target : "dashboard");
     });
 
@@ -882,6 +874,7 @@
     // ---- Networks ----
     function renderNetworks(){
       const tbody = $("#netTbody");
+      if(!tbody) return;
       tbody.innerHTML = networks.map(n => {
         const sel = n.id === state.selectedNetworkId;
         return `
@@ -920,6 +913,7 @@
       const kv = $("#netDetailsKv");
       const pill = $("#netDetailsPill");
       const actions = $("#netDetailsActions");
+      if(!kv || !pill || !actions) return;
       actions.style.display = n ? "flex" : "none";
 
       if(!n){
@@ -963,15 +957,15 @@
       openOverlay("toolOverlay");
     }
 
-    $("#btnNetworksSecurity").addEventListener("click", () => openToolDialog("security"));
+    $("#btnNetworksSecurity")?.addEventListener("click", () => openToolDialog("security"));
 
-    $("#btnNetViewDevices").addEventListener("click", () => setTab("devices"));
-    $("#btnNetScan").addEventListener("click", () => {
+    $("#btnNetViewDevices")?.addEventListener("click", () => setTab("devices"));
+    $("#btnNetScan")?.addEventListener("click", () => {
       const n = networks.find(x => x.id === state.selectedNetworkId);
       if(!n) return showToast("Select a network", "Pick a network row first.");
       runScan();
     });
-    $("#btnNetSec").addEventListener("click", () => openToolDialog("security"));
+    $("#btnNetSec")?.addEventListener("click", () => openToolDialog("security"));
 
     // ---- Tools dialog ----
     function openToolDialog(kind, deviceId){

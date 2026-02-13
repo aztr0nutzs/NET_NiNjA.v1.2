@@ -336,76 +336,14 @@
         </div>
       </section>
 
-      <!-- NETWORKS -->
-      <section class="tab-page" id="tab-networks" aria-labelledby="tabbtn-networks">
-        <h2>Networks</h2>
-
-        <div class="toolbar">
-          <div class="row">
-            <button class="btn btn-primary" id="btnNetworksScanMy">Scan my network</button>
-            <button class="btn btn-ghost" id="btnNetworksSecurity">Run security check</button>
-          </div>
-        </div>
-
-        <div class="split">
-          <div class="table-wrap" aria-label="Networks list">
-            <div class="table-scroll" style="max-height: 48vh;">
-              <table style="min-width: 860px;">
-                <thead>
-                  <tr>
-                    <th>Network name</th>
-                    <th>Type</th>
-                    <th>Security</th>
-                    <th>Signal</th>
-                    <th>Devices</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="netTbody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card" id="netDetailsCard" style="cursor:default;">
-            <div class="card-head">
-              <div class="card-title">Current network details</div>
-              <div class="pill" id="netDetailsPill">Select a network</div>
-            </div>
-            <div class="kv" id="netDetailsKv"></div>
-            <div class="card-actions" id="netDetailsActions" style="display:none;">
-              <button class="btn btn-ghost" id="btnNetViewDevices">View devices on this network</button>
-              <button class="btn btn-ghost purple" id="btnNetScan">Scan this network</button>
-              <button class="btn btn-ghost" id="btnNetSec">Run security check</button>
-            </div>
-          </div>
-        </div>
-
-<!-- DISCOVERY MAP - Ninja Nodes 3D Network Visualization (iframe) -->
-<div class="divider"></div>
-<div class="card" id="nnMapCardContainer" style="cursor:default;">
-  <div class="card-head">
-    <div class="card-title">Discovery Map</div>
-    <div class="pill" id="nnMapPill">Live</div>
-  </div>
-  <div class="muted">Interactive 3D node map — drag to orbit, pinch to zoom, tap nodes for details, switch themes and layouts</div>
-
-  <div class="nn-mapHost" style="height:min(80vh, 900px);min-height:500px;border-radius:18px;overflow:hidden;border:2px solid rgba(0,240,255,0.35);box-shadow:inset 0 0 60px rgba(0,240,255,0.18),0 0 40px rgba(0,240,255,0.25),0 0 80px rgba(185,103,255,0.15);background:rgba(0,0,0,0.35);margin-top:10px;">
-    <iframe id="nnMapIframe"
-            src="new_assets/ninja_nodes.html"
-            style="width:100%;height:100%;border:none;border-radius:16px;display:block;"
-            allow="accelerometer; gyroscope"
-            loading="lazy"
-            title="Discovery Map — Ninja Nodes 3D visualization">
-    </iframe>
-  </div>
-
-  <div class="card-actions" style="margin-top:12px;">
-    <button class="btn btn-ghost purple" id="btnMapRefresh" onclick="document.getElementById('nnMapIframe')?.contentWindow?.location?.reload()">Refresh map</button>
-  </div>
-</div>
-
-</section>
+      <!-- NETWORKS (standalone Ninja Nodes 3D map) -->
+      <section class="tab-page media" id="tab-networks" aria-labelledby="tabbtn-networks">
+        <iframe id="nnMapIframe"
+                src="new_assets/ninja_nodes.html"
+                title="Ninja Nodes 3D Network Map"
+                allow="accelerometer; gyroscope"
+                loading="eager"></iframe>
+      </section>
 
 
 
@@ -537,10 +475,7 @@
 
         <div class="card-actions" style="margin-top:12px;">
           <button class="btn btn-ghost purple" id="g5arRebootBtn">Reboot Gateway</button>
-<<<<<<< ours
           <a class="btn btn-primary" id="g5arOpenRouterControl" href="netninja://router-control">Router Control</a>
-=======
->>>>>>> theirs
         </div>
       </section>
 
@@ -732,4 +667,3 @@
 
 </body>
 </html>
-
