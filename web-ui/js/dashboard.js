@@ -385,7 +385,11 @@
       if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
       const target = String(data.tab || "dashboard");
 <<<<<<< ours
+<<<<<<< ours
       const allowed = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "cameras"]);
+=======
+      const allowed = new Set(["dashboard", "devices", "networks", "tools", "openclaw", "cameras"]);
+>>>>>>> theirs
 =======
       const allowed = new Set(["dashboard", "devices", "networks", "tools", "openclaw", "cameras"]);
 >>>>>>> theirs
