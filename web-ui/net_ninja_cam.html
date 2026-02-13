@@ -929,6 +929,17 @@ function setGrid(gridClass){
     gridClass === "g3" ? "3×3" : "WALL";
 }
 
+function setFocusedCamera(id, forceFocusLayout){
+  state.focusedId = id;
+  if(forceFocusLayout){
+    setGrid("g1");
+    document.querySelectorAll(".seg button").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.grid === "g1");
+    });
+  }
+  renderAll();
+}
+
 function openModal(show){
   document.getElementById("modalBackdrop").style.display = show ? "flex" : "none";
   if(show){
@@ -1229,7 +1240,7 @@ function renderList(){
         </div>
       </div>
     `;
-    item.querySelector('[data-act="focus"]').onclick = () => { state.focusedId = cam.id; renderAll(); };
+    item.querySelector('[data-act="focus"]').onclick = () => setFocusedCamera(cam.id, true);
     item.querySelector('[data-act="reconnect"]').onclick = () => reconnectTile(cam.id, true);
     item.querySelector('[data-act="remove"]').onclick = () => removeCam(cam.id);
     elList.appendChild(item);
@@ -1250,8 +1261,18 @@ function renderGrid(){
       media.className = "media";
       media.loading = "lazy";
       media.referrerPolicy = "no-referrer";
+      media.onload = () => {
+        cam.playing = true;
+        cam.lastErr = null;
+        updateLiveStats();
+      };
+      media.onerror = () => {
+        cam.playing = false;
+        cam.lastErr = "error";
+        dropAndMaybeReconnect(cam.id);
+      };
       media.src = cam.url;
-      cam.playing = true; // MJPEG is "playing" if it has src
+      cam.playing = false;
     } else {
       media = document.createElement("video");
       media.className = "media";
@@ -1319,8 +1340,7 @@ function renderGrid(){
     tile.onclick = (e) => {
       // ignore clicks on buttons
       if(e.target.closest(".ctl")) return;
-      state.focusedId = cam.id;
-      renderAll();
+      setFocusedCamera(cam.id, false);
     };
     tile.querySelector('[data-act="reconnect"]').onclick = (e) => { e.stopPropagation(); reconnectTile(cam.id, true); };
     tile.querySelector('[data-act="full"]').onclick = (e) => { e.stopPropagation(); requestFullscreen(tile); };
