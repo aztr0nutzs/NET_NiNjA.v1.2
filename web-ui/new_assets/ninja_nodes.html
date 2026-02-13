@@ -42,58 +42,34 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 /* ── TOP BAR ── */
 #topbar{
   position:relative;z-index:100;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 16px;
+  display:flex;align-items:center;justify-content:center;
+  padding:8px 12px;
   background:rgba(0,0,0,0.95);
   border-bottom:1px solid rgba(var(--p-raw,0,240,255),0.25);
   box-shadow:0 2px 30px rgba(0,0,0,0.8);
-  gap:12px;flex-wrap:wrap;
+  min-height:96px;
 }
-.top-brand{
-  display:flex;align-items:center;gap:10px;
-}
-.top-badge{
-  width:38px;height:38px;border-radius:10px;
-  background:linear-gradient(135deg,var(--p),var(--s));
-  display:grid;place-items:center;
-  font-family:"Orbitron",sans-serif;font-size:13px;font-weight:900;color:#000;
-  box-shadow:0 0 18px var(--pg);
-  animation:badgePulse 3s ease-in-out infinite;
-}
-@keyframes badgePulse{0%,100%{box-shadow:0 0 14px var(--pg);}50%{box-shadow:0 0 28px var(--ps),0 0 50px var(--sg);}}
-.top-title{
-  font-family:"Orbitron",sans-serif;font-size:13px;font-weight:700;
-  letter-spacing:2px;text-transform:uppercase;
-  text-shadow:0 0 16px var(--p);
-}
-.top-sub{font-size:10px;color:rgba(255,255,255,0.55);margin-top:2px;letter-spacing:1px;}
 
 /* ── TOP BAR VIDEO HEADER ── */
-.top-video-wrap{
-  display:flex;
-  align-items:center;
-}
+.top-video-wrap{display:flex;align-items:center;justify-content:center;width:min(900px,95vw);}
 .top-video{
   display:block;
-  height:56px;
-  width:auto;
-  max-width:min(520px,58vw);
+  width:100%;
+  height:78px;
   border-radius:12px;
   border:1px solid rgba(255,255,255,0.12);
   background:rgba(0,0,0,0.35);
   box-shadow:0 0 18px var(--pg);
-  object-fit:contain;
+  object-fit:cover;
 }
 @media (max-width:480px){
-  .top-video{height:44px;max-width:72vw;border-radius:10px;}
+  .top-video{height:62px;border-radius:10px;}
 }
 @media (min-width:900px){
-  .top-video{height:72px;max-width:520px;}
+  .top-video{height:88px;}
 }
 
-.top-stats{
-  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
-}
+.top-stats{display:none;}
 .stat-chip{
   display:flex;flex-direction:column;align-items:center;
   padding:6px 12px;
@@ -107,7 +83,7 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 .stat-chip.online .sv{color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,0.35);}
 .stat-chip.threat .sv{color:#ff3366;text-shadow:0 0 12px rgba(255,51,102,0.35);}
 
-.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.top-actions{display:none;}
 .hbtn{
   display:flex;align-items:center;gap:6px;
   padding:8px 12px;border-radius:10px;cursor:pointer;
@@ -189,9 +165,8 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 .hud.interactive{pointer-events:auto;}
 
 #hud-tl{top:14px;left:14px;}
-#hud-tr{top:14px;right:14px;}
-#hud-bl{bottom:14px;left:14px;}
-#hud-br{bottom:14px;right:14px;}
+#hud-tr{top:120px;left:14px;right:auto;}
+#hud-bl{top:226px;left:14px;bottom:auto;}
 
 .hud-panel{
   background:rgba(0,0,0,0.82);
@@ -267,33 +242,6 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 /* make the activity feed usable (humans love text, apparently) */
 .hud-window[data-hud="activity"] #activityFeed{max-height:180px;overflow:auto;scrollbar-width:none;}
 .hud-window[data-hud="activity"] #activityFeed::-webkit-scrollbar{display:none;}
-
-/* compass / orientation widget */
-#compass{
-  width:64px;height:64px;position:relative;
-  border:1px solid rgba(255,255,255,0.08);border-radius:50%;
-  background:rgba(0,0,0,0.6);
-  box-shadow:0 0 20px rgba(0,0,0,0.8);
-}
-#compass-ring{
-  width:100%;height:100%;border-radius:50%;
-  border:2px solid var(--p);
-  box-shadow:0 0 14px var(--pg),inset 0 0 14px var(--pg);
-  animation:compassGlow 2s ease-in-out infinite;
-  position:absolute;top:0;left:0;
-}
-@keyframes compassGlow{0%,100%{box-shadow:0 0 8px var(--pg),inset 0 0 8px var(--pg);}50%{box-shadow:0 0 20px var(--ps),inset 0 0 18px var(--ps);}}
-#compass-n{
-  position:absolute;top:4px;left:50%;transform:translateX(-50%);
-  font-size:8px;font-weight:700;color:var(--p);letter-spacing:1px;
-}
-#compass-needle{
-  position:absolute;top:50%;left:50%;
-  width:2px;height:22px;background:linear-gradient(var(--p),transparent);
-  transform-origin:bottom center;margin-left:-1px;margin-top:-22px;
-  box-shadow:0 0 8px var(--p);
-  transition:transform .3s ease;
-}
 
 /* mini legend */
 .legend-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:10px;color:rgba(255,255,255,0.75);}
@@ -378,24 +326,8 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 
   <!-- TOP BAR -->
   <div id="topbar">
-    <div class="top-brand">
-      <div class="top-badge">MN</div>
-      <div class="top-video-wrap" aria-label="Header video">
-        <video class="top-video" src="ninja_nodes.mp4" autoplay muted loop playsinline preload="metadata"></video>
-      </div>
-    </div>
-
-    <div class="top-stats">
-      <div class="stat-chip"><div class="sv" id="scTotal">0</div><div class="sl">Total</div></div>
-      <div class="stat-chip online"><div class="sv" id="scOnline">0</div><div class="sl">Online</div></div>
-      <div class="stat-chip threat"><div class="sv" id="scThreats">0</div><div class="sl">Threats</div></div>
-      <div class="stat-chip"><div class="sv" id="scLinks">0</div><div class="sl">Links</div></div>
-    </div>
-
-    <div class="top-actions">
-      <button class="hbtn primary" id="btnScan">⟳ Scan</button>
-      <button class="hbtn" id="btnReset">⟲ Reset</button>
-      <button class="hbtn" id="btnAutoRotate">↻ Auto</button>
+    <div class="top-video-wrap" aria-label="Ninja Nodes header video">
+      <video class="top-video" src="ninja_nodes.mp4" autoplay muted loop playsinline preload="metadata"></video>
     </div>
   </div>
 
@@ -460,7 +392,7 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 
     <!-- HUD: Top Left — Activity -->
     <div class="hud interactive" id="hud-tl">
-      <div class="hud-window" data-hud="activity" style="width:240px;">
+      <div class="hud-window minimized" data-hud="activity" style="width:240px;">
         <div class="hud-head">
           <div class="hud-head-title">Activity Feed</div>
           <div class="hud-head-actions">
@@ -475,26 +407,9 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
     </div>
 
 
-    <!-- HUD: Top Right — Compass + Zoom -->
-    <div class="hud interactive" id="hud-tr" style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
-      <div class="hud-window" data-hud="compass" style="width:150px;">
-        <div class="hud-head">
-          <div class="hud-head-title">Compass</div>
-          <div class="hud-head-actions">
-            <button class="hud-iconbtn" type="button" data-action="min" title="Minimize">▁</button>
-            <button class="hud-iconbtn" type="button" data-action="pin" title="Reset position">⟲</button>
-          </div>
-        </div>
-        <div class="hud-body" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px;">
-          <div id="compass">
-            <div id="compass-ring"></div>
-            <div id="compass-n">N</div>
-            <div id="compass-needle"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hud-window" data-hud="zoom" style="width:150px;">
+    <!-- HUD: Left stack — Zoom -->
+    <div class="hud interactive" id="hud-tr" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
+      <div class="hud-window minimized" data-hud="zoom" style="width:150px;">
         <div class="hud-head">
           <div class="hud-head-title">Zoom</div>
           <div class="hud-head-actions">
@@ -511,7 +426,7 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 
     <!-- HUD: Bottom Left — Legend -->
     <div class="hud interactive" id="hud-bl">
-      <div class="hud-window" data-hud="legend" style="width:190px;">
+      <div class="hud-window minimized" data-hud="legend" style="width:190px;">
         <div class="hud-head">
           <div class="hud-head-title">Device Types</div>
           <div class="hud-head-actions">
@@ -531,27 +446,6 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
       </div>
     </div>
 
-
-    <!-- HUD: Bottom Right — Coordinates / info -->
-    <div class="hud interactive" id="hud-br">
-      <div class="hud-window" data-hud="coords" style="min-width:180px;">
-        <div class="hud-head">
-          <div class="hud-head-title">Map Coords</div>
-          <div class="hud-head-actions">
-            <button class="hud-iconbtn" type="button" data-action="min" title="Minimize">▁</button>
-            <button class="hud-iconbtn" type="button" data-action="pin" title="Reset position">⟲</button>
-          </div>
-        </div>
-        <div class="hud-body" style="text-align:right;">
-          <div style="font-size:10px;color:rgba(255,255,255,0.65);line-height:1.8;">
-            <div>ROT <span id="infoRotX" style="color:var(--p);">58°</span> / <span id="infoRotZ" style="color:var(--s);">-10°</span></div>
-            <div>ZOOM <span id="infoZoom" style="color:var(--a);">1.00×</span></div>
-            <div>NODES <span id="infoNodes" style="color:var(--p);">0</span></div>
-            <div>MODE <span id="infoMode" style="color:var(--a);">STAR</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
 
     <!-- Tooltip -->
@@ -1243,25 +1137,25 @@ function loop(ts){
 
 // ─── HUD INFO ────────────────────────────────────────────────────────────────
 function updateHudInfo(){
-  document.getElementById("infoRotX").textContent=`${Math.round(S.rotX)}°`;
-  document.getElementById("infoRotZ").textContent=`${Math.round(S.rotZ%360)}°`;
-  document.getElementById("infoZoom").textContent=`${S.zoom.toFixed(2)}×`;
-  document.getElementById("infoNodes").textContent=S.nodes.length;
-  document.getElementById("infoMode").textContent=S.layout.toUpperCase();
-  document.getElementById("compass-needle").style.transform=`rotate(${S.rotZ}deg)`;
   const zp=clamp((S.zoom-0.3)/2.2*100,0,100);
-  document.getElementById("zoomFill").style.width=zp+"%";
-  document.getElementById("zoomHud").firstChild.textContent=`${Math.round(S.zoom*100)}%`;
+  const zoomFill=document.getElementById("zoomFill");
+  const zoomHud=document.getElementById("zoomHud");
+  if(zoomFill) zoomFill.style.width=zp+"%";
+  if(zoomHud) zoomHud.firstChild.textContent=`${Math.round(S.zoom*100)}%`;
 }
 
 function updateStats(){
   const devs=filteredDevices();
   const online=devs.filter(d=>d.online).length;
   const threats=devs.filter(d=>d.trust==="Unknown"||d.type==="unknown").length;
-  document.getElementById("scTotal").textContent=devs.length;
-  document.getElementById("scOnline").textContent=online;
-  document.getElementById("scThreats").textContent=threats;
-  document.getElementById("scLinks").textContent=S.links.length;
+  const scTotal=document.getElementById("scTotal");
+  const scOnline=document.getElementById("scOnline");
+  const scThreats=document.getElementById("scThreats");
+  const scLinks=document.getElementById("scLinks");
+  if(scTotal) scTotal.textContent=devs.length;
+  if(scOnline) scOnline.textContent=online;
+  if(scThreats) scThreats.textContent=threats;
+  if(scLinks) scLinks.textContent=S.links.length;
 }
 
 // ─── TOOLTIP ────────────────────────────────────────────────────────────────
@@ -1428,7 +1322,7 @@ document.querySelectorAll("[data-speed]").forEach(btn=>{
   });
 });
 
-document.getElementById("btnScan").addEventListener("click",()=>{
+document.getElementById("btnScan")?.addEventListener("click",()=>{
   S.scanActive=!S.scanActive; S.scanAnim=0;
   document.getElementById("sbStatus").textContent=S.scanActive?"Scanning network…":"Scan complete";
   addActivity(S.scanActive?"Scan started":"Scan complete",S.scanActive?"#ffaa00":"#00ff88");
@@ -1437,11 +1331,11 @@ document.getElementById("btnScan").addEventListener("click",()=>{
   }
 });
 
-document.getElementById("btnReset").addEventListener("click",()=>{
+document.getElementById("btnReset")?.addEventListener("click",()=>{
   S.rotX=54; S.rotZ=-12; S.zoom=1; S.momentum={x:0,y:0};
 });
 
-document.getElementById("btnAutoRotate").addEventListener("click",function(){
+document.getElementById("btnAutoRotate")?.addEventListener("click",function(){
   S.autoRotate=!S.autoRotate;
   this.classList.toggle("active",S.autoRotate);
   addActivity(`Auto-rotate ${S.autoRotate?"ON":"OFF"}`);
