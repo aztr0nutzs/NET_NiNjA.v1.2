@@ -10,10 +10,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
 :root{
-  --bg1:#120000;
-  --neon-pink:#ff2b2b;
-  --neon-blue:#ffe5e5;
-  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  --bg1:#050505;
+  --neon-pink:#b32020;
+  --neon-blue:#d6d6d6;
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
 
   --side-w: 300px;
   --top-h: 64px;
@@ -24,15 +24,15 @@
   --side-text: #ffecec;
   --side-muted: rgba(255,236,236,0.70);
 
-  --active-bg: rgba(255, 60, 60, 0.85);
-  --active-bg2: rgba(255, 130, 130, 0.55);
+  --active-bg: rgba(120, 25, 25, 0.8);
+  --active-bg2: rgba(170, 70, 70, 0.35);
   --active-text: #ffffff;
 }
 
 *{box-sizing:border-box}
 html,body{height:100%; margin:0; font-family:'Orbitron',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
 body{
-  background: radial-gradient(circle at 30% 20%, #240000 0%, #080000 60%, #000 100%);
+  background: radial-gradient(circle at 30% 20%, #0d0d0d 0%, #040404 65%, #000 100%);
   color:#ffecec;
   overflow-x:hidden;
   overflow-y:auto;
@@ -49,8 +49,8 @@ body{
   border: 1px solid rgba(255,255,255,0.06);
   box-shadow:
     0 8px 40px rgba(0,0,0,0.6),
-    0 0 35px rgba(255,43,43,0.18),
-    0 0 80px rgba(255,229,229,0.08);
+    0 0 0 rgba(0,0,0,0),
+    0 0 0 rgba(0,0,0,0);
   backdrop-filter: blur(10px) saturate(140%);
   color:#fff;
   overflow:visible;
@@ -60,9 +60,9 @@ body{
 
 .neon-title{
   font-size:2.6rem; color:var(--neon-pink); margin:4px 0 6px;
-  text-shadow: 0 0 10px var(--neon-pink), 0 0 40px var(--neon-blue), 0 0 90px var(--neon-pink);
+  text-shadow: none;
   letter-spacing:2px;
-  animation: neonFlicker 2.5s infinite alternate;
+  animation: none;
 }
 @keyframes neonFlicker {
   0%,100%{ text-shadow:0 0 10px #ff2b2b,0 0 40px #ffe5e5,0 0 90px #ff2b2b; }
@@ -89,10 +89,10 @@ button{
   background: linear-gradient(90deg,var(--neon-pink),var(--neon-blue));
   background-size:200% 200%;
   color:#000; cursor:pointer;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,43,43,0.18);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.65);
   animation: buttonGlow 4s ease infinite;
 }
-button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,43,43,0.28); }
+button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.72); }
 @keyframes buttonGlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -107,8 +107,8 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   border:1px solid rgba(255,255,255,0.03);
   color:#ffecec;
   line-height:1.45;
-  box-shadow: 0 0 8px #ff2b2b, 0 0 24px #ffe5e5, 0 0 48px #ff2b2b;
-  animation: panelPulse 3s infinite alternate;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
+  animation: none;
 }
 @keyframes panelPulse {
   0%{box-shadow:0 0 8px #ff2b2b,0 0 24px #ffe5e5,0 0 48px #ff2b2b;}
@@ -152,16 +152,16 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
 
   box-shadow:
     0 10px 26px rgba(0,0,0,0.55),
-    0 0 18px rgba(255,43,43,0.24),
-    0 0 18px rgba(255,229,229,0.16);
+    0 0 0 rgba(0,0,0,0),
+    0 0 0 rgba(0,0,0,0);
   backdrop-filter: blur(10px) saturate(140%);
 }
 .cybr-btn:active{ transform: translateY(1px); }
 .cybr-btn:hover{
   box-shadow:
     0 16px 34px rgba(0,0,0,0.62),
-    0 0 26px rgba(255,43,43,0.30),
-    0 0 26px rgba(255,229,229,0.20);
+    0 0 0 rgba(0,0,0,0),
+    0 0 0 rgba(0,0,0,0);
 }
 .cybr-btn__glitch{
   position: absolute;
@@ -348,21 +348,25 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
 
 .nn-header-banner{
   display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 12px 16px;
+  align-items:stretch;
+  justify-content:stretch;
+  padding: 0;
   margin: 0 0 14px;
   border-radius: 16px;
-  background: rgba(15,0,0,0.55);
+  background: rgba(8,8,8,0.88);
   border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6),
-              0 0 30px rgba(255,43,43,0.25);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  overflow: hidden;
+  min-height: 132px;
 }
 .nn-header-banner img{
-  width: min(520px, 90%);
-  height: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 132px;
   display:block;
-  filter: drop-shadow(0 0 16px rgba(255,43,43,0.5));
+  object-fit: cover;
+  object-position: center;
+  filter: none;
 }
 
 .chat-bot-art{
@@ -374,7 +378,25 @@ button:hover{ transform:translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.6
   width: 140px;
   max-width: 45%;
   height: auto;
-  filter: drop-shadow(0 0 16px rgba(255,43,43,0.45));
+  filter: drop-shadow(0 0 8px rgba(179,32,32,0.25));
+  transform-origin: 50% 85%;
+  animation: clawbotDance 3.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes clawbotDance {
+  0%   { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+  15%  { transform: translate3d(0,-3px,0) rotate(-1.2deg) scale(1.01); }
+  30%  { transform: translate3d(3px,-1px,0) rotate(1.8deg) scale(1.015); }
+  45%  { transform: translate3d(-2px,-7px,0) rotate(-1.8deg) scale(1.02); }
+  60%  { transform: translate3d(2px,-2px,0) rotate(1.4deg) scale(1.015); }
+  75%  { transform: translate3d(-3px,-1px,0) rotate(-1.2deg) scale(1.01); }
+  90%  { transform: translate3d(0,-4px,0) rotate(0.8deg) scale(1.01); }
+  100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .chat-bot-art img{ animation: none; }
 }
 
 .nn-grid{
@@ -630,7 +652,7 @@ input, .mono{
 
 <main class="nn-main">
   <section class="nn-header-banner" aria-label="OpenClaw header">
-    <img src="claw_cntrl.png" alt="OpenClaw control header" />
+    <img src="new_assets/claw_control_new.png" alt="OpenClaw control header" />
   </section>
 
   <section class="glass-panel" style="position:relative; width:auto; margin:0 0 14px; max-width:none;">
@@ -1250,6 +1272,7 @@ input, .mono{
   const state = {
     baseUrl: defaultBaseUrl(),
     wsOpen: false,
+    connected: false,
     nodes: [],
     stats: { uptimeMs: 0, nodeCount: 0 },
     logs: [],
@@ -1257,6 +1280,7 @@ input, .mono{
     instances: [],
     selectedInstance: null,
     sessions: [],
+    messages: [],
     skills: [],
     mode: 'safe',
     config: {},
@@ -1304,6 +1328,20 @@ input, .mono{
     return ageMs <= 30000 ? 'ONLINE' : 'STALE';
   }
 
+  function setConnectButtonLabel(connected){
+    const btn = el('btnConnect');
+    if(!btn) return;
+    const label = connected ? 'Disconnect' : 'Connect';
+    const textNode = Array.from(btn.childNodes).find((n)=> n.nodeType === Node.TEXT_NODE);
+    if(textNode){
+      textNode.textContent = `
+      ${label}
+      `;
+    }
+    const glitch = btn.querySelector('.cybr-btn__glitch');
+    if(glitch) glitch.textContent = label;
+  }
+
   function updateTop(){
     const quick = el('quickStatus');
     if(quick) quick.textContent = state.wsOpen ? 'CONNECTED' : 'DISCONNECTED';
@@ -1319,6 +1357,8 @@ input, .mono{
 
     const up = el('badgeUptimeText');
     if(up) up.textContent = formatDuration(state.stats.uptimeMs || 0);
+
+    setConnectButtonLabel(state.connected || state.wsOpen);
   }
 
   function renderNodes(){
@@ -1465,6 +1505,22 @@ input, .mono{
     out.textContent = items.map(s => `${s.name||'?'} [${s.status||'idle'}] ${s.lastResult||''}`).join('\n');
   }
 
+  function renderMessages(){
+    if(!chatStream) return;
+    const items = Array.isArray(state.messages) ? state.messages : [];
+    if(items.length === 0){
+      chatStream.textContent = '(no messages)';
+      return;
+    }
+    chatStream.textContent = items.map((entry)=>{
+      const when = entry && entry.sentAt ? new Date(entry.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
+      const gw = (entry && entry.gateway) ? String(entry.gateway) : 'gateway';
+      const channel = (entry && entry.channel) ? String(entry.channel) : 'unknown';
+      const body = (entry && entry.body) ? String(entry.body) : '';
+      return `[${when}] ${gw}:${channel} -> ${body}`;
+    }).join('\n');
+  }
+
   async function fetchJson(path){
     const url = (state.baseUrl || '').replace(/\/+$/,'') + path;
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -1490,6 +1546,7 @@ input, .mono{
         if(Array.isArray(dashboard.sessions)) state.sessions = dashboard.sessions;
         if(Array.isArray(dashboard.skills)) state.skills = dashboard.skills;
         if(dashboard.mode) state.mode = dashboard.mode;
+        state.connected = !!dashboard.connected;
         if(dashboard.host){
           const h = el('stHost'); if(h) h.textContent = dashboard.host;
         }
@@ -1500,6 +1557,8 @@ input, .mono{
           const w = el('stWorkspace'); if(w) w.textContent = dashboard.workspace;
         }
       }
+      const messages = await fetchJson('/api/openclaw/messages').catch(()=> null);
+      if(Array.isArray(messages)) state.messages = messages;
       const st = el('stSync');
       if(st) st.textContent = new Date().toLocaleString();
       updateTop();
@@ -1509,6 +1568,7 @@ input, .mono{
       renderSelectedInstance();
       renderSessions();
       renderSkills();
+      renderMessages();
       const mo = el('modeOut');
       if(mo) mo.textContent = state.mode;
     } catch(e){
@@ -1517,6 +1577,7 @@ input, .mono{
   }
 
   let ws = null;
+  let wsAutoReconnect = true;
   function wsUrl(){
     try {
       const u = new URL(state.baseUrl);
@@ -1551,7 +1612,9 @@ input, .mono{
       state.wsOpen = false;
       updateTop();
       log('WS disconnected.');
-      setTimeout(()=> connectWs(), 1200);
+      if(wsAutoReconnect){
+        setTimeout(()=> connectWs(), 1200);
+      }
     };
     ws.onmessage = (ev)=>{
       const data = ev && ev.data != null ? String(ev.data) : '';
@@ -1570,6 +1633,7 @@ input, .mono{
   }
 
   function disconnectWs(){
+    wsAutoReconnect = false;
     try { if(ws) ws.close(); } catch(_) {}
     ws = null;
     state.wsOpen = false;
@@ -1590,8 +1654,27 @@ input, .mono{
 
   const btnConnect = el('btnConnect');
   if(btnConnect){
-    btnConnect.addEventListener('click', ()=>{
-      if(state.wsOpen) disconnectWs(); else connectWs();
+    btnConnect.addEventListener('click', async ()=>{
+      try {
+        if(state.wsOpen){
+          await postJson('/api/openclaw/disconnect', {});
+          disconnectWs();
+          setConnectButtonLabel(false);
+          log('Gateway disconnected.');
+          return;
+        }
+
+        wsAutoReconnect = true;
+        const hostInput = (el('setHost') && el('setHost').value) ? el('setHost').value.trim() : '';
+        await postJson('/api/openclaw/connect', { host: hostInput || null });
+        connectWs();
+        await refreshHttp();
+        state.connected = true;
+        setConnectButtonLabel(true);
+        log('Gateway connected.');
+      } catch(e){
+        log(`Connect toggle failed: ${e && e.message ? e.message : String(e)}`);
+      }
     });
   }
 
@@ -1641,6 +1724,7 @@ input, .mono{
       const normalized = normalizeBaseUrl(next.host);
       state.baseUrl = normalized || defaultBaseUrl();
       disconnectWs();
+      wsAutoReconnect = true;
       connectWs();
       refreshHttp();
       log(`Settings saved: host=${state.baseUrl}`);
@@ -1648,7 +1732,7 @@ input, .mono{
     });
   }
 
-  // Chat UI: keep it functional even without a backend route.
+  // Chat UI
   const chatStream = el('chatStream');
   function appendChat(line){
     if(!chatStream) return;
@@ -1669,12 +1753,16 @@ input, .mono{
       appendChat(`[${new Date().toLocaleTimeString()}] ${gw}${ch ? `:${ch}` : ''} -> ${body}`);
       if(el('msgBody')) el('msgBody').value = '';
 
-      // Best-effort: if a compatible backend exists, try sending.
       try{
-        await postJson('/api/openclaw/chat/send', { gateway: gw, channel: ch, body });
+        const result = await postJson('/api/openclaw/messages', { gateway: gw, channel: ch, body });
+        if(result && typeof result === 'object'){
+          state.messages.push(result);
+          state.messages = state.messages.slice(-200);
+          renderMessages();
+        }
         log('Chat send: backend accepted.');
       } catch(e){
-        log('Chat send: no backend route (local echo only).');
+        log(`Chat send failed: ${e && e.message ? e.message : String(e)}`);
       }
     });
   }
@@ -1933,4 +2021,3 @@ input, .mono{
 </script>
 </body>
 </html>
-
