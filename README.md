@@ -49,7 +49,11 @@ The Discovery Map is an interactive **3D network visualization** embedded direct
 The standalone page lives at `web-ui/new_assets/ninja_nodes.html` and is loaded into the dashboard via an iframe for full isolation and zero CSS/JS conflicts.
 
 ## OpenClaw Android Companion integration
+<<<<<<< ours
 ![OpenClaw Companion header](web-ui/new_assets/ninja_claw_new.png)
+=======
+![OpenClaw Companion header](web-ui/new_assets/claw_control_new.png)
+>>>>>>> theirs
 
 The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_header.mp4` loop as the top hero.
 
