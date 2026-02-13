@@ -384,11 +384,7 @@
       const data = event && event.data;
       if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
       const target = String(data.tab || "dashboard");
-<<<<<<< ours
       const allowed = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "cameras"]);
-=======
-      const allowed = new Set(["dashboard", "devices", "networks", "tools", "openclaw", "cameras"]);
->>>>>>> theirs
       setTab(allowed.has(target) ? target : "dashboard");
     });
 
