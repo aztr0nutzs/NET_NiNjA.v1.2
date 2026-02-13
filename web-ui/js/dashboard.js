@@ -1869,8 +1869,10 @@
         if(frame && frame.contentWindow && typeof frame.contentWindow.nnUpdateDiscoveryMap === "function"){
           const list = Array.isArray(window.devices) ? window.devices :
                        (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
-          if(list && list.length > 0) {
+          if(Array.isArray(list)) {
             frame.contentWindow.nnUpdateDiscoveryMap(list);
+          } else {
+            frame.contentWindow.nnUpdateDiscoveryMap([]);
           }
         }
       } catch(e){ console.warn("[DiscoveryMap] forward error:", e); }

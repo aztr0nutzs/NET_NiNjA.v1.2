@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{width:100%;height:100%;background:#000;overflow:hidden;}
+html,body{width:100%;height:100dvh;min-height:100vh;background:#000;overflow:hidden;}
 body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 
 /* ── THEME VARIABLES ── */
@@ -24,7 +24,7 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 
 /* ── LAYOUT ── */
 #app{
-  width:100vw;height:100vh;
+  width:100vw;height:100dvh;min-height:100vh;
   display:flex;flex-direction:column;
   background:#000;
   position:relative;overflow:hidden;
@@ -495,27 +495,9 @@ const DEVICE_TYPES = {
   unknown: { icon:"⚠", label:"Unknown",  color:"#ff3366", ring:"#cc0033" },
 };
 
-const DEMO_DEVICES = [
-  { id:"gw1", name:"Main Router",    type:"router",  ip:"192.168.1.1",   mac:"A4:C3:F0:11:22:33", vendor:"ASUS",       trust:"Trusted",  online:true },
-  { id:"d1",  name:"DESKTOP-HOME",   type:"pc",      ip:"192.168.1.10",  mac:"B8:27:EB:AA:BB:CC", vendor:"Intel",      trust:"Trusted",  online:true },
-  { id:"d2",  name:"MacBook Pro",    type:"laptop",  ip:"192.168.1.11",  mac:"3C:22:FB:DD:EE:FF", vendor:"Apple",      trust:"Trusted",  online:true },
-  { id:"d3",  name:"iPhone 15",      type:"phone",   ip:"192.168.1.20",  mac:"4A:F0:21:44:55:66", vendor:"Apple",      trust:"Trusted",  online:true },
-  { id:"d4",  name:"Galaxy S24",     type:"phone",   ip:"192.168.1.21",  mac:"CC:98:8B:77:88:99", vendor:"Samsung",    trust:"Trusted",  online:false},
-  { id:"d5",  name:"iPad Air",       type:"tablet",  ip:"192.168.1.22",  mac:"DC:A9:04:AB:CD:EF", vendor:"Apple",      trust:"Trusted",  online:true },
-  { id:"d6",  name:"Samsung TV 65″", type:"tv",      ip:"192.168.1.30",  mac:"70:2A:D5:12:34:56", vendor:"Samsung",    trust:"Trusted",  online:true },
-  { id:"d7",  name:"NestHub",        type:"iot",     ip:"192.168.1.40",  mac:"54:60:09:23:45:67", vendor:"Google",     trust:"Trusted",  online:true },
-  { id:"d8",  name:"Hue Bridge",     type:"iot",     ip:"192.168.1.41",  mac:"00:17:88:34:56:78", vendor:"Signify",    trust:"Trusted",  online:true },
-  { id:"d9",  name:"HP LaserJet",    type:"printer", ip:"192.168.1.50",  mac:"FC:F1:36:45:67:89", vendor:"HP",         trust:"Trusted",  online:false},
-  { id:"d10", name:"Front Camera",   type:"camera",  ip:"192.168.1.60",  mac:"00:62:6E:56:78:9A", vendor:"Hikvision",  trust:"Trusted",  online:true },
-  { id:"d11", name:"Synology NAS",   type:"nas",     ip:"192.168.1.70",  mac:"00:11:32:67:89:AB", vendor:"Synology",   trust:"Trusted",  online:true },
-  { id:"d12", name:"Pi-hole",        type:"server",  ip:"192.168.1.80",  mac:"B8:27:EB:78:9A:BC", vendor:"RPi",        trust:"Trusted",  online:true },
-  { id:"d13", name:"UNKNOWN_DEV_1",  type:"unknown", ip:"192.168.1.150", mac:"52:74:F2:89:AB:CD", vendor:"Unknown",    trust:"Unknown",  online:true },
-  { id:"d14", name:"UNKNOWN_DEV_2",  type:"unknown", ip:"192.168.1.151", mac:"66:AB:12:9A:BC:DE", vendor:"Unknown",    trust:"Unknown",  online:true },
-];
-
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const S = {
-  devices: DEMO_DEVICES,
+  devices: [],
   layout:"star", view:"3d", filter:"all",
   fx:{ particles:true, beams:true, heatmap:false, labels:true, grid:false },
   theme:"cyber", speed:1,
@@ -531,6 +513,125 @@ const S = {
   activity:[],
   animSpeed:1,
 };
+
+const API_BASE = (() => {
+  try {
+    if (location && location.origin && location.origin !== "null" && !String(location.origin).startsWith("file:")) {
+      return String(location.origin);
+    }
+  } catch (_) {}
+  return "http://127.0.0.1:8787";
+})();
+
+function resolveApiUrl(url){
+  if(typeof url!=="string") return url;
+  if(url.startsWith("/")) return API_BASE+url;
+  return url;
+}
+
+const NN_TOKEN = (()=>{
+  try{
+    const u = new URL(String(location.href));
+    const t = (u.searchParams.get("token") || u.searchParams.get("t") || "").trim();
+    if(t){
+      try{ localStorage.setItem("nn_token", t); }catch(_){}
+      return t;
+    }
+  }catch(_){}
+  try{ return (localStorage.getItem("nn_token") || "").trim(); }catch(_){}
+  return "";
+})();
+
+async function fetchJson(url, options){
+  const opts = options || {};
+  const headers = { Accept:"application/json", ...(opts.headers||{}) };
+  if(NN_TOKEN) headers.Authorization = `Bearer ${NN_TOKEN}`;
+
+  const { timeoutMs, ...fetchOpts } = opts;
+  const ctrl = new AbortController();
+  const budget = Number.isFinite(timeoutMs) ? timeoutMs : 7000;
+  const t = budget > 0 ? setTimeout(()=>ctrl.abort(), budget) : null;
+  try{
+    const res = await fetch(resolveApiUrl(url), { ...fetchOpts, headers, signal: ctrl.signal });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    if(t) clearTimeout(t);
+  }
+}
+
+function normalizeDevice(raw, idx=0){
+  const d = raw && typeof raw === "object" ? raw : {};
+  const id = String(d.id || d.mac || d.ip || `device-${idx+1}`);
+  const type = String(d.type || "unknown").toLowerCase();
+  const status = String(d.status || "").toLowerCase();
+  const trustRaw = String(d.trust || "").toLowerCase();
+  const online = typeof d.online === "boolean" ? d.online : status === "online";
+  const trust = trustRaw === "trusted" ? "Trusted" : (trustRaw === "unknown" || type === "unknown" ? "Unknown" : "Trusted");
+  return {
+    id,
+    name: String(d.name || d.hostname || d.ip || id),
+    type: DEVICE_TYPES[type] ? type : "unknown",
+    ip: String(d.ip || "--"),
+    mac: String(d.mac || "--"),
+    vendor: String(d.vendor || "Unknown"),
+    trust,
+    online
+  };
+}
+
+function setDevices(list, sourceLabel){
+  const normalized = Array.isArray(list) ? list.map((d,i)=>normalizeDevice(d,i)) : [];
+  S.devices = normalized;
+  buildGraph();
+  spawnBeams();
+  if(sourceLabel){
+    addActivity(`${sourceLabel}: ${normalized.length} devices`, getThemeHex());
+  }
+}
+
+async function loadDevicesFromBackend(){
+  try{
+    const data = await fetchJson("/api/v1/discovery/results", { cache:"no-store", timeoutMs:7000 });
+    const list = Array.isArray(data) ? data : (Array.isArray(data?.devices) ? data.devices : []);
+    setDevices(list, "Discovery sync");
+    document.getElementById("sbStatus").textContent = "Connected";
+  }catch(_){
+    document.getElementById("sbStatus").textContent = "Waiting for backend";
+  }
+}
+
+async function runNetworkScan(){
+  S.scanActive=true;
+  S.scanAnim=0;
+  document.getElementById("sbStatus").textContent="Scanning network…";
+  addActivity("Scan started", "#ffaa00");
+  try{
+    await fetchJson("/api/v1/discovery/scan", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ mode:"my" }),
+      timeoutMs:12000
+    });
+  }catch(_){
+    addActivity("Scan request failed", "#ff3366");
+  }
+  setTimeout(async ()=>{
+    S.scanActive=false;
+    document.getElementById("sbStatus").textContent="Ready";
+    addActivity("Scan complete", "#00ff88");
+    await loadDevicesFromBackend();
+  }, 3000);
+}
+
+function getParentDevices(){
+  try{
+    const list = window.parent && window.parent !== window ? window.parent.devices : null;
+    return Array.isArray(list) ? list : null;
+  }catch(_){
+    return null;
+  }
+}
 
 // Canvas refs
 const mapC = document.getElementById("map-canvas");
@@ -1323,12 +1424,7 @@ document.querySelectorAll("[data-speed]").forEach(btn=>{
 });
 
 document.getElementById("btnScan")?.addEventListener("click",()=>{
-  S.scanActive=!S.scanActive; S.scanAnim=0;
-  document.getElementById("sbStatus").textContent=S.scanActive?"Scanning network…":"Scan complete";
-  addActivity(S.scanActive?"Scan started":"Scan complete",S.scanActive?"#ffaa00":"#00ff88");
-  if(S.scanActive){
-    setTimeout(()=>{ S.scanActive=false; document.getElementById("sbStatus").textContent="Ready"; },8000);
-  }
+  runNetworkScan();
 });
 
 document.getElementById("btnReset")?.addEventListener("click",()=>{
@@ -1469,13 +1565,14 @@ function init(){
 
   // add initial activity
   setTimeout(()=>addActivity("System initialized","#00f0ff"),300);
-  setTimeout(()=>addActivity(`Loaded ${S.devices.length} devices`,getThemeHex()),600);
-  S.devices.filter(d=>d.online).forEach((d,i)=>{
-    setTimeout(()=>addActivity(`${d.name} online (${d.ip})`, DEVICE_TYPES[d.type]?.color||"#00f0ff"),900+i*120);
-  });
-  S.devices.filter(d=>d.trust==="Unknown").forEach((d,i)=>{
-    setTimeout(()=>addActivity(`⚠ THREAT: ${d.name} (${d.ip})`,"#ff3366"),2000+i*300);
-  });
+
+  const parentDevices = getParentDevices();
+  if(parentDevices){
+    setDevices(parentDevices, "Parent sync");
+  } else {
+    loadDevicesFromBackend();
+  }
+  setInterval(loadDevicesFromBackend, 10000);
 
   requestAnimationFrame(loop);
 }
@@ -1484,19 +1581,7 @@ window.addEventListener("load", init);
 
 // Expose for external integration
 window.nnUpdateDiscoveryMap=function(deviceList){
-  if(Array.isArray(deviceList)){
-    // Normalize type names from dashboard (uppercase) to map keys (lowercase)
-    S.devices = deviceList.map(function(d){
-      var copy = Object.assign({}, d);
-      if(copy.type) copy.type = copy.type.toLowerCase();
-      // Map dashboard trust/status to map expectations
-      if(!copy.online && copy.status){
-        copy.online = (copy.status === "Online");
-      }
-      return copy;
-    });
-  }
-  buildGraph(); spawnBeams();
+  setDevices(Array.isArray(deviceList) ? deviceList : [], "Iframe sync");
 };
 
 // Update beams periodically
