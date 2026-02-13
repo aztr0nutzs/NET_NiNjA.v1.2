@@ -367,15 +367,61 @@
       renderNotifications();
     }
 
+
+    function ensureDeviceMapHost(){
+      const tab = document.getElementById("tab-devices");
+      if(!tab || tab.querySelector("#nnDeviceMapIframe")) return;
+
+      const listWrap = document.createElement("div");
+      listWrap.className = "nn-deviceListWrap";
+      while(tab.firstChild){ listWrap.appendChild(tab.firstChild); }
+
+      const mapHost = document.createElement("div");
+      mapHost.className = "nn-deviceMapHost";
+      mapHost.innerHTML = `
+        <div class="nn-deviceMapToolbar" aria-label="Devices 3D map controls">
+          <button class="btn btn-primary" type="button" id="nnDeviceMapBtn">3D Map</button>
+          <button class="btn btn-ghost" type="button" id="nnDeviceListBtn">Table</button>
+        </div>
+        <iframe id="nnDeviceMapIframe" src="new_assets/ninja_nodes.html" title="Devices 3D Map" loading="eager"></iframe>
+      `;
+
+      tab.appendChild(mapHost);
+      tab.appendChild(listWrap);
+
+      document.getElementById("nnDeviceMapBtn")?.addEventListener("click", ()=> setDeviceMapMode(true));
+      document.getElementById("nnDeviceListBtn")?.addEventListener("click", ()=> setDeviceMapMode(false));
+      document.getElementById("nnDeviceMapIframe")?.addEventListener("load", ()=> setTimeout(()=> window.nnUpdateDiscoveryMap?.(), 250));
+    }
+
+    function setDeviceMapMode(enabled){
+      state.deviceMapMode = Boolean(enabled);
+      const tab = document.getElementById("tab-devices");
+      tab?.classList.toggle("map-mode", state.deviceMapMode);
+      document.getElementById("nnDeviceMapBtn")?.classList.toggle("active", state.deviceMapMode);
+      document.getElementById("nnDeviceListBtn")?.classList.toggle("active", !state.deviceMapMode);
+      const app = document.getElementById("app");
+      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || (state.activeTab === "devices" && state.deviceMapMode));
+      if(state.deviceMapMode){ window.nnUpdateDiscoveryMap?.(); }
+    }
+
     // ---- Navigation ----
     function setTab(tab){
       state.activeTab = tab;
       $$(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
       $$(".tab-page").forEach(p => p.classList.toggle("active", p.id === `tab-${tab}`));
-      if(tab === "devices"){ renderDevices(); }
+
+      if(tab === "devices"){
+        ensureDeviceMapHost();
+        renderDevices();
+        setDeviceMapMode(true);
+      }
       if(tab === "networks"){ window.nnUpdateDiscoveryMap?.(); }
       if(tab === "dashboard"){ renderDashboard(); }
       if(tab === "gateway"){ renderG5ar(); }
+
+      const app = document.getElementById("app");
+      app?.classList.toggle("media-tab-active", tab === "networks" || (tab === "devices" && state.deviceMapMode));
     }
 
     $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
@@ -1865,14 +1911,14 @@
     // Forward the device list into the iframe when it's ready.
     window.nnUpdateDiscoveryMap = function(){
       try {
-        const frame = document.getElementById("nnMapIframe");
-        if(frame && frame.contentWindow && typeof frame.contentWindow.nnUpdateDiscoveryMap === "function"){
-          const list = Array.isArray(window.devices) ? window.devices :
-                       (Array.isArray(window.__nnDevices) ? window.__nnDevices : null);
-          if(list && list.length > 0) {
-            frame.contentWindow.nnUpdateDiscoveryMap(list);
+        const list = Array.isArray(window.devices) ? window.devices :
+                     (Array.isArray(window.__nnDevices) ? window.__nnDevices : []);
+        ["nnMapIframe", "nnDeviceMapIframe"].forEach((id)=>{
+          const frame = document.getElementById(id);
+          if(frame && frame.contentWindow && typeof frame.contentWindow.nnUpdateDiscoveryMap === "function"){
+            frame.contentWindow.nnUpdateDiscoveryMap(Array.isArray(list) ? list : []);
           }
-        }
+        });
       } catch(e){ console.warn("[DiscoveryMap] forward error:", e); }
     };
     // Retry forwarding after iframe load
