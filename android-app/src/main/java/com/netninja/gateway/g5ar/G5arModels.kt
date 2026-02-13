@@ -1,5 +1,9 @@
+@file:OptIn(kotlinx.serialization.InternalSerializationApi::class)
+
 package com.netninja.gateway.g5ar
 
+import com.netninja.json.booleanOrNull
+import com.netninja.json.contentOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -16,6 +20,13 @@ data class GatewayInfo(
   val uiVersion: String? = null,
   val serial: String? = null,
   val uptime: String? = null,
+  val raw: JsonObject = JsonObject(emptyMap())
+)
+
+@Serializable
+data class GatewaySignal(
+  val status: String? = null,
+  val bars: Int? = null,
   val raw: JsonObject = JsonObject(emptyMap())
 )
 

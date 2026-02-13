@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.serialization.InternalSerializationApi::class)
+
 package com.netninja
 
 import android.os.Build
@@ -130,6 +132,7 @@ data class OpenClawWsMessage(
 @Serializable
 data class OpenClawGatewaySnapshot(
   val nodes: List<OpenClawNodeSnapshot>,
+  val uptimeMs: Long = 0L,
   val updatedAt: Long = System.currentTimeMillis()
 )
 

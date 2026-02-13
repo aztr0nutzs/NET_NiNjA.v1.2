@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.serialization.InternalSerializationApi::class)
+
 package com.netninja.gateway.g5ar
 
 import com.netninja.network.RetryPolicy
@@ -115,6 +117,15 @@ class G5arApiImpl(
       uiVersion = body.getString("uiVersion", "webUiVersion"),
       serial = body.getString("serial", "serialNumber", "sn"),
       uptime = body.getString("uptime", "upTime"),
+      raw = body
+    )
+  }
+
+  override suspend fun getGatewaySignal(session: G5arSession): GatewaySignal = withAuthRetry(session) {
+    val body = getObject("/TMI/v1/gateway?get=signal", it)
+    GatewaySignal(
+      status = body.getString("status", "connectionStatus", "state"),
+      bars = body.getString("bars", "signalBars", "barsCount", "signal")?.toIntOrNull(),
       raw = body
     )
   }

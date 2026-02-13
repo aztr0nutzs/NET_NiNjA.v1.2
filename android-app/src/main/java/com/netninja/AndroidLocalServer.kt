@@ -411,7 +411,10 @@ class AndroidLocalServer(internal val ctx: Context) {
   }
 
   internal suspend fun broadcastOpenClawSnapshot() {
-    val snapshot = OpenClawGatewaySnapshot(nodes = OpenClawGatewayState.listNodes())
+    val snapshot = OpenClawGatewaySnapshot(
+      nodes = OpenClawGatewayState.listNodes(),
+      uptimeMs = OpenClawGatewayState.uptimeMs()
+    )
     val payload = openClawJson.encodeToString(snapshot)
     openClawWsSessions.values.forEach { session ->
       catching("openclaw:broadcast.send") { session.send(payload) }
@@ -832,7 +835,7 @@ class AndroidLocalServer(internal val ctx: Context) {
     }
 
     catching("db:load:rules") {
-      r.rawQuery("SELECT match, action FROM rules", null).use { c ->
+      r.rawQuery("SELECT \"match\", \"action\" FROM rules", null).use { c ->
         while (c.moveToNext()) {
           rules += RuleEntry(c.getString(0), c.getString(1))
         }
