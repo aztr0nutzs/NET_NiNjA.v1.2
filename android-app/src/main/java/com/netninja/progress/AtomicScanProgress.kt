@@ -36,16 +36,14 @@ class AtomicScanProgress {
   fun updateFields(
     progress: Int? = null,
     phase: String? = null,
-    message: String? = null,
-    fixAction: String? = null,
+    networks: Int? = null,
     devices: Int? = null
   ): ScanProgress {
     return update { current ->
       current.copy(
         progress = progress ?: current.progress,
         phase = phase ?: current.phase,
-        message = message ?: current.message,
-        fixAction = fixAction ?: current.fixAction,
+        networks = networks ?: current.networks,
         devices = devices ?: current.devices,
         updatedAt = System.currentTimeMillis()
       )

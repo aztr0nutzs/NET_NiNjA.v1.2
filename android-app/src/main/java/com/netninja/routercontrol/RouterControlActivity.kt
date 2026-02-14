@@ -12,7 +12,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import com.netninja.EngineService
-import com.netninja.json.booleanOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -87,7 +86,7 @@ class RouterControlActivity : AppCompatActivity() {
         val req = json.parseToJsonElement(raw).jsonObject
         val action = req["action"]?.jsonPrimitive?.content?.trim().orEmpty()
         val payload = req["payload"]
-        val remember = req["remember"]?.jsonPrimitive?.booleanOrNull == true
+        val remember = req["remember"]?.jsonPrimitive?.toBooleanLenientOrNull() == true
 
         val result = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
           when (action) {
@@ -144,3 +143,11 @@ class RouterControlActivity : AppCompatActivity() {
 
 private val JsonElement?.jsonPrimitive: JsonPrimitive?
   get() = this as? JsonPrimitive
+
+private fun JsonPrimitive.toBooleanLenientOrNull(): Boolean? {
+  return when (content.trim().lowercase()) {
+    "1", "true", "on", "enabled", "up" -> true
+    "0", "false", "off", "disabled", "down" -> false
+    else -> null
+  }
+}

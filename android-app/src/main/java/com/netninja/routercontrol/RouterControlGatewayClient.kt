@@ -9,8 +9,6 @@ import com.netninja.gateway.g5ar.G5arSession
 import com.netninja.gateway.g5ar.GatewayInfo
 import com.netninja.gateway.g5ar.GatewaySignal
 import com.netninja.gateway.g5ar.WifiApConfig
-import com.netninja.json.booleanOrNull
-import com.netninja.json.contentOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -22,6 +20,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
@@ -294,7 +293,6 @@ private fun JsonElement.asString(): String? {
 
 private fun JsonElement.asBoolean(): Boolean? {
   val primitive = this as? JsonPrimitive ?: return null
-  primitive.booleanOrNull?.let { return it }
   return when (primitive.contentOrNull?.trim()?.lowercase()) {
     "1", "true", "on", "enabled", "up" -> true
     "0", "false", "off", "disabled", "down" -> false
