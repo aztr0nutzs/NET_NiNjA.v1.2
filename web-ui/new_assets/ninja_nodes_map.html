@@ -542,7 +542,7 @@ function normalizeDevice(raw, idx=0){
   const status = String(d.status || "").toLowerCase();
   const trustRaw = String(d.trust || "").toLowerCase();
   const online = typeof d.online === "boolean" ? d.online : status === "online";
-  const trust = trustRaw === "trusted" ? "Trusted" : "Unknown";
+  const trust = trustRaw === "trusted" ? "Trusted" : (trustRaw === "unknown" || type === "unknown" ? "Unknown" : "Trusted");
   return {
     id,
     name: String(d.name || d.hostname || d.ip || id),

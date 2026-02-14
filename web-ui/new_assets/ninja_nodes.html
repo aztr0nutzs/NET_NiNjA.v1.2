@@ -165,8 +165,8 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 .hud.interactive{pointer-events:auto;}
 
 #hud-tl{top:14px;left:14px;}
-#hud-tr{top:120px;left:14px;right:auto;}
-#hud-bl{top:226px;left:14px;bottom:auto;}
+#hud-tr{top:14px;right:14px;left:auto;}
+#hud-bl{bottom:14px;left:14px;top:auto;}
 
 .hud-panel{
   background:rgba(0,0,0,0.82);
@@ -242,6 +242,35 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 /* make the activity feed usable (humans love text, apparently) */
 .hud-window[data-hud="activity"] #activityFeed{max-height:180px;overflow:auto;scrollbar-width:none;}
 .hud-window[data-hud="activity"] #activityFeed::-webkit-scrollbar{display:none;}
+
+#inspector{
+  position:absolute;
+  right:14px;
+  bottom:14px;
+  z-index:12;
+  width:min(320px, calc(100vw - 28px));
+  max-height:min(52vh, 420px);
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(0,0,0,0.84);
+  box-shadow:0 12px 28px rgba(0,0,0,0.45);
+  backdrop-filter:blur(12px);
+  overflow:auto;
+}
+#inspector .ins-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:11px;color:var(--p);letter-spacing:1px;text-transform:uppercase;}
+#inspector .ins-body{padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.9);}
+.ins-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;}
+.ins-row{display:flex;justify-content:space-between;gap:10px;margin:4px 0;}
+.ins-k{color:rgba(255,255,255,0.55);text-transform:uppercase;font-size:10px;}
+.ins-v{color:rgba(255,255,255,0.95);text-align:right;}
+.ins-actions{display:flex;gap:8px;margin-top:10px;}
+.ins-btn{flex:1;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.03);color:#fff;font:inherit;cursor:pointer;}
+.ins-btn:hover{border-color:var(--p);background:var(--pg);}
+
+@media (max-width: 900px){
+  #inspector{max-height:min(42vh, 300px);}
+  #hud-tl, #hud-tr, #hud-bl{opacity:.92;}
+}
 
 /* mini legend */
 .legend-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:10px;color:rgba(255,255,255,0.75);}
@@ -387,12 +416,12 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
   <!-- CANVAS -->
   <div id="canvasWrap">
     <canvas id="bg-canvas"></canvas>
-    <canvas id="map-canvas"></canvas>
+    <canvas id="map-canvas" tabindex="0" aria-label="Interactive 3D network map"></canvas>
     <canvas id="fx-canvas"></canvas>
 
     <!-- HUD: Top Left — Activity -->
     <div class="hud interactive" id="hud-tl">
-      <div class="hud-window minimized" data-hud="activity" style="width:240px;">
+      <div class="hud-window" data-hud="activity" style="width:240px;">
         <div class="hud-head">
           <div class="hud-head-title">Activity Feed</div>
           <div class="hud-head-actions">
@@ -409,7 +438,7 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 
     <!-- HUD: Left stack — Zoom -->
     <div class="hud interactive" id="hud-tr" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
-      <div class="hud-window minimized" data-hud="zoom" style="width:150px;">
+      <div class="hud-window" data-hud="zoom" style="width:150px;">
         <div class="hud-head">
           <div class="hud-head-title">Zoom</div>
           <div class="hud-head-actions">
@@ -426,7 +455,7 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
 
     <!-- HUD: Bottom Left — Legend -->
     <div class="hud interactive" id="hud-bl">
-      <div class="hud-window minimized" data-hud="legend" style="width:190px;">
+      <div class="hud-window" data-hud="legend" style="width:190px;">
         <div class="hud-head">
           <div class="hud-head-title">Device Types</div>
           <div class="hud-head-actions">
@@ -463,6 +492,15 @@ body{font-family:"Share Tech Mono",monospace;color:rgba(255,255,255,0.9);}
         <span id="ttStatusText">Online</span>
       </div>
     </div>
+
+    <aside id="inspector" aria-live="polite">
+      <div class="ins-head">Node Inspector</div>
+      <div class="ins-body" id="inspectorBody">
+        <div class="ins-name">No node selected</div>
+        <div class="ins-row"><span class="ins-k">Tip</span><span class="ins-v">Click a node</span></div>
+        <div class="ins-row"><span class="ins-k">Expand</span><span class="ins-v">Double click node</span></div>
+      </div>
+    </aside>
   </div>
 
   <!-- STATUS BAR -->
@@ -507,7 +545,7 @@ const S = {
   momentum:{ x:0, y:0 },
   nodes:[], links:[],
   particles:[], beams:[], ripples:[],
-  selectedId:null, hoveredId:null,
+  selectedId:null, hoveredId:null, focusId:null,
   scanAnim:0, scanActive:false,
   fpsSamples:[], lastFrame:0,
   activity:[],
@@ -567,7 +605,7 @@ function normalizeDevice(raw, idx=0){
   const status = String(d.status || "").toLowerCase();
   const trustRaw = String(d.trust || "").toLowerCase();
   const online = typeof d.online === "boolean" ? d.online : status === "online";
-  const trust = trustRaw === "trusted" ? "Trusted" : "Unknown";
+  const trust = trustRaw === "trusted" ? "Trusted" : (trustRaw === "unknown" || type === "unknown" ? "Unknown" : "Trusted");
   return {
     id,
     name: String(d.name || d.hostname || d.ip || id),
@@ -585,6 +623,8 @@ function setDevices(list, sourceLabel){
   S.devices = normalized;
   buildGraph();
   spawnBeams();
+  const current = S.nodes.find(n=>n.id===S.selectedId) || null;
+  updateInspector(current);
   if(sourceLabel){
     addActivity(`${sourceLabel}: ${normalized.length} devices`, getThemeHex());
   }
@@ -1067,6 +1107,8 @@ function renderMap(t){
 
   // draw links first
   S.links.forEach(lk=>{
+    const focusActive=Boolean(S.focusId);
+    const linkFocused=!focusActive || lk.a.id===S.focusId || lk.b.id===S.focusId;
     const pa=projMap[lk.a.id], pb=projMap[lk.b.id];
     if(!pa||!pb) return;
     const isT=lk.a.threat||lk.b.threat;
@@ -1075,14 +1117,15 @@ function renderMap(t){
 
     // link shadow glow
     mctx.beginPath();mctx.moveTo(pa.sx,pa.sy);mctx.lineTo(pb.sx,pb.sy);
-    mctx.strokeStyle=`rgba(${baseC},${lk.strength*0.12})`;
+    mctx.strokeStyle=`rgba(${baseC},${linkFocused?lk.strength*0.12:lk.strength*0.03})`;
     mctx.lineWidth=6;mctx.stroke();
     // link core
     mctx.beginPath();mctx.moveTo(pa.sx,pa.sy);mctx.lineTo(pb.sx,pb.sy);
     const grad=mctx.createLinearGradient(pa.sx,pa.sy,pb.sx,pb.sy);
-    grad.addColorStop(0,`rgba(${baseC},${lk.strength*(0.4+pulse)})`);
-    grad.addColorStop(0.5,`rgba(${hexToRaw(ah)},${lk.strength*0.6})`);
-    grad.addColorStop(1,`rgba(${hexToRaw(sh)},${lk.strength*(0.4+pulse)})`);
+    const alphaBoost=linkFocused?1:0.18;
+    grad.addColorStop(0,`rgba(${baseC},${lk.strength*(0.4+pulse)*alphaBoost})`);
+    grad.addColorStop(0.5,`rgba(${hexToRaw(ah)},${lk.strength*0.6*alphaBoost})`);
+    grad.addColorStop(1,`rgba(${hexToRaw(sh)},${lk.strength*(0.4+pulse)*alphaBoost})`);
     mctx.strokeStyle=grad;mctx.lineWidth=1.5;mctx.stroke();
   });
 
@@ -1093,6 +1136,7 @@ function renderMap(t){
     const pulse=0.5+0.5*Math.sin(t*0.002*n.floatSpeed+n.pulsePhase*Math.PI*2);
     const isSelected=S.selectedId===n.id;
     const isHovered=S.hoveredId===n.id;
+    const isFocused=!S.focusId || S.focusId===n.id;
 
     // outer halo
     mctx.beginPath();mctx.arc(px,py,r*2.4,0,Math.PI*2);
@@ -1100,7 +1144,10 @@ function renderMap(t){
     const nc=n.threat?"255,51,102":hexToRaw(n.color);
     halo.addColorStop(0,`rgba(${nc},${0.18*pulse})`);
     halo.addColorStop(1,`rgba(${nc},0)`);
-    mctx.fillStyle=halo;mctx.fill();
+    mctx.fillStyle=halo;
+    mctx.globalAlpha=isFocused?1:0.2;
+    mctx.fill();
+    mctx.globalAlpha=1;
 
     // selection ring
     if(isSelected||isHovered){
@@ -1259,6 +1306,44 @@ function updateStats(){
   if(scLinks) scLinks.textContent=S.links.length;
 }
 
+
+function updateInspector(node){
+  const body=document.getElementById("inspectorBody");
+  if(!body) return;
+  if(!node){
+    body.innerHTML=`
+      <div class="ins-name">No node selected</div>
+      <div class="ins-row"><span class="ins-k">Tip</span><span class="ins-v">Click a node</span></div>
+      <div class="ins-row"><span class="ins-k">Expand</span><span class="ins-v">Double click node</span></div>
+    `;
+    return;
+  }
+  const d=node.dev;
+  const linked=S.links.filter(l=>l.a.id===node.id||l.b.id===node.id).length;
+  body.innerHTML=`
+    <div class="ins-name">${d.name}</div>
+    <div class="ins-row"><span class="ins-k">Type</span><span class="ins-v">${d.type}</span></div>
+    <div class="ins-row"><span class="ins-k">IP</span><span class="ins-v">${d.ip}</span></div>
+    <div class="ins-row"><span class="ins-k">MAC</span><span class="ins-v">${d.mac}</span></div>
+    <div class="ins-row"><span class="ins-k">Vendor</span><span class="ins-v">${d.vendor}</span></div>
+    <div class="ins-row"><span class="ins-k">Trust</span><span class="ins-v" style="color:${d.trust==="Trusted"?"#00ff88":"#ff3366"}">${d.trust}</span></div>
+    <div class="ins-row"><span class="ins-k">Status</span><span class="ins-v">${d.online?"Online":"Offline"}</span></div>
+    <div class="ins-row"><span class="ins-k">Links</span><span class="ins-v">${linked}</span></div>
+    <div class="ins-actions">
+      <button class="ins-btn" type="button" id="insFocusBtn">${S.focusId===node.id?"Reset focus":"Focus node"}</button>
+      <button class="ins-btn" type="button" id="insCopyIpBtn">Copy IP</button>
+    </div>
+  `;
+  document.getElementById("insFocusBtn")?.addEventListener("click",()=>{
+    S.focusId=S.focusId===node.id?null:node.id;
+    if(S.focusId){ S.zoom=Math.max(1.2,S.zoom); }
+    updateInspector(node);
+  });
+  document.getElementById("insCopyIpBtn")?.addEventListener("click",async ()=>{
+    try{ await navigator.clipboard.writeText(String(d.ip||"")); addActivity(`Copied IP ${d.ip}`,"#00ff88"); }catch(_){ addActivity("Clipboard unavailable","#ffaa00"); }
+  });
+}
+
 // ─── TOOLTIP ────────────────────────────────────────────────────────────────
 function showTooltip(node, mx, my){
   const tt=document.getElementById("tooltip");
@@ -1334,15 +1419,37 @@ mapC.addEventListener("pointerup",e=>{
   if(ptrs.size<2) lastPinch=null;
   if(ptrs.size===0) S.dragging=false;
   // click → select
-  if(Math.abs(e.clientX-lastMX)<5&&Math.abs(e.clientY-lastMY)<5){
+  if(Math.abs(e.clientX-lastMX)<8&&Math.abs(e.clientY-lastMY)<8){
     const rect=mapC.getBoundingClientRect();
     const hit=hitTest(e.clientX-rect.left,e.clientY-rect.top);
     if(hit){
       S.selectedId=S.selectedId===hit.id?null:hit.id;
-      S.ripples.push({x:hit.x,y:hit.y,t:0,maxR:80});
-      if(S.selectedId) addActivity(`Selected: ${hit.dev.name} (${hit.dev.ip})`, hit.color);
-    } else { S.selectedId=null; }
+      S.ripples.push({x:hit.x,y:hit.y,t:0,maxR:90});
+      if(S.selectedId){
+        addActivity(`Selected: ${hit.dev.name} (${hit.dev.ip})`, hit.color);
+        updateInspector(hit);
+      } else {
+        updateInspector(null);
+      }
+    } else {
+      S.selectedId=null;
+      updateInspector(null);
+    }
   }
+});
+
+mapC.addEventListener("dblclick",e=>{
+  const rect=mapC.getBoundingClientRect();
+  const hit=hitTest(e.clientX-rect.left,e.clientY-rect.top);
+  if(!hit) return;
+  S.focusId=S.focusId===hit.id?null:hit.id;
+  if(S.focusId){
+    S.zoom=clamp(Math.max(S.zoom,1.4),0.3,3);
+    addActivity(`Focused: ${hit.dev.name}`, "#78ffdc");
+  } else {
+    addActivity("Focus cleared", "#78ffdc");
+  }
+  updateInspector(hit);
 });
 
 mapC.addEventListener("pointercancel",e=>{ ptrs.delete(e.pointerId); S.dragging=false; });
@@ -1358,7 +1465,7 @@ function hitTest(mx,my){
   S.nodes.forEach(n=>{
     const p=project(n.x,n.y,W,H);
     const d=Math.hypot(mx-p.sx,my-p.sy);
-    const hit=n.radius*p.scale*1.5;
+    const hit=Math.max(18,n.radius*p.scale*1.9);
     if(d<hit&&d<bestDist){ bestDist=d; best=n; }
   });
   return best;
@@ -1511,6 +1618,7 @@ function initHudWindows(){
     head.addEventListener("pointerdown",(e)=>{
       if(e.button !== 0) return; // left-click only
       if(e.target.closest("button")) return;
+      if(!e.shiftKey) return;
 
       dragging = true;
       head.setPointerCapture(e.pointerId);
@@ -1565,6 +1673,7 @@ function init(){
 
   // add initial activity
   setTimeout(()=>addActivity("System initialized","#00f0ff"),300);
+  updateInspector(null);
 
   const parentDevices = getParentDevices();
   if(parentDevices){
