@@ -35,7 +35,7 @@ class G5arApiImpl(
 
   override suspend fun discover(): Boolean = withContext(Dispatchers.IO) {
     try {
-      val response = request("GET", "/TMI/v1/version", token = null)
+      val response = request("GET", "/TMI/v1/version")
       response.code in 200..299
     } catch (_: SocketTimeoutException) {
       false
@@ -97,10 +97,26 @@ class G5arApiImpl(
         continue
       }
 
-      val token = extractToken(parseBody(response.body))
-      if (!token.isNullOrBlank()) {
+      val parsedBody = parseBody(response.body)
+      val token = extractToken(parsedBody)
+      val authHeader = extractAuthHeader(response)
+      val cookieHeader = extractCookieHeader(response)
+      val resolvedToken = token
+        ?: authHeader?.removePrefix("Bearer ")?.removePrefix("bearer ")?.trim()
+        ?: cookieHeader
+          ?.substringBefore(';')
+          ?.substringAfter('=', missingDelimiterValue = "")
+          ?.trim()
+          ?.takeIf { it.isNotBlank() }
+
+      if (!resolvedToken.isNullOrBlank()) {
         lastLoginCredentials = username to password
-        return@withContext G5arSession(token = token, issuedAtMs = System.currentTimeMillis())
+        return@withContext G5arSession(
+          token = resolvedToken,
+          issuedAtMs = System.currentTimeMillis(),
+          authHeader = authHeader,
+          cookieHeader = cookieHeader
+        )
       }
       lastFailure = response
     }
@@ -199,7 +215,7 @@ class G5arApiImpl(
         config.enabled6?.let { put("enabled6", it) }
       }
     }
-    val response = request("POST", "/TMI/v1/network/configuration/v2?set=ap", token = it.token, payload = payload)
+    val response = request("POST", "/TMI/v1/network/configuration/v2?set=ap", session = it, payload = payload)
     if (response.code !in 200..299) {
       throw IOException("Set Wi-Fi config failed with HTTP ${response.code}")
     }
@@ -208,7 +224,7 @@ class G5arApiImpl(
 
   override suspend fun reboot(session: G5arSession) {
     withAuthRetry(session) {
-      val response = request("POST", "/TMI/v1/gateway/reset?set=reboot", token = it.token)
+      val response = request("POST", "/TMI/v1/gateway/reset?set=reboot", session = it)
       if (response.code !in 200..299) {
         throw IOException("Reboot failed with HTTP ${response.code}")
       }
@@ -232,7 +248,7 @@ class G5arApiImpl(
 
   private suspend fun getElement(path: String, session: G5arSession): JsonElement {
     val response = retryPolicy.execute("g5ar:get:$path") {
-      request("GET", path, token = session.token)
+      request("GET", path, session = session)
     }.getOrThrow()
     if (response.code == HttpURLConnection.HTTP_UNAUTHORIZED) throw UnauthorizedException()
     if (response.code !in 200..299) throw IOException("GET $path failed with HTTP ${response.code}")
@@ -242,7 +258,7 @@ class G5arApiImpl(
   private suspend fun request(
     method: String,
     path: String,
-    token: String? = null,
+    session: G5arSession? = null,
     payload: JsonObject? = null,
     rawBody: String? = null,
     contentType: String = "application/json"
@@ -253,7 +269,14 @@ class G5arApiImpl(
         connectTimeout = CONNECT_TIMEOUT_MS
         readTimeout = READ_TIMEOUT_MS
         setRequestProperty("Accept", "application/json")
-        token?.let { setRequestProperty("Authorization", "Bearer $it") }
+        val authHeader = session?.authHeader?.takeIf { it.isNotBlank() }
+        val token = session?.token?.takeIf { it.isNotBlank() }
+        if (authHeader != null) {
+          setRequestProperty("Authorization", authHeader)
+        } else if (token != null && session?.cookieHeader == null) {
+          setRequestProperty("Authorization", "Bearer $token")
+        }
+        session?.cookieHeader?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", it) }
       }
       try {
         val bodyToWrite = rawBody ?: payload?.let { json.encodeToString(JsonObject.serializer(), it) }
@@ -267,7 +290,7 @@ class G5arApiImpl(
         val code = conn.responseCode
         val stream = if (code >= 400) conn.errorStream else conn.inputStream
         val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-        HttpResult(code = code, body = body)
+        HttpResult(code = code, body = body, headers = conn.headerFields)
       } finally {
         conn.disconnect()
       }
@@ -333,7 +356,31 @@ class G5arApiImpl(
     data class Form(val body: String) : LoginAttempt()
   }
 
-  private data class HttpResult(val code: Int, val body: String)
+  private fun extractAuthHeader(response: HttpResult): String? {
+    val candidates = listOf("Authorization", "X-Auth-Token", "Token")
+    return candidates.firstNotNullOfOrNull { key ->
+      response.firstHeader(key)?.trim()?.takeIf { it.isNotBlank() }
+    }
+  }
+
+  private fun extractCookieHeader(response: HttpResult): String? {
+    val cookies = response.headerValues("Set-Cookie")
+      .mapNotNull { it.substringBefore(';').trim().takeIf { value -> value.contains('=') } }
+    if (cookies.isEmpty()) return null
+    return cookies.joinToString("; ")
+  }
+
+  private data class HttpResult(
+    val code: Int,
+    val body: String,
+    val headers: Map<String?, List<String>> = emptyMap()
+  ) {
+    fun firstHeader(name: String): String? = headerValues(name).firstOrNull()
+
+    fun headerValues(name: String): List<String> {
+      return headers.entries.firstOrNull { (key, _) -> key?.equals(name, ignoreCase = true) == true }?.value.orEmpty()
+    }
+  }
 
   private class UnauthorizedException : IOException("Unauthorized")
 

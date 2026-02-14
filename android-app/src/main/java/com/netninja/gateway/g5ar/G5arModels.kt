@@ -11,7 +11,9 @@ import kotlinx.serialization.json.JsonObject
 @Serializable
 data class G5arSession(
   val token: String,
-  val issuedAtMs: Long
+  val issuedAtMs: Long,
+  val authHeader: String? = null,
+  val cookieHeader: String? = null
 )
 
 @Serializable
