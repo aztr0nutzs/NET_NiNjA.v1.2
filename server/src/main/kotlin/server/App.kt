@@ -22,6 +22,8 @@ import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
 import io.ktor.server.websocket.*
+import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -115,6 +117,65 @@ data class MetricsResponse(
   val error: String? = null
 )
 
+@Serializable
+data class SpeedtestServer(
+  val id: String,
+  val name: String,
+  val location: String
+)
+
+@Serializable
+data class SpeedtestConfig(
+  val serverId: String = "neo-1",
+  val realMode: Boolean = true,
+  val precisionRange: Boolean = false
+)
+
+@Serializable
+data class SpeedtestConfigPatch(
+  val serverId: String? = null,
+  val realMode: Boolean? = null,
+  val precisionRange: Boolean? = null
+)
+
+@Serializable
+data class SpeedtestControlRequest(
+  val serverId: String? = null,
+  val realMode: Boolean? = null,
+  val precisionRange: Boolean? = null
+)
+
+@Serializable
+data class SpeedtestLiveState(
+  val running: Boolean = false,
+  val phase: String = "IDLE",
+  val progress: Int = 0,
+  val serverId: String = "neo-1",
+  val pingMs: Double? = null,
+  val jitterMs: Double? = null,
+  val downloadMbps: Double? = null,
+  val uploadMbps: Double? = null,
+  val lossPct: Double? = null,
+  val bufferbloat: String? = null,
+  val error: String? = null,
+  val updatedAt: Long = System.currentTimeMillis()
+)
+
+@Serializable
+data class SpeedtestResultRequest(
+  val running: Boolean? = null,
+  val phase: String? = null,
+  val progress: Int? = null,
+  val serverId: String? = null,
+  val pingMs: Double? = null,
+  val jitterMs: Double? = null,
+  val downloadMbps: Double? = null,
+  val uploadMbps: Double? = null,
+  val lossPct: Double? = null,
+  val bufferbloat: String? = null,
+  val error: String? = null
+)
+
 private val LOGGER = LoggerFactory.getLogger("server.App")
 
 fun main() {
@@ -157,6 +218,15 @@ fun startServer(
   val scanProgress = AtomicReference(ScanProgress())
   val scanCancel = AtomicBoolean(false)
   val scanJob = AtomicReference<Job?>(null)
+  val speedtestConfig = AtomicReference(SpeedtestConfig())
+  val speedtestLive = AtomicReference(SpeedtestLiveState())
+  val speedtestAbort = AtomicBoolean(false)
+  val speedtestServers = listOf(
+    SpeedtestServer(id = "neo-1", name = "NEO-1", location = "Downtown Relay"),
+    SpeedtestServer(id = "arc-7", name = "ARC-7", location = "Subnet Spire"),
+    SpeedtestServer(id = "hex-3", name = "HEX-3", location = "Industrial Backbone"),
+    SpeedtestServer(id = "luna-9", name = "LUNA-9", location = "Edge Satellite")
+  )
   val openClawGateway = OpenClawGatewayRegistry()
   OpenClawGatewayState.bindRegistry(openClawGateway)
 
@@ -629,6 +699,169 @@ fun startServer(
 
       get("/api/v1/network/info") {
         call.respond(localNetworkInfo())
+      }
+
+      get("/api/v1/speedtest/servers") {
+        call.respond(speedtestServers)
+      }
+
+      get("/api/v1/speedtest/config") {
+        call.respond(speedtestConfig.get())
+      }
+
+      post("/api/v1/speedtest/config") {
+        val req = catchingSuspendOrDefault("speedtest:config.receive", SpeedtestConfigPatch()) { call.receive<SpeedtestConfigPatch>() }
+        val current = speedtestConfig.get()
+        val updated = current.copy(
+          serverId = req.serverId?.trim()?.takeIf { it.isNotBlank() } ?: current.serverId,
+          realMode = req.realMode ?: current.realMode,
+          precisionRange = req.precisionRange ?: current.precisionRange
+        )
+        speedtestConfig.set(updated)
+        call.respond(updated)
+      }
+
+      post("/api/v1/speedtest/start") {
+        val req = catchingSuspendOrDefault("speedtest:start.receive", SpeedtestControlRequest()) { call.receive<SpeedtestControlRequest>() }
+        val current = speedtestConfig.get()
+        val updatedConfig = current.copy(
+          serverId = req.serverId?.trim()?.takeIf { it.isNotBlank() } ?: current.serverId,
+          realMode = req.realMode ?: current.realMode,
+          precisionRange = req.precisionRange ?: current.precisionRange
+        )
+        speedtestConfig.set(updatedConfig)
+        speedtestAbort.set(false)
+        val live = speedtestLive.get().copy(
+          running = true,
+          phase = "PING",
+          progress = 0,
+          serverId = updatedConfig.serverId,
+          error = null,
+          updatedAt = System.currentTimeMillis()
+        )
+        speedtestLive.set(live)
+        call.respond(mapOf("ok" to true, "config" to updatedConfig, "state" to live))
+      }
+
+      post("/api/v1/speedtest/abort") {
+        speedtestAbort.set(true)
+        val updated = speedtestLive.get().copy(
+          running = false,
+          phase = "ABORTED",
+          error = "aborted",
+          updatedAt = System.currentTimeMillis()
+        )
+        speedtestLive.set(updated)
+        call.respond(mapOf("ok" to true, "state" to updated))
+      }
+
+      post("/api/v1/speedtest/reset") {
+        speedtestAbort.set(false)
+        val cfg = speedtestConfig.get()
+        val reset = SpeedtestLiveState(serverId = cfg.serverId)
+        speedtestLive.set(reset)
+        call.respond(mapOf("ok" to true, "state" to reset))
+      }
+
+      get("/api/v1/speedtest/live") {
+        call.respond(speedtestLive.get())
+      }
+
+      post("/api/v1/speedtest/result") {
+        val req = catchingSuspendOrDefault("speedtest:result.receive", SpeedtestResultRequest()) { call.receive<SpeedtestResultRequest>() }
+        val prev = speedtestLive.get()
+        val updated = prev.copy(
+          running = req.running ?: prev.running,
+          phase = req.phase ?: prev.phase,
+          progress = req.progress?.coerceIn(0, 100) ?: prev.progress,
+          serverId = req.serverId?.takeIf { it.isNotBlank() } ?: prev.serverId,
+          pingMs = req.pingMs ?: prev.pingMs,
+          jitterMs = req.jitterMs ?: prev.jitterMs,
+          downloadMbps = req.downloadMbps ?: prev.downloadMbps,
+          uploadMbps = req.uploadMbps ?: prev.uploadMbps,
+          lossPct = req.lossPct ?: prev.lossPct,
+          bufferbloat = req.bufferbloat ?: prev.bufferbloat,
+          error = req.error,
+          updatedAt = System.currentTimeMillis()
+        )
+        speedtestLive.set(updated)
+        call.respond(mapOf("ok" to true, "state" to updated))
+      }
+
+      get("/api/v1/speedtest/ping") {
+        val now = System.currentTimeMillis()
+        val updated = speedtestLive.get().copy(
+          phase = if (speedtestLive.get().running) "PING" else speedtestLive.get().phase,
+          updatedAt = now
+        )
+        speedtestLive.set(updated)
+        call.response.cacheControl(CacheControl.NoCache(null))
+        call.respond(mapOf("ok" to true, "serverTimeMs" to now))
+      }
+
+      get("/api/v1/speedtest/download") {
+        val bytes = call.request.queryParameters["bytes"]?.toLongOrNull()?.coerceIn(1_024L, 250_000_000L) ?: 25_000_000L
+        val startedAt = System.currentTimeMillis()
+        speedtestLive.set(
+          speedtestLive.get().copy(
+            running = true,
+            phase = "DOWNLOAD",
+            progress = 0,
+            error = null,
+            updatedAt = startedAt
+          )
+        )
+        call.response.cacheControl(CacheControl.NoCache(null))
+        call.respondBytesWriter(contentType = ContentType.Application.OctetStream) {
+          val chunk = ByteArray(64 * 1024)
+          var sent = 0L
+          while (sent < bytes) {
+            if (speedtestAbort.get()) break
+            val n = minOf(chunk.size.toLong(), bytes - sent).toInt()
+            repeat(n) { idx ->
+              chunk[idx] = ((sent + idx) and 0xFFL).toByte()
+            }
+            writeFully(chunk, 0, n)
+            sent += n
+            if (sent % (1024L * 1024L) == 0L) {
+              val pct = ((sent.toDouble() / bytes.toDouble()) * 100.0).toInt().coerceIn(0, 100)
+              speedtestLive.set(speedtestLive.get().copy(progress = pct, updatedAt = System.currentTimeMillis()))
+            }
+          }
+          flush()
+        }
+      }
+
+      post("/api/v1/speedtest/upload") {
+        val startedAt = System.currentTimeMillis()
+        speedtestLive.set(
+          speedtestLive.get().copy(
+            running = true,
+            phase = "UPLOAD",
+            error = null,
+            updatedAt = startedAt
+          )
+        )
+        val channel = call.receiveChannel()
+        val buffer = ByteArray(64 * 1024)
+        var total = 0L
+        while (true) {
+          if (speedtestAbort.get()) break
+          val read = channel.readAvailable(buffer, 0, buffer.size)
+          if (read <= 0) break
+          total += read.toLong()
+        }
+        val elapsedMs = (System.currentTimeMillis() - startedAt).coerceAtLeast(1L)
+        val mbps = (total * 8.0) / (elapsedMs.toDouble() / 1000.0) / 1_000_000.0
+        val updated = speedtestLive.get().copy(
+          running = false,
+          phase = if (speedtestAbort.get()) "ABORTED" else "COMPLETE",
+          progress = if (speedtestAbort.get()) speedtestLive.get().progress else 100,
+          uploadMbps = mbps,
+          updatedAt = System.currentTimeMillis()
+        )
+        speedtestLive.set(updated)
+        call.respond(mapOf("ok" to true, "bytesReceived" to total, "elapsedMs" to elapsedMs, "uploadMbps" to mbps))
       }
 
       // Desktop builds do not have Android-style permission gates, but the UI expects a stable endpoint.

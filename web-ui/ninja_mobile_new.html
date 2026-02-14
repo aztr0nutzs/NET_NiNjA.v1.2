@@ -484,6 +484,10 @@
         <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
         <iframe src="openclaw_dash.html" title="OpenClaw Dashboard"></iframe>
       </section>
+      <!-- Speedtest tab page -->
+      <section id="tab-speedtest" class="tab-page media" aria-labelledby="tabbtn-speedtest">
+        <iframe src="new_assets/ninja_speedtest.html" title="Network Speedtest"></iframe>
+      </section>
       <!-- Cameras tab page -->
       <section id="tab-cameras" class="tab-page media" aria-labelledby="tabbtn-cameras">
         <!-- Load the camera viewer via iframe -->
@@ -495,35 +499,39 @@
     <nav class="tabbar" aria-label="Primary navigation">
       <div class="tabbar-inner">
         <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
-          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
+          <div class="ticon" aria-hidden="true">📊</div>
           <div class="tlabel">Dashboard</div>
         </button>
         <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
-          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+          <div class="ticon" aria-hidden="true">📱</div>
           <div class="tlabel">Devices</div>
         </button>
         <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
-          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg></div>
+          <div class="ticon" aria-hidden="true">🌐</div>
           <div class="tlabel">Networks</div>
         </button>
         <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
-          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <div class="ticon" aria-hidden="true">🛠️</div>
           <div class="tlabel">Tools</div>
         </button>
 
         <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
-          <div class="dot"></div>
+          <div class="ticon" aria-hidden="true">📡</div>
           <div class="tlabel">Gateway</div>
         </button>
 
         <!-- OpenClaw tab button -->
         <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
-          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 14v-2a6 6 0 0 1 12 0v2"/><circle cx="8" cy="18" r="1"/><circle cx="16" cy="18" r="1"/></svg></div>
+          <div class="ticon" aria-hidden="true">🤖</div>
           <div class="tlabel">OpenClaw</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-speedtest" data-tab="speedtest">
+          <div class="ticon" aria-hidden="true">⚡</div>
+          <div class="tlabel">Speedtest</div>
         </button>
         <!-- Cameras tab button -->
         <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
-          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+          <div class="ticon" aria-hidden="true">📷</div>
           <div class="tlabel">Cameras</div>
         </button>
       </div>

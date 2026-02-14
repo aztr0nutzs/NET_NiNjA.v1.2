@@ -20,6 +20,7 @@ import io.ktor.server.http.content.staticFiles
 import io.ktor.server.request.receive
 import io.ktor.server.response.cacheControl
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.delete
@@ -32,6 +33,8 @@ import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
+import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -40,13 +43,83 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import java.io.File
 import java.net.URL
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
+
+@Serializable
+private data class SpeedtestServer(
+  val id: String,
+  val name: String,
+  val location: String
+)
+
+@Serializable
+private data class SpeedtestConfig(
+  val serverId: String = "neo-1",
+  val realMode: Boolean = true,
+  val precisionRange: Boolean = false
+)
+
+@Serializable
+private data class SpeedtestConfigPatch(
+  val serverId: String? = null,
+  val realMode: Boolean? = null,
+  val precisionRange: Boolean? = null
+)
+
+@Serializable
+private data class SpeedtestControlRequest(
+  val serverId: String? = null,
+  val realMode: Boolean? = null,
+  val precisionRange: Boolean? = null
+)
+
+@Serializable
+private data class SpeedtestLiveState(
+  val running: Boolean = false,
+  val phase: String = "IDLE",
+  val progress: Int = 0,
+  val serverId: String = "neo-1",
+  val pingMs: Double? = null,
+  val jitterMs: Double? = null,
+  val downloadMbps: Double? = null,
+  val uploadMbps: Double? = null,
+  val lossPct: Double? = null,
+  val bufferbloat: String? = null,
+  val error: String? = null,
+  val updatedAt: Long = System.currentTimeMillis()
+)
+
+@Serializable
+private data class SpeedtestResultRequest(
+  val running: Boolean? = null,
+  val phase: String? = null,
+  val progress: Int? = null,
+  val serverId: String? = null,
+  val pingMs: Double? = null,
+  val jitterMs: Double? = null,
+  val downloadMbps: Double? = null,
+  val uploadMbps: Double? = null,
+  val lossPct: Double? = null,
+  val bufferbloat: String? = null,
+  val error: String? = null
+)
 
 internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: File) {
   with(server) {
     val g5arApi = G5arApiImpl()
     val g5arCredentials = G5arCredentialStore(ctx)
     var g5arSession: G5arSession? = null
+    val speedtestConfig = AtomicReference(SpeedtestConfig())
+    val speedtestLive = AtomicReference(SpeedtestLiveState())
+    val speedtestAbort = AtomicBoolean(false)
+    val speedtestServers = listOf(
+      SpeedtestServer(id = "neo-1", name = "NEO-1", location = "Downtown Relay"),
+      SpeedtestServer(id = "arc-7", name = "ARC-7", location = "Subnet Spire"),
+      SpeedtestServer(id = "hex-3", name = "HEX-3", location = "Industrial Backbone"),
+      SpeedtestServer(id = "luna-9", name = "LUNA-9", location = "Edge Satellite")
+    )
 
     routing {
       staticFiles("/ui", uiDir, index = "ninja_mobile_new.html")
@@ -67,6 +140,172 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
       // Auth is enforced globally for `/api/v1/*` via the shared-secret token interceptor.
       get("/api/v1/network/info") {
         call.respond(localNetworkInfo())
+      }
+
+      get("/api/v1/speedtest/servers") {
+        call.respond(speedtestServers)
+      }
+
+      get("/api/v1/speedtest/config") {
+        call.respond(speedtestConfig.get())
+      }
+
+      post("/api/v1/speedtest/config") {
+        val req = catchingOrDefaultSuspend("speedtest:config.receive", SpeedtestConfigPatch()) { call.receive<SpeedtestConfigPatch>() }
+        val current = speedtestConfig.get()
+        val updated = current.copy(
+          serverId = req.serverId?.trim()?.takeIf { it.isNotBlank() } ?: current.serverId,
+          realMode = req.realMode ?: current.realMode,
+          precisionRange = req.precisionRange ?: current.precisionRange
+        )
+        speedtestConfig.set(updated)
+        call.respond(updated)
+      }
+
+      post("/api/v1/speedtest/start") {
+        val req = catchingOrDefaultSuspend("speedtest:start.receive", SpeedtestControlRequest()) { call.receive<SpeedtestControlRequest>() }
+        val current = speedtestConfig.get()
+        val updatedConfig = current.copy(
+          serverId = req.serverId?.trim()?.takeIf { it.isNotBlank() } ?: current.serverId,
+          realMode = req.realMode ?: current.realMode,
+          precisionRange = req.precisionRange ?: current.precisionRange
+        )
+        speedtestConfig.set(updatedConfig)
+        speedtestAbort.set(false)
+        val live = speedtestLive.get().copy(
+          running = true,
+          phase = "PING",
+          progress = 0,
+          serverId = updatedConfig.serverId,
+          error = null,
+          updatedAt = System.currentTimeMillis()
+        )
+        speedtestLive.set(live)
+        call.respond(mapOf("ok" to true, "config" to updatedConfig, "state" to live))
+      }
+
+      post("/api/v1/speedtest/abort") {
+        speedtestAbort.set(true)
+        val updated = speedtestLive.get().copy(
+          running = false,
+          phase = "ABORTED",
+          error = "aborted",
+          updatedAt = System.currentTimeMillis()
+        )
+        speedtestLive.set(updated)
+        call.respond(mapOf("ok" to true, "state" to updated))
+      }
+
+      post("/api/v1/speedtest/reset") {
+        speedtestAbort.set(false)
+        val cfg = speedtestConfig.get()
+        val reset = SpeedtestLiveState(serverId = cfg.serverId)
+        speedtestLive.set(reset)
+        call.respond(mapOf("ok" to true, "state" to reset))
+      }
+
+      get("/api/v1/speedtest/live") {
+        call.respond(speedtestLive.get())
+      }
+
+      post("/api/v1/speedtest/result") {
+        val req = catchingOrDefaultSuspend("speedtest:result.receive", SpeedtestResultRequest()) { call.receive<SpeedtestResultRequest>() }
+        val prev = speedtestLive.get()
+        val updated = prev.copy(
+          running = req.running ?: prev.running,
+          phase = req.phase ?: prev.phase,
+          progress = req.progress?.coerceIn(0, 100) ?: prev.progress,
+          serverId = req.serverId?.takeIf { it.isNotBlank() } ?: prev.serverId,
+          pingMs = req.pingMs ?: prev.pingMs,
+          jitterMs = req.jitterMs ?: prev.jitterMs,
+          downloadMbps = req.downloadMbps ?: prev.downloadMbps,
+          uploadMbps = req.uploadMbps ?: prev.uploadMbps,
+          lossPct = req.lossPct ?: prev.lossPct,
+          bufferbloat = req.bufferbloat ?: prev.bufferbloat,
+          error = req.error,
+          updatedAt = System.currentTimeMillis()
+        )
+        speedtestLive.set(updated)
+        call.respond(mapOf("ok" to true, "state" to updated))
+      }
+
+      get("/api/v1/speedtest/ping") {
+        val now = System.currentTimeMillis()
+        val prev = speedtestLive.get()
+        speedtestLive.set(
+          prev.copy(
+            phase = if (prev.running) "PING" else prev.phase,
+            updatedAt = now
+          )
+        )
+        call.response.cacheControl(CacheControl.NoCache(null))
+        call.respond(mapOf("ok" to true, "serverTimeMs" to now))
+      }
+
+      get("/api/v1/speedtest/download") {
+        val bytes = call.request.queryParameters["bytes"]?.toLongOrNull()?.coerceIn(1_024L, 250_000_000L) ?: 25_000_000L
+        speedtestLive.set(
+          speedtestLive.get().copy(
+            running = true,
+            phase = "DOWNLOAD",
+            progress = 0,
+            error = null,
+            updatedAt = System.currentTimeMillis()
+          )
+        )
+        call.response.cacheControl(CacheControl.NoCache(null))
+        call.respondBytesWriter(contentType = ContentType.Application.OctetStream) {
+          val chunk = ByteArray(64 * 1024)
+          var sent = 0L
+          while (sent < bytes) {
+            if (speedtestAbort.get()) break
+            val n = minOf(chunk.size.toLong(), bytes - sent).toInt()
+            repeat(n) { idx ->
+              chunk[idx] = ((sent + idx) and 0xFFL).toByte()
+            }
+            writeFully(chunk, 0, n)
+            sent += n
+            if (sent % (1024L * 1024L) == 0L) {
+              val pct = ((sent.toDouble() / bytes.toDouble()) * 100.0).toInt().coerceIn(0, 100)
+              speedtestLive.set(speedtestLive.get().copy(progress = pct, updatedAt = System.currentTimeMillis()))
+            }
+          }
+          flush()
+        }
+      }
+
+      post("/api/v1/speedtest/upload") {
+        val startedAt = System.currentTimeMillis()
+        speedtestLive.set(
+          speedtestLive.get().copy(
+            running = true,
+            phase = "UPLOAD",
+            error = null,
+            updatedAt = startedAt
+          )
+        )
+        val channel = call.receiveChannel()
+        val buffer = ByteArray(64 * 1024)
+        var total = 0L
+        while (true) {
+          if (speedtestAbort.get()) break
+          val read = channel.readAvailable(buffer, 0, buffer.size)
+          if (read <= 0) break
+          total += read.toLong()
+        }
+        val elapsedMs = (System.currentTimeMillis() - startedAt).coerceAtLeast(1L)
+        val mbps = (total * 8.0) / (elapsedMs.toDouble() / 1000.0) / 1_000_000.0
+        val prev = speedtestLive.get()
+        speedtestLive.set(
+          prev.copy(
+            running = false,
+            phase = if (speedtestAbort.get()) "ABORTED" else "COMPLETE",
+            progress = if (speedtestAbort.get()) prev.progress else 100,
+            uploadMbps = mbps,
+            updatedAt = System.currentTimeMillis()
+          )
+        )
+        call.respond(mapOf("ok" to true, "bytesReceived" to total, "elapsedMs" to elapsedMs, "uploadMbps" to mbps))
       }
 
       get("/api/v1/router/info") {

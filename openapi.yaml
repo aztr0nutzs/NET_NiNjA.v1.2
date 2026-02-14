@@ -47,6 +47,62 @@ paths:
       responses:
         '200': { description: OK }
 
+  # Speedtest
+  /api/v1/speedtest/servers:
+    get:
+      summary: Available speedtest server profiles
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/config:
+    get:
+      summary: Speedtest config
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Update speedtest config
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/start:
+    post:
+      summary: Mark speedtest run active
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/abort:
+    post:
+      summary: Abort active speedtest run
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/reset:
+    post:
+      summary: Reset speedtest state
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/live:
+    get:
+      summary: Read live speedtest state
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/result:
+    post:
+      summary: Publish speedtest results to backend state
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/ping:
+    get:
+      summary: Ping probe for speedtest
+      responses:
+        '200': { description: OK }
+  /api/v1/speedtest/download:
+    get:
+      summary: Streaming payload for download measurement
+      responses:
+        '200': { description: binary stream }
+  /api/v1/speedtest/upload:
+    post:
+      summary: Upload sink for upload measurement
+      responses:
+        '200': { description: OK }
+
   # Cameras
   /api/v1/onvif/discover:
     get:

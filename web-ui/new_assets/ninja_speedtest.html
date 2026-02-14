@@ -618,15 +618,12 @@
     </div>
   </div>
 
+  <script src="../js/api-client.js"></script>
   <script>
     /* ============================================================
        NEONLINK Speedtest HUD
-       - Runs in SIM mode by default (works anywhere).
-       - Optional REAL mode: requires same-origin endpoints:
-           GET  /speedtest/ping        -> 200 OK small response
-           GET  /speedtest/download?bytes=25000000  -> stream bytes
-           POST /speedtest/upload      -> accept body
-       - If endpoints missing, it falls back to SIM automatically.
+       - Wired to backend speedtest endpoints under /api/v1/speedtest/*
+       - Gauge and metrics are updated from real transfer timings.
        ============================================================ */
 
     const $ = (id)=>document.getElementById(id);
@@ -671,6 +668,21 @@
       exportBtn: $("exportBtn")
     };
 
+    const SPEEDTEST_TOKEN = window.NetNinjaApi?.token || "";
+    const resolveApiUrl = window.NetNinjaApi?.resolveApiUrl || ((url) => url);
+    function authHeaders(extra = {}){
+      return SPEEDTEST_TOKEN ? { ...extra, Authorization: `Bearer ${SPEEDTEST_TOKEN}` } : { ...extra };
+    }
+    async function jsonFetch(url, options = {}){
+      const res = await fetch(resolveApiUrl(url), {
+        cache: "no-store",
+        ...options,
+        headers: authHeaders(options.headers || {})
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
     // Canvas setup
     const gCanvas = $("gaugeCanvas");
     const gCtx = gCanvas.getContext("2d");
@@ -712,7 +724,7 @@
     const state = {
       running: false,
       aborted: false,
-      useReal: false,
+      useReal: true,
       precisionRange: false,
 
       phase: "idle", // idle, ping, download, upload, done
@@ -745,9 +757,16 @@
 
     // Endpoints for REAL mode (same-origin!)
     const endpoints = {
-      ping: "/speedtest/ping",
-      download: "/speedtest/download?bytes=",
-      upload: "/speedtest/upload"
+      servers: "/api/v1/speedtest/servers",
+      config: "/api/v1/speedtest/config",
+      start: "/api/v1/speedtest/start",
+      abort: "/api/v1/speedtest/abort",
+      reset: "/api/v1/speedtest/reset",
+      live: "/api/v1/speedtest/live",
+      result: "/api/v1/speedtest/result",
+      ping: "/api/v1/speedtest/ping",
+      download: "/api/v1/speedtest/download?bytes=",
+      upload: "/api/v1/speedtest/upload"
     };
 
     // Random but stable-ish noise
@@ -1181,6 +1200,48 @@
     function setServer(id){
       state.server = id;
       ui.serverName.textContent = servers[id]?.name || id.toUpperCase();
+      jsonFetch(endpoints.config, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serverId: id })
+      }).catch(() => {});
+    }
+
+    async function syncRemoteConfig(){
+      try {
+        const cfg = await jsonFetch(endpoints.config);
+        if (cfg && typeof cfg === "object") {
+          if (typeof cfg.serverId === "string" && cfg.serverId) {
+            state.server = cfg.serverId;
+          }
+          if (typeof cfg.realMode === "boolean") {
+            state.useReal = cfg.realMode;
+          }
+          if (typeof cfg.precisionRange === "boolean") {
+            state.precisionRange = cfg.precisionRange;
+          }
+        }
+      } catch (_) {}
+    }
+
+    async function loadServers(){
+      try {
+        const list = await jsonFetch(endpoints.servers);
+        if (!Array.isArray(list) || !ui.serverSel) return;
+        const current = state.server;
+        ui.serverSel.innerHTML = list.map((srv) => {
+          const id = String(srv.id || "").trim();
+          const name = String(srv.name || id.toUpperCase());
+          const location = String(srv.location || "Local");
+          return `<option value="${id}">${name} • ${location}</option>`;
+        }).join("");
+        if (Array.from(ui.serverSel.options).some((opt) => opt.value === current)) {
+          ui.serverSel.value = current;
+        } else if (ui.serverSel.options.length > 0) {
+          ui.serverSel.value = ui.serverSel.options[0].value;
+          state.server = ui.serverSel.value;
+        }
+      } catch (_) {}
     }
 
     // SIMULATION phases (works anywhere, looks real enough to fool humans)
@@ -1268,7 +1329,16 @@
       ui.modeLabel.textContent = "REAL";
       ui.modeLabel.style.textShadow = "0 0 18px rgba(0,246,255,.35)";
       state.useReal = true;
-      state.protoTxt.textContent = "Fetch stream (real)";
+      state.protoTxt.textContent = "Backend stream (real)";
+      await jsonFetch(endpoints.start, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serverId: state.server,
+          realMode: true,
+          precisionRange: state.precisionRange
+        })
+      });
       // Phase: ping
       setPhase("ping", "Measuring latency (real)");
       const pings = [];
@@ -1277,7 +1347,7 @@
         const t0 = now();
         // cache-bust
         const url = `${endpoints.ping}?t=${Math.random().toString(16).slice(2)}`;
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(resolveApiUrl(url), { cache: "no-store", headers: authHeaders() });
         if (!res.ok) throw new Error("ping failed");
         await res.arrayBuffer().catch(()=>{});
         const dt = now() - t0;
@@ -1316,6 +1386,22 @@
 
       pushHistory();
       postAnalyze();
+      await jsonFetch(endpoints.result, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          running: false,
+          phase: "COMPLETE",
+          progress: 100,
+          serverId: state.server,
+          pingMs: state.ping,
+          jitterMs: state.jitter,
+          downloadMbps: state.dl,
+          uploadMbps: state.ul,
+          lossPct: state.loss,
+          bufferbloat: state.bb
+        })
+      }).catch(() => {});
     }
 
     function postAnalyze(){
@@ -1380,7 +1466,7 @@
       // Streams a download and updates the needle live.
       const url = `${endpoints.download}${encodeURIComponent(bytes)}&t=${Math.random().toString(16).slice(2)}`;
       const t0 = now();
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetch(resolveApiUrl(url), { cache: "no-store", headers: authHeaders() });
       if (!res.ok || !res.body) throw new Error("download failed");
 
       const reader = res.body.getReader();
@@ -1437,10 +1523,10 @@
         }
       })();
 
-      const res = await fetch(endpoints.upload, {
+      const res = await fetch(resolveApiUrl(endpoints.upload), {
         method: "POST",
         cache: "no-store",
-        headers: { "Content-Type": "application/octet-stream" },
+        headers: authHeaders({ "Content-Type": "application/octet-stream" }),
         body: blob
       });
 
@@ -1483,22 +1569,21 @@
         await sleep(25);
       }
 
-      const wantsReal = state.useReal;
-
       try{
-        if (wantsReal){
-          try{
-            await runReal();
-          } catch (e){
-            // fallback
-            ui.protoTxt.textContent = "SIM fallback";
-            await runSim();
-          }
-        } else {
-          await runSim();
-        }
+        await runReal();
       } catch (e){
         setPhase("idle", state.aborted ? "Aborted" : "Error");
+        await jsonFetch(endpoints.result, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            running: false,
+            phase: state.aborted ? "ABORTED" : "ERROR",
+            progress: state.aborted ? state.phaseProgress * 100 : 0,
+            serverId: state.server,
+            error: e?.message ? String(e.message) : "speedtest failed"
+          })
+        }).catch(() => {});
       } finally{
         state.running = false;
         ui.btnStart.disabled = false;
@@ -1513,6 +1598,11 @@
       setPhase("idle", "Abort signal sent");
       state.target = 0;
       ui.btnAbort.disabled = true;
+      jsonFetch(endpoints.abort, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      }).catch(() => {});
     }
 
     function resetUI(){
@@ -1529,6 +1619,11 @@
       setPhase("idle", "Awaiting command");
       setProgress(0);
       updateHUD();
+      jsonFetch(endpoints.reset, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      }).catch(() => {});
     }
 
     function toggleSwitch(el, on){
@@ -1558,19 +1653,27 @@
 
     clickSwitch(ui.swReal, ()=>{
       if (state.running) return;
-      state.useReal = !state.useReal;
+      state.useReal = true;
       toggleSwitch(ui.swReal, state.useReal);
-      ui.modeLabel.textContent = state.useReal ? "REAL" : "AUTO";
-      ui.modeLabel.style.textShadow = state.useReal ? "0 0 18px rgba(0,246,255,.35)" : "0 0 18px rgba(0,235,255,.22)";
-      state.protoTxt.textContent = state.useReal ? "Fetch stream (attempt)" : "HTTP/2 (sim)";
+      ui.modeLabel.textContent = "REAL";
+      ui.modeLabel.style.textShadow = "0 0 18px rgba(0,246,255,.35)";
+      state.protoTxt.textContent = "Backend stream (real)";
+      jsonFetch(endpoints.config, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ realMode: true })
+      }).catch(() => {});
     });
 
     clickSwitch(ui.swRange, ()=>{
       if (state.running) return;
       state.precisionRange = !state.precisionRange;
       toggleSwitch(ui.swRange, state.precisionRange);
-      // When precision on, show more usable values for low speeds
-      // (UI-only: max scale changes, measurement unchanged)
+      jsonFetch(endpoints.config, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ precisionRange: state.precisionRange })
+      }).catch(() => {});
     });
 
     ui.exportBtn.addEventListener("click", (e)=>{
@@ -1592,9 +1695,20 @@
     });
 
     // Init
-    setServer(ui.serverSel.value);
-    updateHUD();
-    animateNeedle();
+    (async () => {
+      await syncRemoteConfig();
+      await loadServers();
+      if (ui.serverSel.value) {
+        state.server = ui.serverSel.value;
+      }
+      setServer(state.server || ui.serverSel.value || "neo-1");
+      toggleSwitch(ui.swReal, true);
+      toggleSwitch(ui.swRange, state.precisionRange);
+      ui.modeLabel.textContent = "REAL";
+      state.protoTxt.textContent = "Backend stream (real)";
+      updateHUD();
+      animateNeedle();
+    })();
 
     // Resize redraw
     window.addEventListener("resize", ()=>{

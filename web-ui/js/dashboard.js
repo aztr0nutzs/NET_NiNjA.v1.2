@@ -401,7 +401,7 @@
       document.getElementById("nnDeviceMapBtn")?.classList.toggle("active", state.deviceMapMode);
       document.getElementById("nnDeviceListBtn")?.classList.toggle("active", !state.deviceMapMode);
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || (state.activeTab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || state.activeTab === "speedtest" || (state.activeTab === "devices" && state.deviceMapMode));
       if(state.deviceMapMode){ window.nnUpdateDiscoveryMap?.(); }
     }
 
@@ -421,7 +421,7 @@
       if(tab === "gateway"){ renderG5ar(); }
 
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", tab === "networks" || (tab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", tab === "networks" || tab === "speedtest" || (tab === "devices" && state.deviceMapMode));
     }
 
     $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
@@ -430,7 +430,7 @@
       const data = event && event.data;
       if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
       const target = String(data.tab || "dashboard");
-      const allowed = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "cameras"]);
+      const allowed = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "speedtest", "cameras"]);
       setTab(allowed.has(target) ? target : "dashboard");
     });
 
