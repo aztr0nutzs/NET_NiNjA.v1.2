@@ -9,9 +9,14 @@ set "APP_DIR=%~dp0"
 set "JRE_DIR=%APP_DIR%jre"
 set "LIB_DIR=%APP_DIR%lib"
 set "WEBUI_DIR=%APP_DIR%web-ui"
-set "REPO_ROOT=%APP_DIR%..\.."
 set "DATA_DIR=%LOCALAPPDATA%\NET_NiNjA"
 set "LOG_FILE=%DATA_DIR%\server.log"
+
+REM Detect repo root only if running from the repo (not installed)
+set "REPO_ROOT="
+if exist "%APP_DIR%..\..\gradlew.bat" (
+  set "REPO_ROOT=%APP_DIR%..\.."
+)
 
 REM Ensure data directory exists
 if not exist "%DATA_DIR%" mkdir "%DATA_DIR%"
@@ -34,12 +39,14 @@ REM Resolve lib directory across install + staging + repo build layouts.
 if not exist "%LIB_DIR%\*.jar" (
   if exist "%APP_DIR%staging\lib\*.jar" set "LIB_DIR=%APP_DIR%staging\lib"
 )
-if not exist "%LIB_DIR%\*.jar" (
-  if exist "%REPO_ROOT%\server\build\install\server\lib\*.jar" set "LIB_DIR=%REPO_ROOT%\server\build\install\server\lib"
-)
-if not exist "%LIB_DIR%\*.jar" (
-  if exist "%REPO_ROOT%\server\build\libs\server-all.jar" (
-    set "LIB_DIR=%REPO_ROOT%\server\build\libs"
+if defined REPO_ROOT (
+  if not exist "%LIB_DIR%\*.jar" (
+    if exist "%REPO_ROOT%\server\build\install\server\lib\*.jar" set "LIB_DIR=%REPO_ROOT%\server\build\install\server\lib"
+  )
+  if not exist "%LIB_DIR%\*.jar" (
+    if exist "%REPO_ROOT%\server\build\libs\server-all.jar" (
+      set "LIB_DIR=%REPO_ROOT%\server\build\libs"
+    )
   )
 )
 
@@ -47,8 +54,10 @@ REM Resolve web-ui directory across install + staging + repo layouts.
 if not exist "%WEBUI_DIR%\ninja_mobile_new.html" (
   if exist "%APP_DIR%staging\web-ui\ninja_mobile_new.html" set "WEBUI_DIR=%APP_DIR%staging\web-ui"
 )
-if not exist "%WEBUI_DIR%\ninja_mobile_new.html" (
-  if exist "%REPO_ROOT%\web-ui\ninja_mobile_new.html" set "WEBUI_DIR=%REPO_ROOT%\web-ui"
+if defined REPO_ROOT (
+  if not exist "%WEBUI_DIR%\ninja_mobile_new.html" (
+    if exist "%REPO_ROOT%\web-ui\ninja_mobile_new.html" set "WEBUI_DIR=%REPO_ROOT%\web-ui"
+  )
 )
 
 REM Find the server JAR in the resolved lib directory.

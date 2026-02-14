@@ -78,8 +78,15 @@ foreach ($entry in $bitmapDataList) {
 }
 
 $bw.Flush()
-[System.IO.File]::WriteAllBytes((Join-Path (Get-Location) $IcoPath), $ms.ToArray())
+
+# Write the ICO — use the provided path directly (may be absolute or relative)
+$resolvedIcoPath = if ([System.IO.Path]::IsPathRooted($IcoPath)) {
+  $IcoPath
+} else {
+  Join-Path (Get-Location) $IcoPath
+}
+[System.IO.File]::WriteAllBytes($resolvedIcoPath, $ms.ToArray())
 $ms.Dispose()
 $source.Dispose()
 
-Write-Host "Created ICO: $IcoPath ($($sizes.Count) sizes: $($sizes -join ', ')px)"
+Write-Host "Created ICO: $resolvedIcoPath ($($sizes.Count) sizes: $($sizes -join ', ')px)"

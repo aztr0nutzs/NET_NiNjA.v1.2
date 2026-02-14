@@ -304,7 +304,8 @@ fun startServer(
   }
 
   suspend fun isReachableWithRetry(ip: String, timeoutMs: Int, attempts: Int): Boolean {
-    return retryTransientOrNull(
+    // Try ICMP first (works on Linux, often blocked on Windows without admin)
+    val icmpResult = retryTransientOrNull(
       where = "isReachable",
       attempts = attempts,
       initialDelayMs = 40,
@@ -314,6 +315,13 @@ fun startServer(
     ) {
       InetAddress.getByName(ip).isReachable(timeoutMs)
     } ?: false
+
+    if (icmpResult) return true
+
+    // Fallback: TCP probe on common ports (essential on Windows where ICMP needs admin)
+    return withContext(Dispatchers.IO) {
+      TcpScanner.isReachableTcp(ip, timeoutMs)
+    }
   }
 
   suspend fun resolveHostnameWithRetry(ip: String): String? {
@@ -1223,14 +1231,38 @@ private fun guessOs(openPorts: List<Int>, banners: Map<Int, String>, hostname: S
 
 private fun resolveScanIps(requested: String): List<String> {
   if (requested.isNotBlank()) return cidrToIps(requested)
-  val localIps = java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
-    .flatMap { java.util.Collections.list(it.inetAddresses) }
-    .mapNotNull { addr ->
-      val ip = addr.hostAddress
-      if (ip.contains(":")) null else ip
+  // Find the best non-loopback, non-virtual, non-link-local IPv4 interface.
+  val bestIface = java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
+    .filter { it.isUp && !it.isLoopback && !it.isVirtual }
+    .sortedByDescending { it.interfaceAddresses.size } // prefer interfaces with more addresses
+    .flatMap { iface ->
+      iface.interfaceAddresses.mapNotNull { ifAddr ->
+        val addr = ifAddr.address
+        val ip = addr.hostAddress
+        // Skip IPv6, loopback, link-local (169.254.x.x), APIPA, and multicast
+        if (ip.contains(":")) return@mapNotNull null
+        if (addr.isLoopbackAddress) return@mapNotNull null
+        if (addr.isLinkLocalAddress) return@mapNotNull null
+        if (ip.startsWith("127.")) return@mapNotNull null
+        if (ip.startsWith("169.254.")) return@mapNotNull null
+        // Skip common virtual/VPN adapter name patterns (Hyper-V, VMware, VirtualBox, Docker)
+        val ifName = iface.displayName?.lowercase() ?: ""
+        if (ifName.contains("virtual") || ifName.contains("vmware") || ifName.contains("vbox") ||
+            ifName.contains("docker") || ifName.contains("hyper-v") || ifName.contains("vethernet")) return@mapNotNull null
+        val prefix = ifAddr.networkPrefixLength.toInt()
+        Triple(ip, prefix, iface)
+      }
     }
-  val primary = localIps.firstOrNull() ?: return emptyList()
-  return cidrToIps("${primary.substringBeforeLast(".")}.0/24")
+  if (bestIface.isEmpty()) {
+    // Ultimate fallback — any IPv4 that is not 127.x
+    val anyIp = java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
+      .flatMap { java.util.Collections.list(it.inetAddresses) }
+      .mapNotNull { a -> a.hostAddress.takeIf { !it.contains(":") && !it.startsWith("127.") } }
+      .firstOrNull() ?: return emptyList()
+    return cidrToIps("${anyIp.substringBeforeLast(".")}.0/24")
+  }
+  val (ip, prefix, _) = bestIface.first()
+  return cidrToIps("${ip.substringBeforeLast(".")}.0/$prefix")
 }
 
 private fun cidrToIps(cidr: String): List<String> {
@@ -1278,9 +1310,29 @@ private fun sendMagicPacket(mac: String) {
 }
 
 private fun localNetworkInfo(): Map<String, Any?> {
+  // Find the best real network interface — filter out loopback, virtual, and link-local on Windows.
   val iface = java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
-    .firstOrNull { it.isUp && !it.isLoopback && java.util.Collections.list(it.inetAddresses).any { a -> !a.hostAddress.contains(":") } }
-  val addr = iface?.interfaceAddresses?.firstOrNull { it.address.hostAddress?.contains(":") == false }
+    .filter { it.isUp && !it.isLoopback && !it.isVirtual }
+    .filter { nif ->
+      val name = nif.displayName?.lowercase() ?: ""
+      // Exclude common virtual adapter patterns (Hyper-V, VMware, VirtualBox, Docker)
+      !name.contains("virtual") && !name.contains("vmware") && !name.contains("vbox") &&
+        !name.contains("docker") && !name.contains("hyper-v") && !name.contains("vethernet")
+    }
+    .firstOrNull { nif ->
+      nif.interfaceAddresses.any { ifAddr ->
+        val a = ifAddr.address
+        val ip = a.hostAddress
+        !ip.contains(":") && !a.isLoopbackAddress && !a.isLinkLocalAddress &&
+          !ip.startsWith("127.") && !ip.startsWith("169.254.")
+      }
+    }
+  val addr = iface?.interfaceAddresses?.firstOrNull { ifAddr ->
+    val a = ifAddr.address
+    val ip = a.hostAddress
+    !ip.contains(":") && !a.isLoopbackAddress && !a.isLinkLocalAddress &&
+      !ip.startsWith("127.") && !ip.startsWith("169.254.")
+  }
   val ip = addr?.address?.hostAddress
   val prefix = addr?.networkPrefixLength?.toInt()
   val cidr = if (ip != null && prefix != null) "${ip.substringBeforeLast(".")}.0/$prefix" else null
@@ -1335,6 +1387,7 @@ private fun resolveGatewayViaShell(): String? {
 
   val commands: List<List<String>> = when {
     os.contains("win") -> listOf(
+      listOf("cmd", "/c", "ipconfig"),
       listOf("cmd", "/c", "route", "print", "0.0.0.0")
     )
     else -> listOf(
@@ -1356,6 +1409,11 @@ private fun resolveGatewayViaShell(): String? {
         val lower = line.lowercase().trim()
         // Linux/macOS: "default via 192.168.1.1 ..."
         if (lower.startsWith("default")) {
+          val match = ipPattern.find(line)
+          if (match != null) return match.groupValues[1]
+        }
+        // Windows ipconfig: "Default Gateway . . . . . . . . . : 192.168.1.1"
+        if (lower.contains("default gateway") || lower.contains("puerta de enlace") || lower.contains("passerelle")) {
           val match = ipPattern.find(line)
           if (match != null) return match.groupValues[1]
         }
@@ -1400,13 +1458,40 @@ private fun resolveDnsViaShell(): String? {
   val os = System.getProperty("os.name", "").lowercase()
   val ipPattern = Regex("""(\d+\.\d+\.\d+\.\d+)""")
 
+  // On Windows, prefer `ipconfig /all` which reliably lists DNS servers.
+  if (os.contains("win")) {
+    try {
+      val process = ProcessBuilder("cmd", "/c", "ipconfig", "/all")
+        .redirectErrorStream(true)
+        .start()
+      val output = process.inputStream.bufferedReader().readText()
+      process.waitFor()
+      val dnsServers = mutableListOf<String>()
+      var inDnsSection = false
+      for (line in output.lines()) {
+        val trimmed = line.trim()
+        // "DNS Servers . . . . . . . . . . . : 192.168.1.1"
+        if (trimmed.lowercase().contains("dns server")) {
+          inDnsSection = true
+          val match = ipPattern.find(trimmed)
+          if (match != null) dnsServers += match.groupValues[1]
+        } else if (inDnsSection && trimmed.startsWith("  ").not() && trimmed.contains(":")) {
+          // New field — exit DNS section
+          inDnsSection = false
+        } else if (inDnsSection) {
+          // Continuation line with another DNS IP
+          val match = ipPattern.find(trimmed)
+          if (match != null) dnsServers += match.groupValues[1]
+        }
+      }
+      if (dnsServers.isNotEmpty()) return dnsServers.distinct().joinToString(", ")
+    } catch (_: Exception) {}
+  }
+
+  // Fallback: nslookup (cross-platform)
   val commands: List<List<String>> = when {
-    os.contains("win") -> listOf(
-      listOf("cmd", "/c", "nslookup", "localhost")
-    )
-    else -> listOf(
-      listOf("nslookup", "localhost")
-    )
+    os.contains("win") -> listOf(listOf("cmd", "/c", "nslookup", "localhost"))
+    else -> listOf(listOf("nslookup", "localhost"))
   }
 
   for (cmd in commands) {
