@@ -80,7 +80,8 @@
       inset:0;
       overflow:hidden;
     }
-    .header-media video{
+    .header-media video,
+    .header-media img{
       width:100%;
       height:100%;
       object-fit:contain;
@@ -1154,4 +1155,228 @@
 .nn-mapHost iframe { background: #000; }
 @media (max-width: 768px) {
   .nn-mapHost { height: 480px !important; }
+}
+
+/* ========= BUTTON FEEDBACK & LOADING STATES ========= */
+
+/* Universal button click ripple animation */
+.btn.nn-clicked {
+  animation: nnBtnPulse 0.35s ease-out;
+}
+@keyframes nnBtnPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0,240,255,0.45); }
+  50%  { box-shadow: 0 0 12px 4px rgba(0,240,255,0.25); }
+  100% { box-shadow: none; }
+}
+.btn-primary.nn-clicked {
+  animation: nnBtnPulsePrimary 0.35s ease-out;
+}
+@keyframes nnBtnPulsePrimary {
+  0%   { box-shadow: 0 0 0 0 rgba(185,103,255,0.55); }
+  50%  { box-shadow: 0 0 16px 6px rgba(185,103,255,0.30); }
+  100% { box-shadow: none; }
+}
+.btn-danger.nn-clicked {
+  animation: nnBtnPulseDanger 0.35s ease-out;
+}
+@keyframes nnBtnPulseDanger {
+  0%   { box-shadow: 0 0 0 0 rgba(185,103,255,0.55); }
+  50%  { box-shadow: 0 0 14px 5px rgba(185,103,255,0.30); }
+  100% { box-shadow: none; }
+}
+
+/* Loading spinner for buttons */
+.btn.nn-loading {
+  pointer-events: none;
+  opacity: 0.80;
+  position: relative;
+}
+.btn.nn-loading::after {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: var(--neon-cyan);
+  border-radius: 50%;
+  animation: nnSpin 0.65s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.btn-primary.nn-loading::after {
+  border-color: rgba(0,0,0,0.2);
+  border-top-color: #000;
+}
+@keyframes nnSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scan running state - pulse the scan progress card */
+#nnScanProgressCard.nn-scan-active {
+  border-color: rgba(0,240,255,0.55);
+  animation: nnScanCardPulse 2s ease-in-out infinite;
+}
+@keyframes nnScanCardPulse {
+  0%, 100% { border-color: rgba(0,240,255,0.55); }
+  50%      { border-color: rgba(185,103,255,0.55); }
+}
+
+/* Scan confirmation banner */
+.nn-scan-banner {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  margin: 0 0 14px 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border: 1px solid rgba(0,240,255,0.35);
+  background: linear-gradient(135deg, rgba(0,240,255,0.12), rgba(185,103,255,0.08));
+  color: var(--neon-cyan);
+}
+.nn-scan-banner.active {
+  display: flex;
+  animation: fadeIn 0.14s ease;
+}
+.nn-scan-banner .nn-scan-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,240,255,0.25);
+  border-top-color: var(--neon-cyan);
+  border-radius: 50%;
+  animation: nnSpin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+.nn-scan-banner.nn-scan-done {
+  border-color: rgba(0,240,255,0.45);
+  color: var(--neon-cyan);
+}
+.nn-scan-banner.nn-scan-done .nn-scan-spinner {
+  animation: none;
+  border-color: var(--neon-cyan);
+  background: var(--neon-cyan);
+}
+.nn-scan-banner.nn-scan-error {
+  border-color: rgba(185,103,255,0.45);
+  color: var(--neon-purple);
+}
+.nn-scan-banner.nn-scan-error .nn-scan-spinner {
+  animation: none;
+  border-color: var(--neon-purple);
+  background: var(--neon-purple);
+}
+
+/* ========= DEVICES SCREEN DIFFERENTIATION ========= */
+
+/* Device summary stats bar */
+.nn-device-summary {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(0,240,255,0.06), rgba(0,240,255,0.02));
+  border: 1px solid rgba(0,240,255,0.22);
+}
+.nn-dev-stat {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+.nn-dev-stat + .nn-dev-stat::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 15%;
+  height: 70%;
+  width: 1px;
+  background: rgba(0,240,255,0.18);
+}
+.nn-dev-stat-num {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--neon-cyan);
+  font-family: "Orbitron", sans-serif;
+  line-height: 1.1;
+}
+.nn-dev-stat-num.nn-dev-unknown {
+  color: var(--neon-purple);
+}
+.nn-dev-stat-num.nn-dev-blocked {
+  color: var(--neon-pink);
+}
+.nn-dev-stat-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 3px;
+}
+
+/* Devices tab unique accent: cyan-dominant instead of purple */
+.nn-devices-tab .table-wrap {
+  border-color: rgba(0,240,255,0.22);
+}
+.nn-devices-tab .search {
+  border-color: rgba(0,240,255,0.24);
+}
+.nn-devices-tab .chip.active {
+  background: linear-gradient(135deg, rgba(0,240,255,0.22), rgba(0,240,255,0.08));
+  border-color: rgba(0,240,255,0.35);
+}
+.nn-devices-tab .sidepanel {
+  border-color: rgba(0,240,255,0.22);
+}
+.nn-devices-tab h2 {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 12px rgba(0,240,255,0.25);
+}
+
+/* Device row hover: cyan glow (vs purple in networks) */
+.nn-devices-tab tbody tr:hover {
+  background: rgba(0,240,255,0.08);
+}
+.nn-devices-tab tbody tr.selected {
+  background: rgba(0,240,255,0.14);
+  border-left: 3px solid var(--neon-cyan);
+}
+
+/* Quick device icon badges in table cells */
+.nn-devices-tab .status.online {
+  background: rgba(0,240,255,0.08);
+}
+.nn-devices-tab .status.offline {
+  background: rgba(185,103,255,0.06);
+}
+.nn-devices-tab .status.blocked {
+  background: rgba(255,79,216,0.08);
+}
+
+/* ========= DISABLED / EMPTY STATE STYLING ========= */
+
+.btn:disabled, .btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Input styling for gateway & tools */
+.input {
+  background: rgba(0,0,0,0.30);
+  border: 1px solid rgba(185,103,255,0.22);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: rgba(255,255,255,0.92);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.input:focus {
+  border-color: rgba(0,240,255,0.45);
 }

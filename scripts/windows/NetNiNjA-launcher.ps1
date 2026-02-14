@@ -7,12 +7,20 @@
 $ErrorActionPreference = "Stop"
 
 $appDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = Resolve-Path (Join-Path $appDir "..\..")
 $jreDir   = Join-Path $appDir "jre"
 $libDir   = Join-Path $appDir "lib"
 $webUiDir = Join-Path $appDir "web-ui"
 $dataDir  = Join-Path $env:LOCALAPPDATA "NET_NiNjA"
 $logFile  = Join-Path $dataDir "server.log"
+
+# Determine repo root only if we are running from the repo (not from an installed location).
+# Installed layout: {app}\NetNiNjA-launcher.ps1, {app}\lib\, {app}\web-ui\, {app}\jre\
+# Repo layout:      scripts\windows\NetNiNjA-launcher.ps1, server\build\..., web-ui\
+$repoRoot = $null
+$candidate = Resolve-Path (Join-Path $appDir "..\..") -ErrorAction SilentlyContinue
+if ($candidate -and (Test-Path (Join-Path $candidate "gradlew.bat"))) {
+  $repoRoot = $candidate.Path
+}
 
 # Ensure data directory
 if (-not (Test-Path $dataDir)) { New-Item -ItemType Directory -Path $dataDir -Force | Out-Null }
@@ -37,11 +45,11 @@ if (-not (Test-Path (Join-Path $libDir "*.jar"))) {
   $candidate = Join-Path $appDir "staging\lib"
   if (Test-Path (Join-Path $candidate "*.jar")) { $libDir = $candidate }
 }
-if (-not (Test-Path (Join-Path $libDir "*.jar"))) {
+if ($repoRoot -and -not (Test-Path (Join-Path $libDir "*.jar"))) {
   $candidate = Join-Path $repoRoot "server\build\install\server\lib"
   if (Test-Path (Join-Path $candidate "*.jar")) { $libDir = $candidate }
 }
-if (-not (Test-Path (Join-Path $libDir "*.jar"))) {
+if ($repoRoot -and -not (Test-Path (Join-Path $libDir "*.jar"))) {
   $candidate = Join-Path $repoRoot "server\build\libs"
   if (Test-Path (Join-Path $candidate "server-all.jar")) { $libDir = $candidate }
 }
@@ -51,7 +59,7 @@ if (-not (Test-Path (Join-Path $webUiDir "ninja_mobile_new.html"))) {
   $candidate = Join-Path $appDir "staging\web-ui"
   if (Test-Path (Join-Path $candidate "ninja_mobile_new.html")) { $webUiDir = $candidate }
 }
-if (-not (Test-Path (Join-Path $webUiDir "ninja_mobile_new.html"))) {
+if ($repoRoot -and -not (Test-Path (Join-Path $webUiDir "ninja_mobile_new.html"))) {
   $candidate = Join-Path $repoRoot "web-ui"
   if (Test-Path (Join-Path $candidate "ninja_mobile_new.html")) { $webUiDir = $candidate }
 }

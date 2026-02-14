@@ -80,6 +80,43 @@
 
     const { fetchJson, token: NN_TOKEN } = window.NetNinjaApi;
 
+    // ---- Button feedback helpers ----
+    function btnRipple(btn) {
+      if (!btn) return;
+      btn.classList.remove("nn-clicked");
+      void btn.offsetWidth; // force reflow
+      btn.classList.add("nn-clicked");
+      setTimeout(() => btn.classList.remove("nn-clicked"), 400);
+    }
+    function btnLoading(btn, loading) {
+      if (!btn) return;
+      if (loading) {
+        btn.classList.add("nn-loading");
+        btn._prevText = btn.textContent;
+      } else {
+        btn.classList.remove("nn-loading");
+      }
+    }
+
+    // Attach ripple effect to ALL .btn elements
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn");
+      if (btn) btnRipple(btn);
+    });
+
+    // ---- Scan banner helpers ----
+    function showScanBanner(text, state) {
+      const banner = document.getElementById("nnScanBanner");
+      const bannerText = document.getElementById("nnScanBannerText");
+      if (!banner || !bannerText) return;
+      bannerText.textContent = text;
+      banner.className = "nn-scan-banner active" + (state ? " " + state : "");
+    }
+    function hideScanBanner() {
+      const banner = document.getElementById("nnScanBanner");
+      if (banner) banner.className = "nn-scan-banner";
+    }
+
     function applyDevicesFromBackend(rawList){
       if(!Array.isArray(rawList)) return;
       const next = rawList.map(mergeDevice).filter(Boolean);
@@ -235,6 +272,13 @@
     }
 
     async function sendPermissionAction(action){
+      const btnMap = {
+        app_settings: "#btnOpenAppSettings",
+        location_settings: "#btnOpenLocationSettings",
+        wifi_settings: "#btnOpenWifiSettings"
+      };
+      const btn = $(btnMap[action]);
+      btnLoading(btn, true);
       try{
         const res = await fetchJson("/api/v1/system/permissions/action", {
           method: "POST",
@@ -248,6 +292,8 @@
         }
       } catch (_){
         showToast("Permission control unavailable", "Unable to reach the local service.");
+      } finally {
+        btnLoading(btn, false);
       }
     }
 
@@ -259,7 +305,13 @@
       appBtn?.addEventListener("click", () => sendPermissionAction("app_settings"));
       locBtn?.addEventListener("click", () => sendPermissionAction("location_settings"));
       wifiBtn?.addEventListener("click", () => sendPermissionAction("wifi_settings"));
-      refreshBtn?.addEventListener("click", () => refreshPermissionStatus());
+      refreshBtn?.addEventListener("click", () => {
+        btnLoading(refreshBtn, true);
+        refreshPermissionStatus().finally(() => {
+          btnLoading(refreshBtn, false);
+          showToast("Permissions refreshed", "Permission status updated.");
+        });
+      });
     }
 
     async function refreshDebugState(){
@@ -330,16 +382,27 @@
       $("#toastBody").textContent = body || "";
       const act = $("#toastActions");
       act.innerHTML = "";
-      actions.forEach(a => {
-        const b = document.createElement("button");
-        b.className = "btn btn-ghost purple";
-        b.textContent = a.label;
-        b.addEventListener("click", () => { a.onClick?.(); hideToast(); });
-        act.appendChild(b);
-      });
+      if(actions.length > 0){
+        actions.forEach(a => {
+          const b = document.createElement("button");
+          b.className = "btn btn-ghost purple";
+          b.textContent = a.label;
+          b.addEventListener("click", () => { a.onClick?.(); hideToast(); });
+          act.appendChild(b);
+        });
+      } else {
+        // Always add a dismiss button for accessibility
+        const dismiss = document.createElement("button");
+        dismiss.className = "btn btn-ghost";
+        dismiss.textContent = "OK";
+        dismiss.style.padding = "6px 10px";
+        dismiss.style.fontSize = "11px";
+        dismiss.addEventListener("click", hideToast);
+        act.appendChild(dismiss);
+      }
       toast.classList.add("show");
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(hideToast, 3800);
+      showToast._t = setTimeout(hideToast, actions.length > 0 ? 8000 : 5000);
     }
     function hideToast(){ $("#toast").classList.remove("show"); }
 
@@ -414,7 +477,7 @@
       if(tab === "devices"){
         ensureDeviceMapHost();
         renderDevices();
-        setDeviceMapMode(true);
+        setDeviceMapMode(false);
       }
       if(tab === "networks"){ window.nnUpdateDiscoveryMap?.(); }
       if(tab === "dashboard"){ renderDashboard(); }
@@ -495,6 +558,20 @@
     }
 
     function renderDevices(){
+      // Update device summary stats
+      const onlineN = devices.filter(d => d.status === "Online").length;
+      const unknownN = devices.filter(d => d.trust === "Unknown").length;
+      const blockedN = devices.filter(d => d.trust === "Blocked" || d.status === "Blocked").length;
+      const totalN = devices.length;
+      const elOnline = document.getElementById("nnDevOnline");
+      const elUnknown = document.getElementById("nnDevUnknown");
+      const elBlocked = document.getElementById("nnDevBlocked");
+      const elTotal = document.getElementById("nnDevTotal");
+      if (elOnline) elOnline.textContent = String(onlineN);
+      if (elUnknown) elUnknown.textContent = String(unknownN);
+      if (elBlocked) elBlocked.textContent = String(blockedN);
+      if (elTotal) elTotal.textContent = String(totalN);
+
       const tbody = $("#deviceTbody");
       const rows = devices
         .filter(deviceMatchesFilter)
@@ -774,6 +851,9 @@
       const d = devices.find(x => x.id === id);
       if(!d) return;
       const prev = { status: d.status, trust: d.trust };
+      // Loading feedback on any visible block buttons
+      const btns = document.querySelectorAll("#spBlock, #mBlock, #aBlock");
+      btns.forEach(b => btnLoading(b, true));
       try{
         await runDeviceAction(d.id, "block");
         pushHistory({
@@ -791,9 +871,11 @@
           title: `Device blocked: ${d.name}`,
           detail: "Tap Undo in Recent actions to revert."
         });
-        showToast("Status updated", `${d.name} marked as Blocked.`, [{ label: "Undo", onClick: () => undoLast() }]);
+        showToast("Device blocked", `${d.name} is now blocked.`, [{ label: "Undo", onClick: () => undoLast() }]);
       } catch (_){
-        showToast("Block failed", "Unable to block device.");
+        showToast("Block failed", "Unable to block device. Check connection.");
+      } finally {
+        btns.forEach(b => btnLoading(b, false));
       }
     }
 
@@ -801,6 +883,8 @@
       const d = devices.find(x => x.id === id);
       if(!d) return;
       const prev = d.status;
+      const btns = document.querySelectorAll("#spPause, #mPause, #aPause");
+      btns.forEach(b => btnLoading(b, true));
       try{
         await runDeviceAction(d.id, "pause");
         pushHistory({
@@ -809,13 +893,15 @@
           detail: `${d.ip} status set to Paused`,
           undo: () => {
             updateDeviceMeta(d.id, { status: prev }).then(() => {
-              showToast("Status updated", `${d.name} restored.`);
+              showToast("Resumed", `${d.name} restored.`);
             }).catch(() => showToast("Undo failed", "Unable to restore device."));
           }
         });
-        showToast("Status updated", `${d.name} marked as Paused.`);
+        showToast("Device paused", `${d.name} is now paused.`);
       } catch (_){
-        showToast("Pause failed", "Unable to pause device.");
+        showToast("Pause failed", "Unable to pause device. Check connection.");
+      } finally {
+        btns.forEach(b => btnLoading(b, false));
       }
     }
 
@@ -825,6 +911,8 @@
       const prev = d.trust;
       const next = (d.trust === "Trusted") ? "Unknown" : "Trusted";
       const action = (next === "Trusted") ? "trust" : "untrust";
+      const btns = document.querySelectorAll("#spTrust, #mTrust, #aTrust");
+      btns.forEach(b => btnLoading(b, true));
       try{
         await runDeviceAction(d.id, action);
         pushHistory({
@@ -837,9 +925,11 @@
             }).catch(() => showToast("Undo failed", "Unable to revert trust."));
           }
         });
-        showToast("Updated", `${d.name} is now ${next}.`);
+        showToast("Trust updated", `${d.name} is now ${next}.`);
       } catch (_){
-        showToast("Update failed", "Unable to change trust.");
+        showToast("Update failed", "Unable to change trust. Check connection.");
+      } finally {
+        btns.forEach(b => btnLoading(b, false));
       }
     }
 
@@ -904,16 +994,21 @@
 
     // export / rescan
     $("#btnRescanDevices").addEventListener("click", () => {
+      showToast("Rescan started", "Refreshing device list...");
       runScan();
     });
     $("#btnExportDevices").addEventListener("click", () => {
+      const btn = document.getElementById("btnExportDevices");
+      btnLoading(btn, true);
       fetchJson("/api/v1/export/devices").then((data) => {
         const payload = JSON.stringify(data, null, 2);
         downloadText(payload, "devices.json", "application/json");
         pushHistory({ when: nowLabel(), title: "Exported device list", detail: "devices.json downloaded", undo: null });
-        showToast("Exported", "Downloaded devices.json");
+        showToast("Exported", "Downloaded devices.json successfully.");
       }).catch(() => {
-        showToast("Export failed", "Backend unavailable.");
+        showToast("Export failed", "Backend unavailable. Try scanning first.");
+      }).finally(() => {
+        btnLoading(btn, false);
       });
     });
 
@@ -1180,7 +1275,14 @@
     function wireToolPrimary(onPrimary){
       const btn = $("#toolPrimaryBtn");
       if(!btn) return;
-      btn.addEventListener("click", () => onPrimary?.());
+      btn.addEventListener("click", async () => {
+        btnLoading(btn, true);
+        try {
+          await onPrimary?.();
+        } finally {
+          btnLoading(btn, false);
+        }
+      });
     }
 
     function toolTemplate(desc, fields, primaryLabel, onPrimary){
@@ -1248,10 +1350,19 @@
       scanInFlight = true;
       const prevIds = new Set(devices.map(d => d.id));
 
+      // Visual feedback: banner, button states, card highlight
+      showScanBanner("Scanning your network...", "");
+      const scanCard = document.getElementById("nnScanProgressCard");
+      scanCard?.classList.add("nn-scan-active");
+      const scanNowBtn = document.getElementById("scanNowBtn");
+      const scanMyNetBtn = document.getElementById("btnScanMyNetwork");
+      btnLoading(scanNowBtn, true);
+      btnLoading(scanMyNetBtn, true);
+
       state.lastScanAt = nowLabel();
       $("#changePill").textContent = `Last scan: ${state.lastScanAt}`;
-      $("#changeText").textContent = "Scan requested. Live progress will update below.";
-      showToast("Scan started", "Scan queued. Live progress will update below.");
+      $("#changeText").textContent = "Scan in progress...";
+      showToast("Scan started", "Scanning your network. Progress updates below.");
       pushHistory({ when: nowLabel(), title: "Scan started", detail: "Network scan.", undo: null });
 
       try{
@@ -1272,8 +1383,8 @@
         renderNetworks();
 
         window.applyScanData?.({
-          progress: 5,
-          phase: "SCANNING",
+          progress: 100,
+          phase: "COMPLETE",
           networks: 1,
           devices: devices.length,
           rssiDbm: NaN,
@@ -1283,6 +1394,11 @@
           gateway: cachedNetworkInfo?.gateway || "--",
           linkUp: true
         });
+
+        const newCount = state.lastChangeCount;
+        const totalDev = devices.length;
+        showScanBanner(`Scan complete — ${totalDev} device${totalDev !== 1 ? "s" : ""} found${newCount > 0 ? `, ${newCount} new` : ""}`, "nn-scan-done");
+        showToast("Scan complete", `Found ${totalDev} device${totalDev !== 1 ? "s" : ""}${newCount > 0 ? `, ${newCount} new` : ""}.`);
 
         const unknown = devices.find(d => d.trust === "Unknown");
         if(unknown){
@@ -1294,10 +1410,18 @@
         }
 
         window.nnUpdateDiscoveryMap?.();
+
+        // Auto-clear banner after 8 seconds
+        setTimeout(hideScanBanner, 8000);
       } catch (err){
+        showScanBanner("Scan failed — backend unavailable or scan blocked", "nn-scan-error");
         showToast("Scan failed", "Backend unavailable or scan blocked.");
+        setTimeout(hideScanBanner, 6000);
       } finally {
         scanInFlight = false;
+        scanCard?.classList.remove("nn-scan-active");
+        btnLoading(scanNowBtn, false);
+        btnLoading(scanMyNetBtn, false);
       }
     }
 
@@ -1305,10 +1429,16 @@
 
     async function stopScan(){
       scanInFlight = false;
+      const scanCard = document.getElementById("nnScanProgressCard");
+      scanCard?.classList.remove("nn-scan-active");
+      hideScanBanner();
+      btnLoading(document.getElementById("scanNowBtn"), false);
+      btnLoading(document.getElementById("btnScanMyNetwork"), false);
       try{
         await fetchJson("/api/v1/discovery/stop", { method: "POST" });
         window.applyScanData?.({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
         showToast("Scan stopped", "Discovery scan canceled.");
+        pushHistory({ when: nowLabel(), title: "Scan stopped", detail: "Canceled by user.", undo: null });
       } catch (_){
         showToast("Stop failed", "Unable to stop scan.");
       } finally {
@@ -1337,31 +1467,37 @@
     $("#btnPauseInternet").addEventListener("click", (e) => {
       e.stopPropagation();
       setTab("devices");
-      showToast("Pick a device", "Select a device to set its status.");
+      showToast("Pick a device", "Select a device, then use 'Set status: Paused' to pause it.");
     });
 
     $("#btnBlockNew").addEventListener("click", (e) => {
       e.stopPropagation();
+      const btn = document.getElementById("btnBlockNew");
+      btnLoading(btn, true);
       fetchJson("/api/v1/rules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ match: "new_device", action: "block" })
       }).then(() => {
         pushHistory({ when: nowLabel(), title: "Auto-block new devices", detail: "Auto-block unknown devices enabled.", undo: null });
-        showToast("Enabled", "Auto-block unknown devices enabled.");
+        showToast("Enabled", "New unknown devices will be auto-blocked.");
+        pushNotification({ when: nowLabel(), title: "Auto-block enabled", detail: "Unknown devices will now be automatically blocked." });
       }).catch(() => {
-        showToast("Enable failed", "Unable to create auto-block rule.");
+        showToast("Enable failed", "Unable to create auto-block rule. Check backend connection.");
+      }).finally(() => {
+        btnLoading(btn, false);
       });
     });
 
     $("#btnShareWifi").addEventListener("click", (e) => {
       e.stopPropagation();
-      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} • ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wi‑Fi (SSID) • WPA2";
+      const text = cachedNetworkInfo?.name ? `${cachedNetworkInfo.name} • ${cachedNetworkInfo.cidr || ""}`.trim() : "Home Wi\u2011Fi (SSID) \u2022 WPA2";
       navigator.clipboard?.writeText(text).then(() => {
-        showToast("Copied", "Wi‑Fi details copied to clipboard.");
-        pushHistory({ when: nowLabel(), title: "Shared Wi‑Fi details", detail: "Copied to clipboard", undo: null });
+        showToast("Copied!", "Wi\u2011Fi details copied to clipboard.");
+        pushHistory({ when: nowLabel(), title: "Shared Wi\u2011Fi details", detail: "Copied to clipboard", undo: null });
       }).catch(() => {
-        showToast("Share", "Clipboard not available here.");
+        // Fallback: show the details so user can manually copy
+        showToast("Wi\u2011Fi Details", text);
       });
     });
 
@@ -1660,37 +1796,61 @@
           const password = document.getElementById("g5arPassword")?.value || "";
           const remember = !!document.getElementById("g5arRemember")?.checked;
           if(!password){ showToast("Gateway", "Password is required."); return; }
-          await fetchJson("/api/v1/g5ar/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password, remember })
-          });
-          showToast("Gateway", "Login succeeded.");
-          refreshG5ar();
+          btnLoading(loginBtn, true);
+          try {
+            await fetchJson("/api/v1/g5ar/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password, remember })
+            });
+            showToast("Gateway", "Login succeeded.");
+            refreshG5ar();
+          } catch (_) {
+            showToast("Gateway login failed", "Check credentials and connection.");
+          } finally {
+            btnLoading(loginBtn, false);
+          }
         });
       }
-      if(refreshBtn){ refreshBtn.addEventListener("click", refreshG5ar); }
+      if(refreshBtn){ refreshBtn.addEventListener("click", () => {
+        btnLoading(refreshBtn, true);
+        refreshG5ar().finally(() => btnLoading(refreshBtn, false));
+      }); }
       if(saveWifiBtn){
         saveWifiBtn.addEventListener("click", async () => {
-          await fetchJson("/api/v1/g5ar/wifi", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ssid24: document.getElementById("g5arSsid24")?.value || null,
-              pass24: document.getElementById("g5arPass24")?.value || null,
-              enabled24: !!document.getElementById("g5arEnabled24")?.checked,
-              raw: (g5arScreenState && g5arScreenState.wifiConfig && g5arScreenState.wifiConfig.raw) || {}
-            })
-          });
-          showToast("Gateway", "Wi-Fi settings updated.");
-          refreshG5ar();
+          btnLoading(saveWifiBtn, true);
+          try {
+            await fetchJson("/api/v1/g5ar/wifi", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ssid24: document.getElementById("g5arSsid24")?.value || null,
+                pass24: document.getElementById("g5arPass24")?.value || null,
+                enabled24: !!document.getElementById("g5arEnabled24")?.checked,
+                raw: (g5arScreenState && g5arScreenState.wifiConfig && g5arScreenState.wifiConfig.raw) || {}
+              })
+            });
+            showToast("Gateway", "Wi-Fi settings updated.");
+            refreshG5ar();
+          } catch (_) {
+            showToast("Save failed", "Unable to update Wi-Fi settings.");
+          } finally {
+            btnLoading(saveWifiBtn, false);
+          }
         });
       }
       if(rebootBtn){
         rebootBtn.addEventListener("click", async () => {
           if(!confirm("Reboot the gateway now?")) return;
-          await fetchJson("/api/v1/g5ar/reboot", { method: "POST" });
-          showToast("Gateway", "Reboot command sent.");
+          btnLoading(rebootBtn, true);
+          try {
+            await fetchJson("/api/v1/g5ar/reboot", { method: "POST" });
+            showToast("Gateway", "Reboot command sent. Gateway will restart.");
+          } catch (_) {
+            showToast("Reboot failed", "Unable to send reboot command.");
+          } finally {
+            btnLoading(rebootBtn, false);
+          }
         });
       }
     }

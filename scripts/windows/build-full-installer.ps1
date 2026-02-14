@@ -44,7 +44,7 @@ $stagingDir  = Join-Path $scriptsDir "staging"
 $outputDir   = Join-Path $repoRoot "build\windows-installer\out"
 $gradlew     = Join-Path $repoRoot "gradlew.bat"
 $webUiDir    = Join-Path $repoRoot "web-ui"
-$iconPng     = Join-Path $repoRoot "web-ui\new_assets\ninja_icon.png"
+$iconPng     = Join-Path $repoRoot "web-ui\new_assets\new_ninjacon.png"
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan

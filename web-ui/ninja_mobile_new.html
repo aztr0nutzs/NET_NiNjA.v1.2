@@ -17,9 +17,7 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="header-media" aria-hidden="true">
-          <video id="headerVideo" autoplay muted loop playsinline>
-            <source src="ninja_header.mp4" type="video/mp4" />
-          </video>
+          <img id="headerImage" src="new_assets/ninja_new_header.png" alt="" />
         </div>
         <div class="header-overlay" aria-hidden="true"></div>
 
@@ -69,6 +67,12 @@
       <!-- DASHBOARD -->
       <section class="tab-page active" id="tab-dashboard" aria-labelledby="tabbtn-dashboard">
         <h2>Dashboard</h2>
+
+        <!-- Scan confirmation banner (shown during/after scans) -->
+        <div class="nn-scan-banner" id="nnScanBanner">
+          <div class="nn-scan-spinner"></div>
+          <span id="nnScanBannerText">Scanning your network...</span>
+        </div>
 
         <div class="grid grid-2">
           <div class="card" id="cardMyNetwork" role="button" tabindex="0">
@@ -212,8 +216,26 @@
       </section>
 
       <!-- DEVICES -->
-      <section class="tab-page" id="tab-devices" aria-labelledby="tabbtn-devices">
+      <section class="tab-page nn-devices-tab" id="tab-devices" aria-labelledby="tabbtn-devices">
         <h2>Devices</h2>
+        <div class="nn-device-summary" id="nnDeviceSummary">
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num" id="nnDevOnline">0</span>
+            <span class="nn-dev-stat-label">Online</span>
+          </div>
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num nn-dev-unknown" id="nnDevUnknown">0</span>
+            <span class="nn-dev-stat-label">Unknown</span>
+          </div>
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num nn-dev-blocked" id="nnDevBlocked">0</span>
+            <span class="nn-dev-stat-label">Blocked</span>
+          </div>
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num" id="nnDevTotal">0</span>
+            <span class="nn-dev-stat-label">Total</span>
+          </div>
+        </div>
 
         <div class="toolbar">
           <div class="row">

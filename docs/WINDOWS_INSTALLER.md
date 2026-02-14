@@ -1,18 +1,51 @@
 # Windows Installer (EXE)
 
-This guide covers building the fully self-contained Windows `.exe` installer for Net Ninja. The installer bundles:
-
-- **Ktor server** (fat-JAR + all dependencies)
-- **Web UI** assets (dashboard, OpenClaw, 3D map, camera viewer)
-- **Portable JRE** (jlink-optimized — no Java installation required on the target machine)
-- **Desktop shortcut** with custom icon
-- **Start Menu** entry with dashboard link and uninstaller
-- **Optional auto-start** on Windows login
-- **Clean uninstall** via Add/Remove Programs
+This guide covers building and running Net Ninja on Windows. Multiple installation options are available, from one-click to full Inno Setup EXE.
 
 ---
 
-## Option A: Full Installer (Recommended) — Inno Setup
+## Option A: One-Click Install (Easiest) — No Prerequisites
+
+The simplest way to install. Double-click a batch file and everything is handled automatically:
+- Builds the server JAR (if source is present)
+- Downloads a portable JRE (if Java is not installed)
+- Copies everything to `%LOCALAPPDATA%\NET_NiNjA`
+- Creates Desktop and Start Menu shortcuts
+- Launches the dashboard in your default browser
+
+### Install
+
+Double-click:
+```
+scripts\windows\INSTALL.cmd
+```
+
+Or from PowerShell:
+```powershell
+.\scripts\windows\install-netninja.ps1
+```
+
+Skip the Gradle build if the fat-JAR already exists:
+```powershell
+.\scripts\windows\install-netninja.ps1 -SkipBuild
+```
+
+### Uninstall
+
+Double-click:
+```
+scripts\windows\UNINSTALL.cmd
+```
+
+### After Install
+
+- Double-click **NET NiNjA** on your Desktop to launch
+- Dashboard opens at `http://127.0.0.1:8787/ui/ninja_mobile_new.html`
+- Server runs in the background (check Task Manager for `java.exe`)
+
+---
+
+## Option B: Full Installer (Recommended for Distribution) — Inno Setup
 
 Produces a single self-extracting EXE with bundled JRE. End users need **nothing pre-installed**.
 
@@ -45,7 +78,7 @@ Skip Gradle build if fat-JAR already exists:
 ### What the Build Script Does (Automated)
 1. Builds `server-all.jar` via `gradlew :server:shadowJar`
 2. Creates a minimal JRE (~45 MB) via `jlink` with only required modules
-3. Converts `ninja_icon.png` → multi-resolution `netninja.ico`
+3. Converts `new_ninjacon.png` → multi-resolution `netninja.ico`
 4. Stages all files (lib/, jre/, web-ui/, launchers)
 5. Compiles the Inno Setup script into `NetNiNjA-v1.2.0-Setup.exe`
 

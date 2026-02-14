@@ -1,4 +1,4 @@
-![NET NiNjA header](web-ui/new_assets/ninja_header_readme.png)
+![NET NiNjA header](web-ui/new_assets/ninja_new_header.png)
 
 # NET NiNjA v1.2
 
