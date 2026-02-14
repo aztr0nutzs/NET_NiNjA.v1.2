@@ -162,4 +162,37 @@ class G5arApiImplTest {
     assertTrue("expected multiple login payload attempts", loginAttempt > 1)
     assertEquals("form-token", session.token)
   }
+
+  @Test
+  fun loginSupportsCookieSessionWhenBodyHasNoToken() = runBlocking {
+    server.dispatcher = object : Dispatcher() {
+      override fun dispatch(request: RecordedRequest): MockResponse {
+        return when {
+          request.path == "/TMI/v1/auth/login" -> MockResponse()
+            .setResponseCode(200)
+            .addHeader("Set-Cookie", "SESSION=abc123; Path=/; HttpOnly")
+            .setBody("{}")
+
+          request.path == "/TMI/v1/network/telemetry?get=clients" -> {
+            val cookie = request.getHeader("Cookie")
+            if (cookie == "SESSION=abc123") {
+              MockResponse().setResponseCode(200).setBody("""[{"name":"CookieClient"}]""")
+            } else {
+              MockResponse().setResponseCode(401)
+            }
+          }
+
+          else -> MockResponse().setResponseCode(404)
+        }
+      }
+    }
+
+    val api = G5arApiImpl(server.url("/").toString().trimEnd('/'), RetryPolicy(maxAttempts = 1))
+    val session = api.login("admin", "pw")
+    val clients = api.getClients(session)
+
+    assertEquals("abc123", session.token)
+    assertEquals("SESSION=abc123", session.cookieHeader)
+    assertEquals("CookieClient", clients.first().name)
+  }
 }
