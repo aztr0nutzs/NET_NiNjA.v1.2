@@ -45,7 +45,7 @@ Skip Gradle build if fat-JAR already exists:
 ### What the Build Script Does (Automated)
 1. Builds `server-all.jar` via `gradlew :server:shadowJar`
 2. Creates a minimal JRE (~45 MB) via `jlink` with only required modules
-3. Converts `ninja_icon.png` → multi-resolution `netninja.ico`
+3. Converts `new_ninjacon.png` → multi-resolution `netninja.ico`
 4. Stages all files (lib/, jre/, web-ui/, launchers)
 5. Compiles the Inno Setup script into `NetNiNjA-v1.2.0-Setup.exe`
 
