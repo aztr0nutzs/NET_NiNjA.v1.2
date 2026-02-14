@@ -13,6 +13,7 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import com.netninja.EngineService
 import com.netninja.json.booleanOrNull
+import com.netninja.json.contentOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -96,6 +97,8 @@ class RouterControlActivity : AppCompatActivity() {
               val method = p["method"]?.jsonPrimitive?.content?.trim().orEmpty().ifBlank { "GET" }
               val path = p["path"]?.jsonPrimitive?.content?.trim().orEmpty()
               val body = p["body"]
+              val baseUrl = p["baseUrl"]?.jsonPrimitive?.contentOrNull
+              client.setBaseUrl(baseUrl)
               val data = client.handleHttp(method = method, path = path, body = body, remember = remember)
               runCatching { client.refreshSnapshot() }
               buildJsonObject {

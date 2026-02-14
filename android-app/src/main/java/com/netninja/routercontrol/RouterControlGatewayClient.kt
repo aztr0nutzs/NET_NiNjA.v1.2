@@ -30,8 +30,8 @@ import java.net.URL
 
 class RouterControlGatewayClient(
   context: Context,
-  private val api: G5arApi = G5arApiImpl(),
-  private val baseUrl: String = G5arApiImpl.DEFAULT_BASE_URL
+  initialBaseUrl: String = G5arApiImpl.DEFAULT_BASE_URL,
+  private val apiFactory: (String) -> G5arApi = { base -> G5arApiImpl(baseUrl = base) }
 ) {
   private val creds = G5arCredentialStore(context.applicationContext)
   private val lock = Mutex()
@@ -44,6 +44,12 @@ class RouterControlGatewayClient(
 
   @Volatile
   private var session: G5arSession? = null
+
+  @Volatile
+  private var baseUrl: String = normalizeBaseUrl(initialBaseUrl)
+
+  @Volatile
+  private var api: G5arApi = apiFactory(baseUrl)
 
   @Volatile
   private var version: JsonObject? = null
@@ -158,6 +164,22 @@ class RouterControlGatewayClient(
 
       else -> throw IOException("Unsupported route: $normalizedMethod $normalizedPath")
     }
+  }
+
+  suspend fun setBaseUrl(nextBaseUrl: String?) = lock.withLock {
+    val normalized = normalizeBaseUrl(nextBaseUrl)
+    if (normalized == baseUrl) return@withLock
+    baseUrl = normalized
+    api = apiFactory(baseUrl)
+    session = null
+    version = null
+    gatewayAll = null
+    gatewaySignal = null
+    cell = null
+    clients = JsonArray(emptyList())
+    sim = null
+    wifi = null
+    addLog("BASE_URL set to $baseUrl")
   }
 
   suspend fun refreshSnapshot() = lock.withLock {
@@ -284,6 +306,12 @@ class RouterControlGatewayClient(
     val ts = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
     logs.addFirst("$ts | $msg")
     while (logs.size > 200) logs.removeLast()
+  }
+
+  private fun normalizeBaseUrl(raw: String?): String {
+    val cleaned = raw?.trim().orEmpty().ifBlank { G5arApiImpl.DEFAULT_BASE_URL }
+    val withScheme = if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) cleaned else "http://$cleaned"
+    return withScheme.trimEnd('/')
   }
 }
 

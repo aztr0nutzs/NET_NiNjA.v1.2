@@ -553,7 +553,7 @@
     if (nativeBridge && typeof nativeBridge.request === 'function') {
       const raw = nativeBridge.request(JSON.stringify({
         action: 'http',
-        payload: { path, method, body, auth, timeoutMs },
+        payload: { path, method, body, auth, timeoutMs, baseUrl: stateStore.baseUrl },
         remember: !!(body && body.remember)
       }));
       const parsed = raw ? JSON.parse(raw) : { ok: false, error: 'Empty bridge response' };
