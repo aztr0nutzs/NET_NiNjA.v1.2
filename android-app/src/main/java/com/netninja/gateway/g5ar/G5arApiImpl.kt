@@ -19,9 +19,16 @@ import java.net.SocketTimeoutException
 import java.net.URLEncoder
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 class G5arApiImpl(
-  private val baseUrl: String = DEFAULT_BASE_URL,
+  baseUrl: String = DEFAULT_BASE_URL,
   private val retryPolicy: RetryPolicy = RetryPolicy(maxAttempts = 2, initialDelayMs = 150, maxDelayMs = 500)
 ) : G5arApi {
 
@@ -32,6 +39,9 @@ class G5arApiImpl(
   }
 
   @Volatile
+  private var activeBaseUrl: String = baseUrl.trimEnd('/')
+
+  @Volatile
   private var lastLoginCredentials: Pair<String, String>? = null
 
   /** Persistent cookie jar — accumulates Set-Cookie values across all responses. */
@@ -40,6 +50,39 @@ class G5arApiImpl(
   /** Cached CSRF token extracted from response headers or cookies. */
   @Volatile
   private var csrfToken: String? = null
+
+  private val insecureSslContext: SSLContext by lazy {
+    val trustAll = arrayOf<TrustManager>(
+      object : X509TrustManager {
+        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = Unit
+        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) = Unit
+        override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+      }
+    )
+    SSLContext.getInstance("TLS").apply {
+      init(null, trustAll, SecureRandom())
+    }
+  }
+
+  private val trustAllHostnames: HostnameVerifier = HostnameVerifier { _, _ -> true }
+
+  private fun isPrivateHost(host: String): Boolean {
+    return host == "192.168.12.1" ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      host.startsWith("172.16.") || host.startsWith("172.17.") || host.startsWith("172.18.") ||
+      host.startsWith("172.19.") || host.startsWith("172.20.") || host.startsWith("172.21.") ||
+      host.startsWith("172.22.") || host.startsWith("172.23.") || host.startsWith("172.24.") ||
+      host.startsWith("172.25.") || host.startsWith("172.26.") || host.startsWith("172.27.") ||
+      host.startsWith("172.28.") || host.startsWith("172.29.") || host.startsWith("172.30.") ||
+      host.startsWith("172.31.") ||
+      host == "localhost" || host == "127.0.0.1"
+  }
+
+  private fun baseFromUrl(u: URL): String {
+    val port = if (u.port != -1 && u.port != u.defaultPort) ":${u.port}" else ""
+    return "${u.protocol}://${u.host}$port"
+  }
 
   override suspend fun discover(): Boolean = withContext(Dispatchers.IO) {
     try {
@@ -87,7 +130,8 @@ class G5arApiImpl(
 
     var lastFailure: HttpResult? = null
     for (attempt in attempts) {
-      val response = when (attempt) {
+      val response = try {
+        when (attempt) {
         is LoginAttempt.Json -> request(
           method = "POST",
           path = "/TMI/v1/auth/login",
@@ -101,6 +145,10 @@ class G5arApiImpl(
           rawBody = attempt.body,
           contentType = "application/x-www-form-urlencoded"
         )
+      }
+      } catch (e: IOException) {
+        lastFailure = HttpResult(code = -1, body = (e.message ?: "IOException"), headers = emptyMap())
+        continue
       }
 
       if (response.code !in 200..299) {
@@ -277,10 +325,12 @@ class G5arApiImpl(
     session: G5arSession? = null,
     payload: JsonObject? = null,
     rawBody: String? = null,
-    contentType: String = "application/json"
+    contentType: String = "application/json",
+    redirectDepth: Int = 0
   ): HttpResult {
     return withContext(Dispatchers.IO) {
-      val conn = (URL(baseUrl.trimEnd('/') + path).openConnection() as HttpURLConnection).apply {
+      val conn = (URL(activeBaseUrl.trimEnd('/') + path).openConnection() as HttpURLConnection).apply {
+        instanceFollowRedirects = false
         requestMethod = method
         connectTimeout = CONNECT_TIMEOUT_MS
         readTimeout = READ_TIMEOUT_MS
@@ -292,6 +342,10 @@ class G5arApiImpl(
         } else if (token != null && session?.cookieHeader == null) {
           setRequestProperty("Authorization", "Bearer $token")
         }
+      if (conn is HttpsURLConnection && isPrivateHost(conn.url.host)) {
+        conn.sslSocketFactory = insecureSslContext.socketFactory
+        conn.hostnameVerifier = trustAllHostnames
+      }
         // Merge persistent cookie jar with session cookies (jar takes priority)
         val jarCookies = cookieJar.entries.joinToString("; ") { "${it.key}=${it.value}" }
         val cookieStr = jarCookies.takeIf { it.isNotBlank() }
@@ -313,6 +367,23 @@ class G5arApiImpl(
           }
         }
         val code = conn.responseCode
+        if (code in 300..399 && redirectDepth == 0) {
+          val location = conn.getHeaderField("Location")?.trim()
+          if (!location.isNullOrBlank()) {
+            val resolved = URL(conn.url, location)
+            val newBase = baseFromUrl(resolved)
+            activeBaseUrl = newBase.trimEnd('/')
+            return@withContext request(
+              method = method,
+              path = path,
+              session = session,
+              payload = payload,
+              rawBody = rawBody,
+              contentType = contentType,
+              redirectDepth = 1
+            )
+          }
+        }
         val stream = if (code >= 400) conn.errorStream else conn.inputStream
         val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
         val result = HttpResult(code = code, body = body, headers = conn.headerFields)
@@ -449,7 +520,7 @@ class G5arApiImpl(
 
   companion object {
     const val DEFAULT_BASE_URL = "http://192.168.12.1"
-    private const val CONNECT_TIMEOUT_MS = 2500
-    private const val READ_TIMEOUT_MS = 4500
+    private const val CONNECT_TIMEOUT_MS = 7000
+    private const val READ_TIMEOUT_MS = 12000
   }
 }
