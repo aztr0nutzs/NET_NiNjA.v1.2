@@ -18,6 +18,30 @@ plugins {
 // If you hit persistent file locks in this directory, bump the folder name to move outputs.
 buildDir = rootProject.layout.buildDirectory.dir("android-app-out").get().asFile
 
+// AGP/Kotlin tasks occasionally assume certain intermediate directories and report files exist.
+// Gradle 9+ validates task inputs/outputs strictly, so ensure these paths are present even when
+// upstream tasks are NO-SOURCE / skipped (common for androidTest + external file deps).
+val ensureAgpWorkDirs by tasks.registering {
+    val requiredDirs = listOf(
+        // Referenced by :app:mergeExtDex* tasks (AGP expects this directory to exist).
+        layout.buildDirectory.dir(
+            "intermediates/external_file_lib_dex_archives/debugAndroidTest/desugarDebugAndroidTestFileDependencies"
+        ),
+        layout.buildDirectory.dir(
+            "intermediates/external_file_lib_dex_archives/debug/desugarDebugFileDependencies"
+        ),
+        // Referenced by Kotlin incremental compilation classpath snapshot shrinker.
+        layout.buildDirectory.dir("kotlin/compileDebugKotlin/classpath-snapshot"),
+        layout.buildDirectory.dir("kotlin/compileDebugAndroidTestKotlin/classpath-snapshot"),
+    )
+
+    outputs.dirs(requiredDirs)
+
+    doLast {
+        requiredDirs.forEach { it.get().asFile.mkdirs() }
+    }
+}
+
 val syncWebUiAssets by tasks.registering(Sync::class) {
     // Single source of truth for the UI bundle lives at repo root `web-ui/`.
     from(rootProject.file("web-ui"))
@@ -86,6 +110,28 @@ kotlin {
 
 tasks.named("preBuild") {
     dependsOn(syncWebUiAssets)
+}
+
+tasks.matching { it.name.startsWith("mergeExtDex") || it.name.startsWith("mergeLibDex") || it.name.startsWith("mergeProjectDex") }
+    .configureEach {
+        dependsOn(ensureAgpWorkDirs)
+    }
+
+// When there are no duplicate classes, AGP may skip writing the results report file; Gradle then
+// fails while snapshotting declared outputs. Touch missing output files for these tasks only.
+tasks.matching { it.name.endsWith("DuplicateClasses") }.configureEach {
+    dependsOn(ensureAgpWorkDirs)
+    doLast {
+        outputs.files.files
+            .asSequence()
+            .filter { !it.exists() }
+            // Heuristic: results files tend to have an extension; avoid creating directories by mistake.
+            .filter { it.name.contains('.') }
+            .forEach { outFile ->
+                outFile.parentFile?.mkdirs()
+                outFile.writeText("")
+            }
+    }
 }
 
 dependencies {

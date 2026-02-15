@@ -1,38 +1,38 @@
 
 plugins {
-  kotlin("jvm")
-  kotlin("plugin.serialization")
-  application
-  id("com.gradleup.shadow")
+    kotlin("jvm")
+    kotlin("plugin.serialization")
+    application
+    id("com.gradleup.shadow")
 }
 
 application {
-  mainClass.set("server.MainKt")
+    mainClass.set("server.MainKt")
 }
 
 dependencies {
-  implementation(project(":core"))
-  implementation(libs.ktor.server.netty)
-  implementation(libs.ktor.server.core)
-  implementation(libs.ktor.server.cors)
-  implementation(libs.ktor.server.content.negotiation)
-  implementation(libs.ktor.serialization.kotlinx.json)
-  implementation(libs.ktor.server.websockets)
-  implementation(libs.kotlinx.coroutines.core)
-  implementation(libs.logback.classic)
+    implementation(project(":core"))
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.server.websockets)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.logback.classic)
 
-  testImplementation("io.ktor:ktor-server-test-host:2.3.7")
-  testImplementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-  testImplementation(kotlin("test"))
+    testImplementation("io.ktor:ktor-server-test-host:2.3.7")
+    testImplementation("io.ktor:ktor-client-content-negotiation:2.3.7")
+    testImplementation(kotlin("test"))
 }
 
 kotlin {
-  // Align with the JDK shipped with Android Studio (JBR 21) on this machine.
-  // If you need JDK 17 for CI, pin it via toolchain downloads in settings.gradle(.kts).
-  jvmToolchain(21)
+    // Align with the JDK shipped with Android Studio (JBR 21) on this machine.
+    // If you need JDK 17 for CI, pin it via toolchain downloads in settings.gradle(.kts).
+    jvmToolchain(21)
 }
 
 tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
-  archiveFileName.set("server-all.jar")
-  mergeServiceFiles()
+    archiveFileName.set("server-all.jar")
+    mergeServiceFiles()
 }

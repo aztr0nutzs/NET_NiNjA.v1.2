@@ -2,11 +2,10 @@
 
 package com.netninja.gateway.g5ar
 
-import com.netninja.json.booleanOrNull
-import com.netninja.json.contentOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 
 @Serializable
 data class G5arSession(
@@ -99,7 +98,6 @@ internal fun JsonObject.getBoolean(vararg keys: String): Boolean? {
     val value = this[key] ?: continue
     when (value) {
       is kotlinx.serialization.json.JsonPrimitive -> {
-        value.booleanOrNull?.let { return it }
         value.contentOrNull?.trim()?.lowercase()?.let {
           when (it) {
             "1", "true", "enabled", "on", "up" -> return true

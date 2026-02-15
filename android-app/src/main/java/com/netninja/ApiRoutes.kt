@@ -18,6 +18,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.http.content.staticFiles
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveChannel
 import io.ktor.server.response.cacheControl
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
@@ -873,8 +874,7 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
                 val snap = openClawJson.encodeToString(
                   OpenClawGatewaySnapshot.serializer(),
                   OpenClawGatewaySnapshot(
-                    nodes = OpenClawGatewayState.listNodes(),
-                    uptimeMs = OpenClawGatewayState.uptimeMs()
+                    nodes = OpenClawGatewayState.listNodes()
                   )
                 )
                 outgoing.trySend(Frame.Text(snap))
