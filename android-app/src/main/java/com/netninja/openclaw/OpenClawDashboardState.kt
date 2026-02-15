@@ -229,6 +229,20 @@ class OpenClawDashboardState(private val db: LocalDatabase? = null) {
                 ).forEach { skills[it.name] = it }
             }
 
+
+// Companion mode defaults: make OpenClaw usable immediately with zero setup.
+connected = true
+if (lastSync == null) lastSync = System.currentTimeMillis()
+
+// Seed a visible greeting so the chat view isn't an empty void.
+if (messages.isEmpty()) {
+    addMessage(
+        gateway = "openclaw",
+        channel = "general",
+        body = "OpenClaw online. Type /help for commands."
+    )
+}
+
             appendLog("OpenClaw dashboard state initialized.")
             persistAll()
         }
@@ -517,6 +531,25 @@ class OpenClawDashboardState(private val db: LocalDatabase? = null) {
         persistMessages()
         message
     }
+
+
+fun addChatMessage(body: String, channel: String = "general"): MessageSnapshot = synchronized(lock) {
+    val trimmed = body.trim()
+    val ch = channel.trim().ifBlank { "general" }
+
+    val userMsg = addMessage(gateway = "user", channel = ch, body = trimmed)
+
+    val reply = when {
+        trimmed.isBlank() -> "Say something. Humans love silence, apps shouldn't."
+        trimmed.startsWith("/") -> runCommand(trimmed).output.ifBlank { "OK." }.take(3000)
+        trimmed.equals("help", ignoreCase = true) -> runCommand("/help").output.take(3000)
+        else -> "I'm online. Try /help, /status, /nodes, /skills, /gateways, /instances."
+    }
+
+    addMessage(gateway = "openclaw", channel = ch, body = reply)
+    userMsg
+}
+
 
     // ── Cron Job operations ─────────────────────────────────────────
 
