@@ -57,7 +57,17 @@ Produces a single self-extracting EXE with bundled JRE. End users need **nothing
 | Inno Setup 6 | [Download](https://jrsoftware.org/isdl.php) | Free; installs `ISCC.exe` |
 | Gradle | Bundled | `gradlew.bat` in repo root |
 
-### Build Steps
+### Fastest EXE Build (Auto-select)
+
+This command picks the best available pipeline automatically:
+- Inno Setup present -> full self-contained EXE
+- Otherwise jpackage present -> lightweight EXE
+
+```powershell
+.\scripts\windows\build-auto-exe-installer.ps1 -AppVersion "1.2.0"
+```
+
+### Full Inno Setup Build
 
 From the repo root:
 

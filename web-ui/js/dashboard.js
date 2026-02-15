@@ -1450,7 +1450,7 @@
 
     $("#scanNowBtn").addEventListener("click", () => runScan());
     $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan(); });
-    $("#btnNetworksScanMy").addEventListener("click", () => runScan());
+    $("#btnNetworksScanMy")?.addEventListener("click", () => runScan());
 
     $("#btnViewOnlineDevices").addEventListener("click", (e) => {
       e.stopPropagation();
