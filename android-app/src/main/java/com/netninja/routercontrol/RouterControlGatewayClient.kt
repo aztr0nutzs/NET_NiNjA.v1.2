@@ -232,6 +232,8 @@ class RouterControlGatewayClient(
       connectTimeout = 2500
       readTimeout = 4500
       setRequestProperty("Accept", "application/json")
+      // Forward session cookies for consistency with authenticated flow
+      session?.cookieHeader?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", it) }
     }
     try {
       val code = conn.responseCode

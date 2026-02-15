@@ -12,7 +12,8 @@ data class G5arSession(
   val token: String,
   val issuedAtMs: Long,
   val authHeader: String? = null,
-  val cookieHeader: String? = null
+  val cookieHeader: String? = null,
+  val csrfToken: String? = null
 )
 
 @Serializable

@@ -18,6 +18,7 @@ import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
 import java.net.URLEncoder
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 
 class G5arApiImpl(
   private val baseUrl: String = DEFAULT_BASE_URL,
@@ -33,6 +34,13 @@ class G5arApiImpl(
   @Volatile
   private var lastLoginCredentials: Pair<String, String>? = null
 
+  /** Persistent cookie jar — accumulates Set-Cookie values across all responses. */
+  private val cookieJar = ConcurrentHashMap<String, String>()
+
+  /** Cached CSRF token extracted from response headers or cookies. */
+  @Volatile
+  private var csrfToken: String? = null
+
   override suspend fun discover(): Boolean = withContext(Dispatchers.IO) {
     try {
       val response = request("GET", "/TMI/v1/version")
@@ -45,6 +53,9 @@ class G5arApiImpl(
   }
 
   override suspend fun login(username: String, password: String): G5arSession = withContext(Dispatchers.IO) {
+    cookieJar.clear()
+    csrfToken = null
+
     val attempts = listOf(
       LoginAttempt.Json(
         body = buildJsonObject {
@@ -101,6 +112,10 @@ class G5arApiImpl(
       val token = extractToken(parsedBody)
       val authHeader = extractAuthHeader(response)
       val cookieHeader = extractCookieHeader(response)
+      // Extract CSRF from response headers, CSRF cookies, or JSON body
+      val csrf = extractCsrfFromResponse(response, parsedBody)
+      if (csrf != null) csrfToken = csrf
+
       val resolvedToken = token
         ?: authHeader?.removePrefix("Bearer ")?.removePrefix("bearer ")?.trim()
         ?: cookieHeader
@@ -115,7 +130,8 @@ class G5arApiImpl(
           token = resolvedToken,
           issuedAtMs = System.currentTimeMillis(),
           authHeader = authHeader,
-          cookieHeader = cookieHeader
+          cookieHeader = cookieHeader,
+          csrfToken = csrf
         )
       }
       lastFailure = response
@@ -276,7 +292,16 @@ class G5arApiImpl(
         } else if (token != null && session?.cookieHeader == null) {
           setRequestProperty("Authorization", "Bearer $token")
         }
-        session?.cookieHeader?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", it) }
+        // Merge persistent cookie jar with session cookies (jar takes priority)
+        val jarCookies = cookieJar.entries.joinToString("; ") { "${it.key}=${it.value}" }
+        val cookieStr = jarCookies.takeIf { it.isNotBlank() }
+          ?: session?.cookieHeader?.takeIf { it.isNotBlank() }
+        cookieStr?.let { setRequestProperty("Cookie", it) }
+        // Propagate CSRF token on mutating requests
+        val csrf = csrfToken ?: session?.csrfToken
+        if (csrf != null && method in listOf("POST", "PUT", "DELETE", "PATCH")) {
+          setRequestProperty("X-CSRF-Token", csrf)
+        }
       }
       try {
         val bodyToWrite = rawBody ?: payload?.let { json.encodeToString(JsonObject.serializer(), it) }
@@ -290,7 +315,10 @@ class G5arApiImpl(
         val code = conn.responseCode
         val stream = if (code >= 400) conn.errorStream else conn.inputStream
         val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-        HttpResult(code = code, body = body, headers = conn.headerFields)
+        val result = HttpResult(code = code, body = body, headers = conn.headerFields)
+        updateCookieJar(result)
+        extractCsrfFromResponse(result)?.let { csrfToken = it }
+        result
       } finally {
         conn.disconnect()
       }
@@ -380,6 +408,41 @@ class G5arApiImpl(
     fun headerValues(name: String): List<String> {
       return headers.entries.firstOrNull { (key, _) -> key?.equals(name, ignoreCase = true) == true }?.value.orEmpty()
     }
+  }
+
+  /** Merge Set-Cookie values from a response into the persistent cookie jar. */
+  private fun updateCookieJar(response: HttpResult) {
+    response.headerValues("Set-Cookie").forEach { raw ->
+      val pair = raw.substringBefore(';').trim()
+      val eqIdx = pair.indexOf('=')
+      if (eqIdx > 0) {
+        val name = pair.substring(0, eqIdx).trim()
+        val value = pair.substring(eqIdx + 1).trim()
+        if (name.isNotBlank()) cookieJar[name] = value
+      }
+    }
+  }
+
+  /**
+   * Extract a CSRF token from response headers, CSRF cookies, or optionally from a JSON body.
+   * Checks common header/cookie names used by T-Mobile G5AR firmware.
+   */
+  private fun extractCsrfFromResponse(response: HttpResult, body: JsonElement? = null): String? {
+    // 1. Response headers (highest priority)
+    val headerNames = listOf("X-CSRF-Token", "CSRF-Token", "X-XSRF-TOKEN")
+    for (name in headerNames) {
+      response.firstHeader(name)?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+    }
+    // 2. CSRF cookies — cookie value is the token
+    val csrfCookieNames = setOf("xsrf-token", "_csrf", "csrf_token", "csrf-token")
+    for ((name, value) in cookieJar) {
+      if (name.lowercase() in csrfCookieNames && value.isNotBlank()) return value
+    }
+    // 3. JSON body (login response may include a csrf field)
+    if (body is JsonObject) {
+      body.getString("csrf", "csrfToken", "csrf_token", "_csrf")?.let { return it }
+    }
+    return null
   }
 
   private class UnauthorizedException : IOException("Unauthorized")

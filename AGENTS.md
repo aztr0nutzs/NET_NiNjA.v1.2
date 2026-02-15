@@ -1,4 +1,25 @@
 # AGENTS.md
+# Agent Rules (OMX/Codex)
+
+## Non-negotiables
+- Do NOT change Gradle/AGP/Kotlin versions unless explicitly instructed.
+- Do NOT rename packages, modules, or directories.
+- Do NOT refactor unrelated code.
+- Do NOT introduce new libraries unless required and justified.
+
+## Workflow
+- Always inspect before editing: identify files, dependencies, versions, and risks.
+- Make minimal diffs. Prefer targeted fixes.
+- Provide a step-by-step plan BEFORE edits.
+- After edits, run:
+  - ./gradlew :app:assembleDebug
+  - ./gradlew test (if present)
+  - ./gradlew lint (if present)
+- Summarize changes file-by-file.
+
+## Output
+- Must compile and not break existing behavior.
+- If information is missing, state assumptions and proceed safely.
 
 ## Purpose
 These instructions apply to the entire repository. Follow them for every change.
