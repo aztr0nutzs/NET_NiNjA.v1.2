@@ -657,7 +657,7 @@ input, .mono{
 
   <section class="glass-panel" style="position:relative; width:auto; margin:0 0 14px; max-width:none;">
     <div class="neon-title" style="font-size:2.0rem" id="titleText">OPENCLAW</div>
-    <p class="subtitle" id="subText">Gateway dashboard shell. The sidebar tabs are wired. The backend is still your problem (as usual).</p>
+    <p class="subtitle" id="subText">OpenClaw companion is online. Chat is ready immediately. No setup required.</p>
 
     <div class="badges">
       <div class="badge" id="badgeNodes"><span class="dot"></span><span>NODES: <b id="badgeNodesText">0</b></span></div>
@@ -672,11 +672,11 @@ input, .mono{
       <div class="card">
         <h2>Chat</h2>
         <p class="subtitle" style="margin-top:-6px; opacity:0.5; font-style:italic;">
-          Coming soon — this feature is under development.
+          Talk to OpenClaw here. Try /help, /status, /nodes, /skills.
         </p>
 
         <div class="controls">
-          <div class="row">
+          <div class="row" style="display:none;">
             <div style="flex:1; min-width:220px;">
               <select id="msgGateway">
                 <option value="whatsapp" selected>WhatsApp</option>
@@ -871,7 +871,7 @@ input, .mono{
     <div class="card">
       <h2>Cron Jobs</h2>
       <p class="subtitle" style="margin-top:-6px; opacity:0.5; font-style:italic;">
-        Coming soon — this feature is under development.
+        Talk to OpenClaw here. Try /help, /status, /nodes, /skills.
       </p>
       <div class="row" style="justify-content:flex-end;">
         <button class="cybr-btn" type="button" id="btnClearLogs">
@@ -892,7 +892,7 @@ input, .mono{
       <div class="card">
         <h2>Skills</h2>
         <p class="subtitle" style="margin-top:-6px; opacity:0.5; font-style:italic;">
-          Coming soon — this feature is under development.
+          Talk to OpenClaw here. Try /help, /status, /nodes, /skills.
         </p>
         <div class="output-glass">
           <h2>Registered skills</h2>
@@ -926,7 +926,7 @@ input, .mono{
       <div class="card">
         <h2>Modes</h2>
         <p class="subtitle" style="margin-top:-6px; opacity:0.5; font-style:italic;">
-          Coming soon — this feature is under development.
+          Talk to OpenClaw here. Try /help, /status, /nodes, /skills.
         </p>
         <div class="row">
           <button class="cybr-btn" type="button" id="btnModeSafe" style="flex:1;">
@@ -960,7 +960,7 @@ input, .mono{
       <div class="card">
         <h2>Config</h2>
         <p class="subtitle" style="margin-top:-6px; opacity:0.5; font-style:italic;">
-          Coming soon — this feature is under development.
+          Talk to OpenClaw here. Try /help, /status, /nodes, /skills.
         </p>
 
         <div class="row">
@@ -996,7 +996,7 @@ input, .mono{
       <div class="card">
         <h2>Debug</h2>
         <p class="subtitle" style="margin-top:-6px; opacity:0.5; font-style:italic;">
-          Coming soon — this feature is under development.
+          Talk to OpenClaw here. Try /help, /status, /nodes, /skills.
         </p>
 
         <div class="row">
@@ -1751,7 +1751,7 @@ input, .mono{
       if(el('msgBody')) el('msgBody').value = '';
 
       try{
-        const result = await postJson('/api/openclaw/messages', { gateway: gw, channel: ch, body });
+        const result = await postJson('/api/openclaw/chat/send', { body, channel: ch });
         if(result && typeof result === 'object'){
           state.messages.push(result);
           state.messages = state.messages.slice(-200);
