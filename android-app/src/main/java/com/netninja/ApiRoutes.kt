@@ -857,7 +857,7 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Message body required"))
           return@post
         }
-        call.respond(openClawDashboard.addMessage(gw, ch, body))
+        call.respond(openClawDashboard.addChatMessage(body = body, channel = ch))
       }
 
       get("/api/openclaw/cron") {
