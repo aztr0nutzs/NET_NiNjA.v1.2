@@ -62,6 +62,7 @@ import android.database.sqlite.SQLiteDatabase
 
 import com.netninja.config.ServerConfig
 import com.netninja.logging.StructuredLogger
+import com.netninja.progress.AtomicScanProgress
 import com.netninja.repository.DeviceRepository
 import com.netninja.scan.ScanEngine
 
@@ -188,7 +189,8 @@ class AndroidLocalServer(internal val ctx: Context) {
   internal val lastScanRequestedAt = AtomicReference<Long?>(null)
   private val lastScanResults = AtomicReference<List<Device>>(emptyList())
   internal val lastScanError = AtomicReference<String?>(null)
-  internal val scanProgress = AtomicReference(ScanProgress())
+  internal val scanProgress = AtomicScanProgress()
+  internal val scanProgressFlow = scanProgress.flow
   internal val scanCancel = AtomicBoolean(false)
   internal val activeScanId = AtomicReference<String?>(null)
   private val scanScope = CoroutineScope(Dispatchers.IO + SupervisorJob())

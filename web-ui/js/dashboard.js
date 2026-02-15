@@ -1382,19 +1382,6 @@
         renderDevices();
         renderNetworks();
 
-        window.applyScanData?.({
-          progress: 100,
-          phase: "COMPLETE",
-          networks: 1,
-          devices: devices.length,
-          rssiDbm: NaN,
-          ssid: cachedNetworkInfo?.name || "--",
-          bssid: "--",
-          subnet: cachedNetworkInfo?.cidr || "--",
-          gateway: cachedNetworkInfo?.gateway || "--",
-          linkUp: true
-        });
-
         const newCount = state.lastChangeCount;
         const totalDev = devices.length;
         showScanBanner(`Scan complete — ${totalDev} device${totalDev !== 1 ? "s" : ""} found${newCount > 0 ? `, ${newCount} new` : ""}`, "nn-scan-done");
@@ -2009,6 +1996,18 @@
         elPhase.textContent = "COMPLETE";
       }
       setPill(elPhase.textContent, p);
+    };
+
+    window.onNativeScanProgress = function onNativeScanProgress(data){
+      window.applyScanData(data);
+      const phase = typeof data?.phase === "string" ? data.phase.trim().toUpperCase() : "";
+      const pct = clampNumber(data?.progress, 0, 100);
+      const scanCard = document.getElementById("nnScanProgressCard");
+      if (phase && phase !== "IDLE" && phase !== "COMPLETE" && phase !== "CANCELLED" && phase !== "ERROR" && pct < 100) {
+        scanCard?.classList.add("nn-scan-active");
+      } else {
+        scanCard?.classList.remove("nn-scan-active");
+      }
     };
 
     function stopAll(){

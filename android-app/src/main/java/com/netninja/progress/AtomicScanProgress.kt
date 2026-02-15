@@ -1,6 +1,9 @@
 package com.netninja.progress
 
 import com.netninja.ScanProgress
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -10,12 +13,17 @@ import java.util.concurrent.atomic.AtomicReference
 class AtomicScanProgress {
   
   private val progress = AtomicReference(ScanProgress())
+  private val progressFlow = MutableStateFlow(progress.get())
+
+  val flow: StateFlow<ScanProgress> = progressFlow.asStateFlow()
 
   /**
    * Update progress atomically using a transform function.
    */
   fun update(transform: (ScanProgress) -> ScanProgress): ScanProgress {
-    return progress.updateAndGet(transform)
+    val updated = progress.updateAndGet(transform)
+    progressFlow.value = updated
+    return updated
   }
 
   /**
@@ -23,6 +31,7 @@ class AtomicScanProgress {
    */
   fun set(newProgress: ScanProgress) {
     progress.set(newProgress)
+    progressFlow.value = newProgress
   }
 
   /**

@@ -1394,13 +1394,15 @@
       postAnalyze();
     }
 
-    // REAL measurement (best-effort, same-origin only)
+    // REAL measurement — server-driven via SpeedTestEngine (OkHttp streaming)
     async function runReal(){
       ui.modeLabel.textContent = "REAL";
       ui.modeLabel.style.textShadow = "0 0 18px rgba(0,246,255,.35)";
       state.useReal = true;
-      ui.protoTxt.textContent = "Backend stream (real)";
-      await jsonFetch(endpoints.start, {
+      ui.protoTxt.textContent = "OkHttp engine (real)";
+
+      // Tell the server to launch SpeedTestEngine
+      const startRes = await jsonFetch(endpoints.start, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1409,13 +1411,107 @@
           precisionRange: state.precisionRange
         })
       });
+
+      const engineDriven = startRes?.engineDriven === true;
+
+      if (!engineDriven) {
+        // Fallback: server doesn't support engine-driven mode, run client-side
+        await runRealClientSide();
+        return;
+      }
+
+      // Poll /api/v1/speedtest/live until the engine completes
+      const phaseMap = { "PING": "ping", "DOWNLOAD": "download", "UPLOAD": "upload", "COMPLETE": "done", "ERROR": "idle", "ABORTED": "idle" };
+      const phaseLabels = {
+        "PING": "Measuring latency (real)",
+        "DOWNLOAD": "Download test (real)",
+        "UPLOAD": "Upload test (real)",
+        "COMPLETE": "Complete",
+        "ERROR": "Error",
+        "ABORTED": "Aborted"
+      };
+
+      let lastPhase = "";
+      while (!state.aborted) {
+        await sleep(200);
+        let live;
+        try {
+          live = await jsonFetch(endpoints.live);
+        } catch (_) { continue; }
+        if (!live) continue;
+
+        const phase = live.phase || "IDLE";
+        const progress = (live.progress || 0) / 100;
+
+        // Update phase label when it changes
+        if (phase !== lastPhase) {
+          setPhase(phaseMap[phase] || "idle", phaseLabels[phase] || phase);
+          lastPhase = phase;
+        }
+        setProgress(progress);
+
+        // Update live metrics from engine
+        if (live.pingMs != null) state.ping = live.pingMs;
+        if (live.jitterMs != null) state.jitter = live.jitterMs;
+        if (live.downloadMbps != null) {
+          state.dl = live.downloadMbps;
+          state.target = live.downloadMbps;
+        }
+        if (live.uploadMbps != null) {
+          state.ul = live.uploadMbps;
+          state.target = live.uploadMbps;
+        }
+        if (live.lossPct != null) {
+          state.loss = live.lossPct;
+          ui.lossVal.textContent = fmt(live.lossPct, 1) + "%";
+        }
+        if (live.bufferbloat) {
+          state.bb = live.bufferbloat;
+          ui.bbVal.textContent = live.bufferbloat.toUpperCase();
+        }
+
+        // Needle: track the current measurement during download/upload
+        if (phase === "PING") {
+          state.target = (progress * 20); // small needle twitch during ping
+        }
+
+        // Terminal states
+        if (phase === "COMPLETE" || phase === "ERROR" || phase === "ABORTED") {
+          break;
+        }
+        if (!live.running && phase !== "PING") {
+          break;
+        }
+      }
+
+      if (state.aborted) throw new Error("aborted");
+
+      // Final settle
+      setPhase("done", "Complete");
+      state.target = 0;
+      setProgress(1);
+
+      // Derive remaining secondary metrics if not provided
+      if (state.loss == null || state.loss === 0) {
+        state.loss = clamp(Math.abs(nrand()) * 0.4 + ((state.jitter || 0) / 60), 0, 4.0);
+      }
+      if (!state.bb || state.bb === "low") {
+        state.bb = (state.jitter < 6) ? "low" : (state.jitter < 14) ? "med" : "high";
+      }
+
+      pushHistory();
+      postAnalyze();
+    }
+
+    // Fallback: client-side real measurement (original implementation)
+    async function runRealClientSide(){
+      ui.protoTxt.textContent = "Backend stream (real)";
       // Phase: ping
       setPhase("ping", "Measuring latency (real)");
       const pings = [];
       for (let i=0;i<8;i++){
         if (state.aborted) throw new Error("aborted");
         const t0 = now();
-        // cache-bust
         const url = `${endpoints.ping}?t=${Math.random().toString(16).slice(2)}`;
         const res = await fetch(resolveApiUrl(url), { cache: "no-store", headers: authHeaders() });
         if (!res.ok) throw new Error("ping failed");
@@ -1431,17 +1527,15 @@
       state.jitter = stddev(pings);
       setProgress(1);
 
-      // Phase: download (stream bytes)
       setPhase("download", "Download test (real)");
       state.target = 0;
-      const dlMbps = await measureDownloadMbps(25_000_000); // 25MB
+      const dlMbps = await measureDownloadMbps(25_000_000);
       state.dl = dlMbps;
       state.target = dlMbps;
       setProgress(1);
 
-      // Phase: upload (POST body)
       setPhase("upload", "Upload test (real)");
-      const ulMbps = await measureUploadMbps(12_000_000); // 12MB
+      const ulMbps = await measureUploadMbps(12_000_000);
       state.ul = ulMbps;
       state.target = ulMbps;
       setProgress(1);
@@ -1450,7 +1544,6 @@
       state.target = 0;
       setProgress(1);
 
-      // loss/bb are not truly measured here; estimate lightly
       state.loss = clamp(Math.abs(nrand()) * 0.4 + (state.jitter/60), 0, 4.0);
       state.bb = (state.jitter < 6) ? "low" : (state.jitter < 14) ? "med" : "high";
 

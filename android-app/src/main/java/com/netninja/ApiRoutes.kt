@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.SystemClock
 import com.netninja.cam.OnvifDiscoveryService
 import com.netninja.gateway.g5ar.G5arApiImpl
+import com.netninja.network.SpeedTestEngine
 import com.netninja.gateway.g5ar.G5arCapabilities
 import com.netninja.gateway.g5ar.G5arCredentialStore
 import com.netninja.gateway.g5ar.G5arSession
@@ -36,9 +37,13 @@ import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
@@ -115,6 +120,9 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
     val speedtestConfig = AtomicReference(SpeedtestConfig())
     val speedtestLive = AtomicReference(SpeedtestLiveState())
     val speedtestAbort = AtomicBoolean(false)
+    val speedtestEngine = SpeedTestEngine()
+    val speedtestScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    var speedtestJob: Job? = null
     val speedtestServers = listOf(
       SpeedtestServer(id = "neo-1", name = "NEO-1", location = "Downtown Relay"),
       SpeedtestServer(id = "arc-7", name = "ARC-7", location = "Subnet Spire"),
@@ -173,6 +181,10 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         )
         speedtestConfig.set(updatedConfig)
         speedtestAbort.set(false)
+
+        // Cancel any in-flight engine run
+        speedtestJob?.cancel()
+
         val live = speedtestLive.get().copy(
           running = true,
           phase = "PING",
@@ -182,11 +194,74 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           updatedAt = System.currentTimeMillis()
         )
         speedtestLive.set(live)
-        call.respond(mapOf("ok" to true, "config" to updatedConfig, "state" to live))
+
+        // When realMode is enabled, launch the OkHttp-based SpeedTestEngine
+        if (updatedConfig.realMode) {
+          speedtestJob = speedtestScope.launch {
+            try {
+              val result = speedtestEngine.execute(
+                targets = SpeedTestEngine.Targets(),
+                abortFlag = { speedtestAbort.get() },
+                onProgress = SpeedTestEngine.ProgressCallback { phase, progress, pingMs, jitterMs, downloadMbps, uploadMbps ->
+                  speedtestLive.set(
+                    speedtestLive.get().copy(
+                      running = true,
+                      phase = phase,
+                      progress = progress,
+                      pingMs = pingMs ?: speedtestLive.get().pingMs,
+                      jitterMs = jitterMs ?: speedtestLive.get().jitterMs,
+                      downloadMbps = downloadMbps ?: speedtestLive.get().downloadMbps,
+                      uploadMbps = uploadMbps ?: speedtestLive.get().uploadMbps,
+                      updatedAt = System.currentTimeMillis()
+                    )
+                  )
+                }
+              )
+              // Finalize live state with complete results
+              speedtestLive.set(
+                speedtestLive.get().copy(
+                  running = false,
+                  phase = "COMPLETE",
+                  progress = 100,
+                  pingMs = result.pingMs,
+                  jitterMs = result.jitterMs,
+                  downloadMbps = result.downloadMbps,
+                  uploadMbps = result.uploadMbps,
+                  lossPct = result.lossPct,
+                  bufferbloat = result.bufferbloat,
+                  error = null,
+                  updatedAt = System.currentTimeMillis()
+                )
+              )
+            } catch (e: SpeedTestEngine.SpeedTestAbortedException) {
+              speedtestLive.set(
+                speedtestLive.get().copy(
+                  running = false,
+                  phase = "ABORTED",
+                  error = "aborted",
+                  updatedAt = System.currentTimeMillis()
+                )
+              )
+            } catch (e: Exception) {
+              logEvent("error", mapOf("where" to "speedtest:engine", "message" to e.message))
+              speedtestLive.set(
+                speedtestLive.get().copy(
+                  running = false,
+                  phase = "ERROR",
+                  error = e.message ?: "speedtest engine failed",
+                  updatedAt = System.currentTimeMillis()
+                )
+              )
+            }
+          }
+        }
+
+        call.respond(mapOf("ok" to true, "config" to updatedConfig, "state" to live, "engineDriven" to updatedConfig.realMode))
       }
 
       post("/api/v1/speedtest/abort") {
         speedtestAbort.set(true)
+        speedtestJob?.cancel()
         val updated = speedtestLive.get().copy(
           running = false,
           phase = "ABORTED",

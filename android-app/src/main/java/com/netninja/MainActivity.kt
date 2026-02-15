@@ -26,6 +26,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.netninja.routercontrol.RouterControlActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
@@ -38,6 +46,8 @@ class MainActivity : AppCompatActivity() {
   private lateinit var web: WebView
   private var serverFallbackTriggered = false
   private var bootStartedAtMs: Long = 0L
+  private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+  private var scanProgressJob: Job? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -151,6 +161,7 @@ class MainActivity : AppCompatActivity() {
           "window.onerror=function(m,s,l,c,e){console.log('JS_ERROR:'+m+'@'+s+':'+l+':'+c);};",
           null
         )
+        pushScanProgressToWeb(EngineService.scanProgressFlow.value)
       }
     }
 
@@ -159,6 +170,7 @@ class MainActivity : AppCompatActivity() {
     waitForServerAndLoad(web, serverDashboardUrl, assetDashboardUrl)
 
     setContentView(web)
+    observeScanProgress()
   }
 
   override fun onResume() {
@@ -171,6 +183,49 @@ class MainActivity : AppCompatActivity() {
   override fun onPause() {
     super.onPause()
     PermissionBridge.setForegroundActivity(null)
+  }
+
+  override fun onDestroy() {
+    scanProgressJob?.cancel()
+    uiScope.cancel()
+    super.onDestroy()
+  }
+
+  private fun observeScanProgress() {
+    if (scanProgressJob != null) return
+    scanProgressJob = uiScope.launch {
+      EngineService.scanProgressFlow.collectLatest { progress ->
+        pushScanProgressToWeb(progress)
+      }
+    }
+  }
+
+  private fun pushScanProgressToWeb(progress: ScanProgress) {
+    val payload = JSONObject().apply {
+      put("progress", progress.progress)
+      put("phase", progress.phase)
+      put("message", progress.message)
+      put("fixAction", progress.fixAction)
+      put("networks", progress.networks)
+      put("devices", progress.devices)
+      put("rssiDbm", progress.rssiDbm)
+      put("ssid", progress.ssid)
+      put("bssid", progress.bssid)
+      put("subnet", progress.subnet)
+      put("gateway", progress.gateway)
+      put("linkUp", progress.linkUp)
+      put("updatedAt", progress.updatedAt)
+    }.toString()
+    web.evaluateJavascript(
+      """
+      (function(){
+        const data = $payload;
+        if (typeof window.onNativeScanProgress === "function") window.onNativeScanProgress(data);
+        if (typeof window.applyScanData === "function") window.applyScanData(data);
+      })();
+      """.trimIndent(),
+      null
+    )
   }
 
   private fun ensureRuntimePermissions() {
