@@ -29,6 +29,7 @@ data class OpenClawGatewaySnapshot(
 
 object OpenClawGatewayState {
   private val sessions = ConcurrentHashMap<String, DefaultWebSocketServerSession>()
+  private val observers = ConcurrentHashMap<String, DefaultWebSocketServerSession>()
   private val sessionToNode = ConcurrentHashMap<DefaultWebSocketServerSession, String>()
   private val json = Json { ignoreUnknownKeys = true }
   private var registry: OpenClawGatewayRegistry? = null
@@ -79,10 +80,23 @@ object OpenClawGatewayState {
     }
   }
 
+  suspend fun registerObserver(key: String, session: DefaultWebSocketServerSession) {
+    observers[key] = session
+    val snapshot = OpenClawGatewaySnapshot(nodes = registry?.listNodes().orEmpty())
+    val text = json.encodeToString(snapshot)
+    try {
+      session.send(text)
+    } catch (_: Exception) {}
+  }
+
+  fun disconnectObserver(key: String) {
+    observers.remove(key)
+  }
+
   suspend fun emitSnapshot() {
     val snapshot = OpenClawGatewaySnapshot(nodes = registry?.listNodes().orEmpty())
     val message = json.encodeToString(snapshot)
-    sessions.values.forEach { session ->
+    (sessions.values + observers.values).forEach { session ->
       try {
         session.send(message)
       } catch (_: Exception) {
@@ -98,6 +112,8 @@ object OpenClawGatewayState {
 fun Route.openClawWebSocketServer() {
   webSocket("/openclaw/ws") {
     var nodeId: String? = null
+    var isObserver = false
+    val observerKey = "obs_${System.nanoTime()}"
 
     try {
       for (frame in incoming) {
@@ -105,6 +121,10 @@ fun Route.openClawWebSocketServer() {
         val msg = OpenClawGatewayState.parseMessage(text) ?: continue
 
         when (msg.type.uppercase()) {
+          "OBSERVE" -> {
+            isObserver = true
+            OpenClawGatewayState.registerObserver(observerKey, this)
+          }
           "HELLO" -> {
             val resolvedId = msg.nodeId?.trim().orEmpty()
             if (resolvedId.isBlank()) {
@@ -131,6 +151,9 @@ fun Route.openClawWebSocketServer() {
     } catch (_: CancellationException) {
     } finally {
       OpenClawGatewayState.disconnect(this)
+      if (isObserver) {
+        OpenClawGatewayState.disconnectObserver(observerKey)
+      }
     }
   }
 }

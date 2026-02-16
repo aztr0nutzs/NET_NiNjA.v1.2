@@ -47,6 +47,12 @@ data class CommandRequest(val command: String? = null)
 data class ModeRequest(val mode: String? = null)
 
 @Serializable
+data class ChatSendRequest(
+  val body: String? = null,
+  val channel: String? = null
+)
+
+@Serializable
 data class SkillInvokeRequest(val name: String? = null)
 
 @Serializable
@@ -263,5 +269,16 @@ fun Route.openClawRoutes() {
       return@post
     }
     call.respond(OpenClawDashboardState.runCommand(command))
+  }
+
+  post("/api/openclaw/chat/send") {
+    val req = call.receive<ChatSendRequest>()
+    val body = req.body?.trim().orEmpty()
+    if (body.isBlank()) {
+      call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Message body required"))
+      return@post
+    }
+    val channel = req.channel?.trim().orEmpty().ifBlank { "general" }
+    call.respond(OpenClawDashboardState.addChatMessage(body = body, channel = channel))
   }
 }

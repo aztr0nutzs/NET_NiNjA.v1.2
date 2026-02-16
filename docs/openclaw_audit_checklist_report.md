@@ -71,15 +71,21 @@ Status: **PRESENT** (code-level).
 
 ### 2.1 Status pages vs real connectors
 - Dashboard models include gateway statuses (WhatsApp/Telegram/etc) with local state fields.
-- No OAuth/login/token exchange routes for provider auth were found under `/api/openclaw/*`.
-- No provider inbound webhook ingestion routes were found.
+- Provider connector routes are implemented under `/api/openclaw/providers/{provider}`:
+  - `POST /auth/start` (OAuth start URL + state generation)
+  - `POST /auth/callback` (token exchange)
+  - `POST /auth/api-key` (API key configuration)
+  - `POST /webhook` (inbound ingestion with optional secret header verification)
+  - `GET /channels` (channel discovery)
+- Connector state remains local runtime state in this module (no dedicated secure credential vault layer in this pass).
 
-Status: **Informational/local-only connector state is present; real connector flows are missing (expected).**
+Status: **Connector flows are PRESENT in code (OAuth/API-key/webhook/channels), with local-state limitations.**
 
 ### 2.2 Expected-missing checks
-- OAuth/API keys flow: **MISSING (expected)**.
-- Inbound message ingestion from external platforms: **MISSING (expected)**.
-- Channel discovery against provider APIs: **MISSING (expected)**.
+- OAuth/API keys flow: **PRESENT**.
+- Inbound message ingestion from external platforms: **PRESENT**.
+- Channel discovery against provider APIs: **PRESENT**.
+- Production-grade connector hardening (credential lifecycle/secret storage policy): **NOT VERIFIED in this checklist pass**.
 
 ---
 
@@ -168,7 +174,7 @@ Status: **PRESENT** (code-level).
 - `/help`: **PASS (code inspection)**
 - `/status`: **PASS (code inspection)**
 - Persistence: **PASS (code inspection)**
-- Gateways: **PASS (expected missing confirmed)**
+- Gateways/connectors: **PASS (provider routes + connector flows confirmed in code)**
 - Sessions worker: **PASS (expected missing confirmed)**
 - Cron scheduler: **PASS (expected missing confirmed)**
 - WS endpoint: **PASS (code inspection)**
@@ -183,7 +189,7 @@ Status: **PRESENT** (code-level).
 - ✅ Messages persist across restarts: **Implemented in DB persistence path**
 - ✅ No gateway/channel setup in primary flow: **Mostly true for chat path; gateway UI still visible as informational controls**
 - ✅ UI not dead on first load: **Seed greeting implemented**
-- ✅ No false claims of real WhatsApp/Telegram integration: **No auth/connectors implemented; statuses are local state**
+- ✅ No false claims of real WhatsApp/Telegram integration: **Connector endpoints are implemented; provider behavior remains runtime/environment dependent**
 
 Residual risk before declaring ship-ready:
 1) Device/runtime verification pending (launch/logcat/screenshots).

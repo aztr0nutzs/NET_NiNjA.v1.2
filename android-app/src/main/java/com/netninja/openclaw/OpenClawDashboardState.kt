@@ -11,8 +11,11 @@ import kotlinx.serialization.json.Json
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.util.Calendar
 import java.util.ArrayDeque
 import java.util.LinkedHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 
@@ -182,6 +185,10 @@ class OpenClawDashboardState(private val db: LocalDatabase? = null) {
     private val maxLogEntries = 500
     private val maxMessages = 500
     private val maxSessions = 500
+    private val cronScheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
+        Thread(runnable, "openclaw-cron").apply { isDaemon = true }
+    }
+    private var cronSchedulerStarted = false
 
     private var connected = false
     private var host: String? = null
@@ -245,7 +252,27 @@ if (messages.isEmpty()) {
 
             appendLog("OpenClaw dashboard state initialized.")
             persistAll()
+            startCronSchedulerLocked()
         }
+    }
+
+    private fun startCronSchedulerLocked() {
+        if (cronSchedulerStarted) return
+        cronSchedulerStarted = true
+        cronScheduler.scheduleWithFixedDelay(
+            {
+                runCatching { executeDueCronJobs() }
+                    .onFailure { e ->
+                        synchronized(lock) {
+                            appendLog("Cron scheduler error: ${e.message ?: "unknown"}")
+                            persistLogs()
+                        }
+                    }
+            },
+            15L,
+            15L,
+            TimeUnit.SECONDS
+        )
     }
 
     // ── Snapshot ─────────────────────────────────────────────────────
@@ -580,6 +607,142 @@ fun addChatMessage(body: String, channel: String = "general"): MessageSnapshot =
         appendLog("Cron job ${if (updated.enabled) "enabled" else "disabled"}: $id.")
         persistCronJobs()
         updated
+    }
+
+    private fun executeDueCronJobs() {
+        val now = System.currentTimeMillis()
+        val dueJobs = synchronized(lock) {
+            cronJobs.values
+                .filter { it.enabled && isCronDue(it.schedule, now, it.lastRunAt) }
+                .map { it.id to it.command }
+        }
+        if (dueJobs.isEmpty()) return
+
+        dueJobs.forEach { (id, command) ->
+            val result = runCatching { runCommand(command).output.take(1000) }
+                .getOrElse { "ERROR: ${it.message ?: "command failed"}" }
+            synchronized(lock) {
+                val current = cronJobs[id] ?: return@synchronized
+                cronJobs[id] = current.copy(
+                    lastRunAt = now,
+                    lastResult = result
+                )
+                appendLog("Cron job executed: $id")
+                persistCronJobs()
+            }
+        }
+    }
+
+    private fun isCronDue(schedule: String, nowMs: Long, lastRunAt: Long?): Boolean {
+        val currentMinute = nowMs / 60_000L
+        if (lastRunAt != null && (lastRunAt / 60_000L) == currentMinute) return false
+
+        val trimmed = schedule.trim()
+        if (trimmed.isBlank()) return false
+
+        val everyPrefix = "@every "
+        if (trimmed.startsWith(everyPrefix, ignoreCase = true)) {
+            val durationMs = parseDurationMillis(trimmed.substring(everyPrefix.length)) ?: return false
+            if (durationMs <= 0L) return false
+            return lastRunAt == null || nowMs - lastRunAt >= durationMs
+        }
+
+        val parts = trimmed.split(Regex("\\s+"))
+        if (parts.size != 5) return false
+
+        val cal = Calendar.getInstance().apply { timeInMillis = nowMs }
+        val minute = cal.get(Calendar.MINUTE)
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        val dayOfMonth = cal.get(Calendar.DAY_OF_MONTH)
+        val month = cal.get(Calendar.MONTH) + 1
+        val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK) - 1 // 0=Sunday ... 6=Saturday
+
+        return cronFieldMatches(parts[0], minute, 0, 59) &&
+            cronFieldMatches(parts[1], hour, 0, 23) &&
+            cronFieldMatches(parts[2], dayOfMonth, 1, 31) &&
+            cronFieldMatches(parts[3], month, 1, 12) &&
+            cronFieldMatches(parts[4], dayOfWeek, 0, 6, allowSevenAsSunday = true)
+    }
+
+    private fun parseDurationMillis(value: String): Long? {
+        val raw = value.trim().lowercase()
+        if (raw.isBlank()) return null
+        val match = Regex("^(\\d+)(ms|s|m|h|d)$").matchEntire(raw) ?: return null
+        val amount = match.groupValues[1].toLongOrNull() ?: return null
+        val unit = match.groupValues[2]
+        return when (unit) {
+            "ms" -> amount
+            "s" -> amount * 1_000L
+            "m" -> amount * 60_000L
+            "h" -> amount * 3_600_000L
+            "d" -> amount * 86_400_000L
+            else -> null
+        }
+    }
+
+    private fun cronFieldMatches(
+        field: String,
+        value: Int,
+        min: Int,
+        max: Int,
+        allowSevenAsSunday: Boolean = false
+    ): Boolean {
+        if (field == "*") return true
+        val parts = field.split(",")
+        return parts.any { token ->
+            cronTokenMatches(token.trim(), value, min, max, allowSevenAsSunday)
+        }
+    }
+
+    private fun cronTokenMatches(
+        token: String,
+        value: Int,
+        min: Int,
+        max: Int,
+        allowSevenAsSunday: Boolean
+    ): Boolean {
+        if (token.isBlank()) return false
+
+        if (token.contains("/")) {
+            val segments = token.split("/", limit = 2)
+            if (segments.size != 2) return false
+            val step = segments[1].toIntOrNull()?.takeIf { it > 0 } ?: return false
+            val base = segments[0]
+            val range = parseBaseRange(base, min, max, allowSevenAsSunday) ?: return false
+            if (value !in range) return false
+            return ((value - range.first) % step) == 0
+        }
+
+        if (token.contains("-")) {
+            val range = parseRangeToken(token, min, max, allowSevenAsSunday) ?: return false
+            return value in range
+        }
+
+        val parsed = parseFieldNumber(token, allowSevenAsSunday) ?: return false
+        return parsed in min..max && parsed == value
+    }
+
+    private fun parseBaseRange(base: String, min: Int, max: Int, allowSevenAsSunday: Boolean): IntRange? {
+        if (base == "*") return min..max
+        if (base.contains("-")) return parseRangeToken(base, min, max, allowSevenAsSunday)
+        val start = parseFieldNumber(base, allowSevenAsSunday) ?: return null
+        if (start !in min..max) return null
+        return start..max
+    }
+
+    private fun parseRangeToken(token: String, min: Int, max: Int, allowSevenAsSunday: Boolean): IntRange? {
+        val segments = token.split("-", limit = 2)
+        if (segments.size != 2) return null
+        val start = parseFieldNumber(segments[0], allowSevenAsSunday) ?: return null
+        val end = parseFieldNumber(segments[1], allowSevenAsSunday) ?: return null
+        if (start !in min..max || end !in min..max || end < start) return null
+        return start..end
+    }
+
+    private fun parseFieldNumber(token: String, allowSevenAsSunday: Boolean): Int? {
+        val parsed = token.toIntOrNull() ?: return null
+        if (allowSevenAsSunday && parsed == 7) return 0
+        return parsed
     }
 
     // ── Command execution ───────────────────────────────────────────

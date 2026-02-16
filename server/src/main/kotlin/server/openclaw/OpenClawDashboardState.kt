@@ -6,6 +6,10 @@ import java.util.LinkedHashMap
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Serializable
 data class GatewayStatus(
@@ -87,6 +91,7 @@ data class GatewayPingResult(
 
 object OpenClawDashboardState {
   private val lock = Any()
+  private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
   private val gateways = LinkedHashMap<String, GatewayStatus>()
   private val instances = LinkedHashMap<String, InstanceSnapshot>()
   private val sessions = LinkedHashMap<String, SessionSnapshot>()
@@ -347,9 +352,99 @@ object OpenClawDashboardState {
     message
   }
 
+  fun addChatMessage(body: String, channel: String = "general"): MessageSnapshot = synchronized(lock) {
+    val trimmed = body.trim()
+    val ch = channel.trim().ifBlank { "general" }
+
+    val userMsg = addMessage(gateway = "user", channel = ch, body = trimmed)
+
+    val reply = when {
+      trimmed.isBlank() -> "Say something. Humans love silence, apps shouldn't."
+      trimmed.startsWith("/") -> runCommand(trimmed).output.ifBlank { "OK." }.take(3000)
+      trimmed.equals("help", ignoreCase = true) -> runCommand("/help").output.take(3000)
+      else -> "I'm online. Try /help, /status, /nodes, /skills, /gateways, /instances."
+    }
+
+    addMessage(gateway = "openclaw", channel = ch, body = reply)
+    userMsg
+  }
+
   fun runCommand(command: String): CommandResult = synchronized(lock) {
-    appendLog("Command executed: $command.")
-    CommandResult(command = command, output = "Queued command: $command")
+    appendLog("Command: $command")
+    val output = when {
+      command.startsWith("status") || command.startsWith("/status") -> {
+        json.encodeToString(snapshot())
+      }
+      command.startsWith("config") || command.startsWith("/config") -> {
+        buildJsonObject {
+          put("host", host)
+          put("profile", profile)
+          put("workspace", workspace)
+          put("connected", connected)
+          put("lastSync", lastSync ?: 0L)
+          put("mode", mode)
+        }.toString()
+      }
+      command.startsWith("debug") || command.startsWith("/debug") -> {
+        buildJsonObject {
+          put("connected", connected)
+          put("host", host)
+          put("profile", profile)
+          put("workspace", workspace)
+          put("lastSync", lastSync ?: 0L)
+          put("activeInstance", activeInstance)
+          put("memoryIndexed", memoryIndexed)
+          put("memoryItems", memoryItems)
+          put("mode", mode)
+          put("gatewayCount", gateways.size)
+          put("instanceCount", instances.size)
+          put("sessionCount", sessions.size)
+          put("skillCount", skills.size)
+          put("messageCount", messages.size)
+          put("logCount", logs.size)
+        }.toString()
+      }
+      command.startsWith("nodes") || command.startsWith("/nodes") -> {
+        "Node count: ${OpenClawGatewayState.nodeCount()}, " +
+                "Uptime: ${OpenClawGatewayState.uptimeMs()}ms\n" +
+                OpenClawGatewayState.listNodes().joinToString("\n") {
+                  "  ${it.id}: caps=${it.capabilities}, last=${it.lastSeen}"
+                }.ifBlank { "  (no nodes)" }
+      }
+      command.startsWith("skills") || command.startsWith("/skills") -> {
+        skills.values.joinToString("\n") { "  ${it.name}: ${it.status} \u2014 ${it.description}" }
+      }
+      command.startsWith("gateways") || command.startsWith("/gateways") -> {
+        gateways.values.joinToString("\n") { "  ${it.key}: ${it.status} (${it.sessions} sessions)" }
+      }
+      command.startsWith("instances") || command.startsWith("/instances") -> {
+        instances.values.joinToString("\n") { "  ${it.name}: ${it.state}${if (it.active) " [active]" else ""}" }
+      }
+      command.startsWith("sessions") || command.startsWith("/sessions") -> {
+        sessions.values.joinToString("\n") { "  ${it.id}: ${it.type} -> ${it.target} (${it.state})" }.ifBlank { "  (no sessions)" }
+      }
+      command.startsWith("panic") || command.startsWith("/panic") -> {
+        panic()
+        "PANIC executed. All sessions canceled, gateways down."
+      }
+      command.startsWith("help") || command.startsWith("/help") -> {
+        """Available commands:
+          |  /status    \u2014 Full dashboard snapshot
+          |  /config    \u2014 Current configuration
+          |  /debug     \u2014 Debug state dump
+          |  /nodes     \u2014 Connected OpenClaw nodes
+          |  /skills    \u2014 Registered skills
+          |  /gateways  \u2014 Gateway statuses
+          |  /instances \u2014 Instance list
+          |  /sessions  \u2014 Active sessions
+          |  /panic     \u2014 Emergency shutdown
+          |  /help      \u2014 This help text""".trimMargin()
+      }
+      else -> "Executed: $command"
+    }
+    val result = CommandResult(command = command, output = output)
+    appendLog("Command result: ${output.take(200)}")
+    result
   }
 
   fun clearLogs() = synchronized(lock) {
