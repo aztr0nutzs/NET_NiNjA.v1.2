@@ -26,6 +26,8 @@ import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.net.InetAddress
@@ -81,6 +83,17 @@ data class DeviceMetaUpdate(
 
 @Serializable
 data class PortScanRequest(val ip: String? = null, val timeoutMs: Int? = null)
+
+@Serializable
+data class RouterProxyRequest(
+  val path: String? = null,
+  val method: String? = null,
+  val body: JsonElement? = null,
+  val auth: Boolean? = null,
+  val timeoutMs: Int? = null,
+  val baseUrl: String? = null,
+  val gatewayAuthorization: String? = null
+)
 
 @Serializable
 data class ScanProgress(
@@ -707,6 +720,81 @@ fun startServer(
 
       get("/api/v1/network/info") {
         call.respond(localNetworkInfo())
+      }
+
+      post("/api/v1/router/proxy") {
+        val req = catchingSuspendOrDefault("routerProxy:receive", RouterProxyRequest()) { call.receive<RouterProxyRequest>() }
+        val method = req.method?.trim()?.uppercase().orEmpty().ifBlank { "GET" }
+        val path = req.path?.trim().orEmpty()
+        val baseUrl = req.baseUrl?.trim()?.takeIf { it.isNotBlank() } ?: "http://192.168.12.1"
+        val timeoutMs = (req.timeoutMs ?: 5000).coerceIn(500, 15_000)
+        val gatewayAuthorization = req.gatewayAuthorization?.trim().orEmpty()
+
+        if (path.isBlank() || !path.startsWith("/") || !path.startsWith("/TMI/")) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "invalid_path"))
+          return@post
+        }
+
+        if (method !in setOf("GET", "POST", "PUT", "PATCH", "DELETE")) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "invalid_method"))
+          return@post
+        }
+
+        val target = try {
+          java.net.URL(baseUrl.trimEnd('/') + path)
+        } catch (_: Exception) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("ok" to false, "error" to "invalid_base_url"))
+          return@post
+        }
+
+        val connection = try {
+          (target.openConnection() as java.net.HttpURLConnection).apply {
+            requestMethod = method
+            connectTimeout = timeoutMs
+            readTimeout = timeoutMs
+            setRequestProperty(HttpHeaders.Accept, ContentType.Application.Json.toString())
+            if (gatewayAuthorization.isNotBlank()) {
+              setRequestProperty(HttpHeaders.Authorization, gatewayAuthorization)
+            }
+          }
+        } catch (_: Exception) {
+          call.respond(HttpStatusCode.BadGateway, mapOf("ok" to false, "error" to "proxy_connect_failed"))
+          return@post
+        }
+
+        try {
+          val payloadText = req.body?.let { Json.encodeToString(JsonElement.serializer(), it) }
+          if (payloadText != null && method in setOf("POST", "PUT", "PATCH", "DELETE")) {
+            connection.doOutput = true
+            connection.setRequestProperty(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            connection.outputStream.use { out ->
+              out.write(payloadText.toByteArray(Charsets.UTF_8))
+            }
+          }
+
+          val statusCode = catchingOrDefault("routerProxy:status", 502, fields = mapOf("path" to path, "method" to method)) {
+            connection.responseCode
+          }
+          val responseText = (if (statusCode in 200..299) connection.inputStream else connection.errorStream)
+            ?.bufferedReader(Charsets.UTF_8)
+            ?.use { it.readText() }
+            .orEmpty()
+          val responseType = connection.contentType
+            ?.substringBefore(';')
+            ?.takeIf { it.isNotBlank() }
+            ?.let { raw -> catchingOrNull("routerProxy:contentType.parse", fields = mapOf("contentType" to raw)) { ContentType.parse(raw) } }
+            ?: ContentType.Application.Json
+
+          call.respondText(
+            text = responseText,
+            contentType = responseType,
+            status = HttpStatusCode.fromValue(statusCode.coerceIn(100, 599))
+          )
+        } catch (_: Exception) {
+          call.respond(HttpStatusCode.BadGateway, mapOf("ok" to false, "error" to "proxy_request_failed"))
+        } finally {
+          connection.disconnect()
+        }
       }
 
       get("/api/v1/speedtest/servers") {

@@ -169,6 +169,8 @@
       cachedNetworkInfo = info;
 
       const name = info.name || "Network";
+      const lowerName = String(name).toLowerCase();
+      const networkType = /\bwi-?fi\b|\bwlan\b|\bwireless\b/.test(lowerName) ? "Wi-Fi" : "Ethernet/LAN";
       const ip = info.ip || "—";
       const cidr = info.cidr || "—";
       const gateway = info.gateway || "—";
@@ -180,6 +182,7 @@
       const n1 = networks.find(n => n.id === "n1");
       if(n1){
         n1.name = name;
+        n1.type = networkType;
         n1.details.ssid = name;
         n1.details.gateway = gateway;
         n1.details.yourIp = ip;
@@ -1974,7 +1977,15 @@
       }
 
       if(Number.isFinite(data.networks)) elNetworks.textContent = String(Math.max(0, Math.floor(data.networks)));
-      if(Number.isFinite(data.devices)) elDevices.textContent = String(Math.max(0, Math.floor(data.devices)));
+      if(Number.isFinite(data.devices)){
+        const liveDevices = Math.max(0, Math.floor(data.devices));
+        elDevices.textContent = String(liveDevices);
+        const n1 = networks.find(n => n.id === "n1");
+        if(n1 && n1.devices !== liveDevices){
+          n1.devices = liveDevices;
+          renderNetworks();
+        }
+      }
 
       if(Number.isFinite(data.rssiDbm)){
         elRssi.textContent = Math.round(data.rssiDbm) + " dBm";
