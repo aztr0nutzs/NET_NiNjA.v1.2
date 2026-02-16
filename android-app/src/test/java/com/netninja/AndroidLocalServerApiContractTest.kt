@@ -2,7 +2,9 @@
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.sun.net.httpserver.HttpServer
 import java.net.HttpURLConnection
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.URI
 import io.ktor.client.HttpClient
@@ -172,6 +174,84 @@ class AndroidLocalServerApiContractTest {
       }
       assertEquals(200, get(URI("$base/api/openclaw/nodes")).first)
       assertEquals(200, get(URI("$base/api/openclaw/stats")).first)
+
+      run {
+        val providerServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        providerServer.createContext("/oauth/token") { exchange ->
+          val response = """{"access_token":"token-abc","refresh_token":"refresh-abc"}"""
+          exchange.sendResponseHeaders(200, response.toByteArray().size.toLong())
+          exchange.responseBody.use { it.write(response.toByteArray()) }
+        }
+        providerServer.createContext("/channels") { exchange ->
+          val response = """{"channels":[{"id":"general","name":"General"}]}"""
+          exchange.sendResponseHeaders(200, response.toByteArray().size.toLong())
+          exchange.responseBody.use { it.write(response.toByteArray()) }
+        }
+        providerServer.start()
+        try {
+          val providerBase = "http://127.0.0.1:${providerServer.address.port}"
+          val (startCode, startBody) = postJson(
+            URI("$base/api/openclaw/providers/telegram/auth/start"),
+            """{"authMode":"oauth2","clientId":"cid","clientSecret":"csecret","authUrl":"$providerBase/oauth/authorize","tokenUrl":"$providerBase/oauth/token","redirectUri":"https://localhost/callback"}"""
+          )
+          assertEquals(200, startCode)
+          val state = Regex("""\"state\"\s*:\s*\"([^\"]+)\"""").find(startBody)?.groupValues?.get(1)
+          assertTrue("Expected oauth state in response: $startBody", !state.isNullOrBlank())
+
+          val (callbackCode, callbackBody) = postJson(
+            URI("$base/api/openclaw/providers/telegram/auth/callback"),
+            """{"code":"code-123","state":"$state"}"""
+          )
+          assertEquals(200, callbackCode)
+          assertTrue("Expected connected provider snapshot", callbackBody.contains("\"connected\":true"))
+
+          val (channelCode, channelBody) = get(URI("$base/api/openclaw/providers/telegram/channels"))
+          assertEquals(200, channelCode)
+          assertTrue("Expected discovered channel", channelBody.contains("\"id\":\"general\""))
+
+          val (_, apiKeyBody) = postJson(
+            URI("$base/api/openclaw/providers/whatsapp/auth/api-key"),
+            """{"apiKey":"wa-secret","apiBaseUrl":"$providerBase","webhookSecret":"hook-secret"}"""
+          )
+          assertTrue("Expected API key connector to report configured", apiKeyBody.contains("\"hasApiKey\":true"))
+
+          val (badWebhookCode, _) = postJson(
+            URI("$base/api/openclaw/providers/whatsapp/webhook"),
+            """{"messages":[{"channel":"ops","body":"hello"}]}"""
+          )
+          assertEquals(401, badWebhookCode)
+
+          fun postJsonWithWebhookSecret(uri: URI, body: String, secret: String): Pair<Int, String> {
+            val conn = (uri.toURL().openConnection() as HttpURLConnection).apply {
+              requestMethod = "POST"
+              doOutput = true
+              setRequestProperty(LocalApiAuth.HEADER_TOKEN, token)
+              setRequestProperty("Content-Type", "application/json")
+              setRequestProperty("X-Webhook-Secret", secret)
+              connectTimeout = 1500
+              readTimeout = 1500
+            }
+            return try {
+              conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+              val code = conn.responseCode
+              val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+              code to (stream?.bufferedReader()?.use { it.readText() }.orEmpty())
+            } finally {
+              conn.disconnect()
+            }
+          }
+
+          val (webhookCode, webhookBody) = postJsonWithWebhookSecret(
+            URI("$base/api/openclaw/providers/whatsapp/webhook"),
+            """{"messages":[{"channel":"ops","body":"hello"}]}""",
+            "hook-secret"
+          )
+          assertEquals(200, webhookCode)
+          assertTrue("Expected one ingested message", webhookBody.contains("\"ingested\":1"))
+        } finally {
+          providerServer.stop(0)
+        }
+      }
 
       // WebSocket: register a node then verify it appears via REST.
       run {
