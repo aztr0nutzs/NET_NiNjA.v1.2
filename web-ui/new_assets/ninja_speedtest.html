@@ -738,7 +738,7 @@
       exportBtn: $("exportBtn")
     };
 
-    const SPEEDTEST_TOKEN = window.NetNinjaApi?.token || "";
+    const SPEEDTEST_TOKEN = window.NetNinjaApi?.token || localStorage.getItem('nn_token') || new URLSearchParams(location.search).get('token') || new URLSearchParams(location.search).get('t') || "";
     const resolveApiUrl = window.NetNinjaApi?.resolveApiUrl || ((url) => url);
     function authHeaders(extra = {}){
       return SPEEDTEST_TOKEN ? { ...extra, Authorization: `Bearer ${SPEEDTEST_TOKEN}` } : { ...extra };
