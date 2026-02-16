@@ -30,11 +30,6 @@
         </div>
 
         <div class="topbar-actions">
-          <button class="btn btn-primary" id="scanNowBtn" title="Scan my network now">
-            <span>Scan</span>
-            <span class="kbd">now</span>
-          </button>
-
           <button class="btn icon-btn" id="historyBtn" title="Undo / Recent actions">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 12a9 9 0 1 0 3-6.7"/>
@@ -152,7 +147,6 @@
             </div>
 
             <div class="card-actions" style="margin-top:12px;">
-              <button class="btn btn-primary" id="btnStart">Start</button>
               <button class="btn btn-ghost purple" id="btnStop">Stop</button>
             </div>
           </div>
@@ -246,7 +240,6 @@
               </svg>
               <input id="deviceSearch" type="text" placeholder="Search by name, IP, MAC…" autocomplete="off" />
             </div>
-            <button class="btn btn-ghost" id="btnRescanDevices">Scan devices again</button>
             <button class="btn btn-ghost purple" id="btnExportDevices">Export list</button>
           </div>
 
@@ -374,17 +367,6 @@
         <h2>Tools</h2>
 
         <div class="grid grid-2">
-          <div class="card" id="toolFullScan" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Full device scan</div>
-              <div class="pill">Preset</div>
-            </div>
-            <div class="muted">Scan all addresses on your network for any device.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="fullScan">Run full scan</button>
-            </div>
-          </div>
-
           <div class="card" id="toolPortScan" role="button" tabindex="0">
             <div class="card-head">
               <div class="card-title">Port scan</div>

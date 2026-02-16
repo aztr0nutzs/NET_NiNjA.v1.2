@@ -1247,7 +1247,11 @@
         stateStore.baseUrl = document.getElementById('inp-baseurl').value.trim() || stateStore.baseUrl;
         try {
           toast('Connecting...');
-          await discover();
+          try {
+            await discover();
+          } catch (discoverErr) {
+            log(`WARN discover: ${discoverErr.message}; continuing to login`);
+          }
           await login(user, pass);
           await fetchAll();
           updateKpis();

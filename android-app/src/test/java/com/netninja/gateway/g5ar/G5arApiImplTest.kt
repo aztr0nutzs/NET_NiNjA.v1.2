@@ -195,4 +195,37 @@ class G5arApiImplTest {
     assertEquals("SESSION=abc123", session.cookieHeader)
     assertEquals("CookieClient", clients.first().name)
   }
+
+  @Test
+  fun loginSupportsCookieSessionWhenBodyIsNotJson() = runBlocking {
+    server.dispatcher = object : Dispatcher() {
+      override fun dispatch(request: RecordedRequest): MockResponse {
+        return when {
+          request.path == "/TMI/v1/auth/login" -> MockResponse()
+            .setResponseCode(200)
+            .addHeader("Set-Cookie", "SESSION=cookieFromPlainBody; Path=/; HttpOnly")
+            .setBody("OK")
+
+          request.path == "/TMI/v1/network/telemetry?get=clients" -> {
+            val cookie = request.getHeader("Cookie")
+            if (cookie == "SESSION=cookieFromPlainBody") {
+              MockResponse().setResponseCode(200).setBody("""[{"name":"PlainBodyClient"}]""")
+            } else {
+              MockResponse().setResponseCode(401)
+            }
+          }
+
+          else -> MockResponse().setResponseCode(404)
+        }
+      }
+    }
+
+    val api = G5arApiImpl(server.url("/").toString().trimEnd('/'), RetryPolicy(maxAttempts = 1))
+    val session = api.login("admin", "pw")
+    val clients = api.getClients(session)
+
+    assertEquals("cookieFromPlainBody", session.token)
+    assertEquals("SESSION=cookieFromPlainBody", session.cookieHeader)
+    assertEquals("PlainBodyClient", clients.first().name)
+  }
 }

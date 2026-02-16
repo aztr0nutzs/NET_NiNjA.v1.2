@@ -996,7 +996,7 @@
     }));
 
     // export / rescan
-    $("#btnRescanDevices").addEventListener("click", () => {
+    $("#btnRescanDevices")?.addEventListener("click", () => {
       showToast("Rescan started", "Refreshing device list...");
       runScan();
     });
@@ -1438,7 +1438,7 @@
 
     window.nnStopScan = stopScan;
 
-    $("#scanNowBtn").addEventListener("click", () => runScan());
+    $("#scanNowBtn")?.addEventListener("click", () => runScan());
     $("#btnScanMyNetwork").addEventListener("click", (e) => { e.stopPropagation(); runScan(); });
     $("#btnNetworksScanMy")?.addEventListener("click", () => runScan());
 

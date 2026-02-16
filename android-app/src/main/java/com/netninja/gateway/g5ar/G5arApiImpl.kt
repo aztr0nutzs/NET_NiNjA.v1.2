@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
@@ -156,8 +157,8 @@ class G5arApiImpl(
         continue
       }
 
-      val parsedBody = parseBody(response.body)
-      val token = extractToken(parsedBody)
+      val parsedBody = parseBodyOrNull(response.body)
+      val token = parsedBody?.let { extractToken(it) }
       val authHeader = extractAuthHeader(response)
       val cookieHeader = extractCookieHeader(response)
       // Extract CSRF from response headers, CSRF cookies, or JSON body
@@ -171,6 +172,7 @@ class G5arApiImpl(
           ?.substringAfter('=', missingDelimiterValue = "")
           ?.trim()
           ?.takeIf { it.isNotBlank() }
+        ?: (parsedBody as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
 
       if (!resolvedToken.isNullOrBlank()) {
         lastLoginCredentials = username to password
@@ -342,10 +344,10 @@ class G5arApiImpl(
         } else if (token != null && session?.cookieHeader == null) {
           setRequestProperty("Authorization", "Bearer $token")
         }
-      if (conn is HttpsURLConnection && isPrivateHost(conn.url.host)) {
-        conn.sslSocketFactory = insecureSslContext.socketFactory
-        conn.hostnameVerifier = trustAllHostnames
-      }
+        if (this is HttpsURLConnection && isPrivateHost(url.host)) {
+          sslSocketFactory = insecureSslContext.socketFactory
+          hostnameVerifier = trustAllHostnames
+        }
         // Merge persistent cookie jar with session cookies (jar takes priority)
         val jarCookies = cookieJar.entries.joinToString("; ") { "${it.key}=${it.value}" }
         val cookieStr = jarCookies.takeIf { it.isNotBlank() }
@@ -398,6 +400,11 @@ class G5arApiImpl(
 
   private fun parseBody(raw: String): JsonElement {
     return if (raw.isBlank()) JsonObject(emptyMap()) else json.parseToJsonElement(raw)
+  }
+
+  private fun parseBodyOrNull(raw: String): JsonElement? {
+    if (raw.isBlank()) return JsonObject(emptyMap())
+    return runCatching { json.parseToJsonElement(raw) }.getOrNull()
   }
 
   private fun parseClients(element: JsonElement): List<ClientDevice> {
