@@ -302,12 +302,17 @@ class AndroidLocalServer(internal val ctx: Context) {
     val unauthorizedLimiter = RateLimiter(capacity = 15.0, refillTokensPerMs = 15.0 / 60_000.0) // 15/min burst 15
     val rotateLimiter = RateLimiter(capacity = 2.0, refillTokensPerMs = 2.0 / (10 * 60_000.0)) // 2 per 10 minutes
 
-    // Require a shared-secret token for all API calls, and reject non-loopback callers.
+    // Require a shared-secret token for protected API/WebSocket calls, and reject non-loopback callers.
     intercept(ApplicationCallPipeline.Plugins) {
       if (call.request.httpMethod == HttpMethod.Options) return@intercept
 
       val path = call.request.path()
-      if (!path.startsWith("/api/v1/")) return@intercept
+      val protectedPath =
+        path.startsWith("/api/v1/") ||
+          path.startsWith("/api/openclaw/") ||
+          path.startsWith("/openclaw/") ||
+          path == "/openclaw/ws"
+      if (!protectedPath) return@intercept
 
       val bearer = call.request.headers[HttpHeaders.Authorization]
         ?.removePrefix("Bearer")

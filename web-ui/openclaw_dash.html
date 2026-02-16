@@ -1243,6 +1243,32 @@ input, .mono{
   const el = (id)=>document.getElementById(id);
   const SETTINGS_KEY = 'openclaw_dash_settings_v1';
 
+  // ── Auth token capture (mirrors api-client.js) ──────────────────────
+  // Android / server appends ?token=... when loading the dashboard.
+  // Persist in localStorage so subsequent navigations & reconnects work.
+  const authToken = (function resolveToken(){
+    try {
+      const u = new URL(String(location.href));
+      const t = (u.searchParams.get('token') || u.searchParams.get('t') || '').trim();
+      if(t){
+        try { localStorage.setItem('nn_token', t); } catch(_){}
+        try {
+          u.searchParams.delete('token');
+          u.searchParams.delete('t');
+          history.replaceState(null, '', u.toString());
+        } catch(_){}
+        return t;
+      }
+    } catch(_){}
+    try { return (localStorage.getItem('nn_token') || '').trim(); } catch(_){}
+    return '';
+  })();
+  // Also expose for parent frames / external callers that may inject window.NN_TOKEN.
+  if(!authToken && typeof window.NN_TOKEN === 'string' && window.NN_TOKEN.trim()){
+    /* fallback: parent injected NN_TOKEN before our iframe loaded */
+  }
+  const TOKEN = authToken || (typeof window.NN_TOKEN === 'string' ? window.NN_TOKEN.trim() : '');
+
   function normalizeBaseUrl(raw){
     const r = (raw || '').trim();
     if(!r) return '';
@@ -1519,7 +1545,13 @@ input, .mono{
 
   async function fetchJson(path){
     const url = (state.baseUrl || '').replace(/\/+$/,'') + path;
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const headers = { 'Accept': 'application/json' };
+    if(TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+    const res = await fetch(url, { headers });
+    if(res.status === 401){
+      log('Auth rejected (401) — re-check your token or re-open from the app.');
+      throw new Error('Unauthorized');
+    }
     if(!res.ok){
       const text = await res.text().catch(()=> '');
       throw new Error(`${res.status} ${res.statusText}${text ? (': ' + text.slice(0,200)) : ''}`);
@@ -1575,13 +1607,16 @@ input, .mono{
   let ws = null;
   let wsAutoReconnect = true;
   function wsUrl(){
+    // Server auth intercept covers /openclaw/ws — pass token via query param
+    // (WebSocket API does not support custom headers on the handshake).
+    const suffix = TOKEN ? ('?token=' + encodeURIComponent(TOKEN)) : '';
     try {
       const u = new URL(state.baseUrl);
       const proto = (u.protocol === 'https:') ? 'wss:' : 'ws:';
-      return `${proto}//${u.host}/openclaw/ws`;
+      return `${proto}//${u.host}/openclaw/ws${suffix}`;
     } catch(_) {
       const proto = (location && location.protocol === 'https:') ? 'wss:' : 'ws:';
-      return `${proto}//${location.host}/openclaw/ws`;
+      return `${proto}//${location.host}/openclaw/ws${suffix}`;
     }
   }
 
@@ -1639,11 +1674,17 @@ input, .mono{
 
   async function postJson(path, body){
     const url = (state.baseUrl || '').replace(/\/+$/,'') + path;
+    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+    if(TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers,
       body: JSON.stringify(body || {})
     });
+    if(res.status === 401){
+      log('Auth rejected (401) — re-check your token or re-open from the app.');
+      throw new Error('Unauthorized');
+    }
     const text = await res.text().catch(()=> '');
     if(!res.ok) throw new Error(`${res.status} ${res.statusText}${text ? (': ' + text.slice(0,200)) : ''}`);
     return text ? JSON.parse(text) : {};

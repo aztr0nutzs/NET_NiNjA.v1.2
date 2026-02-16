@@ -56,10 +56,12 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URLEncoder
 import java.io.File
 import java.net.URL
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
@@ -240,9 +242,45 @@ private data class ProviderConnectorState(
 
 private fun normalizeProviderKey(raw: String): String = raw.trim().lowercase()
 
-private fun String.sha256Hex(): String {
-  val md = java.security.MessageDigest.getInstance("SHA-256")
-  return md.digest(toByteArray(StandardCharsets.UTF_8)).joinToString("") { "%02x".format(it) }
+private const val OPENCLAW_MAX_COMMAND_CHARS = 4096
+private const val OPENCLAW_MAX_CHAT_CHARS = 4096
+private const val OPENCLAW_MAX_WEBHOOK_CHARS = 256_000
+
+private fun isLoopbackHost(host: String): Boolean {
+  val normalized = host.trim().trimEnd('.').lowercase()
+  return normalized == "localhost" ||
+    normalized == "::1" ||
+    normalized == "0:0:0:0:0:0:0:1" ||
+    normalized.startsWith("127.")
+}
+
+private fun validateProviderUrl(raw: String?, fieldName: String): String? {
+  val value = raw?.trim().orEmpty()
+  if (value.isBlank()) return null
+  val uri = runCatching { URI(value) }.getOrNull()
+    ?: return "$fieldName must be a valid absolute URL"
+  val scheme = uri.scheme?.trim()?.lowercase()
+  val host = uri.host?.trim().orEmpty()
+  if (scheme.isNullOrBlank() || host.isBlank()) {
+    return "$fieldName must be a valid absolute URL"
+  }
+  if (scheme != "http" && scheme != "https") {
+    return "$fieldName must use http or https"
+  }
+  if (!uri.userInfo.isNullOrBlank()) {
+    return "$fieldName must not include credentials in URL"
+  }
+  if (scheme == "http" && !isLoopbackHost(host)) {
+    return "$fieldName must use https for non-loopback targets"
+  }
+  return null
+}
+
+private fun constantTimeSecretMatch(expectedSecret: String, providedSecret: String): Boolean {
+  val md = MessageDigest.getInstance("SHA-256")
+  val expected = md.digest(expectedSecret.toByteArray(StandardCharsets.UTF_8))
+  val provided = md.digest(providedSecret.toByteArray(StandardCharsets.UTF_8))
+  return MessageDigest.isEqual(expected, provided)
 }
 
 private fun httpPostForm(url: String, form: Map<String, String>): Pair<Int, String> {
@@ -296,6 +334,7 @@ private fun parseInboundMessages(provider: String, rawBody: String, parser: Json
   fun appendMessage(channel: String?, body: String?) {
     val trimmedBody = body?.trim().orEmpty()
     if (trimmedBody.isBlank()) return
+    if (trimmedBody.length > OPENCLAW_MAX_CHAT_CHARS) return
     val resolvedChannel = channel?.trim().orEmpty().ifBlank { "general" }
     entries += resolvedChannel to trimmedBody
   }
@@ -960,6 +999,19 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           return@post
         }
         val req = call.receive<ProviderConnectorConfigRequest>()
+        val authUrlInput = req.authUrl?.trim().orEmpty().ifBlank { null }
+        val tokenUrlInput = req.tokenUrl?.trim().orEmpty().ifBlank { null }
+        val apiBaseInput = req.apiBaseUrl?.trim().orEmpty().ifBlank { null }
+        val discoveryInput = req.discoveryUrl?.trim().orEmpty().ifBlank { null }
+        listOf(
+          validateProviderUrl(authUrlInput, "authUrl"),
+          validateProviderUrl(tokenUrlInput, "tokenUrl"),
+          validateProviderUrl(apiBaseInput, "apiBaseUrl"),
+          validateProviderUrl(discoveryInput, "discoveryUrl")
+        ).firstOrNull { !it.isNullOrBlank() }?.let { error ->
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to error))
+          return@post
+        }
         val connector = getOrCreateConnector(provider)
         synchronized(connectorStateLock) {
           connector.authMode = req.authMode?.trim().orEmpty().ifBlank { connector.authMode }.lowercase()
@@ -1038,6 +1090,10 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "tokenUrl, clientId, clientSecret, and redirectUri are required"))
           return@post
         }
+        validateProviderUrl(connector.tokenUrl, "tokenUrl")?.let { error ->
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to error))
+          return@post
+        }
 
         val (status, body) = try {
           httpPostForm(
@@ -1110,6 +1166,15 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "apiKey required"))
           return@post
         }
+        val apiBaseInput = req.apiBaseUrl?.trim().orEmpty().ifBlank { null }
+        val discoveryInput = req.discoveryUrl?.trim().orEmpty().ifBlank { null }
+        listOf(
+          validateProviderUrl(apiBaseInput, "apiBaseUrl"),
+          validateProviderUrl(discoveryInput, "discoveryUrl")
+        ).firstOrNull { !it.isNullOrBlank() }?.let { error ->
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to error))
+          return@post
+        }
         val connector = getOrCreateConnector(provider)
         synchronized(connectorStateLock) {
           connector.authMode = "api_key"
@@ -1133,16 +1198,20 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         }
 
         val connector = getOrCreateConnector(provider)
-        val expectedSecretHash = connector.webhookSecret?.takeIf { it.isNotBlank() }?.sha256Hex()
-        if (!expectedSecretHash.isNullOrBlank()) {
+        val expectedSecret = connector.webhookSecret?.takeIf { it.isNotBlank() }
+        if (!expectedSecret.isNullOrBlank()) {
           val provided = call.request.headers["X-Webhook-Secret"]?.trim().orEmpty()
-          if (provided.isBlank() || provided.sha256Hex() != expectedSecretHash) {
+          if (provided.isBlank() || !constantTimeSecretMatch(expectedSecret, provided)) {
             call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "invalid webhook secret"))
             return@post
           }
         }
 
         val raw = call.receiveText()
+        if (raw.length > OPENCLAW_MAX_WEBHOOK_CHARS) {
+          call.respond(HttpStatusCode.PayloadTooLarge, mapOf("error" to "payload too large"))
+          return@post
+        }
         val entries = parseInboundMessages(provider, raw, openClawJson)
         if (entries.isEmpty()) {
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "no supported messages in payload"))
@@ -1175,6 +1244,10 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
 
         if (discoveryUrl.isNullOrBlank()) {
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider discovery URL is not configured"))
+          return@get
+        }
+        validateProviderUrl(discoveryUrl, "discoveryUrl")?.let { error ->
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to error))
           return@get
         }
 
@@ -1376,6 +1449,10 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "gateway, channel, and body required"))
           return@post
         }
+        if (body.length > OPENCLAW_MAX_CHAT_CHARS) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "body too large"))
+          return@post
+        }
         call.respond(openClawDashboard.addMessage(gateway, channel, body))
       }
 
@@ -1385,6 +1462,10 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         val command = req.command?.trim().orEmpty()
         if (command.isBlank()) {
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Command required"))
+          return@post
+        }
+        if (command.length > OPENCLAW_MAX_COMMAND_CHARS) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Command too long"))
           return@post
         }
         call.respond(openClawDashboard.runCommand(command, server))
@@ -1402,6 +1483,10 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         val body = req.body?.trim().orEmpty()
         if (body.isBlank()) {
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Message body required"))
+          return@post
+        }
+        if (body.length > OPENCLAW_MAX_CHAT_CHARS) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Message body too large"))
           return@post
         }
         call.respond(openClawDashboard.addChatMessage(body = body, channel = ch))

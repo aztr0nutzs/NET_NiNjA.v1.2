@@ -258,7 +258,11 @@ class AndroidLocalServerApiContractTest {
         val nodeId = "android-test-node-${System.currentTimeMillis()}"
         val client = HttpClient(CIO) { install(WebSockets) }
         try {
-          client.webSocket(host = "127.0.0.1", port = port, path = "/openclaw/ws") {
+          client.webSocket(
+            host = "127.0.0.1",
+            port = port,
+            path = "/openclaw/ws?${LocalApiAuth.QUERY_PARAM}=$token"
+          ) {
             send(Frame.Text("""{"type":"HELLO","nodeId":"$nodeId","capabilities":["test"]}"""))
             // Give the server a moment to register.
             delay(150)

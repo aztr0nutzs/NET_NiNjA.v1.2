@@ -151,11 +151,11 @@ Status: **MISSING (expected)**.
 ## 6) Security / UX expectations
 
 ### 6.1 Localhost openness
-- Android auth interceptor gates only `/api/v1/*`.
-- OpenClaw routes are under `/api/openclaw/*` and therefore are currently not token-gated.
+- Android auth interceptor now gates `/api/v1/*`, `/api/openclaw/*`, and `/openclaw/*` (including `/openclaw/ws`).
+- OpenClaw routes are token-gated and loopback-restricted under the same protection policy.
 - Android server default bind is localhost (`127.0.0.1`), reducing exposure to local device context.
 
-Status: **PRESENT as currently-open local endpoints (matches checklist expectation), with caveat: keep localhost-only bind.**
+Status: **HARDENED** (token + loopback enforcement in place, keep localhost-only bind).
 
 ### 6.2 First-run smoothness
 - Seed message and connected defaults are set in `OpenClawDashboardState.initialize()`.
@@ -178,7 +178,7 @@ Status: **PRESENT** (code-level).
 - Sessions worker: **PASS (expected missing confirmed)**
 - Cron scheduler: **PASS (expected missing confirmed)**
 - WS endpoint: **PASS (code inspection)**
-- Security guard: **PASS (current localhost-open behavior confirmed)**
+- Security guard: **PASS (OpenClaw endpoints now token-gated and loopback-restricted)**
 
 ---
 
@@ -194,4 +194,4 @@ Status: **PRESENT** (code-level).
 Residual risk before declaring ship-ready:
 1) Device/runtime verification pending (launch/logcat/screenshots).
 2) Android build not validated in this CI shell due missing SDK.
-3) OpenClaw endpoint auth model intentionally open under `/api/openclaw/*`; acceptable only while bind remains loopback-only.
+3) Runtime validation pending for real device flows (tokened WebSocket clients and provider callbacks under hardened checks).
