@@ -20,6 +20,7 @@ import io.ktor.server.application.call
 import io.ktor.server.http.content.staticFiles
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveChannel
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.cacheControl
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
@@ -47,8 +48,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.net.HttpURLConnection
+import java.net.URLEncoder
 import java.io.File
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
@@ -112,6 +123,261 @@ private data class SpeedtestResultRequest(
   val error: String? = null
 )
 
+@Serializable
+private data class ProviderConnectorConfigRequest(
+  val authMode: String? = null,
+  val clientId: String? = null,
+  val clientSecret: String? = null,
+  val authUrl: String? = null,
+  val tokenUrl: String? = null,
+  val redirectUri: String? = null,
+  val scope: String? = null,
+  val apiBaseUrl: String? = null,
+  val discoveryUrl: String? = null,
+  val apiKey: String? = null,
+  val webhookSecret: String? = null
+)
+
+@Serializable
+private data class ProviderAuthStartResponse(
+  val provider: String,
+  val authMode: String,
+  val state: String? = null,
+  val authUrl: String? = null,
+  val message: String? = null
+)
+
+@Serializable
+private data class ProviderAuthCallbackRequest(
+  val code: String? = null,
+  val state: String? = null
+)
+
+@Serializable
+private data class ProviderApiKeyAuthRequest(
+  val apiKey: String? = null,
+  val apiBaseUrl: String? = null,
+  val discoveryUrl: String? = null,
+  val webhookSecret: String? = null
+)
+
+@Serializable
+private data class ProviderInboundWebhookResponse(
+  val ok: Boolean,
+  val provider: String,
+  val ingested: Int
+)
+
+@Serializable
+private data class ProviderChannelSnapshot(
+  val id: String,
+  val name: String? = null,
+  val kind: String = "channel"
+)
+
+@Serializable
+private data class ProviderChannelDiscoveryResponse(
+  val provider: String,
+  val source: String,
+  val channels: List<ProviderChannelSnapshot>
+)
+
+@Serializable
+private data class ProviderConnectorSnapshot(
+  val provider: String,
+  val authMode: String,
+  val configured: Boolean,
+  val connected: Boolean,
+  val hasApiKey: Boolean,
+  val hasAccessToken: Boolean,
+  val authUrl: String? = null,
+  val tokenUrl: String? = null,
+  val redirectUri: String? = null,
+  val scope: String? = null,
+  val apiBaseUrl: String? = null,
+  val discoveryUrl: String? = null,
+  val updatedAt: Long,
+  val lastError: String? = null
+)
+
+private data class ProviderConnectorState(
+  val provider: String,
+  var authMode: String = "api_key",
+  var clientId: String? = null,
+  var clientSecret: String? = null,
+  var authUrl: String? = null,
+  var tokenUrl: String? = null,
+  var redirectUri: String? = null,
+  var scope: String? = null,
+  var apiBaseUrl: String? = null,
+  var discoveryUrl: String? = null,
+  var apiKey: String? = null,
+  var accessToken: String? = null,
+  var refreshToken: String? = null,
+  var webhookSecret: String? = null,
+  var pendingState: String? = null,
+  var connected: Boolean = false,
+  var updatedAt: Long = System.currentTimeMillis(),
+  var lastError: String? = null
+) {
+  fun toSnapshot(): ProviderConnectorSnapshot = ProviderConnectorSnapshot(
+    provider = provider,
+    authMode = authMode,
+    configured = !clientId.isNullOrBlank() || !apiKey.isNullOrBlank(),
+    connected = connected,
+    hasApiKey = !apiKey.isNullOrBlank(),
+    hasAccessToken = !accessToken.isNullOrBlank(),
+    authUrl = authUrl,
+    tokenUrl = tokenUrl,
+    redirectUri = redirectUri,
+    scope = scope,
+    apiBaseUrl = apiBaseUrl,
+    discoveryUrl = discoveryUrl,
+    updatedAt = updatedAt,
+    lastError = lastError
+  )
+}
+
+private fun normalizeProviderKey(raw: String): String = raw.trim().lowercase()
+
+private fun String.sha256Hex(): String {
+  val md = java.security.MessageDigest.getInstance("SHA-256")
+  return md.digest(toByteArray(StandardCharsets.UTF_8)).joinToString("") { "%02x".format(it) }
+}
+
+private fun httpPostForm(url: String, form: Map<String, String>): Pair<Int, String> {
+  val body = form.entries.joinToString("&") { (k, v) ->
+    "${URLEncoder.encode(k, StandardCharsets.UTF_8.name())}=${URLEncoder.encode(v, StandardCharsets.UTF_8.name())}"
+  }
+  val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+    requestMethod = "POST"
+    connectTimeout = 5000
+    readTimeout = 5000
+    doOutput = true
+    setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+    setRequestProperty("Accept", "application/json")
+  }
+  return try {
+    conn.outputStream.use { it.write(body.toByteArray(StandardCharsets.UTF_8)) }
+    val code = conn.responseCode
+    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+    code to (stream?.bufferedReader()?.use { it.readText() }.orEmpty())
+  } finally {
+    conn.disconnect()
+  }
+}
+
+private fun httpGetJson(url: String, bearerToken: String? = null, apiKey: String? = null): Pair<Int, String> {
+  val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+    requestMethod = "GET"
+    connectTimeout = 5000
+    readTimeout = 5000
+    setRequestProperty("Accept", "application/json")
+    if (!bearerToken.isNullOrBlank()) {
+      setRequestProperty("Authorization", "Bearer $bearerToken")
+    }
+    if (!apiKey.isNullOrBlank()) {
+      setRequestProperty("X-API-Key", apiKey)
+    }
+  }
+  return try {
+    val code = conn.responseCode
+    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+    code to (stream?.bufferedReader()?.use { it.readText() }.orEmpty())
+  } finally {
+    conn.disconnect()
+  }
+}
+
+private fun parseInboundMessages(provider: String, rawBody: String, parser: Json): List<Pair<String, String>> {
+  val payload = runCatching { parser.parseToJsonElement(rawBody) }.getOrNull() ?: return emptyList()
+  val entries = mutableListOf<Pair<String, String>>()
+
+  fun appendMessage(channel: String?, body: String?) {
+    val trimmedBody = body?.trim().orEmpty()
+    if (trimmedBody.isBlank()) return
+    val resolvedChannel = channel?.trim().orEmpty().ifBlank { "general" }
+    entries += resolvedChannel to trimmedBody
+  }
+
+  when (provider) {
+    "telegram" -> {
+      val updates = payload.jsonObject["updates"]?.jsonArray ?: JsonArray(emptyList())
+      updates.forEach { item ->
+        val msg = item.jsonObject["message"]?.jsonObject ?: return@forEach
+        val text = msg["text"]?.jsonPrimitive?.contentOrNull
+        val chat = msg["chat"]?.jsonObject
+        val channel = chat?.get("username")?.jsonPrimitive?.contentOrNull
+          ?: chat?.get("id")?.jsonPrimitive?.contentOrNull
+        appendMessage(channel, text)
+      }
+    }
+    else -> {
+      val messages = payload.jsonObject["messages"]?.jsonArray
+      if (messages != null) {
+        messages.forEach { item ->
+          val obj = item.jsonObject
+          appendMessage(
+            channel = obj["channel"]?.jsonPrimitive?.contentOrNull ?: obj["chatId"]?.jsonPrimitive?.contentOrNull,
+            body = obj["body"]?.jsonPrimitive?.contentOrNull ?: obj["text"]?.jsonPrimitive?.contentOrNull
+          )
+        }
+      } else {
+        appendMessage(
+          channel = payload.jsonObject["channel"]?.jsonPrimitive?.contentOrNull,
+          body = payload.jsonObject["body"]?.jsonPrimitive?.contentOrNull ?: payload.jsonObject["text"]?.jsonPrimitive?.contentOrNull
+        )
+      }
+    }
+  }
+  return entries
+}
+
+private fun parseChannels(provider: String, rawBody: String, parser: Json): List<ProviderChannelSnapshot> {
+  val payload = runCatching { parser.parseToJsonElement(rawBody) }.getOrNull() ?: return emptyList()
+
+  fun fromArray(items: JsonArray): List<ProviderChannelSnapshot> = items.mapNotNull { element ->
+    val obj = element as? JsonObject ?: return@mapNotNull null
+    val id = obj["id"]?.jsonPrimitive?.contentOrNull
+      ?: obj["chat_id"]?.jsonPrimitive?.contentOrNull
+      ?: obj["name"]?.jsonPrimitive?.contentOrNull
+      ?: return@mapNotNull null
+    val name = obj["name"]?.jsonPrimitive?.contentOrNull
+      ?: obj["title"]?.jsonPrimitive?.contentOrNull
+      ?: obj["username"]?.jsonPrimitive?.contentOrNull
+    ProviderChannelSnapshot(id = id, name = name)
+  }
+
+  return when (provider) {
+    "telegram" -> {
+      val result = payload.jsonObject["result"]?.jsonArray ?: JsonArray(emptyList())
+      result.mapNotNull { update ->
+        val message = update.jsonObject["message"]?.jsonObject ?: return@mapNotNull null
+        val chat = message["chat"]?.jsonObject ?: return@mapNotNull null
+        val id = chat["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+        val name = chat["title"]?.jsonPrimitive?.contentOrNull
+          ?: chat["username"]?.jsonPrimitive?.contentOrNull
+          ?: chat["first_name"]?.jsonPrimitive?.contentOrNull
+        ProviderChannelSnapshot(id = id, name = name)
+      }.distinctBy { it.id }
+    }
+    "discord" -> {
+      val items = payload.jsonObject["channels"]?.jsonArray
+      if (items != null) {
+        fromArray(items)
+      } else if (payload is JsonArray) {
+        fromArray(payload)
+      } else {
+        emptyList()
+      }
+    }
+    else -> {
+      val items = payload.jsonObject["channels"]?.jsonArray
+      if (items != null) fromArray(items) else if (payload is JsonArray) fromArray(payload) else emptyList()
+    }
+  }
+}
+
 internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: File) {
   with(server) {
     val g5arApi = G5arApiImpl()
@@ -129,6 +395,17 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
       SpeedtestServer(id = "hex-3", name = "HEX-3", location = "Industrial Backbone"),
       SpeedtestServer(id = "luna-9", name = "LUNA-9", location = "Edge Satellite")
     )
+    val connectorStateLock = Any()
+    val providerConnectors = LinkedHashMap<String, ProviderConnectorState>()
+
+    fun getOrCreateConnector(provider: String): ProviderConnectorState = synchronized(connectorStateLock) {
+      val key = normalizeProviderKey(provider)
+      providerConnectors.getOrPut(key) { ProviderConnectorState(provider = key) }
+    }
+
+    fun snapshotConnectors(): List<ProviderConnectorSnapshot> = synchronized(connectorStateLock) {
+      providerConnectors.values.map { it.toSnapshot() }
+    }
 
     routing {
       staticFiles("/ui", uiDir, index = "ninja_mobile_new.html")
@@ -661,6 +938,276 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         } else {
           call.respond(result)
         }
+      }
+
+      get("/api/openclaw/providers") {
+        call.respond(snapshotConnectors())
+      }
+
+      get("/api/openclaw/providers/{provider}") {
+        val provider = normalizeProviderKey(call.parameters["provider"]?.trim().orEmpty())
+        if (provider.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider required"))
+          return@get
+        }
+        call.respond(getOrCreateConnector(provider).toSnapshot())
+      }
+
+      post("/api/openclaw/providers/{provider}/auth/start") {
+        val provider = normalizeProviderKey(call.parameters["provider"]?.trim().orEmpty())
+        if (provider.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider required"))
+          return@post
+        }
+        val req = call.receive<ProviderConnectorConfigRequest>()
+        val connector = getOrCreateConnector(provider)
+        synchronized(connectorStateLock) {
+          connector.authMode = req.authMode?.trim().orEmpty().ifBlank { connector.authMode }.lowercase()
+          connector.clientId = req.clientId?.trim().orEmpty().ifBlank { connector.clientId }
+          connector.clientSecret = req.clientSecret?.trim().orEmpty().ifBlank { connector.clientSecret }
+          connector.authUrl = req.authUrl?.trim().orEmpty().ifBlank { connector.authUrl }
+          connector.tokenUrl = req.tokenUrl?.trim().orEmpty().ifBlank { connector.tokenUrl }
+          connector.redirectUri = req.redirectUri?.trim().orEmpty().ifBlank { connector.redirectUri }
+          connector.scope = req.scope?.trim().orEmpty().ifBlank { connector.scope }
+          connector.apiBaseUrl = req.apiBaseUrl?.trim().orEmpty().ifBlank { connector.apiBaseUrl }
+          connector.discoveryUrl = req.discoveryUrl?.trim().orEmpty().ifBlank { connector.discoveryUrl }
+          connector.webhookSecret = req.webhookSecret?.trim().orEmpty().ifBlank { connector.webhookSecret }
+          connector.lastError = null
+          connector.updatedAt = System.currentTimeMillis()
+        }
+
+        if (connector.authMode != "oauth2") {
+          call.respond(
+            ProviderAuthStartResponse(
+              provider = provider,
+              authMode = connector.authMode,
+              message = "Provider uses API key flow. Submit /auth/api-key."
+            )
+          )
+          return@post
+        }
+
+        if (connector.authUrl.isNullOrBlank() || connector.clientId.isNullOrBlank() || connector.redirectUri.isNullOrBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "authUrl, clientId, and redirectUri are required for oauth2"))
+          return@post
+        }
+
+        val state = java.util.UUID.randomUUID().toString()
+        val params = linkedMapOf(
+          "response_type" to "code",
+          "client_id" to connector.clientId.orEmpty(),
+          "redirect_uri" to connector.redirectUri.orEmpty(),
+          "state" to state
+        )
+        connector.scope?.takeIf { it.isNotBlank() }?.let { params["scope"] = it }
+        val query = params.entries.joinToString("&") { (k, v) ->
+          "${URLEncoder.encode(k, StandardCharsets.UTF_8.name())}=${URLEncoder.encode(v, StandardCharsets.UTF_8.name())}"
+        }
+        val authUrl = "${connector.authUrl}?$query"
+        synchronized(connectorStateLock) {
+          connector.pendingState = state
+          connector.updatedAt = System.currentTimeMillis()
+        }
+        call.respond(ProviderAuthStartResponse(provider = provider, authMode = "oauth2", state = state, authUrl = authUrl))
+      }
+
+      post("/api/openclaw/providers/{provider}/auth/callback") {
+        val provider = normalizeProviderKey(call.parameters["provider"]?.trim().orEmpty())
+        if (provider.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider required"))
+          return@post
+        }
+        val req = call.receive<ProviderAuthCallbackRequest>()
+        val code = req.code?.trim().orEmpty()
+        val state = req.state?.trim().orEmpty()
+        if (code.isBlank() || state.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "code and state required"))
+          return@post
+        }
+
+        val connector = getOrCreateConnector(provider)
+        if (connector.authMode != "oauth2") {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider is not configured for oauth2"))
+          return@post
+        }
+        if (connector.pendingState.isNullOrBlank() || connector.pendingState != state) {
+          call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "invalid oauth state"))
+          return@post
+        }
+        if (connector.tokenUrl.isNullOrBlank() || connector.clientId.isNullOrBlank() || connector.clientSecret.isNullOrBlank() || connector.redirectUri.isNullOrBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "tokenUrl, clientId, clientSecret, and redirectUri are required"))
+          return@post
+        }
+
+        val (status, body) = try {
+          httpPostForm(
+            connector.tokenUrl.orEmpty(),
+            mapOf(
+              "grant_type" to "authorization_code",
+              "client_id" to connector.clientId.orEmpty(),
+              "client_secret" to connector.clientSecret.orEmpty(),
+              "code" to code,
+              "redirect_uri" to connector.redirectUri.orEmpty()
+            )
+          )
+        } catch (e: Exception) {
+          synchronized(connectorStateLock) {
+            connector.lastError = "token_exchange_failed"
+            connector.connected = false
+            connector.updatedAt = System.currentTimeMillis()
+          }
+          logEvent("openclaw_provider_token_exchange_failed", mapOf("provider" to provider, "reason" to e.message))
+          call.respond(HttpStatusCode.BadGateway, mapOf("error" to "token exchange failed"))
+          return@post
+        }
+
+        if (status !in 200..299) {
+          synchronized(connectorStateLock) {
+            connector.lastError = "token_exchange_http_$status"
+            connector.connected = false
+            connector.updatedAt = System.currentTimeMillis()
+          }
+          logEvent("openclaw_provider_token_exchange_http_error", mapOf("provider" to provider, "status" to status))
+          call.respond(HttpStatusCode.BadGateway, mapOf("error" to "token exchange failed", "status" to status))
+          return@post
+        }
+
+        val parsed = runCatching { openClawJson.parseToJsonElement(body).jsonObject }.getOrNull()
+        val accessToken = parsed?.get("access_token")?.jsonPrimitive?.contentOrNull
+        val refreshToken = parsed?.get("refresh_token")?.jsonPrimitive?.contentOrNull
+        if (accessToken.isNullOrBlank()) {
+          synchronized(connectorStateLock) {
+            connector.lastError = "token_missing_access_token"
+            connector.connected = false
+            connector.updatedAt = System.currentTimeMillis()
+          }
+          call.respond(HttpStatusCode.BadGateway, mapOf("error" to "provider token response missing access_token"))
+          return@post
+        }
+
+        synchronized(connectorStateLock) {
+          connector.accessToken = accessToken
+          connector.refreshToken = refreshToken
+          connector.connected = true
+          connector.pendingState = null
+          connector.lastError = null
+          connector.updatedAt = System.currentTimeMillis()
+        }
+        openClawDashboard.restartGateway(provider)
+        call.respond(getOrCreateConnector(provider).toSnapshot())
+      }
+
+      post("/api/openclaw/providers/{provider}/auth/api-key") {
+        val provider = normalizeProviderKey(call.parameters["provider"]?.trim().orEmpty())
+        if (provider.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider required"))
+          return@post
+        }
+
+        val req = call.receive<ProviderApiKeyAuthRequest>()
+        val key = req.apiKey?.trim().orEmpty()
+        if (key.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "apiKey required"))
+          return@post
+        }
+        val connector = getOrCreateConnector(provider)
+        synchronized(connectorStateLock) {
+          connector.authMode = "api_key"
+          connector.apiKey = key
+          connector.apiBaseUrl = req.apiBaseUrl?.trim().orEmpty().ifBlank { connector.apiBaseUrl }
+          connector.discoveryUrl = req.discoveryUrl?.trim().orEmpty().ifBlank { connector.discoveryUrl }
+          connector.webhookSecret = req.webhookSecret?.trim().orEmpty().ifBlank { connector.webhookSecret }
+          connector.connected = true
+          connector.lastError = null
+          connector.updatedAt = System.currentTimeMillis()
+        }
+        openClawDashboard.restartGateway(provider)
+        call.respond(getOrCreateConnector(provider).toSnapshot())
+      }
+
+      post("/api/openclaw/providers/{provider}/webhook") {
+        val provider = normalizeProviderKey(call.parameters["provider"]?.trim().orEmpty())
+        if (provider.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider required"))
+          return@post
+        }
+
+        val connector = getOrCreateConnector(provider)
+        val expectedSecretHash = connector.webhookSecret?.takeIf { it.isNotBlank() }?.sha256Hex()
+        if (!expectedSecretHash.isNullOrBlank()) {
+          val provided = call.request.headers["X-Webhook-Secret"]?.trim().orEmpty()
+          if (provided.isBlank() || provided.sha256Hex() != expectedSecretHash) {
+            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "invalid webhook secret"))
+            return@post
+          }
+        }
+
+        val raw = call.receiveText()
+        val entries = parseInboundMessages(provider, raw, openClawJson)
+        if (entries.isEmpty()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "no supported messages in payload"))
+          return@post
+        }
+        entries.forEach { (channel, body) ->
+          openClawDashboard.addMessage(gateway = provider, channel = channel, body = body)
+        }
+        synchronized(connectorStateLock) {
+          connector.connected = true
+          connector.lastError = null
+          connector.updatedAt = System.currentTimeMillis()
+        }
+        call.respond(ProviderInboundWebhookResponse(ok = true, provider = provider, ingested = entries.size))
+      }
+
+      get("/api/openclaw/providers/{provider}/channels") {
+        val provider = normalizeProviderKey(call.parameters["provider"]?.trim().orEmpty())
+        if (provider.isBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider required"))
+          return@get
+        }
+
+        val connector = getOrCreateConnector(provider)
+        val discoveryUrl = connector.discoveryUrl?.takeIf { it.isNotBlank() }
+          ?: when (provider) {
+            "telegram" -> connector.accessToken?.let { "https://api.telegram.org/bot$it/getUpdates?limit=100" }
+            else -> connector.apiBaseUrl?.trimEnd('/')?.plus("/channels")
+          }
+
+        if (discoveryUrl.isNullOrBlank()) {
+          call.respond(HttpStatusCode.BadRequest, mapOf("error" to "provider discovery URL is not configured"))
+          return@get
+        }
+
+        val (status, body) = try {
+          httpGetJson(discoveryUrl, bearerToken = connector.accessToken, apiKey = connector.apiKey)
+        } catch (e: Exception) {
+          synchronized(connectorStateLock) {
+            connector.connected = false
+            connector.lastError = "channel_discovery_failed"
+            connector.updatedAt = System.currentTimeMillis()
+          }
+          logEvent("openclaw_provider_channel_discovery_failed", mapOf("provider" to provider, "reason" to e.message))
+          call.respond(HttpStatusCode.BadGateway, mapOf("error" to "channel discovery failed"))
+          return@get
+        }
+
+        if (status !in 200..299) {
+          synchronized(connectorStateLock) {
+            connector.connected = false
+            connector.lastError = "channel_discovery_http_$status"
+            connector.updatedAt = System.currentTimeMillis()
+          }
+          call.respond(HttpStatusCode.BadGateway, mapOf("error" to "channel discovery failed", "status" to status))
+          return@get
+        }
+
+        val channels = parseChannels(provider, body, openClawJson)
+        synchronized(connectorStateLock) {
+          connector.connected = true
+          connector.lastError = null
+          connector.updatedAt = System.currentTimeMillis()
+        }
+        call.respond(ProviderChannelDiscoveryResponse(provider = provider, source = discoveryUrl, channels = channels))
       }
 
       get("/api/openclaw/instances") {
@@ -1289,4 +1836,3 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
     }
   }
 }
-
