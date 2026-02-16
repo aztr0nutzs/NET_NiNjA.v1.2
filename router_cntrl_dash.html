@@ -517,6 +517,26 @@
     logs: []
   };
 
+  const nnServerToken = (() => {
+    try {
+      const u = new URL(String(location.href));
+      const t = (u.searchParams.get('token') || u.searchParams.get('t') || '').trim();
+      if (t) {
+        try { localStorage.setItem('nn_token', t); } catch (_) {}
+        try {
+          u.searchParams.delete('token');
+          u.searchParams.delete('t');
+          history.replaceState(null, '', u.toString());
+        } catch (_) {}
+        return t;
+      }
+    } catch (_) {}
+    try {
+      return (localStorage.getItem('nn_token') || '').trim();
+    } catch (_) {}
+    return '';
+  })();
+
   const nativeBridge = (typeof window !== 'undefined' && window.NetNinjaRouterBridge) ? window.NetNinjaRouterBridge : null;
   window.__NET_NINJA__ = window.__NET_NINJA__ || {};
   window.__NET_NINJA__.setState = function(next) {
@@ -567,14 +587,25 @@
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const headers = { 'Accept': 'application/json' };
-      if (body != null) headers['Content-Type'] = 'application/json';
-      if (auth && stateStore.token) headers['Authorization'] = `Bearer ${stateStore.token}`;
+      const gatewayAuthorization = (auth && stateStore.token) ? `Bearer ${stateStore.token}` : null;
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      };
+      if (nnServerToken) headers['Authorization'] = `Bearer ${nnServerToken}`;
 
-      const res = await fetch(`${stateStore.baseUrl}${path}`, {
-        method,
+      const res = await fetch('/api/v1/router/proxy', {
+        method: 'POST',
         headers,
-        body: body != null ? JSON.stringify(body) : undefined,
+        body: JSON.stringify({
+          path,
+          method,
+          body,
+          auth,
+          timeoutMs,
+          baseUrl: stateStore.baseUrl,
+          gatewayAuthorization
+        }),
         signal: controller.signal,
         credentials: 'omit'
       });
