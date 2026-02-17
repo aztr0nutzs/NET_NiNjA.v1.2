@@ -56,6 +56,13 @@ data class ChatSendRequest(
 data class SkillInvokeRequest(val name: String? = null)
 
 @Serializable
+data class CronJobRouteRequest(
+  val schedule: String? = null,
+  val command: String? = null,
+  val enabled: Boolean? = null
+)
+
+@Serializable
 data class OpenClawStatsResponse(
   val uptimeMs: Long,
   val nodeCount: Int
@@ -280,5 +287,47 @@ fun Route.openClawRoutes() {
     }
     val channel = req.channel?.trim().orEmpty().ifBlank { "general" }
     call.respond(OpenClawDashboardState.addChatMessage(body = body, channel = channel))
+  }
+
+  // ── Cron ──────────────────────────────────────────────────────────────
+
+  get("/api/openclaw/cron") {
+    call.respond(OpenClawDashboardState.listCronJobs())
+  }
+
+  post("/api/openclaw/cron") {
+    val req = call.receive<CronJobRouteRequest>()
+    val schedule = req.schedule?.trim().orEmpty()
+    val command = req.command?.trim().orEmpty()
+    if (schedule.isBlank() || command.isBlank()) {
+      call.respond(HttpStatusCode.BadRequest, mapOf("error" to "schedule and command required"))
+      return@post
+    }
+    val job = OpenClawDashboardState.addCronJob(schedule, command, req.enabled ?: true)
+    if (job == null) {
+      call.respond(HttpStatusCode.Conflict, mapOf("error" to "Max cron jobs reached"))
+    } else {
+      call.respond(job)
+    }
+  }
+
+  post("/api/openclaw/cron/{id}/toggle") {
+    val id = call.parameters["id"]?.trim().orEmpty()
+    val job = OpenClawDashboardState.toggleCronJob(id)
+    if (job == null) {
+      call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown cron job"))
+    } else {
+      call.respond(job)
+    }
+  }
+
+  delete("/api/openclaw/cron/{id}") {
+    val id = call.parameters["id"]?.trim().orEmpty()
+    val removed = OpenClawDashboardState.removeCronJob(id)
+    if (removed) {
+      call.respond(mapOf("ok" to true))
+    } else {
+      call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown cron job"))
+    }
   }
 }

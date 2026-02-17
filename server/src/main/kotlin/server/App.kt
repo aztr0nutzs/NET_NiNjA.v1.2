@@ -40,6 +40,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.time.Duration
 import org.slf4j.LoggerFactory
+import server.openclaw.OpenClawDashboardState
 import server.openclaw.OpenClawGatewayRegistry
 import server.openclaw.OpenClawGatewayState
 import server.openclaw.openClawRoutes
@@ -242,6 +243,7 @@ fun startServer(
   )
   val openClawGateway = OpenClawGatewayRegistry()
   OpenClawGatewayState.bindRegistry(openClawGateway)
+  OpenClawDashboardState.bindDb(conn)
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
