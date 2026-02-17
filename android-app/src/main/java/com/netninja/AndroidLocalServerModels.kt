@@ -124,9 +124,13 @@ data class PermissionsActionResponse(
 @Serializable
 data class OpenClawWsMessage(
   val type: String,
+  val protocolVersion: Int? = null,
   val nodeId: String? = null,
   val capabilities: List<String> = emptyList(),
-  val payload: String? = null
+  val payload: String? = null,
+  val requestId: String? = null,
+  val success: Boolean? = null,
+  val error: String? = null
 )
 
 @Serializable

@@ -523,8 +523,10 @@ if (messages.isEmpty()) {
                 val result = runCatching {
                     when (session.type) {
                         "command" -> {
-                            val cmd = session.payload ?: session.target
-                            runCommand(cmd).output.take(2000)
+                            runCommand(resolveSessionCommand(session)).output.take(2000)
+                        }
+                        "node" -> {
+                            runCommand(resolveSessionCommand(session)).output.take(2000)
                         }
                         "skill" -> {
                             val executor = pluggedSkillExecutor
@@ -535,8 +537,7 @@ if (messages.isEmpty()) {
                             }
                         }
                         else -> {
-                            val cmd = session.payload ?: session.target
-                            runCommand(cmd).output.take(2000)
+                            runCommand(resolveSessionCommand(session)).output.take(2000)
                         }
                     }
                 }
@@ -853,10 +854,96 @@ fun addChatMessage(body: String, channel: String = "general"): MessageSnapshot =
      * Execute a command string. Routes known commands to real operations,
      * unknown ones are echoed.
      */
+    private sealed interface ParsedNodeCommand {
+        object ListNodes : ParsedNodeCommand
+        data class Ping(val nodeId: String) : ParsedNodeCommand
+        data class Run(val nodeId: String, val action: String) : ParsedNodeCommand
+        data class Invalid(val error: String) : ParsedNodeCommand
+    }
+
+    private fun resolveSessionCommand(session: SessionSnapshot): String {
+        val type = session.type.trim().lowercase()
+        val target = session.target.trim()
+        val payload = session.payload?.trim().orEmpty()
+        return when {
+            type == "node" && target.isNotBlank() -> normalizeNodeSessionCommand(target, payload)
+            target.startsWith("node:", ignoreCase = true) -> {
+                val nodeId = target.substringAfter(":", "").trim()
+                if (nodeId.isBlank()) "node target required" else normalizeNodeSessionCommand(nodeId, payload)
+            }
+            else -> session.payload ?: session.target
+        }
+    }
+
+    private fun normalizeNodeSessionCommand(nodeId: String, payload: String): String {
+        return when {
+            payload.isBlank() || payload.equals("ping", ignoreCase = true) -> "/node $nodeId ping"
+            payload.startsWith("run ", ignoreCase = true) -> "/node $nodeId ${payload.replaceFirst(Regex("(?i)^run\\s+"), "run ")}"
+            else -> "/node $nodeId run $payload"
+        }
+    }
+
+    private fun parseNodeCommand(rawCommand: String): ParsedNodeCommand? {
+        val trimmed = rawCommand.trim()
+        if (!(trimmed.startsWith("/node") || trimmed.startsWith("node"))) return null
+        val normalized = if (trimmed.startsWith("/")) trimmed.substring(1) else trimmed
+        val parts = normalized.split(Regex("\\s+"), limit = 4)
+        if (parts.isEmpty() || !parts[0].equals("node", ignoreCase = true)) return null
+        if (parts.size < 2) return ParsedNodeCommand.Invalid("Usage: /node list | /node <id> ping | /node <id> run <action>")
+
+        if (parts[1].equals("list", ignoreCase = true)) return ParsedNodeCommand.ListNodes
+
+        val nodeId = parts[1].trim()
+        if (nodeId.isBlank()) return ParsedNodeCommand.Invalid("Node id is required")
+        if (parts.size < 3) return ParsedNodeCommand.Invalid("Usage: /node <id> ping | /node <id> run <action>")
+
+        return when {
+            parts[2].equals("ping", ignoreCase = true) -> ParsedNodeCommand.Ping(nodeId)
+            parts[2].equals("run", ignoreCase = true) -> {
+                val action = if (parts.size >= 4) parts[3].trim() else ""
+                if (action.isBlank()) ParsedNodeCommand.Invalid("Usage: /node <id> run <action>")
+                else ParsedNodeCommand.Run(nodeId, action)
+            }
+            else -> ParsedNodeCommand.Invalid("Unknown node verb '${parts[2]}'. Use ping or run")
+        }
+    }
+
+    private fun nodeListOutput(): String =
+        "Node count: ${OpenClawGatewayState.nodeCount()}, " +
+            "Uptime: ${OpenClawGatewayState.uptimeMs()}ms\n" +
+            OpenClawGatewayState.listNodes().joinToString("\n") {
+                "  ${it.id}: caps=${it.capabilities}, last=${it.lastSeen}"
+            }.ifBlank { "  (no nodes)" }
+
+    private fun executeNodeCommand(parsed: ParsedNodeCommand): String {
+        return when (parsed) {
+            ParsedNodeCommand.ListNodes -> nodeListOutput()
+            is ParsedNodeCommand.Invalid -> "ERROR: ${parsed.error}"
+            is ParsedNodeCommand.Ping -> {
+                val outcome = OpenClawGatewayState.dispatchNodeAction(parsed.nodeId, "ping")
+                if (outcome.ok) {
+                    "NODE ${parsed.nodeId} ping success (request=${outcome.requestId}, ${outcome.durationMs}ms): ${outcome.payload ?: "ok"}"
+                } else {
+                    "NODE ${parsed.nodeId} ping ${outcome.status}: ${outcome.error ?: "unknown error"}"
+                }
+            }
+            is ParsedNodeCommand.Run -> {
+                val outcome = OpenClawGatewayState.dispatchNodeAction(parsed.nodeId, parsed.action)
+                if (outcome.ok) {
+                    "NODE ${parsed.nodeId} run success (request=${outcome.requestId}, ${outcome.durationMs}ms): ${outcome.payload ?: "ok"}"
+                } else {
+                    "NODE ${parsed.nodeId} run ${outcome.status}: ${outcome.error ?: "unknown error"}"
+                }
+            }
+        }
+    }
+
     @Suppress("UNUSED_PARAMETER")
     fun runCommand(command: String, server: Any? = null): CommandResult = synchronized(lock) {
         appendLog("Command: $command")
+        val nodeCommand = parseNodeCommand(command)
         val output = when {
+            nodeCommand != null -> executeNodeCommand(nodeCommand)
             command.startsWith("status") || command.startsWith("/status") -> {
                 json.encodeToString(snapshot())
             }
@@ -895,6 +982,9 @@ fun addChatMessage(body: String, channel: String = "general"): MessageSnapshot =
                 |  /config    — Current configuration
                 |  /debug     — Debug state dump
                 |  /nodes     — Connected OpenClaw nodes
+                |  /node list â€” List connected nodes
+                |  /node <id> ping
+                |  /node <id> run <action>
                 |  /skills    — Registered skills
                 |  /gateways  — Gateway statuses
                 |  /instances — Instance list

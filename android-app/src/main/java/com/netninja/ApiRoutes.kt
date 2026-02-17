@@ -245,6 +245,82 @@ private fun normalizeProviderKey(raw: String): String = raw.trim().lowercase()
 private const val OPENCLAW_MAX_COMMAND_CHARS = 4096
 private const val OPENCLAW_MAX_CHAT_CHARS = 4096
 private const val OPENCLAW_MAX_WEBHOOK_CHARS = 256_000
+private const val OPENCLAW_WS_PROTOCOL_VERSION = 1
+private val OPENCLAW_WS_ALLOWED_TYPES = setOf("OBSERVE", "HELLO", "HEARTBEAT", "RESULT")
+
+@Serializable
+internal data class OpenClawWsErrorFrame(
+  val type: String = "ERROR",
+  val code: String,
+  val message: String,
+  val protocolVersion: Int = OPENCLAW_WS_PROTOCOL_VERSION
+)
+
+internal sealed class OpenClawWsValidationResult {
+  data class Valid(val message: OpenClawWsMessage) : OpenClawWsValidationResult()
+  data class Invalid(val error: OpenClawWsErrorFrame, val closeCode: CloseReason.Codes = CloseReason.Codes.CANNOT_ACCEPT) :
+    OpenClawWsValidationResult()
+}
+
+internal fun validateOpenClawWsMessage(
+  payload: String,
+  currentNodeId: String?,
+  parser: Json
+): OpenClawWsValidationResult {
+  fun invalid(code: String, message: String): OpenClawWsValidationResult.Invalid =
+    OpenClawWsValidationResult.Invalid(OpenClawWsErrorFrame(code = code, message = message))
+
+  val msg = runCatching {
+    parser.decodeFromString(OpenClawWsMessage.serializer(), payload)
+  }.getOrNull() ?: return invalid("MALFORMED_JSON", "Invalid JSON payload.")
+
+  val type = msg.type.trim().uppercase(java.util.Locale.ROOT)
+  if (type !in OPENCLAW_WS_ALLOWED_TYPES) {
+    return invalid("UNKNOWN_TYPE", "Unsupported message type '$type'.")
+  }
+
+  val version = msg.protocolVersion ?: OPENCLAW_WS_PROTOCOL_VERSION
+  if (version != OPENCLAW_WS_PROTOCOL_VERSION) {
+    return invalid(
+      "UNSUPPORTED_PROTOCOL_VERSION",
+      "Unsupported protocolVersion '$version'. Expected $OPENCLAW_WS_PROTOCOL_VERSION."
+    )
+  }
+
+  val trimmedNodeId = msg.nodeId?.trim()?.takeIf { it.isNotBlank() }
+  val trimmedPayload = msg.payload?.trim()
+
+  return when (type) {
+    "HELLO" -> {
+      if (trimmedNodeId == null) invalid("MISSING_NODE_ID", "HELLO requires nodeId.")
+      else OpenClawWsValidationResult.Valid(
+        msg.copy(type = type, protocolVersion = version, nodeId = trimmedNodeId)
+      )
+    }
+    "HEARTBEAT" -> {
+      if (currentNodeId.isNullOrBlank() && trimmedNodeId == null) {
+        invalid("MISSING_NODE_IDENTITY", "HEARTBEAT requires nodeId or prior HELLO.")
+      } else {
+        OpenClawWsValidationResult.Valid(
+          msg.copy(type = type, protocolVersion = version, nodeId = trimmedNodeId)
+        )
+      }
+    }
+    "RESULT" -> {
+      when {
+        currentNodeId.isNullOrBlank() && trimmedNodeId == null ->
+          invalid("MISSING_NODE_IDENTITY", "RESULT requires nodeId or prior HELLO.")
+        trimmedPayload == null ->
+          invalid("MISSING_PAYLOAD", "RESULT requires payload.")
+        else ->
+          OpenClawWsValidationResult.Valid(
+            msg.copy(type = type, protocolVersion = version, nodeId = trimmedNodeId, payload = trimmedPayload)
+          )
+      }
+    }
+    else -> OpenClawWsValidationResult.Valid(msg.copy(type = type, protocolVersion = version, nodeId = trimmedNodeId))
+  }
+}
 
 private fun isLoopbackHost(host: String): Boolean {
   val normalized = host.trim().trimEnd('.').lowercase()
@@ -1537,20 +1613,28 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
         var nodeId: String? = null
         var isObserver = false
         val observerKey = "obs_${System.nanoTime()}"
-        var parseErrors = 0
         try {
           for (frame in incoming) {
             val text = (frame as? Frame.Text)?.readText() ?: continue
-            val msg = catchingOrNull("openclaw:parseMessage", fields = mapOf("payloadLen" to text.length)) {
-              openClawJson.decodeFromString(OpenClawWsMessage.serializer(), text)
+            val validation = catchingOrNull("openclaw:parseValidateMessage", fields = mapOf("payloadLen" to text.length)) {
+              validateOpenClawWsMessage(text, nodeId, openClawJson)
             }
-            if (msg == null) {
-              // Avoid log spam if a client sends garbage in a loop.
-              parseErrors++
-              if (parseErrors <= 3) {
-                logEvent("openclaw_parse_failed", mapOf("payloadLen" to text.length, "count" to parseErrors))
+            if (validation == null) {
+              val error = OpenClawWsErrorFrame(
+                code = "VALIDATION_FAILURE",
+                message = "Failed to validate websocket payload."
+              )
+              outgoing.trySend(Frame.Text(openClawJson.encodeToString(OpenClawWsErrorFrame.serializer(), error)))
+              close(CloseReason(CloseReason.Codes.UNEXPECTED_CONDITION, error.message.take(120)))
+              return@webSocket
+            }
+            val msg = when (validation) {
+              is OpenClawWsValidationResult.Valid -> validation.message
+              is OpenClawWsValidationResult.Invalid -> {
+                outgoing.trySend(Frame.Text(openClawJson.encodeToString(OpenClawWsErrorFrame.serializer(), validation.error)))
+                close(CloseReason(validation.closeCode, validation.error.message.take(120)))
+                return@webSocket
               }
-              continue
             }
 
             when (msg.type.trim().uppercase(java.util.Locale.ROOT)) {
@@ -1598,7 +1682,13 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
               "RESULT" -> {
                 val resolvedId = nodeId ?: msg.nodeId?.trim()
                 if (!resolvedId.isNullOrBlank()) {
-                  OpenClawGatewayState.updateResult(resolvedId, msg.payload)
+                  OpenClawGatewayState.updateResult(
+                    nodeId = resolvedId,
+                    payload = msg.payload,
+                    requestId = msg.requestId,
+                    success = msg.success,
+                    error = msg.error
+                  )
                   broadcastOpenClawSnapshot()
                 }
               }

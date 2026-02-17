@@ -2,9 +2,7 @@
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.sun.net.httpserver.HttpServer
 import java.net.HttpURLConnection
-import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.URI
 import io.ktor.client.HttpClient
@@ -14,6 +12,10 @@ import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.delay
+import okhttp3.mockwebserver.Dispatcher
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -176,20 +178,23 @@ class AndroidLocalServerApiContractTest {
       assertEquals(200, get(URI("$base/api/openclaw/stats")).first)
 
       run {
-        val providerServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-        providerServer.createContext("/oauth/token") { exchange ->
-          val response = """{"access_token":"token-abc","refresh_token":"refresh-abc"}"""
-          exchange.sendResponseHeaders(200, response.toByteArray().size.toLong())
-          exchange.responseBody.use { it.write(response.toByteArray()) }
-        }
-        providerServer.createContext("/channels") { exchange ->
-          val response = """{"channels":[{"id":"general","name":"General"}]}"""
-          exchange.sendResponseHeaders(200, response.toByteArray().size.toLong())
-          exchange.responseBody.use { it.write(response.toByteArray()) }
+        val providerServer = MockWebServer()
+        providerServer.dispatcher = object : Dispatcher() {
+          override fun dispatch(request: RecordedRequest): MockResponse {
+            return when {
+              request.path?.startsWith("/oauth/token") == true ->
+                MockResponse().setBody("""{"access_token":"token-abc","refresh_token":"refresh-abc"}""")
+                  .setResponseCode(200).addHeader("Content-Type", "application/json")
+              request.path?.startsWith("/channels") == true ->
+                MockResponse().setBody("""{"channels":[{"id":"general","name":"General"}]}""")
+                  .setResponseCode(200).addHeader("Content-Type", "application/json")
+              else -> MockResponse().setResponseCode(404)
+            }
+          }
         }
         providerServer.start()
         try {
-          val providerBase = "http://127.0.0.1:${providerServer.address.port}"
+          val providerBase = "http://127.0.0.1:${providerServer.port}"
           val (startCode, startBody) = postJson(
             URI("$base/api/openclaw/providers/telegram/auth/start"),
             """{"authMode":"oauth2","clientId":"cid","clientSecret":"csecret","authUrl":"$providerBase/oauth/authorize","tokenUrl":"$providerBase/oauth/token","redirectUri":"https://localhost/callback"}"""
@@ -249,7 +254,7 @@ class AndroidLocalServerApiContractTest {
           assertEquals(200, webhookCode)
           assertTrue("Expected one ingested message", webhookBody.contains("\"ingested\":1"))
         } finally {
-          providerServer.stop(0)
+          providerServer.shutdown()
         }
       }
 
