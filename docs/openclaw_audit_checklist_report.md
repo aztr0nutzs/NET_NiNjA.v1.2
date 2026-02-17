@@ -1,12 +1,14 @@
 # OpenClaw Implementation Audit Report
 
 Date: 2026-02-16T16:59:24Z
+Revised: 2026-02-16 (post-implementation verification pass)
 
 Scope inspected:
 - Android local server OpenClaw API + WebSocket routes
 - Android OpenClaw state machine (chat, sessions, cron, persistence)
+- Server OpenClaw state machine (chat, sessions, cron, persistence, JDBC)
 - Embedded OpenClaw dashboard UI (`web-ui/openclaw_dash.html`)
-- Desktop/server OpenClaw routes/state/WebSocket for parity notes
+- Desktop/server OpenClaw routes/state/WebSocket for full parity audit
 
 Assumptions / limits:
 - This environment has **no Android SDK configured**, so Android assemble/test/lint cannot fully execute.
@@ -71,20 +73,24 @@ Status: **PRESENT** (code-level).
 
 ### 2.1 Status pages vs real connectors
 - Dashboard models include gateway statuses (WhatsApp/Telegram/etc) with local state fields.
-- Provider connector routes are implemented under `/api/openclaw/providers/{provider}`:
+- **Android** provider connector routes are implemented under `/api/openclaw/providers/{provider}` (`ApiRoutes.kt` lines 982–1240):
+  - `GET /api/openclaw/providers` (list all)
+  - `GET /api/openclaw/providers/{provider}` (single provider info)
   - `POST /auth/start` (OAuth start URL + state generation)
   - `POST /auth/callback` (token exchange)
   - `POST /auth/api-key` (API key configuration)
   - `POST /webhook` (inbound ingestion with optional secret header verification)
   - `GET /channels` (channel discovery)
+- **Server** provider connector routes: **MISSING** — `server/src/main/kotlin/server/openclaw/OpenClawRoutes.kt` has zero `/providers/` endpoints. This is a **parity gap**.
 - Connector state remains local runtime state in this module (no dedicated secure credential vault layer in this pass).
 
-Status: **Connector flows are PRESENT in code (OAuth/API-key/webhook/channels), with local-state limitations.**
+Status: **Android PRESENT; Server MISSING (parity gap — no provider routes).**
 
 ### 2.2 Expected-missing checks
-- OAuth/API keys flow: **PRESENT**.
-- Inbound message ingestion from external platforms: **PRESENT**.
-- Channel discovery against provider APIs: **PRESENT**.
+- OAuth/API keys flow: **PRESENT (Android only)**.
+- Inbound message ingestion from external platforms: **PRESENT (Android only)**.
+- Channel discovery against provider APIs: **PRESENT (Android only)**.
+- Server provider routes: **MISSING** — must be ported from Android `ApiRoutes.kt` to server `OpenClawRoutes.kt`.
 - Production-grade connector hardening (credential lifecycle/secret storage policy): **NOT VERIFIED in this checklist pass**.
 
 ---
@@ -98,11 +104,13 @@ Status: **Connector flows are PRESENT in code (OAuth/API-key/webhook/channels), 
 
 Status: **PRESENT**.
 
-### 3.2 Worker execution missing
-- Session creation only records local session state (`queued`).
-- No worker/job/coroutine background executor tied to session queue was found for OpenClaw sessions.
+### 3.2 Worker execution
+- `processQueuedSessions()` background worker is **implemented on both Android and server**:
+  - **Android**: `OpenClawDashboardState.kt` line 500 — `sessionScheduler` (5s interval) polls queued sessions, transitions `queued → running → completed/failed`. Command-type sessions run via `runCommand()`, skill-type via `SkillExecutor`.
+  - **Server**: `OpenClawDashboardState.kt` line 389 — same pattern, transitions sessions through the same lifecycle.
+- Sessions are no longer stateful-only; they execute their target commands/skills.
 
-Status: **MISSING (expected)**.
+Status: **PRESENT** (both Android and server). ~~Previously reported as MISSING — now implemented.~~
 
 ---
 
@@ -118,11 +126,13 @@ Status: **MISSING (expected)**.
 
 Status: **PRESENT**.
 
-### 4.2 Scheduler execution missing
-- No OpenClaw cron scheduler loop/executor found that triggers cron commands by schedule.
-- Stored cron data appears administrative/stateful only.
+### 4.2 Scheduler execution
+- Cron scheduler is **implemented on both Android and server**:
+  - **Android**: `startCronSchedulerLocked()` at line 290 — `cronScheduler.scheduleWithFixedDelay` (60s interval). `executeDueCronJobs()` at line 714 filters enabled jobs via `isCronDue()`, executes via `runCommand()`, updates `lastRunAt`/`lastResult`.
+  - **Server**: `startCronScheduler()` at line 693 — same pattern. `executeDueCronJobs()` at line 747. Full cron parser includes `isCronDue`, `parseDurationMillis`, `cronFieldMatches`, `cronTokenMatches`, `parseBaseRange`, `parseRangeToken`, `parseFieldNumber`. Supports both standard 5-field cron and `@every` duration syntax.
+- Scheduler starts on `bindDb()` (server) or `initialize()` (Android).
 
-Status: **MISSING (expected)**.
+Status: **PRESENT** (both Android and server). ~~Previously reported as MISSING — now implemented.~~
 
 ---
 
@@ -130,9 +140,13 @@ Status: **MISSING (expected)**.
 
 ### 5.1 WebSocket endpoint exists
 - WebSocket endpoint exists at `/openclaw/ws` in both Android local server and desktop/server module.
-- Android WS supports `HELLO`, `OBSERVE`, `HEARTBEAT`, `RESULT` and broadcasts node snapshots.
+- **Android** WS supports `HELLO`, `OBSERVE`, `HEARTBEAT`, `RESULT` and broadcasts node snapshots.
+- **Server** WS (`OpenClawWebSocketServer.kt`) supports `HELLO`, `OBSERVE`, `HEARTBEAT`, `RESULT`:
+  - `OBSERVE` handling confirmed at line 124 — registers observer via `registerObserver()`.
+  - Observer sessions receive snapshot broadcasts alongside node sessions (line 99).
+  - Disconnect cleanup via `disconnectObserver()` in finally block (line 155).
 
-Status: **PRESENT**.
+Status: **PRESENT** (full protocol on both sides).
 
 ### 5.2 Protocol enforcement missing
 - Payload parsing uses `decodeFromString` with parse-failure continue behavior.
@@ -151,13 +165,22 @@ Status: **MISSING (expected)**.
 ## 6) Security / UX expectations
 
 ### 6.1 Localhost openness
-- Android auth interceptor now gates `/api/v1/*`, `/api/openclaw/*`, and `/openclaw/*` (including `/openclaw/ws`).
-- OpenClaw routes are token-gated and loopback-restricted under the same protection policy.
+- Android auth interceptor gates `/api/v1/*`, `/api/openclaw/*`, and `/openclaw/*` (including `/openclaw/ws`) — also enforces loopback-only.
+- Server auth interceptor gates all `/api/` and `/openclaw/ws` paths (`App.kt` lines 603–606).
+- OpenClaw routes are token-gated on both sides.
 - Android server default bind is localhost (`127.0.0.1`), reducing exposure to local device context.
 
 Status: **HARDENED** (token + loopback enforcement in place, keep localhost-only bind).
 
-### 6.2 First-run smoothness
+### 6.2 Web UI auth tokens
+- `fetchJson()` (`openclaw_dash.html` line 1549) sends `Authorization: Bearer` header when TOKEN is available.
+- `postJson()` (`openclaw_dash.html` line 1678) sends `Authorization: Bearer` header when TOKEN is available.
+- Token resolution chain: URL `?token=` param → `window.NN_TOKEN` → localStorage.
+- 401 responses are caught and logged with user-facing message.
+
+Status: **PRESENT** — web UI auth tokens are correctly sent. ~~Previously flagged as missing.~~
+
+### 6.3 First-run smoothness
 - Seed message and connected defaults are set in `OpenClawDashboardState.initialize()`.
 - Chat view has non-empty initial state when message store empty.
 
@@ -173,25 +196,42 @@ Status: **PRESENT** (code-level).
 - Chat ready on open: **PASS (code inspection)**
 - `/help`: **PASS (code inspection)**
 - `/status`: **PASS (code inspection)**
-- Persistence: **PASS (code inspection)**
-- Gateways/connectors: **PASS (provider routes + connector flows confirmed in code)**
-- Sessions worker: **PASS (expected missing confirmed)**
-- Cron scheduler: **PASS (expected missing confirmed)**
-- WS endpoint: **PASS (code inspection)**
-- Security guard: **PASS (OpenClaw endpoints now token-gated and loopback-restricted)**
+- Persistence (Android): **PASS (code inspection)** — `persistMessages()` / `loadFromDb()` confirmed
+- Persistence (Server): **PASS (code inspection)** — `bindDb()`, `persistConfig/Sessions/Gateways/Instances/Skills/Messages/CronJobs`, `loadFromDb()` all confirmed. Wired in `App.kt` line 246.
+- Gateways/connectors (Android): **PASS (provider routes + connector flows confirmed in code)**
+- Gateways/connectors (Server): **FAIL — provider routes MISSING** (no `/api/openclaw/providers/` endpoints in `OpenClawRoutes.kt`)
+- Sessions worker: **PASS** — `processQueuedSessions()` implemented on both Android (line 500) and server (line 389)
+- Cron scheduler: **PASS** — `startCronScheduler()` + `executeDueCronJobs()` + full cron parser implemented on both Android and server
+- WS endpoint: **PASS (code inspection)** — HELLO/OBSERVE/HEARTBEAT/RESULT handled on both sides
+- Web UI auth: **PASS** — `fetchJson`/`postJson` send `Authorization: Bearer` header
+- Security guard: **PASS (OpenClaw endpoints now token-gated and loopback-restricted on both Android and server)**
 
 ---
 
 ## v0 ship gate assessment (from checklist)
 
-- ✅ Chat opens instantly: **Implemented in code path**
-- ✅ `/help` + `/status` respond: **Implemented in code path**
-- ✅ Messages persist across restarts: **Implemented in DB persistence path**
+- ✅ Chat opens instantly: **Implemented in code path** (Android + server)
+- ✅ `/help` + `/status` respond: **Implemented in code path** (Android + server)
+- ✅ Messages persist across restarts: **Implemented in DB persistence path** (Android SQLite + server JDBC)
+- ✅ Session worker executes queued sessions: **Implemented** (`processQueuedSessions()` on both sides)
+- ✅ Cron scheduler fires due jobs: **Implemented** (`executeDueCronJobs()` on both sides with full cron parser)
+- ✅ Web UI sends auth tokens: **Implemented** (`fetchJson`/`postJson` include `Authorization: Bearer`)
 - ✅ No gateway/channel setup in primary flow: **Mostly true for chat path; gateway UI still visible as informational controls**
 - ✅ UI not dead on first load: **Seed greeting implemented**
 - ✅ No false claims of real WhatsApp/Telegram integration: **Connector endpoints are implemented; provider behavior remains runtime/environment dependent**
+- ✅ Server persistence wired: **`OpenClawDashboardState.bindDb(conn)` called in `App.kt` line 246; all mutation methods call persist**
 
 Residual risk before declaring ship-ready:
 1) Device/runtime verification pending (launch/logcat/screenshots).
 2) Android build not validated in this CI shell due missing SDK.
 3) Runtime validation pending for real device flows (tokened WebSocket clients and provider callbacks under hardened checks).
+4) **Server provider connector routes are MISSING** — OAuth/API-key/webhook/channels endpoints exist only on Android (`ApiRoutes.kt` lines 982–1240), not in server `OpenClawRoutes.kt`. This is a parity gap that must be ported for desktop/server builds to support gateway provider flows.
+
+---
+
+## Revision log
+
+| Date | Change |
+|---|---|
+| 2026-02-16 (original) | Initial audit — session worker and cron scheduler reported as MISSING |
+| 2026-02-16 (revision) | Verified `processQueuedSessions()`, `startCronScheduler()`/`executeDueCronJobs()`, web UI auth tokens, server persist calls, and `bindDb()` wiring are all **now implemented**. Corrected sections 3.2, 4.2, 5.1, 6.1–6.3, test report, and ship gate. Added server provider routes parity gap (section 2). |
