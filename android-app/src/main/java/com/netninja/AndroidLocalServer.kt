@@ -866,6 +866,7 @@ class AndroidLocalServer(internal val ctx: Context) {
 
     catching("db:load:openclaw") {
       openClawDashboard.initialize()
+      openClawDashboard.setSkillExecutor(skillExecutor)
     }
   }
 

@@ -190,6 +190,12 @@ class OpenClawDashboardState(private val db: LocalDatabase? = null) {
     }
     private var cronSchedulerStarted = false
 
+    private val sessionScheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
+        Thread(runnable, "openclaw-sessions").apply { isDaemon = true }
+    }
+    private var sessionSchedulerStarted = false
+    @Volatile private var pluggedSkillExecutor: SkillExecutor? = null
+
     private var connected = false
     private var host: String? = null
     private var profile = "default"
@@ -253,7 +259,32 @@ if (messages.isEmpty()) {
             appendLog("OpenClaw dashboard state initialized.")
             persistAll()
             startCronSchedulerLocked()
+            startSessionSchedulerLocked()
         }
+    }
+
+    /** Wire a [SkillExecutor] so the session worker can dispatch skill-typed sessions. */
+    fun setSkillExecutor(executor: SkillExecutor) {
+        pluggedSkillExecutor = executor
+    }
+
+    private fun startSessionSchedulerLocked() {
+        if (sessionSchedulerStarted) return
+        sessionSchedulerStarted = true
+        sessionScheduler.scheduleWithFixedDelay(
+            {
+                runCatching { processQueuedSessions() }
+                    .onFailure { e ->
+                        synchronized(lock) {
+                            appendLog("Session scheduler error: ${e.message ?: "unknown"}")
+                            persistLogs()
+                        }
+                    }
+            },
+            5L,
+            5L,
+            TimeUnit.SECONDS
+        )
     }
 
     private fun startCronSchedulerLocked() {
@@ -457,6 +488,77 @@ if (messages.isEmpty()) {
         appendLog("Session canceled: $id.")
         persistSessions()
         updated
+    }
+
+    // ── Session worker ──────────────────────────────────────────────
+
+    /**
+     * Called every 5 s by [sessionScheduler].
+     * Picks up sessions in "queued" state, transitions them through
+     * running → completed/failed, then persists.
+     */
+    private fun processQueuedSessions() {
+        val queued = synchronized(lock) {
+            sessions.values
+                .filter { it.state == "queued" }
+                .map { it.id to it }
+        }
+        if (queued.isEmpty()) return
+
+        for ((id, session) in queued) {
+            // Mark running — flag avoids continue/break inside inline lambdas (needs Kotlin 2.2)
+            var shouldRun = false
+            synchronized(lock) {
+                val current = sessions[id]
+                if (current != null && current.state == "queued") {
+                    sessions[id] = current.copy(state = "running", updatedAt = System.currentTimeMillis())
+                    appendLog("Session running: $id (${session.type}).")
+                    persistSessions()
+                    shouldRun = true
+                }
+            }
+
+            if (shouldRun) {
+                // Execute work outside the lock
+                val result = runCatching {
+                    when (session.type) {
+                        "command" -> {
+                            val cmd = session.payload ?: session.target
+                            runCommand(cmd).output.take(2000)
+                        }
+                        "skill" -> {
+                            val executor = pluggedSkillExecutor
+                            if (executor != null) {
+                                executor.execute(session.target) ?: "Skill '${session.target}' returned no result"
+                            } else {
+                                "No skill executor available"
+                            }
+                        }
+                        else -> {
+                            val cmd = session.payload ?: session.target
+                            runCommand(cmd).output.take(2000)
+                        }
+                    }
+                }
+
+                // Transition to completed or failed
+                synchronized(lock) {
+                    val current = sessions[id]
+                    if (current != null && current.state == "running") {
+                        val now = System.currentTimeMillis()
+                        val finalState = if (result.isSuccess) "completed" else "failed"
+                        val output = result.getOrElse { it.message ?: "unknown error" }
+                        sessions[id] = current.copy(
+                            state = finalState,
+                            payload = output.take(2000),
+                            updatedAt = now
+                        )
+                        appendLog("Session $finalState: $id -> ${output.take(200)}")
+                        persistSessions()
+                    }
+                }
+            }
+        }
     }
 
     // ── Skill operations ────────────────────────────────────────────

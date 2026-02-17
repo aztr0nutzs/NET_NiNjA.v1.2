@@ -3,6 +3,8 @@ package server.openclaw
 import java.time.Instant
 import java.util.ArrayDeque
 import java.util.LinkedHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
@@ -104,6 +106,10 @@ object OpenClawDashboardState {
   private val maxMessages = 200
   private val maxSessions = 200
 
+  private val sessionScheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
+    Thread(runnable, "openclaw-sessions").apply { isDaemon = true }
+  }
+
   private var connected = false
   private var host: String? = null
   private var profile = "default"
@@ -151,6 +157,23 @@ object OpenClawDashboardState {
     ).forEach { skills[it.name] = it }
 
     appendLog("OpenClaw dashboard state initialized.")
+    startSessionScheduler()
+  }
+
+  private fun startSessionScheduler() {
+    sessionScheduler.scheduleWithFixedDelay(
+      {
+        runCatching { processQueuedSessions() }
+          .onFailure { e ->
+            synchronized(lock) {
+              appendLog("Session scheduler error: ${e.message ?: "unknown"}")
+            }
+          }
+      },
+      5L,
+      5L,
+      TimeUnit.SECONDS
+    )
   }
 
   fun snapshot(): DashboardSnapshot = synchronized(lock) {
@@ -307,6 +330,53 @@ object OpenClawDashboardState {
     sessions[id] = updated
     appendLog("Session canceled: $id.")
     updated
+  }
+
+  // ── Session worker ──────────────────────────────────────────────
+
+  /**
+   * Called every 5 s by [sessionScheduler].
+   * Picks up sessions in "queued" state, transitions them through
+   * running → completed/failed.
+   */
+  private fun processQueuedSessions() {
+    val queued = synchronized(lock) {
+      sessions.values
+        .filter { it.state == "queued" }
+        .map { it.id to it }
+    }
+    if (queued.isEmpty()) return
+
+    for ((id, session) in queued) {
+      // Mark running
+      synchronized(lock) {
+        val current = sessions[id] ?: continue
+        if (current.state != "queued") continue // raced with cancel
+        sessions[id] = current.copy(state = "running", updatedAt = System.currentTimeMillis())
+        appendLog("Session running: $id (${session.type}).")
+      }
+
+      // Execute work outside the lock
+      val result = runCatching {
+        val cmd = session.payload ?: session.target
+        runCommand(cmd).output.take(2000)
+      }
+
+      // Transition to completed or failed
+      synchronized(lock) {
+        val current = sessions[id] ?: continue
+        if (current.state != "running") continue // canceled while running
+        val now = System.currentTimeMillis()
+        val finalState = if (result.isSuccess) "completed" else "failed"
+        val output = result.getOrElse { it.message ?: "unknown error" }
+        sessions[id] = current.copy(
+          state = finalState,
+          payload = output.take(2000),
+          updatedAt = now
+        )
+        appendLog("Session $finalState: $id -> ${output.take(200)}")
+      }
+    }
   }
 
   fun refreshSkills(): List<SkillSnapshot> = synchronized(lock) {
