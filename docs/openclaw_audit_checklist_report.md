@@ -81,16 +81,24 @@ Status: **PRESENT** (code-level).
   - `POST /auth/api-key` (API key configuration)
   - `POST /webhook` (inbound ingestion with optional secret header verification)
   - `GET /channels` (channel discovery)
-- **Server** provider connector routes: **MISSING** — `server/src/main/kotlin/server/openclaw/OpenClawRoutes.kt` has zero `/providers/` endpoints. This is a **parity gap**.
+- **Server** provider connector routes are now **PRESENT** in `server/src/main/kotlin/server/openclaw/OpenClawRoutes.kt`:
+  - `GET /api/openclaw/providers` (list all)
+  - `GET /api/openclaw/providers/{provider}` (single provider info)
+  - `POST /api/openclaw/providers/{provider}/auth/start` (OAuth start URL + state generation)
+  - `POST /api/openclaw/providers/{provider}/auth/callback` (token exchange)
+  - `POST /api/openclaw/providers/{provider}/auth/api-key` (API key configuration)
+  - `POST /api/openclaw/providers/{provider}/webhook` (inbound ingestion with constant-time secret verification)
+  - `GET /api/openclaw/providers/{provider}/channels` (channel discovery)
+  - Backed by `ProviderConnectorStore` thread-safe singleton with DTOs (`ProviderConnectorConfigRequest`, `ProviderAuthStartResponse`, etc.).
 - Connector state remains local runtime state in this module (no dedicated secure credential vault layer in this pass).
 
-Status: **Android PRESENT; Server MISSING (parity gap — no provider routes).**
+Status: **PRESENT (both Android and server).** ~~Previously reported server MISSING — now ported.~~
 
 ### 2.2 Expected-missing checks
-- OAuth/API keys flow: **PRESENT (Android only)**.
-- Inbound message ingestion from external platforms: **PRESENT (Android only)**.
-- Channel discovery against provider APIs: **PRESENT (Android only)**.
-- Server provider routes: **MISSING** — must be ported from Android `ApiRoutes.kt` to server `OpenClawRoutes.kt`.
+- OAuth/API keys flow: **PRESENT (Android + server)**.
+- Inbound message ingestion from external platforms: **PRESENT (Android + server)**.
+- Channel discovery against provider APIs: **PRESENT (Android + server)**.
+- Server provider routes: **PRESENT** — ported from Android `ApiRoutes.kt` to server `OpenClawRoutes.kt` with all 7 endpoints, DTOs, helpers, and `ProviderConnectorStore` state management.
 - Production-grade connector hardening (credential lifecycle/secret storage policy): **NOT VERIFIED in this checklist pass**.
 
 ---
@@ -199,7 +207,7 @@ Status: **PRESENT** (code-level).
 - Persistence (Android): **PASS (code inspection)** — `persistMessages()` / `loadFromDb()` confirmed
 - Persistence (Server): **PASS (code inspection)** — `bindDb()`, `persistConfig/Sessions/Gateways/Instances/Skills/Messages/CronJobs`, `loadFromDb()` all confirmed. Wired in `App.kt` line 246.
 - Gateways/connectors (Android): **PASS (provider routes + connector flows confirmed in code)**
-- Gateways/connectors (Server): **FAIL — provider routes MISSING** (no `/api/openclaw/providers/` endpoints in `OpenClawRoutes.kt`)
+- Gateways/connectors (Server): **PASS** — all 7 provider routes ported to `OpenClawRoutes.kt` (`ProviderConnectorStore` + DTOs + helpers)
 - Sessions worker: **PASS** — `processQueuedSessions()` implemented on both Android (line 500) and server (line 389)
 - Cron scheduler: **PASS** — `startCronScheduler()` + `executeDueCronJobs()` + full cron parser implemented on both Android and server
 - WS endpoint: **PASS (code inspection)** — HELLO/OBSERVE/HEARTBEAT/RESULT handled on both sides
@@ -225,7 +233,7 @@ Residual risk before declaring ship-ready:
 1) Device/runtime verification pending (launch/logcat/screenshots).
 2) Android build not validated in this CI shell due missing SDK.
 3) Runtime validation pending for real device flows (tokened WebSocket clients and provider callbacks under hardened checks).
-4) **Server provider connector routes are MISSING** — OAuth/API-key/webhook/channels endpoints exist only on Android (`ApiRoutes.kt` lines 982–1240), not in server `OpenClawRoutes.kt`. This is a parity gap that must be ported for desktop/server builds to support gateway provider flows.
+4) ~~Server provider connector routes are MISSING~~ **RESOLVED** — all 7 provider endpoints ported from Android `ApiRoutes.kt` to server `OpenClawRoutes.kt` with full parity (OAuth start/callback, API key, webhook ingestion, channel discovery, list all, get single).
 
 ---
 
@@ -235,3 +243,4 @@ Residual risk before declaring ship-ready:
 |---|---|
 | 2026-02-16 (original) | Initial audit — session worker and cron scheduler reported as MISSING |
 | 2026-02-16 (revision) | Verified `processQueuedSessions()`, `startCronScheduler()`/`executeDueCronJobs()`, web UI auth tokens, server persist calls, and `bindDb()` wiring are all **now implemented**. Corrected sections 3.2, 4.2, 5.1, 6.1–6.3, test report, and ship gate. Added server provider routes parity gap (section 2). |
+| 2026-02-16 (revision 2) | **Server provider routes implemented.** Ported all 7 `/api/openclaw/providers/` endpoints from Android `ApiRoutes.kt` to server `OpenClawRoutes.kt` with `ProviderConnectorStore`, DTOs, helpers (OAuth2, API key, webhook, channel discovery). Updated sections 2.1, 2.2, test report, and ship gate residual risk #4. Parity gap **closed**. |
