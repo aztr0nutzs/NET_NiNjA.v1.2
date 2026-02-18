@@ -88,25 +88,48 @@ class RouterControlGatewayClient(
         obj
       }
 
-      normalizedMethod == "POST" && normalizedPath == "/TMI/v1/auth/login" -> {
+      // Handle firmware v2 version endpoint.  This falls back to the same fetch logic
+      // but targets the v2 path.
+      normalizedMethod == "GET" && normalizedPath == "/TMI/v2/version" -> {
+        val obj = fetchVersionV2()
+        version = obj
+        addLog("DISCOVER ok: /TMI/v2/version")
+        obj
+      }
+
+      // Support v1 and v2 auth endpoints.  Return the real token rather than a placeholder.
+      (normalizedMethod == "POST" && (normalizedPath == "/TMI/v1/auth/login" || normalizedPath == "/TMI/v2/auth/login")) -> {
         val payload = body as? JsonObject ?: JsonObject(emptyMap())
         val user = payload["username"]?.asString()?.trim().orEmpty().ifBlank { "admin" }
         val password = payload["password"]?.asString().orEmpty()
         if (password.isBlank()) throw IOException("Password is required")
-        val newSession = withContext(Dispatchers.IO) { api.login(user, password) }
-        session = newSession
+        // Perform the login via the API and capture the returned session.
+        session = withContext(Dispatchers.IO) { api.login(user, password) }
         if (remember) {
           creds.save(user, password)
         } else {
           creds.clear()
         }
         addLog("AUTH ok")
-        buildJsonObject {
-          put("token", resolveSessionToken(newSession).orEmpty())
-        }
+        // Extract the real bearer token for the web layer.  Prefer the auth header,
+        // removing the Bearer prefix, then fall back to the raw token.  If no token is
+        // available return an empty string.  This allows the JS to detect a successful login.
+        val token = session?.authHeader?.removePrefix("Bearer ")?.removePrefix("bearer ")?.trim()
+          ?.takeIf { it.isNotEmpty() }
+          ?: session?.token
+          ?: ""
+        buildJsonObject { put("token", token) }
       }
 
       normalizedMethod == "GET" && normalizedPath == "/TMI/v1/gateway?get=all" -> {
+        val s = requireSession()
+        val data = withContext(Dispatchers.IO) { api.getGatewayInfo(s) }
+        gatewayAll = gatewayInfoToJson(data)
+        gatewayAll
+      }
+
+      // Support v2 gateway all endpoint.
+      normalizedMethod == "GET" && normalizedPath == "/TMI/v2/gateway?get=all" -> {
         val s = requireSession()
         val data = withContext(Dispatchers.IO) { api.getGatewayInfo(s) }
         gatewayAll = gatewayInfoToJson(data)
@@ -120,7 +143,23 @@ class RouterControlGatewayClient(
         gatewaySignal
       }
 
+      // Support v2 gateway signal endpoint.
+      normalizedMethod == "GET" && normalizedPath == "/TMI/v2/gateway?get=signal" -> {
+        val s = requireSession()
+        val data = withContext(Dispatchers.IO) { api.getGatewaySignal(s) }
+        gatewaySignal = gatewaySignalToJson(data)
+        gatewaySignal
+      }
+
       normalizedMethod == "GET" && normalizedPath == "/TMI/v1/network/telemetry?get=cell" -> {
+        val s = requireSession()
+        val data = withContext(Dispatchers.IO) { api.getCellTelemetry(s) }
+        cell = data.raw
+        cell
+      }
+
+      // Support v2 cell telemetry endpoint.
+      normalizedMethod == "GET" && normalizedPath == "/TMI/v2/network/telemetry?get=cell" -> {
         val s = requireSession()
         val data = withContext(Dispatchers.IO) { api.getCellTelemetry(s) }
         cell = data.raw
@@ -134,6 +173,14 @@ class RouterControlGatewayClient(
         clients
       }
 
+      // Support v2 clients telemetry endpoint.
+      normalizedMethod == "GET" && normalizedPath == "/TMI/v2/network/telemetry?get=clients" -> {
+        val s = requireSession()
+        val data = withContext(Dispatchers.IO) { api.getClients(s) }
+        clients = JsonArray(data.map { clientToJson(it) })
+        clients
+      }
+
       normalizedMethod == "GET" && normalizedPath == "/TMI/v1/network/telemetry?get=sim" -> {
         val s = requireSession()
         val data = withContext(Dispatchers.IO) { api.getSimInfo(s) }
@@ -141,7 +188,23 @@ class RouterControlGatewayClient(
         sim
       }
 
+      // Support v2 SIM telemetry endpoint.
+      normalizedMethod == "GET" && normalizedPath == "/TMI/v2/network/telemetry?get=sim" -> {
+        val s = requireSession()
+        val data = withContext(Dispatchers.IO) { api.getSimInfo(s) }
+        sim = data.raw
+        sim
+      }
+
       normalizedMethod == "GET" && normalizedPath == "/TMI/v1/network/configuration/v2?get=ap" -> {
+        val s = requireSession()
+        val data = withContext(Dispatchers.IO) { api.getWifiConfig(s) }
+        wifi = wifiToJson(data)
+        wifi
+      }
+
+      // Support v2 Wi‑Fi configuration (v2) endpoint.
+      normalizedMethod == "GET" && normalizedPath == "/TMI/v2/network/configuration/v2?get=ap" -> {
         val s = requireSession()
         val data = withContext(Dispatchers.IO) { api.getWifiConfig(s) }
         wifi = wifiToJson(data)
@@ -157,7 +220,25 @@ class RouterControlGatewayClient(
         wifi
       }
 
+      // Support v2 Wi‑Fi configuration set endpoint.
+      normalizedMethod == "POST" && normalizedPath == "/TMI/v2/network/configuration/v2?set=ap" -> {
+        val s = requireSession()
+        val cfg = parseWifiConfig(body)
+        val updated = withContext(Dispatchers.IO) { api.setWifiConfig(s, cfg) }
+        wifi = wifiToJson(updated)
+        addLog("ACTION wifi apply")
+        wifi
+      }
+
       normalizedMethod == "POST" && normalizedPath == "/TMI/v1/gateway/reset?set=reboot" -> {
+        val s = requireSession()
+        withContext(Dispatchers.IO) { api.reboot(s) }
+        addLog("ACTION reboot requested")
+        buildJsonObject { put("ok", true) }
+      }
+
+      // Support v2 reboot endpoint.
+      normalizedMethod == "POST" && normalizedPath == "/TMI/v2/gateway/reset?set=reboot" -> {
         val s = requireSession()
         withContext(Dispatchers.IO) { api.reboot(s) }
         addLog("ACTION reboot requested")
@@ -207,8 +288,21 @@ class RouterControlGatewayClient(
   suspend fun buildState(error: String? = null): JsonObject = lock.withLock {
     buildJsonObject {
       put("baseUrl", baseUrl)
-      val token = resolveSessionToken(session)
-      if (token != null) put("token", token) else put("token", JsonNull)
+      // Propagate the real token to the UI.  When a session exists, extract the bearer
+      // token from the authHeader (removing the Bearer prefix) or fall back to the
+      // raw session token.  Otherwise return null.
+      if (session != null) {
+        val raw = session?.authHeader?.removePrefix("Bearer ")?.removePrefix("bearer ")?.trim()
+          ?.takeIf { it?.isNotEmpty() == true }
+          ?: session?.token
+        if (!raw.isNullOrEmpty()) {
+          put("token", JsonPrimitive(raw))
+        } else {
+          put("token", JsonNull)
+        }
+      } else {
+        put("token", JsonNull)
+      }
       put("last", buildJsonObject {
         put("version", version ?: JsonObject(emptyMap()))
         put("gatewayAll", gatewayAll ?: JsonObject(emptyMap()))
@@ -240,6 +334,33 @@ class RouterControlGatewayClient(
       // Forward session cookies for consistency with authenticated flow
       session?.cookieHeader?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", it) }
     }
+    try {
+      val code = conn.responseCode
+      val stream = if (code >= 400) conn.errorStream else conn.inputStream
+      val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+      if (code !in 200..299) throw IOException("Version probe failed with HTTP $code")
+      val parsed = if (text.isBlank()) JsonObject(emptyMap()) else json.parseToJsonElement(text)
+      parsed.jsonObject
+    } finally {
+      conn.disconnect()
+    }
+  }
+
+  /**
+   * Fetch the router version from the v2 firmware path.  This uses the same logic
+   * as [fetchVersion] but targets `/TMI/v2/version`.  We avoid using the API layer
+   * because it hardcodes the v1 path.
+   */
+  private suspend fun fetchVersionV2(): JsonObject = withContext(Dispatchers.IO) {
+    val conn =
+      (URL(baseUrl.trimEnd('/') + "/TMI/v2/version").openConnection() as HttpURLConnection).apply {
+        requestMethod = "GET"
+        connectTimeout = 2500
+        readTimeout = 4500
+        setRequestProperty("Accept", "application/json")
+        // Forward session cookies for consistency with authenticated flow
+        session?.cookieHeader?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", it) }
+      }
     try {
       val code = conn.responseCode
       val stream = if (code >= 400) conn.errorStream else conn.inputStream
