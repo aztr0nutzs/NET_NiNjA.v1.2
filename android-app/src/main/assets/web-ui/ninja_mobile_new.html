@@ -22,7 +22,9 @@
         <div class="header-overlay" aria-hidden="true"></div>
 
         <div class="brand">
-          <div class="brand-badge" id="brandBadge">MN</div>
+          <div class="brand-badge" id="brandBadge">
+            <video src="openclaw_icon.mp4" autoplay loop muted playsinline preload="auto" aria-label="OpenClaw icon" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"></video>
+          </div>
           <div style="min-width:0;">
             <div class="brand-title">My Network Control</div>
             <div class="brand-sub" id="brandSub">Home Wi‑Fi (SSID) • secure</div>
@@ -484,7 +486,7 @@
       </section>
 
       <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
-      <section id="tab-openclaw" class="tab-page" aria-labelledby="tabbtn-openclaw" style="padding:0;">
+      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw" style="padding:0;">
         <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
         <iframe src="openclaw_dash.html" title="OpenClaw Dashboard" style="width:100%;height:100%;border:none;"></iframe>
       </section>

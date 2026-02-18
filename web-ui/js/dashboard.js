@@ -467,7 +467,7 @@
       document.getElementById("nnDeviceMapBtn")?.classList.toggle("active", state.deviceMapMode);
       document.getElementById("nnDeviceListBtn")?.classList.toggle("active", !state.deviceMapMode);
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || state.activeTab === "speedtest" || (state.activeTab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || state.activeTab === "openclaw" || state.activeTab === "speedtest" || (state.activeTab === "devices" && state.deviceMapMode));
       if(state.deviceMapMode){ window.nnUpdateDiscoveryMap?.(); }
     }
 
@@ -487,7 +487,7 @@
       if(tab === "gateway"){ renderG5ar(); }
 
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", tab === "networks" || tab === "speedtest" || (tab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", tab === "networks" || tab === "openclaw" || tab === "speedtest" || (tab === "devices" && state.deviceMapMode));
     }
 
     $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
