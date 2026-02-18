@@ -93,14 +93,17 @@ class RouterControlGatewayClient(
         val user = payload["username"]?.asString()?.trim().orEmpty().ifBlank { "admin" }
         val password = payload["password"]?.asString().orEmpty()
         if (password.isBlank()) throw IOException("Password is required")
-        session = withContext(Dispatchers.IO) { api.login(user, password) }
+        val newSession = withContext(Dispatchers.IO) { api.login(user, password) }
+        session = newSession
         if (remember) {
           creds.save(user, password)
         } else {
           creds.clear()
         }
         addLog("AUTH ok")
-        buildJsonObject { put("token", "__native__") }
+        buildJsonObject {
+          put("token", resolveSessionToken(newSession).orEmpty())
+        }
       }
 
       normalizedMethod == "GET" && normalizedPath == "/TMI/v1/gateway?get=all" -> {
@@ -167,18 +170,19 @@ class RouterControlGatewayClient(
 
   suspend fun setBaseUrl(nextBaseUrl: String?) = lock.withLock {
     val normalized = normalizeBaseUrl(nextBaseUrl)
-    if (normalized == baseUrl) return@withLock
-    baseUrl = normalized
-    api = apiFactory(baseUrl)
-    session = null
-    version = null
-    gatewayAll = null
-    gatewaySignal = null
-    cell = null
-    clients = JsonArray(emptyList())
-    sim = null
-    wifi = null
-    addLog("BASE_URL set to $baseUrl")
+    if (baseUrl != normalized) {
+      baseUrl = normalized
+      api = apiFactory(baseUrl)
+      session = null
+      version = null
+      gatewayAll = null
+      gatewaySignal = null
+      cell = null
+      clients = JsonArray(emptyList())
+      sim = null
+      wifi = null
+      addLog("BASE_URL set to $baseUrl")
+    }
   }
 
   suspend fun refreshSnapshot() = lock.withLock {
@@ -203,7 +207,8 @@ class RouterControlGatewayClient(
   suspend fun buildState(error: String? = null): JsonObject = lock.withLock {
     buildJsonObject {
       put("baseUrl", baseUrl)
-      if (session != null) put("token", "__native__") else put("token", JsonNull)
+      val token = resolveSessionToken(session)
+      if (token != null) put("token", token) else put("token", JsonNull)
       put("last", buildJsonObject {
         put("version", version ?: JsonObject(emptyMap()))
         put("gatewayAll", gatewayAll ?: JsonObject(emptyMap()))
@@ -307,6 +312,21 @@ class RouterControlGatewayClient(
     val ts = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
     logs.addFirst("$ts | $msg")
     while (logs.size > 200) logs.removeLast()
+  }
+
+  private fun resolveSessionToken(activeSession: G5arSession?): String? {
+    val authToken = activeSession?.authHeader
+      ?.trim()
+      ?.takeIf { it.isNotBlank() }
+      ?.let { auth ->
+        if (auth.startsWith("Bearer ", ignoreCase = true)) {
+          auth.substring("Bearer ".length).trim()
+        } else {
+          auth
+        }
+      }
+      ?.takeIf { it.isNotBlank() }
+    return authToken ?: activeSession?.token?.takeIf { it.isNotBlank() }
   }
 
   private fun normalizeBaseUrl(raw: String?): String {

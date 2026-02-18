@@ -129,62 +129,78 @@ class G5arApiImpl(
       )
     )
 
+    val loginPaths = listOf("/TMI/v1/auth/login", "/TMI/v2/auth/login")
     var lastFailure: HttpResult? = null
-    for (attempt in attempts) {
-      val response = try {
-        when (attempt) {
-        is LoginAttempt.Json -> request(
-          method = "POST",
-          path = "/TMI/v1/auth/login",
-          payload = attempt.body,
-          contentType = "application/json"
-        )
+    for (path in loginPaths) {
+      var hadOnly404Failures = false
+      var hadNon404Failure = false
+      for (attempt in attempts) {
+        val response = try {
+          when (attempt) {
+            is LoginAttempt.Json -> request(
+              method = "POST",
+              path = path,
+              payload = attempt.body,
+              contentType = "application/json"
+            )
 
-        is LoginAttempt.Form -> request(
-          method = "POST",
-          path = "/TMI/v1/auth/login",
-          rawBody = attempt.body,
-          contentType = "application/x-www-form-urlencoded"
-        )
-      }
-      } catch (e: IOException) {
-        lastFailure = HttpResult(code = -1, body = (e.message ?: "IOException"), headers = emptyMap())
-        continue
-      }
+            is LoginAttempt.Form -> request(
+              method = "POST",
+              path = path,
+              rawBody = attempt.body,
+              contentType = "application/x-www-form-urlencoded"
+            )
+          }
+        } catch (e: IOException) {
+          hadNon404Failure = true
+          lastFailure = HttpResult(code = -1, body = (e.message ?: "IOException"), headers = emptyMap())
+          continue
+        }
 
-      if (response.code !in 200..299) {
+        if (response.code !in 200..299) {
+          if (response.code == HttpURLConnection.HTTP_NOT_FOUND) {
+            hadOnly404Failures = true
+          } else {
+            hadNon404Failure = true
+          }
+          lastFailure = response
+          continue
+        }
+
+        val parsedBody = parseBodyOrNull(response.body)
+        val token = parsedBody?.let { extractToken(it) }
+        val authHeader = extractAuthHeader(response)
+        val cookieHeader = extractCookieHeader(response)
+        // Extract CSRF from response headers, CSRF cookies, or JSON body
+        val csrf = extractCsrfFromResponse(response, parsedBody)
+        if (csrf != null) csrfToken = csrf
+
+        val resolvedToken = token
+          ?: authHeader?.removePrefix("Bearer ")?.removePrefix("bearer ")?.trim()
+          ?: cookieHeader
+            ?.substringBefore(';')
+            ?.substringAfter('=', missingDelimiterValue = "")
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+          ?: (parsedBody as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
+
+        if (!resolvedToken.isNullOrBlank()) {
+          lastLoginCredentials = username to password
+          return@withContext G5arSession(
+            token = resolvedToken,
+            issuedAtMs = System.currentTimeMillis(),
+            authHeader = authHeader,
+            cookieHeader = cookieHeader,
+            csrfToken = csrf
+          )
+        }
+        hadNon404Failure = true
         lastFailure = response
-        continue
       }
 
-      val parsedBody = parseBodyOrNull(response.body)
-      val token = parsedBody?.let { extractToken(it) }
-      val authHeader = extractAuthHeader(response)
-      val cookieHeader = extractCookieHeader(response)
-      // Extract CSRF from response headers, CSRF cookies, or JSON body
-      val csrf = extractCsrfFromResponse(response, parsedBody)
-      if (csrf != null) csrfToken = csrf
-
-      val resolvedToken = token
-        ?: authHeader?.removePrefix("Bearer ")?.removePrefix("bearer ")?.trim()
-        ?: cookieHeader
-          ?.substringBefore(';')
-          ?.substringAfter('=', missingDelimiterValue = "")
-          ?.trim()
-          ?.takeIf { it.isNotBlank() }
-        ?: (parsedBody as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
-
-      if (!resolvedToken.isNullOrBlank()) {
-        lastLoginCredentials = username to password
-        return@withContext G5arSession(
-          token = resolvedToken,
-          issuedAtMs = System.currentTimeMillis(),
-          authHeader = authHeader,
-          cookieHeader = cookieHeader,
-          csrfToken = csrf
-        )
+      if (!(hadOnly404Failures && !hadNon404Failure)) {
+        break
       }
-      lastFailure = response
     }
 
     val fail = lastFailure

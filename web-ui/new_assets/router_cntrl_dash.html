@@ -634,11 +634,11 @@
     return true;
   }
 
-  async function login(username, password) {
+  async function login(username, password, remember = false) {
     const resp = await httpJson('/TMI/v1/auth/login', {
       method: 'POST',
       auth: false,
-      body: { username, password },
+      body: { username, password, remember: !!remember },
       timeoutMs: 5000
     });
 
@@ -1180,6 +1180,12 @@
           <input class="input" id="inp-baseurl" placeholder="Base URL" value="${stateStore.baseUrl}" />
           <button class="btn" id="btn-login">LOGIN</button>
         </div>
+        <div class="row">
+          <label class="hint" for="inp-remember" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input id="inp-remember" type="checkbox" />
+            Remember credentials on this device
+          </label>
+        </div>
         <p class="hint">
           If login fails in a normal browser, it’s likely CORS. In your Android app, do the HTTP calls natively and inject results into the WebView.
         </p>
@@ -1244,6 +1250,7 @@
         e.preventDefault();
         const user = document.getElementById('inp-user').value.trim();
         const pass = document.getElementById('inp-pass').value;
+        const remember = document.getElementById('inp-remember')?.checked === true;
         stateStore.baseUrl = document.getElementById('inp-baseurl').value.trim() || stateStore.baseUrl;
         try {
           toast('Connecting...');
@@ -1252,7 +1259,7 @@
           } catch (discoverErr) {
             log(`WARN discover: ${discoverErr.message}; continuing to login`);
           }
-          await login(user, pass);
+          await login(user, pass, remember);
           await fetchAll();
           updateKpis();
           buildCards();
