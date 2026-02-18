@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OpenClaw Android Companion — Android Dashboard (Redline Shell)</title>
-  <!-- Styles copied from upstream new dashboard -->
   <style>
     :root {
       --bg: #000;
@@ -89,7 +88,8 @@
     .switch.on{border-color:rgba(255,47,77,.7);box-shadow:0 0 12px rgba(255,47,77,.25) inset}
     .switch.on::after{left:20px;background:var(--red);box-shadow:0 0 9px var(--red)}
 
-    /* ===== Chat Interface ===== */
+    
+    /* ===== Chat Interface (ported into Redline shell) ===== */
     .chat-wrap{display:flex;flex-direction:column;gap:10px;min-height:520px}
     .chat-log{flex:1;min-height:280px;max-height:520px;overflow:auto;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.9))}
     .bubble{max-width:82%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);margin:8px 0;font-size:13px;line-height:1.35}
@@ -102,7 +102,10 @@
     .chat-actions{display:flex;gap:8px}
     .btn.secondary{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.03)}
 
+
     @media (max-width:1200px){.app{grid-template-columns:1fr}.sidebar{max-height:42vh}.card,.wide{grid-column:1/-1}}
+  
+    /* --- Added to ensure menu/chat always visible even if other scripts fail --- */
     .hidden{display:none !important}
     .panel{padding:14px}
     .muted{color:var(--muted)}
@@ -121,75 +124,198 @@
     .chat-compose{display:flex;gap:10px;align-items:flex-end}
     .chat-compose textarea{flex:1;resize:vertical;min-height:46px;max-height:160px}
 
-    /* Colour overrides to tone down the redline accent */
+    /* ===== OpenClaw: header + icon + less-red-glow overrides ===== */
     :root{
       --bg: #000;
       --panel: #050505;
       --panel2: #070707;
       --text: #f3f3f3;
       --muted: #9a9a9a;
+
+      /* Keep "redline" as an accent, not a flashlight */
       --red: rgba(255, 60, 60, .55);
       --red2: rgba(255, 60, 60, .35);
       --glow: rgba(255, 60, 60, .16);
     }
-    body{background:#000 !important;background-image:none !important;}
-    .glass{box-shadow:0 10px 30px rgba(0,0,0,.65) !important;border-color:rgba(255,255,255,.06) !important;background:rgba(10,10,10,.65) !important;backdrop-filter:blur(10px);}
-    .sidebar{box-shadow:none !important;}
-    .pageHeader{width:100%;margin:10px 0 12px;padding:10px;border-radius:16px;background:#000;border:1px solid rgba(255,255,255,.06);}  
-    .pageHeaderImg{display:block;width:100%;height:auto;max-height:220px;object-fit:contain;object-position:center;border-radius:12px;}
-    @media (max-width:760px){.pageHeader{padding:8px;border-radius:14px;}.pageHeaderImg{max-height:160px;}}
-    .avatarVideo{width:64px;height:64px;object-fit:contain;border-radius:12px;display:block;background:#000;pointer-events:none;}
-    .avatarImg{width:64px;height:64px;object-fit:contain;display:block;filter:drop-shadow(0 10px 18px rgba(0,0,0,.65));}
-    @keyframes ocFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-4px) scale(1.02);}}
-    @keyframes ocPulseGlow{0%,100%{filter:drop-shadow(0 10px 18px rgba(0,0,0,.65));opacity:1;}50%{filter:drop-shadow(0 10px 18px rgba(0,0,0,.65)) drop-shadow(0 0 10px rgba(255,60,60,.18));opacity:.98;}}
-    .avatarAnim{animation:ocFloat 2.8s ease-in-out infinite, ocPulseGlow 3.6s ease-in-out infinite;will-change:transform,filter;}
-    .btn{box-shadow:none !important;}
-    .btn:hover{box-shadow:0 10px 28px rgba(0,0,0,.55) !important;}
+
+    body{
+      background: #000 !important;
+      background-image: none !important;
+    }
+
+    /* Remove the heavy ambient red bloom */
+    .glass{
+      box-shadow: 0 10px 30px rgba(0,0,0,.65) !important;
+      border-color: rgba(255,255,255,.06) !important;
+      background: rgba(10,10,10,.65) !important;
+      backdrop-filter: blur(10px);
+    }
+    .sidebar{
+      box-shadow: none !important;
+    }
+
+    /* Page header banner */
+    .pageHeader{
+      width: 100%;
+      margin: 10px 0 12px;
+      padding: 10px;
+      border-radius: 16px;
+      background: #000;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .pageHeaderImg{
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 220px;           /* desktop-ish */
+      object-fit: contain;         /* no crop */
+      object-position: center;
+      border-radius: 12px;
+    }
+    @media (max-width: 760px){
+      .pageHeader{ padding: 8px; border-radius: 14px; }
+      .pageHeaderImg{ max-height: 160px; }  /* mobile */
+    }
+
+    /* Sidebar icon image */
+
+    /* Sidebar video avatar */
+    .avatarVideo{
+      width:64px;
+      height:64px;
+      object-fit:contain;
+      border-radius:12px;
+      display:block;
+      background:#000;
+      pointer-events:none;
+    }
+
+    .avatarImg{
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.65));
+    }
+
+    /* Animate the icon (subtle, not seizure-inducing) */
+    @keyframes ocFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-4px) scale(1.02); }
+    }
+    @keyframes ocPulseGlow {
+      0%, 100% { filter: drop-shadow(0 10px 18px rgba(0,0,0,.65)); opacity: 1; }
+      50% { filter: drop-shadow(0 10px 18px rgba(0,0,0,.65)) drop-shadow(0 0 10px rgba(255,60,60,.18)); opacity: .98; }
+    }
+    .avatarAnim{
+      animation: ocFloat 2.8s ease-in-out infinite, ocPulseGlow 3.6s ease-in-out infinite;
+      will-change: transform, filter;
+    }
+
+    /* Tone down button glows */
+    .btn{
+      box-shadow: none !important;
+    }
+    .btn:hover{
+      box-shadow: 0 10px 28px rgba(0,0,0,.55) !important;
+    }
   </style>
 </head>
+
 <body>
   <div class="app">
     <aside class="sidebar glass">
       <div class="brand">
         <div class="avatar" title="AztroBot Avatar">
-          <video class="avatarVideo avatarAnim" autoplay muted loop playsinline preload="auto" aria-label="OpenClaw icon animation">
-            <source src="openclaw_icon.mp4" type="video/mp4">
-            <img src="openclaw_icon_fallback.png" alt="OpenClaw icon" class="avatarImg avatarAnim" />
-          </video>
+          <video class="avatarVideo avatarAnim"
+  autoplay
+  muted
+  loop
+  playsinline
+ preload="auto" aria-label="OpenClaw icon animation">
+  <source src="openclaw_icon.mp4" type="video/mp4">
+  <img src="openclaw_icon_fallback.png" alt="OpenClaw icon" class="avatarImg avatarAnim" />
+</video>
         </div>
         <div>
           <h1>AztroBot // NiNjA-Claw</h1>
           <p>OpenClaw Android Companion</p>
         </div>
       </div>
+
       <nav class="menu" aria-label="Primary">
-        <button class="menu-item active" data-view="dashboard"><span class="mi-icon">⌁</span><span>Dashboard</span></button>
-        <button class="menu-item" data-view="sessions"><span class="mi-icon">⏺</span><span>Sessions</span></button>
-        <button class="menu-item" data-view="subagents"><span class="mi-icon">🧩</span><span>Subagents</span></button>
-        <button class="menu-item" data-view="agents"><span class="mi-icon">🤖</span><span>Agents</span></button>
-        <button class="menu-item" data-view="workspace-files"><span class="mi-icon">🗂</span><span>Workspace Files</span></button>
-        <button class="menu-item" data-view="exec-terminal"><span class="mi-icon">⌨</span><span>Exec Terminal</span></button>
-        <button class="menu-item" data-view="processes"><span class="mi-icon">⚙</span><span>Processes</span></button>
-        <button class="menu-item" data-view="web-search"><span class="mi-icon">🔎</span><span>Web Search</span></button>
-        <button class="menu-item" data-view="web-fetch"><span class="mi-icon">⬇</span><span>Web Fetch</span></button>
-        <button class="menu-item" data-view="browser"><span class="mi-icon">🌐</span><span>Browser</span></button>
-        <button class="menu-item" data-view="canvas"><span class="mi-icon">▦</span><span>Canvas</span></button>
-        <button class="menu-item" data-view="nodes"><span class="mi-icon">⛓</span><span>Nodes</span></button>
-        <button class="menu-item" data-view="cron"><span class="mi-icon">⏱</span><span>Cron</span></button>
-        <button class="menu-item" data-view="messages"><span class="mi-icon">✉</span><span>Messages</span></button>
-        <button class="menu-item" data-view="memory"><span class="mi-icon">🧠</span><span>Memory</span></button>
-        <button class="menu-item" data-view="image-vision"><span class="mi-icon">👁</span><span>Image Vision</span></button>
-        <button class="menu-item" data-view="tts"><span class="mi-icon">🔊</span><span>TTS</span></button>
-        <button class="menu-item" data-view="gateway"><span class="mi-icon">🔌</span><span>Gateway</span></button>
-        <button class="menu-item" data-view="settings"><span class="mi-icon">⚙</span><span>Settings</span></button>
-        <button class="menu-item" data-view="router"><span class="mi-icon">⌂</span><span>Router Control</span></button>
-        <button class="menu-item" data-view="openclaw"><span class="mi-icon">⚙</span><span>OpenClaw</span></button>
+        <button class="menu-item active" data-view="dashboard">
+          <span class="mi-icon">⌁</span><span>Dashboard</span>
+        </button>
+        <button class="menu-item" data-view="sessions">
+          <span class="mi-icon">⏺</span><span>Sessions</span>
+        </button>
+        <button class="menu-item" data-view="subagents">
+          <span class="mi-icon">🧩</span><span>Subagents</span>
+        </button>
+        <button class="menu-item" data-view="agents">
+          <span class="mi-icon">🤖</span><span>Agents</span>
+        </button>
+        <button class="menu-item" data-view="workspace-files">
+          <span class="mi-icon">🗂</span><span>Workspace Files</span>
+        </button>
+        <button class="menu-item" data-view="exec-terminal">
+          <span class="mi-icon">⌨</span><span>Exec Terminal</span>
+        </button>
+        <button class="menu-item" data-view="processes">
+          <span class="mi-icon">⚙</span><span>Processes</span>
+        </button>
+        <button class="menu-item" data-view="web-search">
+          <span class="mi-icon">🔎</span><span>Web Search</span>
+        </button>
+        <button class="menu-item" data-view="web-fetch">
+          <span class="mi-icon">⬇</span><span>Web Fetch</span>
+        </button>
+        <button class="menu-item" data-view="browser">
+          <span class="mi-icon">🌐</span><span>Browser</span>
+        </button>
+        <button class="menu-item" data-view="canvas">
+          <span class="mi-icon">▦</span><span>Canvas</span>
+        </button>
+        <button class="menu-item" data-view="nodes">
+          <span class="mi-icon">⛓</span><span>Nodes</span>
+        </button>
+        <button class="menu-item" data-view="cron">
+          <span class="mi-icon">⏱</span><span>Cron</span>
+        </button>
+        <button class="menu-item" data-view="messages">
+          <span class="mi-icon">✉</span><span>Messages</span>
+        </button>
+        <button class="menu-item" data-view="memory">
+          <span class="mi-icon">🧠</span><span>Memory</span>
+        </button>
+        <button class="menu-item" data-view="image-vision">
+          <span class="mi-icon">👁</span><span>Image Vision</span>
+        </button>
+        <button class="menu-item" data-view="tts">
+          <span class="mi-icon">🔊</span><span>TTS</span>
+        </button>
+        <button class="menu-item" data-view="gateway">
+          <span class="mi-icon">🔌</span><span>Gateway</span>
+        </button>
+        <button class="menu-item" data-view="settings">
+          <span class="mi-icon">⚙</span><span>Settings</span>
+        </button>
+        <button class="menu-item" data-view="router">
+          <span class="mi-icon">⌂</span><span>Router Control</span>
+        </button>
+        <button class="menu-item" data-view="openclaw">
+          <span class="mi-icon">⚙</span><span>OpenClaw</span>
+        </button>
       </nav>
+
       <div style="margin-top:auto;border-top:1px dashed var(--line);padding-top:10px;color:var(--muted);font-size:12px">
         <span class="tag">Black background</span><span class="tag">Redline accents</span>
       </div>
     </aside>
+
     <main class="main">
+
       <div class="pageHeader" role="banner" aria-label="OpenClaw header">
         <img class="pageHeaderImg" src="claw_control_final.png" alt="CLAW CONTROL — OpenClaw Android Companion" />
       </div>
@@ -201,172 +327,50 @@
           <button class="btn" id="demoBtn" type="button">Demo Alert</button>
         </div>
       </header>
+
       <section class="content">
         <section class="panel glass view" id="view-dashboard">
           <h2 style="margin:0 0 10px 0">Dashboard</h2>
-          <p class="muted" style="margin:0">This is a UI shell. If you want real data here, it has to come from your gateway/node APIs, not cosmic hope.</p>
+          <p class="muted" style="margin:0">
+            This is a UI shell. If you want real data here, it has to come from your gateway/node APIs, not cosmic hope.
+          </p>
         </section>
-        <!-- Placeholder panels for features not yet implemented -->
-        <!-- Nodes view (Phase 6: Node Management) -->
+
         <section class="panel glass view hidden" id="view-nodes">
           <h2 style="margin:0 0 10px 0">Nodes</h2>
-          <div class="muted" id="nodesStatus" style="margin:0 0 10px 0;"></div>
-          <table style="width:100%;font-size:13px;border-collapse:collapse;">
-            <thead>
-              <tr><th>Node ID</th><th>Capabilities</th><th>Last Seen</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="nodesTbody"></tbody>
-          </table>
+          <p class="muted" style="margin:0">Placeholder panel.</p>
         </section>
+
         <section class="panel glass view hidden" id="view-cron">
-          <h2 style="margin:0 0 10px 0">Cron Scheduler</h2>
-          <div class="muted" id="cronStatus" style="margin:0 0 10px 0;"></div>
-          <table style="width:100%;font-size:13px;border-collapse:collapse;">
-            <thead>
-              <tr><th>ID</th><th>Schedule</th><th>Command</th><th>Enabled</th><th>Next</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="cronTbody"></tbody>
-          </table>
-          <div style="margin-top:12px;">
-            <h3 style="margin:0 0 6px 0">New Cron Job</h3>
-            <input id="cronSchedule" type="text" placeholder="Cron expression (e.g. @every 5m)" style="width:40%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);margin-right:8px;" />
-            <input id="cronCommand" type="text" placeholder="Command (e.g. /status)" style="width:40%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);margin-right:8px;" />
-            <button class="btn primary" id="addCronBtn" type="button">Add</button>
-          </div>
+          <h2 style="margin:0 0 10px 0">Cron</h2>
+          <p class="muted" style="margin:0">Placeholder panel.</p>
         </section>
-        <section class="panel glass view hidden" id="view-router"><h2 style="margin:0 0 10px 0">Router Control</h2><p class="muted" style="margin:0">UI placeholder. Router login/control needs actual backend + auth.</p></section>
-        <section class="panel glass view hidden" id="view-openclaw"><h2 style="margin:0 0 10px 0">OpenClaw</h2><p class="muted" style="margin:0">UI placeholder for OpenClaw integrations.</p></section>
-        <!-- Provider Connectors view (Phase 5) -->
-        <section class="panel glass view hidden" id="view-gateway">
-          <h2 style="margin:0 0 10px 0">Provider Connectors</h2>
-          <div class="muted" id="providersStatus" style="margin:0 0 10px 0;"></div>
-          <table style="width:100%;font-size:13px;border-collapse:collapse;">
-            <thead>
-              <tr><th>Provider</th><th>Auth Mode</th><th>Configured</th><th>Connected</th><th>Last Error</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="providersTbody"></tbody>
-          </table>
-          <div id="providerDetails" class="hidden" style="margin-top:12px;">
-            <h3 style="margin:0 0 6px 0">Provider Details: <span id="selectedProviderName"></span></h3>
-            <div class="muted" id="channelsStatus" style="margin:0 0 10px 0;"></div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-              <label for="providerChannelSelect" style="font-size:13px;">Channel:</label>
-              <select id="providerChannelSelect" style="min-width:160px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);"></select>
-              <input type="text" id="providerMessage" placeholder="Message" style="flex:1;min-width:160px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);" />
-              <button class="btn primary" id="sendProviderMsgBtn" type="button">Send</button>
-            </div>
-          </div>
+
+        <section class="panel glass view hidden" id="view-router">
+          <h2 style="margin:0 0 10px 0">Router Control</h2>
+          <p class="muted" style="margin:0">UI placeholder. Router login/control needs actual backend + auth.</p>
         </section>
-        <!-- Settings view (Phase 7: Configuration & Debug) -->
-        <section class="panel glass view hidden" id="view-settings">
-          <h2 style="margin:0 0 10px 0">Settings</h2>
-          <div class="grid-two" style="gap:20px;">
-            <!-- Configuration -->
-            <div style="min-width:0;">
-              <h3 style="margin:0 0 6px 0">Configuration</h3>
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                <div><label for="configHost">Host</label><br/><input id="configHost" type="text" placeholder="Host" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);"></div>
-                <div><label for="configProfile">Profile</label><br/><input id="configProfile" type="text" placeholder="Profile" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);"></div>
-                <div><label for="configWorkspace">Workspace</label><br/><input id="configWorkspace" type="text" placeholder="Workspace" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);"></div>
-              </div>
-              <div style="margin-top:10px;display:flex;gap:8px;">
-                <button class="btn" id="loadConfigBtn" type="button">Load Config</button>
-                <button class="btn primary" id="saveConfigBtn" type="button">Save Config</button>
-              </div>
-            </div>
-            <!-- Debug snapshot -->
-            <div style="min-width:0;">
-              <h3 style="margin:0 0 6px 0">Debug Snapshot</h3>
-              <button class="btn" id="loadDebugBtn" type="button" style="margin-bottom:8px;">Refresh Debug</button>
-              <pre id="debugOutput" style="background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px;height:200px;overflow:auto;font-size:11px;white-space:pre-wrap;"></pre>
-            </div>
-          </div>
+
+        <section class="panel glass view hidden" id="view-openclaw">
+          <h2 style="margin:0 0 10px 0">OpenClaw</h2>
+          <p class="muted" style="margin:0">UI placeholder for OpenClaw integrations.</p>
         </section>
-        <!-- Memory view (Phase 8: Advanced Tools) -->
-        <section class="panel glass view hidden" id="view-memory">
-          <h2 style="margin:0 0 10px 0">Memory</h2>
-          <p class="muted" style="margin:0 0 8px 0">Run memory commands via slash API (e.g. list, search, clear). Commands are executed on the backend.</p>
-          <textarea id="memoryCommand" placeholder="Enter memory command (e.g. list, search foo)" style="width:100%;min-height:80px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);"></textarea>
-          <button class="btn primary" id="runMemoryCmdBtn" type="button" style="margin-top:8px;">Run Command</button>
-          <pre id="memoryOutput" style="margin-top:10px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px;height:200px;overflow:auto;font-size:11px;white-space:pre-wrap;"></pre>
-        </section>
-        <!-- Image Vision view (Phase 8: Advanced Tools) -->
-        <section class="panel glass view hidden" id="view-image-vision">
-          <h2 style="margin:0 0 10px 0">Image Vision</h2>
-          <p class="muted" style="margin:0 0 8px 0">Upload an image to analyze. Results will be displayed below.</p>
-          <input type="file" id="imageFile" accept="image/*" style="margin-bottom:8px;" />
-          <button class="btn primary" id="runImageVisionBtn" type="button">Analyze</button>
-          <pre id="imageVisionOutput" style="margin-top:10px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px;height:200px;overflow:auto;font-size:11px;white-space:pre-wrap;"></pre>
-        </section>
-        <!-- TTS view (Phase 8: Advanced Tools) -->
-        <section class="panel glass view hidden" id="view-tts">
-          <h2 style="margin:0 0 10px 0">Text‑to‑Speech</h2>
-          <p class="muted" style="margin:0 0 8px 0">Enter text to be spoken by the node (if supported).</p>
-          <textarea id="ttsInput" placeholder="Enter text to speak" style="width:100%;min-height:80px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);"></textarea>
-          <button class="btn primary" id="runTtsBtn" type="button" style="margin-top:8px;">Speak</button>
-        </section>
-        <!-- Sessions view added for Phase 2 -->
-        <section class="panel glass view hidden" id="view-sessions">
-          <h2 style="margin:0 0 10px 0">Sessions</h2>
-          <div class="muted" id="sessionsStatus" style="margin:0 0 10px 0;"></div>
-          <table style="width:100%;font-size:13px;border-collapse:collapse;">
-            <thead>
-              <tr><th>ID</th><th>State</th><th>Command</th><th>Created</th><th>Action</th></tr>
-            </thead>
-            <tbody id="sessionsTbody"></tbody>
-          </table>
-          <div style="margin-top:12px;">
-            <h3 style="margin:0 0 6px 0">New Session</h3>
-            <input id="sessionCommand" type="text" placeholder="Command (e.g. /status)" style="width:60%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);margin-right:8px;" />
-            <input id="sessionTarget" type="text" placeholder="Target (optional)" style="width:20%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);margin-right:8px;" />
-            <button class="btn primary" id="scheduleSessionBtn" type="button">Schedule</button>
-          </div>
-        </section>
-        <!-- Subagents view (Phase 4: Instances) -->
-        <section class="panel glass view hidden" id="view-subagents">
-          <h2 style="margin:0 0 10px 0">Subagents</h2>
-          <div class="muted" id="instancesStatus" style="margin:0 0 10px 0;"></div>
-          <table style="width:100%;font-size:13px;border-collapse:collapse;">
-            <thead>
-              <tr><th>Name</th><th>Profile</th><th>Workspace</th><th>State</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="instancesTbody"></tbody>
-          </table>
-          <div style="margin-top:12px;">
-            <h3 style="margin:0 0 6px 0">Add Subagent</h3>
-            <input id="instanceName" type="text" placeholder="Name (e.g. dev)" style="width:30%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);margin-right:8px;" />
-            <input id="instanceProfile" type="text" placeholder="Profile (optional)" style="width:25%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);margin-right:8px;" />
-            <input id="instanceWorkspace" type="text" placeholder="Workspace (optional)" style="width:25%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:#111;color:var(--text);margin-right:8px;" />
-            <button class="btn primary" id="addInstanceBtn" type="button">Add</button>
-          </div>
-        </section>
-        <!-- Agents view (Phase 4: Skills) -->
-        <section class="panel glass view hidden" id="view-agents">
-          <h2 style="margin:0 0 10px 0">Agents</h2>
-          <div class="muted" id="skillsStatus" style="margin:0 0 10px 0;"></div>
-          <table style="width:100%;font-size:13px;border-collapse:collapse;">
-            <thead>
-              <tr><th>Name</th><th>Action</th></tr>
-            </thead>
-            <tbody id="skillsTbody"></tbody>
-          </table>
-          <div style="margin-top:12px;">
-            <button class="btn" id="refreshSkillsBtn" type="button">Refresh Skills</button>
-          </div>
-        </section>
-        <!-- Chat view (Phase 1) -->
+
+        <!-- CHAT VIEW (REAL, ALWAYS PRESENT IN DOM) -->
         <section class="panel glass view hidden" id="view-messages">
           <div class="chat">
             <div class="chat-header">
               <div>
                 <div style="font-weight:800">Chat</div>
-                <div class="muted" style="font-size:12px">Send a message or slash command. History persists via the gateway.</div>
+                <div class="muted" style="font-size:12px">Local UI stub (wire to /openclaw/ws when your backend is real)</div>
               </div>
               <div class="chat-actions">
                 <button class="btn" id="chatClearBtn" type="button">Clear</button>
               </div>
             </div>
+
             <div class="chat-log" id="chatLog" aria-live="polite" aria-label="Chat messages"></div>
+
             <div class="chat-compose">
               <textarea id="chatInput" rows="2" placeholder="Type a message… (Enter to send, Shift+Enter for newline)"></textarea>
               <button class="btn primary" id="chatSendBtn" type="button">Send</button>
@@ -376,107 +380,44 @@
       </section>
     </main>
   </div>
+
   <script>
-    // ========== API Helpers ==========
-    async function apiRequest(path, { method = 'GET', body = null } = {}) {
-      const token = window.localStorage.getItem('nn_token');
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      const res = await fetch(path, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status} ${res.statusText}: ${text}`);
-      }
-      return res.status === 204 ? null : res.json();
-    }
-    const apiGet = (path) => apiRequest(path);
-    const apiPost = (path, body) => apiRequest(path, { method: 'POST', body });
-    const apiDelete = (path) => apiRequest(path, { method: 'DELETE' });
-    function showError(err) {
-      console.error(err);
-      const toast = document.createElement('div');
-      toast.textContent = err.message || err;
-      toast.style.background = 'rgba(255,0,0,0.7)';
-      toast.style.color = '#fff';
-      toast.style.padding = '8px 12px';
-      toast.style.borderRadius = '8px';
-      toast.style.position = 'fixed';
-      toast.style.bottom = '16px';
-      toast.style.right = '16px';
-      toast.style.zIndex = 9999;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-
-    // Show a toast notification for successes or information
-    function showToast(msg) {
-      const toast = document.createElement('div');
-      toast.textContent = msg;
-      toast.style.background = 'rgba(0,160,80,0.8)';
-      toast.style.color = '#fff';
-      toast.style.padding = '8px 12px';
-      toast.style.borderRadius = '8px';
-      toast.style.position = 'fixed';
-      toast.style.bottom = '16px';
-      toast.style.right = '16px';
-      toast.style.zIndex = 9999;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 2500);
-    }
-
-    // ========== View switching ==========
+    // ---------- Simple view switching (no magic menu generator, no missing DOM) ----------
     const menuButtons = Array.from(document.querySelectorAll('.menu .menu-item'));
+    const views = Array.from(document.querySelectorAll('.view'));
+
     function showView(name) {
       const targetId = `view-${name}`;
       let target = document.getElementById(targetId);
+
+      // If the target view doesn't exist yet, create a sane placeholder
       if (!target) {
         const container = document.querySelector('section.content');
         target = document.createElement('section');
         target.className = 'panel glass view';
         target.id = targetId;
         const pretty = name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        target.innerHTML = `<h2 style="margin:0 0 10px 0">${pretty}</h2><p class="muted" style="margin:0">Not implemented in this companion dashboard yet. This is the menu item from <code>openclaw_dash.html</code>, so the UI is ready whenever the feature is.</p>`;
+        target.innerHTML = `
+          <h2 style="margin:0 0 10px 0">${pretty}</h2>
+          <p class="muted" style="margin:0">Not implemented in this companion dashboard yet. This is the menu item from <code>openclaw_dash.html</code>, so the UI is ready whenever the feature is.</p>
+        `;
         container.appendChild(target);
       }
+
+      // Re-query views so newly created sections participate
       const allViews = Array.from(document.querySelectorAll('.view'));
       allViews.forEach(v => v.classList.toggle('hidden', v.id !== targetId));
       menuButtons.forEach(b => b.classList.toggle('active', b.dataset.view === name));
-      // When switching to specific views, load data
-      if (name === 'sessions') {
-        loadSessions();
-      }
-      if (name === 'messages') {
-        loadChat();
-      }
-      if (name === 'cron') {
-        loadCronJobs();
-      }
-      if (name === 'subagents') {
-        loadInstances();
-      }
-      if (name === 'agents') {
-        loadSkills();
-      }
-      if (name === 'gateway') {
-        loadProviders();
-      }
-      if (name === 'nodes') {
-        loadNodes();
-      }
-      if (name === 'settings') {
-        loadConfig();
-        loadDebug();
-      }
     }
-    menuButtons.forEach(btn => { btn.addEventListener('click', () => showView(btn.dataset.view)); });
+
+    menuButtons.forEach(btn => {
+      btn.addEventListener('click', () => showView(btn.dataset.view));
+    });
+
     // Default view
     showView('dashboard');
 
-    // Topbar demo button handlers
+    // ---------- Topbar demo buttons ----------
     const statusText = document.getElementById('statusText');
     document.getElementById('demoBtn').addEventListener('click', () => {
       statusText.textContent = 'Demo: alert triggered (this is UI-only)';
@@ -491,9 +432,10 @@
       setTimeout(() => statusText.textContent = 'Gateway online • Node paired • Android companion active', 2000);
     });
 
-    // ========== Chat ==========
+    // ---------- Chat (local stub) ----------
     const chatLog = document.getElementById('chatLog');
     const chatInput = document.getElementById('chatInput');
+
     function appendMsg(role, text) {
       const row = document.createElement('div');
       row.className = `msg ${role}`;
@@ -501,6 +443,7 @@
       chatLog.appendChild(row);
       chatLog.scrollTop = chatLog.scrollHeight;
     }
+
     function escapeHtml(str) {
       return String(str)
         .replaceAll('&', '&amp;')
@@ -508,46 +451,22 @@
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;')
-        .replaceAll('\n', '<br/>');
+        .replaceAll('
+', '<br/>');
     }
-    async function loadChat() {
-      try {
-        const history = await apiGet('/api/openclaw/messages?channel=ui');
-        chatLog.innerHTML = '';
-        history.forEach(msg => {
-          const role = (msg.role === 'user' || msg.type === 'user') ? 'user' : 'bot';
-          const text = msg.body || msg.payload || msg.text || '';
-          appendMsg(role, text);
-        });
-      } catch (e) {
-        showError(e);
-      }
-    }
-    async function sendChat() {
+
+    function sendChat() {
       const text = chatInput.value.trim();
       if (!text) return;
       appendMsg('user', text);
       chatInput.value = '';
-      try {
-        const reply = await apiPost('/api/openclaw/chat/send?gateway=default&channel=ui', { body: text });
-        if (reply && (reply.text || reply.payload || reply.body)) {
-          appendMsg('bot', reply.text || reply.payload || reply.body || '');
-        } else {
-          await loadChat();
-        }
-      } catch (e) {
-        showError(e);
-      }
+      // stub assistant response
+      setTimeout(() => appendMsg('bot', 'UI stub: wire me to /openclaw/ws and I will stop pretending.'), 250);
     }
+
     document.getElementById('chatSendBtn').addEventListener('click', sendChat);
-    document.getElementById('chatClearBtn').addEventListener('click', async () => {
-      try {
-        await apiDelete('/api/openclaw/messages?channel=ui');
-        chatLog.innerHTML = '';
-      } catch (e) {
-        showError(e);
-      }
-    });
+    document.getElementById('chatClearBtn').addEventListener('click', () => { chatLog.innerHTML = ''; });
+
     chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -555,493 +474,26 @@
       }
     });
 
-    // ========== Sessions ==========
-    const sessionsTbody = document.getElementById('sessionsTbody');
-    const sessionsStatus = document.getElementById('sessionsStatus');
-    async function loadSessions() {
-      try {
-        const sessions = await apiGet('/api/openclaw/sessions');
-        renderSessions(sessions);
-        sessionsStatus.textContent = `${sessions.length} session(s)`;
-      } catch (e) {
-        showError(e);
-      }
-    }
-    function renderSessions(sessions) {
-      sessionsTbody.innerHTML = '';
-      sessions.forEach(sess => {
-        const tr = document.createElement('tr');
-        const created = sess.createdAt || sess.created || sess.timestamp || null;
-        const createdStr = created ? new Date(created).toLocaleString() : '';
-        tr.innerHTML = `
-          <td>${sess.id ?? ''}</td>
-          <td>${sess.state ?? ''}</td>
-          <td>${escapeHtml(sess.command || sess.payload || '')}</td>
-          <td>${createdStr}</td>
-          <td><button class="btn secondary" data-sid="${sess.id}">Cancel</button></td>
-        `;
-        sessionsTbody.appendChild(tr);
-      });
-      Array.from(sessionsTbody.querySelectorAll('button[data-sid]')).forEach(btn => {
-        btn.addEventListener('click', () => cancelSession(btn.getAttribute('data-sid')));
-      });
-    }
-    async function scheduleSession() {
-      const command = document.getElementById('sessionCommand').value.trim();
-      const target = document.getElementById('sessionTarget').value.trim();
-      if (!command) return;
-      try {
-        await apiPost('/api/openclaw/sessions', { type: 'command', target: target || null, payload: command });
-        document.getElementById('sessionCommand').value = '';
-        document.getElementById('sessionTarget').value = '';
-        await loadSessions();
-      } catch (e) {
-        showError(e);
-      }
-    }
-    async function cancelSession(id) {
-      try {
-        await apiDelete('/api/openclaw/sessions/' + encodeURIComponent(id));
-        await loadSessions();
-      } catch (e) {
-        showError(e);
-      }
-    }
-    document.getElementById('scheduleSessionBtn').addEventListener('click', scheduleSession);
-
-    // ========== Cron Jobs ==========
-    const cronTbody = document.getElementById('cronTbody');
-    const cronStatus = document.getElementById('cronStatus');
-    async function loadCronJobs() {
-      try {
-        const jobs = await apiGet('/api/openclaw/cron');
-        renderCron(jobs);
-        cronStatus.textContent = `${jobs.length} job(s)`;
-      } catch (e) {
-        showError(e);
-      }
-    }
-    function renderCron(jobs) {
-      cronTbody.innerHTML = '';
-      jobs.forEach(job => {
-        const tr = document.createElement('tr');
-        const nextRun = job.nextRun || job.next || job.nextRunAt || '';
-        const nextStr = nextRun ? new Date(nextRun).toLocaleString() : '';
-        tr.innerHTML = `
-          <td>${job.id ?? ''}</td>
-          <td>${escapeHtml(job.schedule || '')}</td>
-          <td>${escapeHtml(job.command || '')}</td>
-          <td>${job.enabled ? 'Yes' : 'No'}</td>
-          <td>${nextStr}</td>
-          <td>
-            <button class="btn secondary" data-toggle="${job.id}">${job.enabled ? 'Disable' : 'Enable'}</button>
-            <button class="btn secondary" data-delete="${job.id}">Delete</button>
-          </td>
-        `;
-        cronTbody.appendChild(tr);
-      });
-      // attach listeners for toggle and delete buttons
-      Array.from(cronTbody.querySelectorAll('button[data-toggle]')).forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.getAttribute('data-toggle');
-          try {
-            await apiPost('/api/openclaw/cron/' + encodeURIComponent(id) + '/toggle');
-            await loadCronJobs();
-          } catch (e) { showError(e); }
-        });
-      });
-      Array.from(cronTbody.querySelectorAll('button[data-delete]')).forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.getAttribute('data-delete');
-          try {
-            await apiDelete('/api/openclaw/cron/' + encodeURIComponent(id));
-            await loadCronJobs();
-          } catch (e) { showError(e); }
-        });
-      });
-    }
-    async function addCronJob() {
-      const schedule = document.getElementById('cronSchedule').value.trim();
-      const command = document.getElementById('cronCommand').value.trim();
-      if (!schedule || !command) return;
-      try {
-        await apiPost('/api/openclaw/cron', { schedule, command, enabled: true });
-        document.getElementById('cronSchedule').value = '';
-        document.getElementById('cronCommand').value = '';
-        await loadCronJobs();
-      } catch (e) {
-        showError(e);
-      }
-    }
-    document.getElementById('addCronBtn').addEventListener('click', addCronJob);
-
-    // ========== Instances / Subagents ==========
-    const instancesTbody = document.getElementById('instancesTbody');
-    const instancesStatus = document.getElementById('instancesStatus');
-    async function loadInstances() {
-      try {
-        const instances = await apiGet('/api/openclaw/instances');
-        renderInstances(instances);
-        instancesStatus.textContent = `${instances.length} subagent(s)`;
-      } catch (e) { showError(e); }
-    }
-    function renderInstances(instances) {
-      instancesTbody.innerHTML = '';
-      instances.forEach(item => {
-        const tr = document.createElement('tr');
-        const state = item.active ? 'Active' : (item.selected ? 'Selected' : '');
-        tr.innerHTML = `
-          <td>${escapeHtml(item.name || '')}</td>
-          <td>${escapeHtml(item.profile || '')}</td>
-          <td>${escapeHtml(item.workspace || '')}</td>
-          <td>${state}</td>
-          <td>
-            <button class="btn secondary" data-sel="${item.name}">Select</button>
-            <button class="btn secondary" data-act="${item.name}">Activate</button>
-            <button class="btn secondary" data-stop="${item.name}">Stop</button>
-          </td>
-        `;
-        instancesTbody.appendChild(tr);
-      });
-      // attach instance actions
-      Array.from(instancesTbody.querySelectorAll('button[data-sel]')).forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const name = btn.getAttribute('data-sel');
-          try {
-            await apiPost('/api/openclaw/instances/' + encodeURIComponent(name) + '/select');
-            await loadInstances();
-          } catch (e) { showError(e); }
-        });
-      });
-      Array.from(instancesTbody.querySelectorAll('button[data-act]')).forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const name = btn.getAttribute('data-act');
-          try {
-            await apiPost('/api/openclaw/instances/' + encodeURIComponent(name) + '/activate');
-            await loadInstances();
-          } catch (e) { showError(e); }
-        });
-      });
-      Array.from(instancesTbody.querySelectorAll('button[data-stop]')).forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const name = btn.getAttribute('data-stop');
-          try {
-            await apiPost('/api/openclaw/instances/' + encodeURIComponent(name) + '/stop');
-            await loadInstances();
-          } catch (e) { showError(e); }
-        });
-      });
-    }
-    async function addInstance() {
-      const name = document.getElementById('instanceName').value.trim();
-      const profile = document.getElementById('instanceProfile').value.trim();
-      const workspace = document.getElementById('instanceWorkspace').value.trim();
-      if (!name) return;
-      try {
-        await apiPost('/api/openclaw/instances', { name, profile: profile || null, workspace: workspace || null });
-        document.getElementById('instanceName').value = '';
-        document.getElementById('instanceProfile').value = '';
-        document.getElementById('instanceWorkspace').value = '';
-        await loadInstances();
-      } catch (e) { showError(e); }
-    }
-    document.getElementById('addInstanceBtn')?.addEventListener('click', addInstance);
-
-    // ========== Skills / Agents ==========
-    const skillsTbody = document.getElementById('skillsTbody');
-    const skillsStatus = document.getElementById('skillsStatus');
-    async function loadSkills() {
-      try {
-        const skills = await apiGet('/api/openclaw/skills');
-        renderSkills(skills);
-        skillsStatus.textContent = `${skills.length} skill(s)`;
-      } catch (e) { showError(e); }
-    }
-    function renderSkills(skills) {
-      skillsTbody.innerHTML = '';
-      skills.forEach(name => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${escapeHtml(name)}</td>
-          <td><button class="btn secondary" data-invoke="${name}">Invoke</button></td>
-        `;
-        skillsTbody.appendChild(tr);
-      });
-      Array.from(skillsTbody.querySelectorAll('button[data-invoke]')).forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const name = btn.getAttribute('data-invoke');
-          try {
-            await apiPost('/api/openclaw/skills/invoke', { name });
-            showToast('Skill invoked: ' + name);
-          } catch (e) { showError(e); }
-        });
-      });
-    }
-    async function refreshSkills() {
-      try {
-        await apiPost('/api/openclaw/skills/refresh');
-        await loadSkills();
-      } catch (e) { showError(e); }
-    }
-    document.getElementById('refreshSkillsBtn')?.addEventListener('click', refreshSkills);
-
-    // ========== Provider Connectors ==========
-    const providersTbody = document.getElementById('providersTbody');
-    const providersStatus = document.getElementById('providersStatus');
-    let selectedProvider = null;
-    async function loadProviders() {
-      try {
-        const providers = await apiGet('/api/openclaw/providers');
-        renderProviders(providers);
-        if (providersStatus) providersStatus.textContent = `${providers.length} provider(s)`;
-      } catch (e) { showError(e); }
-    }
-    function renderProviders(providers) {
-      if (!providersTbody) return;
-      providersTbody.innerHTML = '';
-      providers.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${escapeHtml(p.provider)}</td>
-          <td>${escapeHtml(p.authMode)}</td>
-          <td>${p.configured ? 'Yes' : 'No'}</td>
-          <td>${p.connected ? 'Yes' : 'No'}</td>
-          <td>${escapeHtml(p.lastError || '')}</td>
-          <td>
-            <button class="btn secondary" data-config="${p.provider}">Config</button>
-            <button class="btn secondary" data-channels="${p.provider}">Channels</button>
-          </td>
-        `;
-        providersTbody.appendChild(tr);
-      });
-      // attach listeners for config and channels
-      Array.from(providersTbody.querySelectorAll('button[data-config]')).forEach(btn => {
-        btn.addEventListener('click', () => {
-          const provider = btn.getAttribute('data-config');
-          configProvider(provider);
-        });
-      });
-      Array.from(providersTbody.querySelectorAll('button[data-channels]')).forEach(btn => {
-        btn.addEventListener('click', () => {
-          const provider = btn.getAttribute('data-channels');
-          loadProviderChannels(provider);
-        });
-      });
-    }
-    async function configProvider(provider) {
-      const apiKey = prompt('Enter API key for ' + provider + '\nLeave blank to cancel.');
-      if (!apiKey) return;
-      try {
-        await apiPost(`/api/openclaw/providers/${encodeURIComponent(provider)}/auth/api-key`, { apiKey });
-        showToast('API key saved for ' + provider);
-        await loadProviders();
-      } catch (e) { showError(e); }
-    }
-    async function loadProviderChannels(provider) {
-      try {
-        const res = await apiGet(`/api/openclaw/providers/${encodeURIComponent(provider)}/channels`);
-        selectedProvider = provider;
-        const selectEl = document.getElementById('providerChannelSelect');
-        if (selectEl) {
-          selectEl.innerHTML = '';
-          (res.channels || []).forEach(ch => {
-            const opt = document.createElement('option');
-            opt.value = ch.id;
-            opt.textContent = ch.name || ch.id;
-            selectEl.appendChild(opt);
-          });
-        }
-        const nameEl = document.getElementById('selectedProviderName');
-        if (nameEl) nameEl.textContent = provider;
-        const detailsEl = document.getElementById('providerDetails');
-        if (detailsEl) detailsEl.classList.remove('hidden');
-        const chStatus = document.getElementById('channelsStatus');
-        if (chStatus) chStatus.textContent = `${(res.channels || []).length} channel(s)`;
-      } catch (e) { showError(e); }
-    }
-    async function sendProviderMessage() {
-      const channelSelect = document.getElementById('providerChannelSelect');
-      const msgInput = document.getElementById('providerMessage');
-      if (!channelSelect || !msgInput) return;
-      const channel = channelSelect.value;
-      const message = msgInput.value.trim();
-      if (!selectedProvider || !channel || !message) return;
-      try {
-        await apiPost('/api/openclaw/messages', { gateway: selectedProvider, channel, body: message });
-        msgInput.value = '';
-        showToast('Message sent');
-      } catch (e) { showError(e); }
-    }
-    document.getElementById('sendProviderMsgBtn')?.addEventListener('click', sendProviderMessage);
-
-    // ========== Nodes ==========
-    const nodesTbody = document.getElementById('nodesTbody');
-    const nodesStatus = document.getElementById('nodesStatus');
-    async function loadNodes() {
-      try {
-        const nodes = await apiGet('/api/openclaw/nodes');
-        renderNodes(nodes);
-        if (nodesStatus) nodesStatus.textContent = `${nodes.length} node(s)`;
-      } catch (e) { showError(e); }
-    }
-    function renderNodes(nodes) {
-      if (!nodesTbody) return;
-      nodesTbody.innerHTML = '';
-      nodes.forEach(node => {
-        const nodeId = node.id || node.nodeId || node.node_id || '';
-        const caps = Array.isArray(node.capabilities) ? node.capabilities.join(', ') : (node.capabilities || '');
-        const heartbeat = node.lastHeartbeat || node.lastSeen || node.heartbeat || node.last_heartbeat || null;
-        const lastStr = heartbeat ? new Date(heartbeat).toLocaleString() : '';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${escapeHtml(nodeId)}</td>
-          <td>${escapeHtml(caps)}</td>
-          <td>${lastStr}</td>
-          <td>
-            <button class="btn secondary" data-ping="${nodeId}">Ping</button>
-            <button class="btn secondary" data-run="${nodeId}">Run</button>
-          </td>
-        `;
-        nodesTbody.appendChild(tr);
-      });
-      // attach actions
-      Array.from(nodesTbody.querySelectorAll('button[data-ping]')).forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-ping');
-          pingNode(id);
-        });
-      });
-      Array.from(nodesTbody.querySelectorAll('button[data-run]')).forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-run');
-          runNodeCommand(id);
-        });
-      });
-    }
-    async function pingNode(nodeId) {
-      if (!nodeId) return;
-      const cmd = `/node ${nodeId} ping`;
-      try {
-        await apiPost('/api/openclaw/command', { command: cmd });
-        showToast('Ping dispatched to ' + nodeId);
-      } catch (e) { showError(e); }
-    }
-    async function runNodeCommand(nodeId) {
-      if (!nodeId) return;
-      const action = prompt('Enter action to run on node ' + nodeId + '\n(e.g. status or a skill name)');
-      if (!action) return;
-      const cmd = `/node ${nodeId} run ${action}`;
-      try {
-        await apiPost('/api/openclaw/command', { command: cmd });
-        showToast('Command dispatched');
-      } catch (e) { showError(e); }
-    }
-
-    // ========== Configuration & Debug ==========
-    async function loadConfig() {
-      try {
-        const conf = await apiGet('/api/openclaw/config');
-        document.getElementById('configHost').value = conf.host || '';
-        document.getElementById('configProfile').value = conf.profile || '';
-        document.getElementById('configWorkspace').value = conf.workspace || '';
-      } catch (e) { showError(e); }
-    }
-    async function saveConfig() {
-      const host = document.getElementById('configHost').value.trim();
-      const profile = document.getElementById('configProfile').value.trim();
-      const workspace = document.getElementById('configWorkspace').value.trim();
-      try {
-        await apiPost('/api/openclaw/config', { host: host || null, profile: profile || null, workspace: workspace || null });
-        showToast('Configuration saved');
-        await loadConfig();
-      } catch (e) { showError(e); }
-    }
-    async function loadDebug() {
-      try {
-        const debug = await apiGet('/api/openclaw/debug');
-        const output = document.getElementById('debugOutput');
-        output.textContent = JSON.stringify(debug, null, 2);
-      } catch (e) { showError(e); }
-    }
-    document.getElementById('loadConfigBtn')?.addEventListener('click', loadConfig);
-    document.getElementById('saveConfigBtn')?.addEventListener('click', saveConfig);
-    document.getElementById('loadDebugBtn')?.addEventListener('click', loadDebug);
-
-    // ========== Advanced Tools (Memory, Vision, TTS) ==========
-    async function runMemoryCommand() {
-      const cmdInput = document.getElementById('memoryCommand');
-      const out = document.getElementById('memoryOutput');
-      if (!cmdInput || !out) return;
-      const cmd = cmdInput.value.trim();
-      if (!cmd) return;
-      try {
-        const result = await apiPost('/api/openclaw/command', { command: `/memory ${cmd}` });
-        out.textContent = JSON.stringify(result, null, 2);
-      } catch (e) { showError(e); }
-    }
-    document.getElementById('runMemoryCmdBtn')?.addEventListener('click', runMemoryCommand);
-
-    async function runImageVision() {
-      const fileInput = document.getElementById('imageFile');
-      const out = document.getElementById('imageVisionOutput');
-      if (!fileInput || !out) return;
-      const file = fileInput.files[0];
-      if (!file) return;
-      try {
-        const token = window.localStorage.getItem('nn_token');
-        const formData = new FormData();
-        formData.append('file', file);
-        const headers = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const res = await fetch('/api/openclaw/image-vision', { method: 'POST', headers, body: formData });
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`${res.status} ${res.statusText}: ${text}`);
-        }
-        const data = await res.json();
-        out.textContent = JSON.stringify(data, null, 2);
-      } catch (e) { showError(e); }
-    }
-    document.getElementById('runImageVisionBtn')?.addEventListener('click', runImageVision);
-
-    async function runTts() {
-      const textarea = document.getElementById('ttsInput');
-      if (!textarea) return;
-      const text = textarea.value.trim();
-      if (!text) return;
-      try {
-        // Try sending via dedicated TTS endpoint if available; fallback to command
-        try {
-          await apiPost('/api/openclaw/tts', { body: text });
-          showToast('TTS requested');
-        } catch (inner) {
-          // Fallback: use slash command via /command endpoint
-          await apiPost('/api/openclaw/command', { command: `/tts ${text}` });
-          showToast('TTS command dispatched');
-        }
-      } catch (e) { showError(e); }
-    }
-    document.getElementById('runTtsBtn')?.addEventListener('click', runTts);
-
-    // ========== Startup ==========
-    document.addEventListener('DOMContentLoaded', () => {
-      loadChat();
-    });
-
-    // Avatar video fallback logic (copied from upstream)
+    
+    // ---------- Avatar video diagnostics + fallback ----------
     (function setupAvatarVideo(){
       const v = document.querySelector('.avatarVideo');
       if(!v) return;
+
+      // If the codec/container isn't supported, fall back immediately.
       const canMp4 = v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') || v.canPlayType('video/mp4');
       if(!canMp4){
         console.warn('Avatar video: MP4 not supported by this browser/codec. Falling back to PNG.');
         v.outerHTML = '<img class="avatarImg avatarAnim" src="openclaw_icon_fallback.png" alt="OpenClaw icon">';
         return;
       }
+
       v.addEventListener('error', () => {
-        console.warn('Avatar video: failed to load/play. Falling back to PNG.');
+        console.warn('Avatar video: failed to load/play. Check filename/path and codec. Falling back to PNG.');
         v.outerHTML = '<img class="avatarImg avatarAnim" src="openclaw_icon_fallback.png" alt="OpenClaw icon">';
       });
+
+      // Some browsers refuse autoplay until play() is called (even if muted).
       v.muted = true;
       const p = v.play();
       if(p && typeof p.catch === 'function'){
@@ -1051,6 +503,9 @@
         });
       }
     })();
+
+    // Helpful initial line
+    appendMsg('bot', 'Chat UI loaded. Click “Messages” in the sidebar to see this panel.');
   </script>
 </body>
 </html>
