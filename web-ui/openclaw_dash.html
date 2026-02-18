@@ -60,7 +60,7 @@
     .menu-item.active{border-color:rgba(255,47,77,.35);box-shadow:0 0 18px rgba(255,47,77,.10) inset}
     .menu-item.active::before{opacity:1}
 
-    .main{display:grid;grid-template-rows:auto 1fr;gap:10px;min-height:0}
+    .main{display:grid;grid-template-rows:auto auto 1fr;gap:10px;min-height:0}
     .topbar{padding:12px 14px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
     .status{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
     .dot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 10px var(--good);animation:pulse 1.8s infinite}
@@ -107,7 +107,7 @@
   
     /* --- Added to ensure menu/chat always visible even if other scripts fail --- */
     .hidden{display:none !important}
-    .panel{padding:14px}
+    .panel{padding:14px;grid-column:1/-1}
     .muted{color:var(--muted)}
     .menu .menu-item{width:100%;display:flex;gap:10px;align-items:center;text-align:left}
     .menu .menu-item .mi-icon{width:20px;display:inline-flex;justify-content:center;opacity:.9}
@@ -475,7 +475,7 @@
         }
         const data = await res.json();
         // The server returns a message object; use 'text' or fallback to a generic reply.
-        const reply = data?.text ?? data?.message ?? '...';
+        const reply = data?.body ?? '...';
         appendMsg('bot', reply);
       } catch (e) {
         appendMsg('bot', `Network error: ${e.message}`);
@@ -499,8 +499,8 @@
         if (res.ok) {
           const messages = await res.json();
           messages.forEach(m => {
-            const role = m.role === 'user' ? 'user' : 'bot';
-            appendMsg(role, m.text || m.message || '');
+            const role = m.gateway === 'user' ? 'user' : 'bot';
+            appendMsg(role, m.body || '');
           });
         } else {
           console.warn('Failed to load messages', res.status);

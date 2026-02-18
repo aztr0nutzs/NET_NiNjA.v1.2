@@ -13,7 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 
 @Serializable
@@ -188,6 +190,9 @@ object OpenClawDashboardState {
       SkillSnapshot("wol_broadcast", "Send Wake-on-LAN magic packets.", "idle")
     ).forEach { skills[it.name] = it }
 
+    connected = true
+    lastSync = System.currentTimeMillis()
+    addMessage(gateway = "openclaw", channel = "general", body = "OpenClaw online. Type /help for commands.")
     appendLog("OpenClaw dashboard state initialized.")
     startSessionScheduler()
   }
@@ -486,7 +491,7 @@ object OpenClawDashboardState {
     val trimmed = body.trim()
     val ch = channel.trim().ifBlank { "general" }
 
-    val userMsg = addMessage(gateway = "user", channel = ch, body = trimmed)
+    addMessage(gateway = "user", channel = ch, body = trimmed)
 
     val reply = when {
       trimmed.isBlank() -> "Say something. Humans love silence, apps shouldn't."
@@ -496,7 +501,6 @@ object OpenClawDashboardState {
     }
 
     addMessage(gateway = "openclaw", channel = ch, body = reply)
-    userMsg
   }
 
   private sealed interface ParsedNodeCommand {
@@ -684,42 +688,42 @@ object OpenClawDashboardState {
     persistLogs()
   }
 
-  fun debugSnapshot(): Map<String, Any?> = synchronized(lock) {
-    mapOf(
-      "connected" to connected,
-      "host" to host,
-      "profile" to profile,
-      "workspace" to workspace,
-      "lastSync" to lastSync,
-      "activeInstance" to activeInstance,
-      "memoryIndexed" to memoryIndexed,
-      "memoryItems" to memoryItems,
-      "mode" to mode,
-      "gatewayCount" to gateways.size,
-      "instanceCount" to instances.size,
-      "sessionCount" to sessions.size,
-      "skillCount" to skills.size,
-      "cronJobCount" to cronJobs.size,
-      "messageCount" to messages.size,
-      "logCount" to logs.size,
-      "gateways" to gateways.values.toList(),
-      "instances" to instances.values.toList(),
-      "sessions" to sessions.values.toList(),
-      "skills" to skills.values.toList(),
-      "cronJobs" to cronJobs.values.toList(),
-      "messages" to messages.toList(),
-      "logs" to logs.toList()
-    )
+  fun debugSnapshot(): JsonObject = synchronized(lock) {
+    buildJsonObject {
+      put("connected", connected)
+      put("host", host)
+      put("profile", profile)
+      put("workspace", workspace)
+      put("lastSync", lastSync ?: 0L)
+      put("activeInstance", activeInstance)
+      put("memoryIndexed", memoryIndexed)
+      put("memoryItems", memoryItems)
+      put("mode", mode)
+      put("gatewayCount", gateways.size)
+      put("instanceCount", instances.size)
+      put("sessionCount", sessions.size)
+      put("skillCount", skills.size)
+      put("cronJobCount", cronJobs.size)
+      put("messageCount", messages.size)
+      put("logCount", logs.size)
+      put("gateways", json.encodeToJsonElement<List<GatewayStatus>>(gateways.values.toList()))
+      put("instances", json.encodeToJsonElement<List<InstanceSnapshot>>(instances.values.toList()))
+      put("sessions", json.encodeToJsonElement<List<SessionSnapshot>>(sessions.values.toList()))
+      put("skills", json.encodeToJsonElement<List<SkillSnapshot>>(skills.values.toList()))
+      put("cronJobs", json.encodeToJsonElement<List<CronJobSnapshot>>(cronJobs.values.toList()))
+      put("messages", json.encodeToJsonElement<List<MessageSnapshot>>(messages.toList()))
+      put("logs", json.encodeToJsonElement<List<String>>(logs.toList()))
+    }
   }
 
-  fun configSnapshot(): Map<String, Any?> = synchronized(lock) {
-    mapOf(
-      "host" to host,
-      "profile" to profile,
-      "workspace" to workspace,
-      "connected" to connected,
-      "lastSync" to lastSync
-    )
+  fun configSnapshot(): JsonObject = synchronized(lock) {
+    buildJsonObject {
+      put("host", host)
+      put("profile", profile)
+      put("workspace", workspace)
+      put("connected", connected)
+      put("lastSync", lastSync ?: 0L)
+    }
   }
 
   private fun appendLog(message: String) {
