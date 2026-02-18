@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Network Control</title>
+
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
@@ -18,58 +20,475 @@
           <img id="headerImage" src="new_assets/ninja_new_header.png" alt="" />
         </div>
         <div class="header-overlay" aria-hidden="true"></div>
+
         <div class="brand">
-          <div class="brand-badge" id="brandBadge">MN</div>
+          <div class="brand-badge" id="brandBadge">
+            <video src="openclaw_icon.mp4" autoplay loop muted playsinline preload="auto" aria-label="OpenClaw icon" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"></video>
+          </div>
           <div style="min-width:0;">
-            <div class="brand-title">My Network Control</div>
+            <div class="brand-title"></div>
             <div class="brand-sub" id="brandSub">Home Wi‑Fi (SSID) • secure</div>
           </div>
         </div>
+
         <div class="topbar-actions">
           <button class="btn icon-btn" id="historyBtn" title="Undo / Recent actions">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/><path d="M12 7v5l3 3"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7"/>
+              <path d="M3 4v6h6"/>
+              <path d="M12 7v5l3 3"/>
+            </svg>
             <span class="sr-only">Recent actions</span>
           </button>
+
           <button class="btn icon-btn" id="notifBtn" title="Notifications">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
+              <path d="M13.7 21a2 2 0 01-3.4 0"/>
+            </svg>
             <span class="sr-only">Notifications</span>
           </button>
+
           <button class="btn icon-btn" id="settingsBtn" title="Settings">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.4-2.5H9.1L8.7 7a7.2 7.2 0 0 0-1.7 1L4.6 7l-2 3.5 2 1.5a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.2 7.2 0 0 0 1.7 1l.4 2.5h5.8l.4-2.5a7.2 7.2 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+              <path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.4-2.5H9.1L8.7 7a7.2 7.2 0 0 0-1.7 1L4.6 7l-2 3.5 2 1.5a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.2 7.2 0 0 0 1.7 1l.4 2.5h5.8l.4-2.5a7.2 7.2 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z"/>
+            </svg>
             <span class="sr-only">Settings</span>
           </button>
         </div>
       </div>
     </header>
+
     <main>
       <!-- DASHBOARD -->
       <section class="tab-page active" id="tab-dashboard" aria-labelledby="tabbtn-dashboard">
-        <h2>Dashboard</h2>
-        <!-- content omitted for brevity -->
+        <h2></h2>
+
+        <!-- Scan confirmation banner (shown during/after scans) -->
+        <div class="nn-scan-banner" id="nnScanBanner">
+          <div class="nn-scan-spinner"></div>
+          <span id="nnScanBannerText">Scanning your network...</span>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card" id="cardMyNetwork" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title"></div>
+              <div class="pill ok" id="myNetPill">Secure</div>
+            </div>
+            <div class="muted" id="myNetText">Home Wi‑Fi (SSID) – Secure</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" id="btnScanMyNetwork">Scan </button>
+            </div>
+          </div>
+
+          <div class="card" id="cardWhosOnline" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Who's On My Network</div>
+              <div class="pill" id="onlineDeltaPill">Changed: 0</div>
+            </div>
+                       <div class="big" id="onlineCount">0</div>
+            <div class="muted">devices online</div>
+            <div class="card-actions">
+              <button class="btn btn-ghost" id="btnViewOnlineDevices">View devices</button>
+            </div>
+          </div>
+
+          <div class="card" id="cardUnknown" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">New / Unknown Devices</div>
+              <div class="pill warn" id="unknownPill">Review</div>
+            </div>
+            <div class="muted" id="unknownList">No new devices.</div>
+            <div class="card-actions">
+              <button class="btn btn-ghost" id="btnReviewUnknown">Review unknown devices</button>
+            </div>
+          </div>
+
+          <div class="card" id="cardQuickActions" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Quick Actions</div>
+              <div class="pill">Fast</div>
+            </div>
+            <div class="muted">Keep it simple: no nested menus here.</div>
+            <div class="card-actions">
+              <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
+              <button class="btn btn-danger" id="btnBlockNew">Auto‑block new devices</button>
+              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi‑Fi details</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- LIVE SCAN PROGRESS (integrated from prog.html) -->
+        <div class="nn-scanGrid">
+          <div class="card" id="nnScanProgressCard" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Live Scan Progress</div>
+              <div class="pill" id="nnScanPill">Idle</div>
+            </div>
+            <div class="muted">Live progress is read from <code>/api/v1/discovery/progress</code> while scans run.</div>
+
+            <div class="nn-prog" style="margin-top:10px;">
+              <div class="kvRow"><span class="k">Phase</span><span class="v" id="scanPhase">IDLE</span></div>
+              <div class="kvRow"><span class="k">Progress</span><span class="v" id="scanPct">0%</span></div>
+
+              <div class="kvRow"><span class="k">Networks</span><span class="v" id="networksFound">0</span></div>
+              <div class="kvRow"><span class="k">Devices</span><span class="v" id="devicesFound">0</span></div>
+
+              <div class="kvRow"><span class="k">RSSI</span><span class="v" id="rssiValue">-- dBm</span></div>
+              <div class="kvRow"><span class="k">Link</span><span class="v" id="nnLinkValue">UP</span></div>
+            </div>
+
+            <div class="nn-bar" aria-label="scan progress bar"><i id="scanFill"></i></div>
+
+            <div class="nn-activity" aria-label="scan activity">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+
+            <div class="card-actions" style="margin-top:12px;">
+              <button class="btn btn-ghost purple" id="btnStop">Stop</button>
+            </div>
+          </div>
+
+          <div class="card" id="nnScanTargetCard" style="cursor:default;">
+            <div class="card-head">
+              <div class="card-title">Target</div>
+              <div class="pill">Current</div>
+            </div>
+
+            <div class="kv">
+              <div><b>SSID</b><span id="ssid">--</span></div>
+              <div><b>BSSID</b><span id="bssid">--</span></div>
+              <div><b>Subnet</b><span id="subnet">--</span></div>
+              <div><b>Gateway</b><span id="gateway">--</span></div>
+            </div>
+
+            <div class="muted" style="margin-top:10px;">
+              When your backend has a heartbeat endpoint or WebSocket, call <code>window.startPolling(url)</code> or <code>window.connectWebSocket(wsUrl)</code> and this updates live.
+            </div>
+          </div>
+        </div>
+
+
+        <div class="card" id="nnPermissionsCard" role="button" tabindex="0" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">Permissions & Background Scans</div>
+            <div class="pill warn" id="permSummaryPill">Needs review</div>
+          </div>
+          <div class="muted">
+            Android requires Location or Nearby Wi‑Fi access to read SSID/BSSID and scan your network.
+            Background scans are rate‑limited and will pause if Wi‑Fi is disconnected or permissions are denied.
+          </div>
+          <div class="nn-permList" aria-live="polite">
+            <span>Nearby Wi‑Fi</span><span id="permNearbyWifi">Unknown</span>
+            <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
+            <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
+            <span>Network state</span><span id="permNetworkState">Unknown</span>
+          </div>
+          <div class="card-actions" style="margin-top:12px;">
+            <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
+            <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
+            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi‑Fi settings</button>
+            <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            Tip: Tap the MN badge 5 times to open the hidden debug panel.
+          </div>
+          <div class="nn-debugPanel" id="nnDebugPanel" aria-live="polite">
+            <pre id="nnDebugText">Debug panel idle.</pre>
+          </div>
+        </div>
+
+        <div class="card" id="cardStatus" role="button" tabindex="0" style="cursor:default;">
+          <div class="card-head">
+            <div class="card-title">What changed</div>
+            <div class="pill" id="changePill">Last scan: never</div>
+          </div>
+          <div class="muted" id="changeText">Run a scan to see changes and new devices.</div>
+        </div>
       </section>
+
       <!-- DEVICES -->
       <section class="tab-page nn-devices-tab" id="tab-devices" aria-labelledby="tabbtn-devices">
         <h2>Devices</h2>
-        <!-- content omitted for brevity -->
+        <div class="nn-device-summary" id="nnDeviceSummary">
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num" id="nnDevOnline">0</span>
+            <span class="nn-dev-stat-label">Online</span>
+          </div>
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num nn-dev-unknown" id="nnDevUnknown">0</span>
+            <span class="nn-dev-stat-label">Unknown</span>
+          </div>
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num nn-dev-blocked" id="nnDevBlocked">0</span>
+            <span class="nn-dev-stat-label">Blocked</span>
+          </div>
+          <div class="nn-dev-stat">
+            <span class="nn-dev-stat-num" id="nnDevTotal">0</span>
+            <span class="nn-dev-stat-label">Total</span>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="row">
+            <div class="search" role="search">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 21l-4.35-4.35"/>
+                <circle cx="11" cy="11" r="7"/>
+              </svg>
+              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MAC…" autocomplete="off" />
+            </div>
+            <button class="btn btn-ghost purple" id="btnExportDevices">Export list</button>
+          </div>
+
+          <div class="row">
+            <div class="chips" id="trustChips" aria-label="Device filters">
+              <button class="chip active" data-filter="all">All</button>
+              <button class="chip" data-filter="online">Online</button>
+              <button class="chip" data-filter="offline">Offline</button>
+              <button class="chip" data-filter="trusted">Trusted</button>
+              <button class="chip" data-filter="unknown">Unknown</button>
+              <button class="chip" data-filter="blocked">Blocked</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="table-wrap" aria-label="Device list">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Device name</th>
+                    <th>Owner</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>IP</th>
+                    <th>MAC</th>
+                    <th>Vendor</th>
+                    <th>First seen</th>
+                    <th>Last seen</th>
+                    <th>Trust</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="deviceTbody">
+                  <!-- populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="sidepanel" id="deviceSidepanel" aria-label="Device details panel">
+            <div class="side-head">
+              <div>
+                <div class="side-title" id="spTitle">Select a device</div>
+                <div class="side-sub" id="spSub">Pick a row to view details.</div>
+              </div>
+              <div class="pill" id="spStatus">—</div>
+            </div>
+
+            <div class="row" style="margin-bottom: 10px;">
+              <button class="btn btn-ghost" id="spPause">Set status: Paused</button>
+              <button class="btn btn-danger" id="spBlock">Set status: Blocked</button>
+              <button class="btn btn-ghost purple" id="spTrust">Mark as trusted</button>
+              <button class="btn btn-ghost" id="spPortScan">Run port scan</button>
+            </div>
+
+            <div class="tabs2" role="tablist" aria-label="Device details sections">
+              <button class="tab2 active" data-sp-tab="summary">Summary</button>
+              <button class="tab2" data-sp-tab="network">Network info</button>
+              <button class="tab2" data-sp-tab="activity">Activity</button>
+              <button class="tab2" data-sp-tab="notes">Notes & labels</button>
+            </div>
+
+            <div id="spSectionSummary">
+              <div class="kv" id="spSummaryKv"></div>
+            </div>
+            <div id="spSectionNetwork" style="display:none;">
+              <div class="kv" id="spNetworkKv"></div>
+            </div>
+            <div id="spSectionActivity" style="display:none;">
+              <div class="kv" id="spActivityKv"></div>
+            </div>
+            <div id="spSectionNotes" style="display:none;">
+              <div class="notes">
+                <div class="field">
+                  <label for="spNote">Add a note…</label>
+                  <textarea id="spNote" placeholder="Example: Guest device, allow 2 hours."></textarea>
+                </div>
+                <div class="field">
+                  <label for="spRoom">Room</label>
+                  <select id="spRoom">
+                    <option value="">None</option>
+                    <option>Office</option>
+                    <option>Living Room</option>
+                    <option>Bedroom</option>
+                    <option>Kitchen</option>
+                    <option>Garage</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="spOwner">Owner</label>
+                  <select id="spOwner">
+                    <option value="">None</option>
+                    <option>Me</option>
+                    <option>Guest</option>
+                    <option>Child</option>
+                    <option>Work</option>
+                  </select>
+                </div>
+                <button class="btn btn-ghost purple" id="spSaveNotes">Save</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="muted" style="margin-top: 10px;">
+          Tip: double‑click a device row to open the detailed view.
+        </div>
       </section>
-      <!-- NETWORKS -->
+
+      <!-- NETWORKS (standalone Ninja Nodes 3D map) -->
       <section class="tab-page media" id="tab-networks" aria-labelledby="tabbtn-networks">
-        <iframe id="nnMapIframe" src="new_assets/ninja_nodes.html" title="Ninja Nodes 3D Network Map" allow="accelerometer; gyroscope" loading="eager"></iframe>
+        <iframe id="nnMapIframe"
+                src="new_assets/ninja_nodes.html"
+                title="Ninja Nodes 3D Network Map"
+                allow="accelerometer; gyroscope"
+                loading="eager"></iframe>
       </section>
+
+
+
       <!-- TOOLS -->
       <section class="tab-page" id="tab-tools" aria-labelledby="tabbtn-tools">
         <h2>Tools</h2>
-        <!-- content omitted for brevity -->
+
+        <div class="grid grid-2">
+          <div class="card" id="toolPortScan" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Port scan</div>
+              <div class="pill">Preset</div>
+            </div>
+            <div class="muted">Check which ports are open on a device.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="portScan">Choose device</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolSecurity" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Security check</div>
+              <div class="pill warn">Careful</div>
+            </div>
+            <div class="muted">Look for weak security on your network.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="security">Run security check</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolReports" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Reports</div>
+              <div class="pill">Export</div>
+            </div>
+            <div class="muted">Export devices, activity, and scan results.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="reports">Open reports</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolAutomation" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Automation / Schedules</div>
+              <div class="pill">Optional</div>
+            </div>
+            <div class="muted">Schedule scans or auto‑block unknown devices.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="schedule">Create schedule</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top: 10px;">
+          Each tool dialog keeps only 2–3 core controls plus an "Advanced options" expander. Because humans love clicking things.
+        </div>
       </section>
-      <!-- Gateway page -->
+
       <section class="tab-page" id="tab-gateway" aria-labelledby="tabbtn-gateway">
         <h2>Gateway (G5AR)</h2>
-        <!-- content omitted for brevity -->
+        <div class="card" id="g5arStatusCard">
+          <div class="card-head">
+            <div class="card-title">Connection</div>
+            <div class="pill" id="g5arReachability">Unknown</div>
+          </div>
+          <div class="muted" id="g5arError">Sign in to load gateway controls.</div>
+          <div class="card-actions" style="margin-top:10px;">
+            <input id="g5arUser" class="input" type="text" value="admin" aria-label="Gateway username" style="max-width:160px;" />
+            <input id="g5arPassword" class="input" type="password" placeholder="Gateway password" aria-label="Gateway password" style="max-width:200px;" />
+            <label><input id="g5arRemember" type="checkbox" /> Remember</label>
+            <button class="btn btn-primary" id="g5arLoginBtn">Login</button>
+            <button class="btn btn-ghost" id="g5arRefreshBtn">Refresh</button>
+          </div>
+        </div>
+
+        <div class="card" id="g5arInfoCard">
+          <div class="card-head"><div class="card-title">Gateway Info</div></div>
+          <div class="kv">
+            <div><b>Firmware</b><span id="g5arFirmware">—</span></div>
+            <div><b>UI Version</b><span id="g5arUiVersion">—</span></div>
+            <div><b>Serial</b><span id="g5arSerial">—</span></div>
+            <div><b>Uptime</b><span id="g5arUptime">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arCellCard">
+          <div class="card-head"><div class="card-title">Cellular</div></div>
+          <div class="kv">
+            <div><b>RSRP</b><span id="g5arRsrp">—</span></div>
+            <div><b>RSRQ</b><span id="g5arRsrq">—</span></div>
+            <div><b>SINR</b><span id="g5arSinr">—</span></div>
+            <div><b>Band</b><span id="g5arBand">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arSimCard">
+          <div class="card-head"><div class="card-title">SIM</div></div>
+          <div class="kv">
+            <div><b>ICCID</b><span id="g5arIccid">—</span></div>
+            <div><b>IMEI</b><span id="g5arImei">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arClientsCard">
+          <div class="card-head"><div class="card-title">Clients</div></div>
+          <div class="muted" id="g5arClients">No client data yet.</div>
+        </div>
+
+        <div class="card" id="g5arWifiCard">
+          <div class="card-head"><div class="card-title">Wi-Fi Settings</div></div>
+          <div class="card-actions" style="margin-top:10px;">
+            <input id="g5arSsid24" class="input" type="text" placeholder="2.4GHz SSID" aria-label="2.4GHz SSID" style="max-width:180px;" />
+            <input id="g5arPass24" class="input" type="password" placeholder="2.4GHz Password" aria-label="2.4GHz Password" style="max-width:200px;" />
+            <label><input id="g5arEnabled24" type="checkbox" /> 2.4GHz Enabled</label>
+            <button class="btn btn-primary" id="g5arSaveWifiBtn">Save Wi-Fi</button>
+          </div>
+        </div>
+
+        <div class="card-actions" style="margin-top:12px;">
+          <button class="btn btn-ghost purple" id="g5arRebootBtn">Reboot Gateway</button>
+          <a class="btn btn-primary" id="g5arOpenRouterControl" href="netninja://router-control">Router Control</a>
+        </div>
       </section>
+
       <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
       <section id="tab-openclaw" class="tab-page" aria-labelledby="tabbtn-openclaw" style="padding:0;">
-        <!-- Modified: load the new OpenClaw dashboard rather than the old one -->
-        <iframe src="openclaw_dash_new.html" title="OpenClaw Dashboard" style="width:100%;height:100%;border:none;"></iframe>
+        <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
+        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard" style="width:100%;height:100%;border:none;"></iframe>
       </section>
       <!-- Speedtest tab page -->
       <section id="tab-speedtest" class="tab-page media" aria-labelledby="tabbtn-speedtest">
@@ -77,26 +496,187 @@
       </section>
       <!-- Cameras tab page -->
       <section id="tab-cameras" class="tab-page media" aria-labelledby="tabbtn-cameras">
+        <!-- Load the camera viewer via iframe -->
         <iframe src="net_ninja_cam.html" title="Cameras"></iframe>
       </section>
     </main>
+
     <!-- BOTTOM NAV (TABS) -->
     <nav class="tabbar" aria-label="Primary navigation">
       <div class="tabbar-inner">
-        <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard"><div class="ticon" aria-hidden="true">📊</div><div class="tlabel">Dashboard</div></button>
-        <button class="tabbtn" id="tabbtn-devices" data-tab="devices"><div class="ticon" aria-hidden="true">📱</div><div class="tlabel">Devices</div></button>
-        <button class="tabbtn" id="tabbtn-networks" data-tab="networks"><div class="ticon" aria-hidden="true">🌐</div><div class="tlabel">Networks</div></button>
-        <button class="tabbtn" id="tabbtn-tools" data-tab="tools"><div class="ticon" aria-hidden="true">🛠️</div><div class="tlabel">Tools</div></button>
+        <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
+          <div class="ticon" aria-hidden="true">📊</div>
+          <div class="tlabel">Dashboard</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
+          <div class="ticon" aria-hidden="true">📱</div>
+          <div class="tlabel">Devices</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
+          <div class="ticon" aria-hidden="true">🌐</div>
+          <div class="tlabel">Networks</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
+          <div class="ticon" aria-hidden="true">🛠️</div>
+          <div class="tlabel">Tools</div>
+        </button>
+
         <!-- OpenClaw tab button -->
-        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw"><div class="ticon" aria-hidden="true">🤖</div><div class="tlabel">OpenClaw</div></button>
-        <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway"><div class="ticon" aria-hidden="true">📡</div><div class="tlabel">Gateway</div></button>
-        <button class="tabbtn" id="tabbtn-speedtest" data-tab="speedtest"><div class="ticon" aria-hidden="true">⚡</div><div class="tlabel">Speedtest</div></button>
-        <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras"><div class="ticon" aria-hidden="true">📷</div><div class="tlabel">Cameras</div></button>
+        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
+          <div class="ticon" aria-hidden="true">🤖</div>
+          <div class="tlabel">OpenClaw</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
+          <div class="ticon" aria-hidden="true">📡</div>
+          <div class="tlabel">Gateway</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-speedtest" data-tab="speedtest">
+          <div class="ticon" aria-hidden="true">⚡</div>
+          <div class="tlabel">Speedtest</div>
+        </button>
+        <!-- Cameras tab button -->
+        <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
+          <div class="ticon" aria-hidden="true">📷</div>
+          <div class="tlabel">Cameras</div>
+        </button>
       </div>
     </nav>
-    <!-- Additional overlays, modals, and scripts omitted for brevity -->
+
+    <!-- RECENT ACTIONS / UNDO -->
+    <div class="overlay" id="historyOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Recent actions">
+        <div class="sheet-head">
+          <div class="sheet-title">Recent actions</div>
+          <button class="btn icon-btn" data-close="historyOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="muted">Last thing you did shows up here. Undo is available when it makes sense.</div>
+          <div class="divider"></div>
+          <div class="list" id="historyList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="overlay" id="notifOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Notifications">
+        <div class="sheet-head">
+          <div class="sheet-title">Notifications</div>
+          <button class="btn icon-btn" data-close="notifOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="list" id="notifList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICE DETAILS (MOBILE SHEET) -->
+    <div class="overlay" id="deviceOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Device details">
+        <div class="sheet-head">
+          <div class="sheet-title" id="devSheetTitle">Device details</div>
+          <button class="btn icon-btn" data-close="deviceOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body" id="devSheetBody"></div>
+      </div>
+    </div>
+
+    <!-- GENERIC TOOL DIALOG -->
+    <div class="overlay" id="toolOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Tool dialog">
+        <div class="sheet-head">
+          <div class="sheet-title" id="toolTitle">Tool</div>
+          <button class="btn icon-btn" data-close="toolOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body" id="toolBody"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS (simple sheet) -->
+    <div class="overlay" id="settingsOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+        <div class="sheet-head">
+          <div class="sheet-title">Settings</div>
+          <button class="btn icon-btn" data-close="settingsOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div style="padding:8px 16px; background:rgba(0,255,255,0.08);
+            border-radius:8px; margin-bottom:12px; font-size:13px; opacity:0.7;">
+            Settings are read-only in this version.
+          </div>
+          <div class="card" style="cursor:default; opacity:0.6;">
+            <div class="card-head">
+              <div class="card-title">General</div>
+              <div class="pill">Theme</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">App theme</span><span class="v">Neon dark</span></div>
+              <div class="line"><span class="k">Language</span><span class="v">English</span></div>
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+
+          <div class="card" style="cursor:default; opacity:0.6;">
+            <div class="card-head">
+              <div class="card-title">Network</div>
+              <div class="pill">Interface</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">Active interface</span><span class="v">Auto</span></div>
+              <div class="line"><span class="k">Router control</span><span class="v">Off</span></div>
+            </div>
+            <div class="muted" style="margin-top:10px;">
+              Router-control features require explicit permissions and should never be assumed. Humans hate consent until it matters.
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+
+          <div class="card" style="cursor:default; opacity:0.6;">
+            <div class="card-head">
+              <div class="card-title">Notifications</div>
+              <div class="pill">Alerts</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">New device alerts</span><span class="v">On</span></div>
+              <div class="line"><span class="k">Device blocked alerts</span><span class="v">On</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+      <div class="t1" id="toastTitle"></div>
+      <div class="t2" id="toastBody"></div>
+      <div class="tact" id="toastActions"></div>
+    </div>
   </div>
+
   <script src="js/api-client.js"></script>
   <script src="js/dashboard.js"></script>
+
 </body>
 </html>
