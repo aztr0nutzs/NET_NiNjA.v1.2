@@ -197,7 +197,7 @@ class AndroidLocalServerApiContractTest {
           val providerBase = "http://127.0.0.1:${providerServer.port}"
           val (startCode, startBody) = postJson(
             URI("$base/api/openclaw/providers/telegram/auth/start"),
-            """{"authMode":"oauth2","clientId":"cid","clientSecret":"csecret","authUrl":"$providerBase/oauth/authorize","tokenUrl":"$providerBase/oauth/token","redirectUri":"https://localhost/callback"}"""
+            """{"authMode":"oauth2","clientId":"cid","clientSecret":"csecret","authUrl":"$providerBase/oauth/authorize","tokenUrl":"$providerBase/oauth/token","redirectUri":"https://localhost/callback","apiBaseUrl":"$providerBase"}"""
           )
           assertEquals(200, startCode)
           val state = Regex("""\"state\"\s*:\s*\"([^\"]+)\"""").find(startBody)?.groupValues?.get(1)

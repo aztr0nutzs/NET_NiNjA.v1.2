@@ -468,7 +468,7 @@ private fun parseChannels(provider: String, rawBody: String, parser: Json): List
   return when (provider) {
     "telegram" -> {
       val result = payload.jsonObject["result"]?.jsonArray ?: JsonArray(emptyList())
-      result.mapNotNull { update ->
+      val telegramChannels = result.mapNotNull { update ->
         val message = update.jsonObject["message"]?.jsonObject ?: return@mapNotNull null
         val chat = message["chat"]?.jsonObject ?: return@mapNotNull null
         val id = chat["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
@@ -477,6 +477,12 @@ private fun parseChannels(provider: String, rawBody: String, parser: Json): List
           ?: chat["first_name"]?.jsonPrimitive?.contentOrNull
         ProviderChannelSnapshot(id = id, name = name)
       }.distinctBy { it.id }
+      if (telegramChannels.isNotEmpty()) {
+        telegramChannels
+      } else {
+        val fallback = payload.jsonObject["channels"]?.jsonArray
+        if (fallback != null) fromArray(fallback) else emptyList()
+      }
     }
     "discord" -> {
       val items = payload.jsonObject["channels"]?.jsonArray
@@ -1315,9 +1321,10 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
 
         val connector = getOrCreateConnector(provider)
         val discoveryUrl = connector.discoveryUrl?.takeIf { it.isNotBlank() }
+          ?: connector.apiBaseUrl?.trimEnd('/')?.plus("/channels")
           ?: when (provider) {
             "telegram" -> connector.accessToken?.let { "https://api.telegram.org/bot$it/getUpdates?limit=100" }
-            else -> connector.apiBaseUrl?.trimEnd('/')?.plus("/channels")
+            else -> null
           }
 
         if (discoveryUrl.isNullOrBlank()) {
