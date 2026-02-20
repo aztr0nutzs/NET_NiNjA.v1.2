@@ -57,7 +57,7 @@ class RouterControlActivity : AppCompatActivity() {
       settings.allowFileAccessFromFileURLs = false
       settings.allowUniversalAccessFromFileURLs = false
       addJavascriptInterface(RouterJsBridge(), "NetNinjaRouterBridge")
-      loadUrl("http://127.0.0.1:8787/ui/new_assets/router_cntrl_dash.html?bridge=native")
+      loadUrl("http://127.0.0.1:8787/ui/router_cntrl_dash.html?bridge=native")
     }
     setContentView(webView)
   }

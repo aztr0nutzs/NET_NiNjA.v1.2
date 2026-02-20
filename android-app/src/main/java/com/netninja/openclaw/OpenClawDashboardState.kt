@@ -577,23 +577,29 @@ if (messages.isEmpty()) {
      * Invoke a skill: for network skills this actually triggers a
      * real operation via [skillExecutor], for others marks as running.
      */
-    fun invokeSkill(name: String, executor: SkillExecutor? = null): SkillSnapshot? = synchronized(lock) {
-        val skill = skills[name] ?: return null
-        val updated = skill.copy(status = "running")
-        skills[name] = updated
-        appendLog("Skill invoked: $name.")
-        persistSkills()
+    fun invokeSkill(name: String, executor: SkillExecutor? = null): SkillSnapshot? {
+        // Stage 1: mark as running inside the lock
+        val updatedSnapshot = synchronized(lock) {
+            val skill = skills[name] ?: return null
+            val updated = skill.copy(status = "running")
+            skills[name] = updated
+            appendLog("Skill invoked: $name.")
+            persistSkills()
+            updated
+        }
 
-        // Fire asynchronous execution outside the lock
+        // Stage 2: execute outside the lock to avoid re-entry deadlock
         val result = executor?.execute(name)
         if (result != null) {
-            val completed = updated.copy(status = "completed")
-            skills[name] = completed
-            appendLog("Skill completed: $name -> $result")
-            persistSkills()
-            return completed
+            return synchronized(lock) {
+                val completed = updatedSnapshot.copy(status = "completed")
+                skills[name] = completed
+                appendLog("Skill completed: $name -> $result")
+                persistSkills()
+                completed
+            }
         }
-        updated
+        return updatedSnapshot
     }
 
     // ── Mode operations ─────────────────────────────────────────────
@@ -667,7 +673,7 @@ fun addChatMessage(body: String, channel: String = "general"): MessageSnapshot =
     val trimmed = body.trim()
     val ch = channel.trim().ifBlank { "general" }
 
-    val userMsg = addMessage(gateway = "user", channel = ch, body = trimmed)
+    addMessage(gateway = "user", channel = ch, body = trimmed)
 
     val reply = when {
         trimmed.isBlank() -> "Say something. Humans love silence, apps shouldn't."
@@ -677,7 +683,6 @@ fun addChatMessage(body: String, channel: String = "general"): MessageSnapshot =
     }
 
     addMessage(gateway = "openclaw", channel = ch, body = reply)
-    userMsg
 }
 
 

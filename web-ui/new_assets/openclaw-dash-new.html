@@ -103,20 +103,7 @@
     .btn.secondary{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.03)}
 
 
-    @media (max-width:1200px){
-      .app{
-        grid-template-columns:1fr;
-        grid-template-rows:auto minmax(0,1fr);
-        height:100dvh;
-      }
-      .sidebar{
-        max-height:none;
-        overflow:auto;
-      }
-      .main{min-height:0}
-      .content{min-height:0}
-      .card,.wide{grid-column:1/-1}
-    }
+    @media (max-width:1200px){.app{grid-template-columns:1fr}.sidebar{max-height:42vh}.card,.wide{grid-column:1/-1}}
   
     /* --- Added to ensure menu/chat always visible even if other scripts fail --- */
     .hidden{display:none !important}
@@ -246,8 +233,8 @@
   loop
   playsinline
  preload="auto" aria-label="OpenClaw icon animation">
-  <source src="../openclaw_icon.mp4" type="video/mp4">
-  <img src="../openclaw_icon2.png" alt="OpenClaw icon" class="avatarImg avatarAnim" />
+  <source src="openclaw_icon.mp4" type="video/mp4">
+  <img src="openclaw_icon_fallback.png" alt="OpenClaw icon" class="avatarImg avatarAnim" />
 </video>
         </div>
         <div>
@@ -497,13 +484,13 @@
       const canMp4 = v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') || v.canPlayType('video/mp4');
       if(!canMp4){
         console.warn('Avatar video: MP4 not supported by this browser/codec. Falling back to PNG.');
-        v.outerHTML = '<img class="avatarImg avatarAnim" src="../openclaw_icon2.png" alt="OpenClaw icon">';
+        v.outerHTML = '<img class="avatarImg avatarAnim" src="openclaw_icon_fallback.png" alt="OpenClaw icon">';
         return;
       }
 
       v.addEventListener('error', () => {
         console.warn('Avatar video: failed to load/play. Check filename/path and codec. Falling back to PNG.');
-        v.outerHTML = '<img class="avatarImg avatarAnim" src="../openclaw_icon2.png" alt="OpenClaw icon">';
+        v.outerHTML = '<img class="avatarImg avatarAnim" src="openclaw_icon_fallback.png" alt="OpenClaw icon">';
       });
 
       // Some browsers refuse autoplay until play() is called (even if muted).
@@ -512,7 +499,7 @@
       if(p && typeof p.catch === 'function'){
         p.catch(() => {
           console.warn('Avatar video: autoplay blocked. Falling back to PNG.');
-          v.outerHTML = '<img class="avatarImg avatarAnim" src="../openclaw_icon2.png" alt="OpenClaw icon">';
+          v.outerHTML = '<img class="avatarImg avatarAnim" src="openclaw_icon_fallback.png" alt="OpenClaw icon">';
         });
       }
     })();
