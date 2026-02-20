@@ -4,6 +4,7 @@ package com.netninja
 
 import android.os.Build
 import android.os.SystemClock
+import android.util.Log
 import com.netninja.cam.OnvifDiscoveryService
 import com.netninja.gateway.g5ar.G5arApiImpl
 import com.netninja.network.SpeedTestEngine
@@ -1574,6 +1575,7 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
           call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Message body too large"))
           return@post
         }
+        Log.d("OpenClawApi", "chat/send channel=$ch bodyLen=${body.length}")
         call.respond(openClawDashboard.addChatMessage(body = body, channel = ch))
       }
 
@@ -1653,6 +1655,7 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
                   close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Missing nodeId"))
                   return@webSocket
                 }
+                Log.d("OpenClawWs", "HELLO accepted nodeId=$resolvedId")
                 nodeId = resolvedId
                 openClawWsSessions[resolvedId] = this
 

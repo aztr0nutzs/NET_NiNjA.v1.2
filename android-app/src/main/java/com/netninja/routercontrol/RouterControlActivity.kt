@@ -5,6 +5,7 @@ package com.netninja.routercontrol
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -28,6 +29,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 
 class RouterControlActivity : AppCompatActivity() {
+  private val logTag = "RouterControlUi"
   private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
   private val json = Json {
     ignoreUnknownKeys = true
@@ -57,7 +59,9 @@ class RouterControlActivity : AppCompatActivity() {
       settings.allowFileAccessFromFileURLs = false
       settings.allowUniversalAccessFromFileURLs = false
       addJavascriptInterface(RouterJsBridge(), "NetNinjaRouterBridge")
-      loadUrl("http://127.0.0.1:8787/ui/router_cntrl_dash.html?bridge=native")
+      val dashboardUrl = "http://127.0.0.1:8787/ui/new_assets/router_cntrl_dash.html?bridge=native"
+      Log.d(logTag, "Loading router dashboard asset: new_assets/router_cntrl_dash.html")
+      loadUrl(dashboardUrl)
     }
     setContentView(webView)
   }

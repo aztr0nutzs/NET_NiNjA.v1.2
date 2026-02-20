@@ -23,6 +23,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import android.util.Log
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -30,7 +31,7 @@ import java.net.URL
 class RouterControlGatewayClient(
   context: Context,
   initialBaseUrl: String = G5arApiImpl.DEFAULT_BASE_URL,
-  private val apiFactory: (String) -> G5arApi = { base -> G5arApiImpl(baseUrl = base) }
+  private val apiFactory: (String) -> G5arApi = { base -> G5arApiImpl(baseUrl = base, traceLogger = { msg -> Log.d("RouterControlNet", msg) }) }
 ) {
   private val creds = G5arCredentialStore(context.applicationContext)
   private val lock = Mutex()
@@ -431,7 +432,9 @@ class RouterControlGatewayClient(
 
   private fun addLog(msg: String) {
     val ts = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
-    logs.addFirst("$ts | $msg")
+    val line = "$ts | $msg"
+    runCatching { Log.d("RouterControl", line) }
+    logs.addFirst(line)
     while (logs.size > 200) logs.removeLast()
   }
 

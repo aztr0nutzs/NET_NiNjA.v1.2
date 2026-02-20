@@ -14,6 +14,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import android.util.Log
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
@@ -30,7 +31,8 @@ import javax.net.ssl.X509TrustManager
 
 class G5arApiImpl(
   baseUrl: String = DEFAULT_BASE_URL,
-  private val retryPolicy: RetryPolicy = RetryPolicy(maxAttempts = 2, initialDelayMs = 150, maxDelayMs = 500)
+  private val retryPolicy: RetryPolicy = RetryPolicy(maxAttempts = 2, initialDelayMs = 150, maxDelayMs = 500),
+  private val traceLogger: ((String) -> Unit)? = null
 ) : G5arApi {
 
   private val json = Json {
@@ -51,6 +53,15 @@ class G5arApiImpl(
   /** Cached CSRF token extracted from response headers or cookies. */
   @Volatile
   private var csrfToken: String? = null
+
+  private fun logcat(msg: String) {
+    runCatching { Log.d("RouterControlNet", msg) }
+  }
+
+  private fun trace(msg: String) {
+    logcat(msg)
+    traceLogger?.invoke(msg)
+  }
 
   private val insecureSslContext: SSLContext by lazy {
     val trustAll = arrayOf<TrustManager>(
@@ -135,6 +146,11 @@ class G5arApiImpl(
       var hadOnly404Failures = false
       var hadNon404Failure = false
       for (attempt in attempts) {
+        val attemptKind = when (attempt) {
+          is LoginAttempt.Json -> "json"
+          is LoginAttempt.Form -> "form"
+        }
+        trace("login attempt path=$path encoding=$attemptKind base=$activeBaseUrl")
         val response = try {
           when (attempt) {
             is LoginAttempt.Json -> request(
@@ -152,12 +168,14 @@ class G5arApiImpl(
             )
           }
         } catch (e: IOException) {
+          trace("login transport_error path=$path encoding=$attemptKind error=${e.javaClass.simpleName}:${e.message ?: ""}")
           hadNon404Failure = true
           lastFailure = HttpResult(code = -1, body = (e.message ?: "IOException"), headers = emptyMap())
           continue
         }
 
         if (response.code !in 200..299) {
+          trace("login http_fail path=$path encoding=$attemptKind status=${response.code} bodyLen=${response.body.length}")
           if (response.code == HttpURLConnection.HTTP_NOT_FOUND) {
             hadOnly404Failures = true
           } else {
@@ -185,6 +203,7 @@ class G5arApiImpl(
           ?: (parsedBody as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
 
         if (!resolvedToken.isNullOrBlank()) {
+          trace("login success path=$path encoding=$attemptKind tokenPresent=true cookiePresent=${!cookieHeader.isNullOrBlank()} csrfPresent=${!csrf.isNullOrBlank()}")
           lastLoginCredentials = username to password
           return@withContext G5arSession(
             token = resolvedToken,
@@ -194,6 +213,7 @@ class G5arApiImpl(
             csrfToken = csrf
           )
         }
+        trace("login response_missing_token path=$path encoding=$attemptKind status=${response.code} bodyLen=${response.body.length}")
         hadNon404Failure = true
         lastFailure = response
       }
@@ -376,6 +396,7 @@ class G5arApiImpl(
         }
       }
       try {
+        trace("request begin method=$method url=${conn.url} redirectDepth=$redirectDepth hasSession=${session != null}")
         val bodyToWrite = rawBody ?: payload?.let { json.encodeToString(JsonObject.serializer(), it) }
         if (bodyToWrite != null) {
           conn.doOutput = true
@@ -390,6 +411,7 @@ class G5arApiImpl(
           if (!location.isNullOrBlank()) {
             val resolved = URL(conn.url, location)
             val newBase = baseFromUrl(resolved)
+            trace("request redirect method=$method status=$code from=${conn.url} to=$resolved")
             activeBaseUrl = newBase.trimEnd('/')
             return@withContext request(
               method = method,
@@ -407,6 +429,9 @@ class G5arApiImpl(
         val result = HttpResult(code = code, body = body, headers = conn.headerFields)
         updateCookieJar(result)
         extractCsrfFromResponse(result)?.let { csrfToken = it }
+        val setCookieCount = result.headerValues("Set-Cookie").size
+        val location = result.firstHeader("Location")?.takeIf { it.isNotBlank() } ?: "-"
+        trace("request end method=$method url=${conn.url} status=$code bodyLen=${body.length} setCookie=$setCookieCount location=$location")
         result
       } finally {
         conn.disconnect()

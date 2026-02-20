@@ -362,7 +362,7 @@
             <div class="chat-header">
               <div>
                 <div style="font-weight:800">Chat</div>
-                <div class="muted" style="font-size:12px">Local UI stub (wire to /openclaw/ws when your backend is real)</div>
+                <div class="muted" style="font-size:12px">Backed by local API: POST /api/openclaw/chat/send</div>
               </div>
               <div class="chat-actions">
                 <button class="btn" id="chatClearBtn" type="button">Clear</button>
@@ -388,25 +388,13 @@
 
     function showView(name) {
       const targetId = `view-${name}`;
-      let target = document.getElementById(targetId);
-
-      // If the target view doesn't exist yet, create a sane placeholder
+      const target = document.getElementById(targetId);
       if (!target) {
-        const container = document.querySelector('section.content');
-        target = document.createElement('section');
-        target.className = 'panel glass view';
-        target.id = targetId;
-        const pretty = name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        target.innerHTML = `
-          <h2 style="margin:0 0 10px 0">${pretty}</h2>
-          <p class="muted" style="margin:0">Not implemented in this companion dashboard yet. This is the menu item from <code>openclaw_dash.html</code>, so the UI is ready whenever the feature is.</p>
-        `;
-        container.appendChild(target);
+        console.warn(`[OpenClawDash] missing view for ${targetId}`);
+        statusText.textContent = `View "${name}" is not implemented in this build.`;
+        return;
       }
-
-      // Re-query views so newly created sections participate
-      const allViews = Array.from(document.querySelectorAll('.view'));
-      allViews.forEach(v => v.classList.toggle('hidden', v.id !== targetId));
+      views.forEach(v => v.classList.toggle('hidden', v.id !== targetId));
       menuButtons.forEach(b => b.classList.toggle('active', b.dataset.view === name));
     }
 
@@ -417,22 +405,14 @@
     // Default view
     showView('dashboard');
 
-    // ---------- Topbar demo buttons ----------
+    // ---------- Topbar actions ----------
     const statusText = document.getElementById('statusText');
-    document.getElementById('demoBtn').addEventListener('click', () => {
-      statusText.textContent = 'Demo: alert triggered (this is UI-only)';
-      setTimeout(() => statusText.textContent = 'Gateway online • Node paired • Android companion active', 2500);
-    });
-    document.getElementById('scanBtn').addEventListener('click', () => {
-      statusText.textContent = 'Scan requested… (stub)';
-      setTimeout(() => statusText.textContent = 'Gateway online • Node paired • Android companion active', 2000);
-    });
-    document.getElementById('syncBtn').addEventListener('click', () => {
-      statusText.textContent = 'Sync requested… (stub)';
-      setTimeout(() => statusText.textContent = 'Gateway online • Node paired • Android companion active', 2000);
-    });
+    const notImplementedMessage = 'Not implemented in this dashboard build.';
+    document.getElementById('demoBtn').addEventListener('click', () => { statusText.textContent = notImplementedMessage; });
+    document.getElementById('scanBtn').addEventListener('click', () => { statusText.textContent = notImplementedMessage; });
+    document.getElementById('syncBtn').addEventListener('click', () => { statusText.textContent = notImplementedMessage; });
 
-    // ---------- Chat (local stub) ----------
+    // ---------- Chat (backend) ----------
     const chatLog = document.getElementById('chatLog');
     const chatInput = document.getElementById('chatInput');
 
@@ -445,23 +425,39 @@
     }
 
     function escapeHtml(str) {
-      return String(str)
+      return String(str || '')
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;')
-        .replaceAll('
-', '<br/>');
+        .replaceAll('\n', '<br/>');
     }
 
-    function sendChat() {
+    async function sendChat() {
       const text = chatInput.value.trim();
       if (!text) return;
       appendMsg('user', text);
       chatInput.value = '';
-      // stub assistant response
-      setTimeout(() => appendMsg('bot', 'UI stub: wire me to /openclaw/ws and I will stop pretending.'), 250);
+
+      try {
+        const res = await fetch('/api/openclaw/chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel: 'ui', body: text })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          appendMsg('bot', `Error: ${res.status} ${errText || ''}`.trim());
+          return;
+        }
+
+        const data = await res.json();
+        appendMsg('bot', data?.body || '(empty response)');
+      } catch (e) {
+        appendMsg('bot', `Network error: ${e?.message || e}`);
+      }
     }
 
     document.getElementById('chatSendBtn').addEventListener('click', sendChat);
@@ -474,7 +470,25 @@
       }
     });
 
-    
+    (async function loadMessages() {
+      try {
+        const res = await fetch('/api/openclaw/messages');
+        if (!res.ok) {
+          appendMsg('bot', `History load failed: HTTP ${res.status}`);
+          return;
+        }
+        const messages = await res.json();
+        messages.forEach(m => {
+          const role = m.gateway === 'openclaw' ? 'bot' : 'user';
+          appendMsg(role, m.body || '');
+        });
+      } catch (e) {
+        appendMsg('bot', `History load error: ${e?.message || e}`);
+      }
+    })();
+
+    console.log('[OpenClawDash] loaded asset: new_assets/openclaw-dash-new.html');
+
     // ---------- Avatar video diagnostics + fallback ----------
     (function setupAvatarVideo(){
       const v = document.querySelector('.avatarVideo');
@@ -505,7 +519,8 @@
     })();
 
     // Helpful initial line
-    appendMsg('bot', 'Chat UI loaded. Click “Messages” in the sidebar to see this panel.');
+    appendMsg('bot', 'Chat UI loaded. Open Messages and send /help.');
   </script>
 </body>
 </html>
+
