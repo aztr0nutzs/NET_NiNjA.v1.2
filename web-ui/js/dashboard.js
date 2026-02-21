@@ -467,27 +467,49 @@
       document.getElementById("nnDeviceMapBtn")?.classList.toggle("active", state.deviceMapMode);
       document.getElementById("nnDeviceListBtn")?.classList.toggle("active", !state.deviceMapMode);
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || state.activeTab === "openclaw" || state.activeTab === "speedtest" || (state.activeTab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || state.activeTab === "openclaw" || state.activeTab === "speedtest" || state.activeTab === "cameras" || (state.activeTab === "devices" && state.deviceMapMode));
       if(state.deviceMapMode){ window.nnUpdateDiscoveryMap?.(); }
     }
 
     // ---- Navigation ----
-    function setTab(tab){
-      state.activeTab = tab;
-      $$(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-      $$(".tab-page").forEach(p => p.classList.toggle("active", p.id === `tab-${tab}`));
+    const allowedTabs = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "speedtest", "cameras"]);
 
-      if(tab === "devices"){
+    function setTab(tab, opts = {}){
+      const options = opts || {};
+      const resolvedTab = allowedTabs.has(tab) ? tab : "dashboard";
+      state.activeTab = resolvedTab;
+      $$(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === resolvedTab));
+      $$(".tab-page").forEach(p => p.classList.toggle("active", p.id === `tab-${resolvedTab}`));
+
+      if(resolvedTab === "devices"){
         ensureDeviceMapHost();
         renderDevices();
         setDeviceMapMode(false);
       }
-      if(tab === "networks"){ window.nnUpdateDiscoveryMap?.(); }
-      if(tab === "dashboard"){ renderDashboard(); }
-      if(tab === "gateway"){ renderG5ar(); }
+      if(resolvedTab === "networks"){ window.nnUpdateDiscoveryMap?.(); }
+      if(resolvedTab === "dashboard"){ renderDashboard(); }
+      if(resolvedTab === "gateway"){ renderG5ar(); }
+
+      // Prevent modal/sheet overlays from visually stacking on top of newly selected tabs.
+      $$(".overlay.show").forEach((ov) => {
+        ov.classList.remove("show");
+        ov.setAttribute("aria-hidden", "true");
+      });
 
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", tab === "networks" || tab === "openclaw" || tab === "speedtest" || (tab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", resolvedTab === "networks" || resolvedTab === "openclaw" || resolvedTab === "speedtest" || resolvedTab === "cameras" || (resolvedTab === "devices" && state.deviceMapMode));
+
+      // Push tab state so Android/WebView back navigates tab history instead of immediately exiting.
+      if(!options.fromPop){
+        const nextHash = `#tab-${resolvedTab}`;
+        const nextState = { nnTab: resolvedTab };
+        const currentTab = history.state && history.state.nnTab;
+        if(options.replace || !currentTab){
+          history.replaceState(nextState, "", nextHash);
+        } else if(currentTab !== resolvedTab){
+          history.pushState(nextState, "", nextHash);
+        }
+      }
     }
 
     $$(".tabbtn").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
@@ -496,8 +518,14 @@
       const data = event && event.data;
       if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
       const target = String(data.tab || "dashboard");
-      const allowed = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "speedtest", "cameras"]);
-      setTab(allowed.has(target) ? target : "dashboard");
+      setTab(allowedTabs.has(target) ? target : "dashboard");
+    });
+
+    window.addEventListener("popstate", (event) => {
+      const stateTab = event && event.state && event.state.nnTab;
+      const hashTab = /^#tab-(.+)$/.exec(String(location.hash || ""))?.[1];
+      const target = allowedTabs.has(stateTab) ? stateTab : (allowedTabs.has(hashTab) ? hashTab : "dashboard");
+      setTab(target, { fromPop: true });
     });
 
     // ---- Dashboard ----
@@ -772,10 +800,10 @@
       `;
 
       // Wire actions
-      $("#mPause").addEventListener("click", () => pauseDevice(d.id));
-      $("#mBlock").addEventListener("click", () => blockDevice(d.id));
-      $("#mTrust").addEventListener("click", () => toggleTrust(d.id));
-      $("#mPort").addEventListener("click", () => openToolDialog("portScan", d.id));
+      $("#mPause")?.addEventListener("click", () => pauseDevice(d.id));
+      $("#mBlock")?.addEventListener("click", () => blockDevice(d.id));
+      $("#mTrust")?.addEventListener("click", () => toggleTrust(d.id));
+      $("#mPort")?.addEventListener("click", () => openToolDialog("portScan", d.id));
 
       $("#mSave").addEventListener("click", async () => {
         const patch = {
@@ -1847,6 +1875,10 @@
 
     // ---- Settings / initial state ----
     function init(){
+      const initialHashTab = /^#tab-(.+)$/.exec(String(location.hash || ""))?.[1];
+      const initialTab = allowedTabs.has(initialHashTab) ? initialHashTab : "dashboard";
+      setTab(initialTab, { replace: true });
+
       // initial notification
       pushNotification({ when: nowLabel(), title: "Welcome", detail: "Scan your network to start discovering devices." });
 

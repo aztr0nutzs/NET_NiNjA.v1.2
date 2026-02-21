@@ -3,11 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<<<<<<< HEAD
   <title>My Network Control</title>
-=======
-
->>>>>>> 163cb374e47b7fe15ce8b4e92f28cdd9dfc1af07
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,11 +23,11 @@
 
         <div class="brand">
           <div class="brand-badge" id="brandBadge">
-            <video src="openclaw_icon.mp4" autoplay loop muted playsinline preload="auto" aria-label="OpenClaw icon" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"></video>
+            <video src="new_assets/openclaw_icon.mp4" autoplay loop muted playsinline preload="auto" aria-label="OpenClaw icon" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"></video>
           </div>
           <div style="min-width:0;">
-            <div class="brand-title"></div>
-            <div class="brand-sub" id="brandSub">Home Wi‑Fi (SSID) • secure</div>
+            <div class="brand-title">My Network Control</div>
+            <div class="brand-sub" id="brandSub">Home Wi-Fi (SSID) - secure</div>
           </div>
         </div>
 
@@ -67,11 +63,7 @@
     <main>
       <!-- DASHBOARD -->
       <section class="tab-page active" id="tab-dashboard" aria-labelledby="tabbtn-dashboard">
-<<<<<<< HEAD
         <h2>Dashboard</h2>
-=======
-        <h2></h2>
->>>>>>> 163cb374e47b7fe15ce8b4e92f28cdd9dfc1af07
 
         <!-- Scan confirmation banner (shown during/after scans) -->
         <div class="nn-scan-banner" id="nnScanBanner">
@@ -82,36 +74,21 @@
         <div class="grid grid-2">
           <div class="card" id="cardMyNetwork" role="button" tabindex="0">
             <div class="card-head">
-<<<<<<< HEAD
               <div class="card-title">My Network</div>
-=======
-              <div class="card-title"></div>
->>>>>>> 163cb374e47b7fe15ce8b4e92f28cdd9dfc1af07
               <div class="pill ok" id="myNetPill">Secure</div>
             </div>
-            <div class="muted" id="myNetText">Home Wi‑Fi (SSID) – Secure</div>
+            <div class="muted" id="myNetText">Home Wi-Fi (SSID) - Secure</div>
             <div class="card-actions">
-<<<<<<< HEAD
               <button class="btn btn-primary" id="btnScanMyNetwork">Scan my network</button>
-=======
-              <button class="btn btn-primary" id="btnScanMyNetwork">Scan </button>
->>>>>>> 163cb374e47b7fe15ce8b4e92f28cdd9dfc1af07
             </div>
           </div>
 
           <div class="card" id="cardWhosOnline" role="button" tabindex="0">
             <div class="card-head">
-<<<<<<< HEAD
               <div class="card-title">Who's Online</div>
               <div class="pill" id="onlineDeltaPill">Changed: 0</div>
             </div>
             <div class="big" id="onlineCount">0</div>
-=======
-              <div class="card-title">Who's On My Network</div>
-              <div class="pill" id="onlineDeltaPill">Changed: 0</div>
-            </div>
-                       <div class="big" id="onlineCount">0</div>
->>>>>>> 163cb374e47b7fe15ce8b4e92f28cdd9dfc1af07
             <div class="muted">devices online</div>
             <div class="card-actions">
               <button class="btn btn-ghost" id="btnViewOnlineDevices">View devices</button>
@@ -137,8 +114,8 @@
             <div class="muted">Keep it simple: no nested menus here.</div>
             <div class="card-actions">
               <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
-              <button class="btn btn-danger" id="btnBlockNew">Auto‑block new devices</button>
-              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi‑Fi details</button>
+              <button class="btn btn-danger" id="btnBlockNew">Auto-block new devices</button>
+              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi-Fi details</button>
             </div>
           </div>
         </div>
@@ -202,11 +179,11 @@
             <div class="pill warn" id="permSummaryPill">Needs review</div>
           </div>
           <div class="muted">
-            Android requires Location or Nearby Wi‑Fi access to read SSID/BSSID and scan your network.
-            Background scans are rate‑limited and will pause if Wi‑Fi is disconnected or permissions are denied.
+            Android requires Location or Nearby Wi-Fi access to read SSID/BSSID and scan your network.
+            Background scans are rate-limited and will pause if Wi-Fi is disconnected or permissions are denied.
           </div>
           <div class="nn-permList" aria-live="polite">
-            <span>Nearby Wi‑Fi</span><span id="permNearbyWifi">Unknown</span>
+            <span>Nearby Wi-Fi</span><span id="permNearbyWifi">Unknown</span>
             <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
             <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
             <span>Network state</span><span id="permNetworkState">Unknown</span>
@@ -214,7 +191,7 @@
           <div class="card-actions" style="margin-top:12px;">
             <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
             <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
-            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi‑Fi settings</button>
+            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi-Fi settings</button>
             <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
           </div>
           <div class="muted" style="margin-top:10px;">
@@ -509,9 +486,9 @@
       </section>
 
       <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
-      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw">
-        <!-- Canonical OpenClaw dashboard entrypoint -->
-        <iframe src="new_assets/openclaw-dash-new.html" title="OpenClaw Dashboard"></iframe>
+      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw" style="padding:0;">
+        <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
+        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard" style="width:100%;height:100%;border:none;"></iframe>
       </section>
       <!-- Speedtest tab page -->
       <section id="tab-speedtest" class="tab-page media" aria-labelledby="tabbtn-speedtest">
@@ -528,49 +505,38 @@
     <nav class="tabbar" aria-label="Primary navigation">
       <div class="tabbar-inner">
         <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
-          <div class="ticon" aria-hidden="true">📊</div>
+          <div class="ticon" aria-hidden="true">DB</div>
           <div class="tlabel">Dashboard</div>
         </button>
         <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
-          <div class="ticon" aria-hidden="true">📱</div>
+          <div class="ticon" aria-hidden="true">DV</div>
           <div class="tlabel">Devices</div>
         </button>
         <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
-          <div class="ticon" aria-hidden="true">🌐</div>
+          <div class="ticon" aria-hidden="true">NW</div>
           <div class="tlabel">Networks</div>
         </button>
         <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
-          <div class="ticon" aria-hidden="true">🛠️</div>
+          <div class="ticon" aria-hidden="true">TL</div>
           <div class="tlabel">Tools</div>
         </button>
 
-<<<<<<< HEAD
-        <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
-          <div class="ticon" aria-hidden="true">📡</div>
-          <div class="tlabel">Gateway</div>
-        </button>
-
-=======
->>>>>>> 163cb374e47b7fe15ce8b4e92f28cdd9dfc1af07
         <!-- OpenClaw tab button -->
         <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
-          <div class="ticon" aria-hidden="true">🤖</div>
+          <div class="ticon" aria-hidden="true">OC</div>
           <div class="tlabel">OpenClaw</div>
         </button>
-<<<<<<< HEAD
-=======
         <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
-          <div class="ticon" aria-hidden="true">📡</div>
+          <div class="ticon" aria-hidden="true">GW</div>
           <div class="tlabel">Gateway</div>
         </button>
->>>>>>> 163cb374e47b7fe15ce8b4e92f28cdd9dfc1af07
         <button class="tabbtn" id="tabbtn-speedtest" data-tab="speedtest">
-          <div class="ticon" aria-hidden="true">⚡</div>
+          <div class="ticon" aria-hidden="true">SP</div>
           <div class="tlabel">Speedtest</div>
         </button>
         <!-- Cameras tab button -->
         <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
-          <div class="ticon" aria-hidden="true">📷</div>
+          <div class="ticon" aria-hidden="true">CM</div>
           <div class="tlabel">Cameras</div>
         </button>
       </div>
