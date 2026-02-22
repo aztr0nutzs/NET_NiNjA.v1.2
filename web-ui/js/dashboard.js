@@ -467,12 +467,12 @@
       document.getElementById("nnDeviceMapBtn")?.classList.toggle("active", state.deviceMapMode);
       document.getElementById("nnDeviceListBtn")?.classList.toggle("active", !state.deviceMapMode);
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || state.activeTab === "openclaw" || state.activeTab === "speedtest" || state.activeTab === "cameras" || (state.activeTab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", state.activeTab === "networks" || state.activeTab === "speedtest" || (state.activeTab === "devices" && state.deviceMapMode));
       if(state.deviceMapMode){ window.nnUpdateDiscoveryMap?.(); }
     }
 
     // ---- Navigation ----
-    const allowedTabs = new Set(["dashboard", "devices", "networks", "tools", "gateway", "openclaw", "speedtest", "cameras"]);
+    const allowedTabs = new Set(["dashboard", "devices", "networks", "tools", "gateway", "speedtest"]);
 
     function setTab(tab, opts = {}){
       const options = opts || {};
@@ -497,7 +497,7 @@
       });
 
       const app = document.getElementById("app");
-      app?.classList.toggle("media-tab-active", resolvedTab === "networks" || resolvedTab === "openclaw" || resolvedTab === "speedtest" || resolvedTab === "cameras" || (resolvedTab === "devices" && state.deviceMapMode));
+      app?.classList.toggle("media-tab-active", resolvedTab === "networks" || resolvedTab === "speedtest" || (resolvedTab === "devices" && state.deviceMapMode));
 
       // Push tab state so Android/WebView back navigates tab history instead of immediately exiting.
       if(!options.fromPop){
