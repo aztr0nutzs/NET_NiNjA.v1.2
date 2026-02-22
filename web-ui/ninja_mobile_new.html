@@ -23,7 +23,7 @@
 
         <div class="brand">
           <div class="brand-badge" id="brandBadge">
-            <video src="new_assets/openclaw_icon.mp4" autoplay loop muted playsinline preload="auto" aria-label="OpenClaw icon" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"></video>
+            <img src="new_assets/ninja_icon.png" alt="NET_NiNjA logo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />
           </div>
           <div style="min-width:0;">
             <div class="brand-title">My Network Control</div>
@@ -485,19 +485,9 @@
         </div>
       </section>
 
-      <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
-      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw" style="padding:0;">
-        <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
-        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard" style="width:100%;height:100%;border:none;"></iframe>
-      </section>
       <!-- Speedtest tab page -->
       <section id="tab-speedtest" class="tab-page media" aria-labelledby="tabbtn-speedtest">
         <iframe src="new_assets/ninja_speedtest.html" title="Network Speedtest"></iframe>
-      </section>
-      <!-- Cameras tab page -->
-      <section id="tab-cameras" class="tab-page media" aria-labelledby="tabbtn-cameras">
-        <!-- Load the camera viewer via iframe -->
-        <iframe src="net_ninja_cam.html" title="Cameras"></iframe>
       </section>
     </main>
 
@@ -520,12 +510,6 @@
           <div class="ticon" aria-hidden="true">TL</div>
           <div class="tlabel">Tools</div>
         </button>
-
-        <!-- OpenClaw tab button -->
-        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
-          <div class="ticon" aria-hidden="true">OC</div>
-          <div class="tlabel">OpenClaw</div>
-        </button>
         <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
           <div class="ticon" aria-hidden="true">GW</div>
           <div class="tlabel">Gateway</div>
@@ -533,11 +517,6 @@
         <button class="tabbtn" id="tabbtn-speedtest" data-tab="speedtest">
           <div class="ticon" aria-hidden="true">SP</div>
           <div class="tlabel">Speedtest</div>
-        </button>
-        <!-- Cameras tab button -->
-        <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
-          <div class="ticon" aria-hidden="true">CM</div>
-          <div class="tlabel">Cameras</div>
         </button>
       </div>
     </nav>
