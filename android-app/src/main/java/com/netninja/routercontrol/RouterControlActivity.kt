@@ -87,63 +87,53 @@ class RouterControlActivity : AppCompatActivity() {
   inner class RouterJsBridge {
     @JavascriptInterface
     fun request(raw: String): String {
-      return runCatching {
-        val req = json.parseToJsonElement(raw).jsonObject
-        val action = req["action"]?.jsonPrimitive?.content?.trim().orEmpty()
-        val payload = req["payload"]
-        val remember = req["remember"]?.jsonPrimitive?.toBooleanLenientOrNull() == true
+      val req = json.parseToJsonElement(raw).jsonObject
+      val action = req["action"]?.jsonPrimitive?.content?.trim().orEmpty()
+      val payload = req["payload"]
+      val remember = req["remember"]?.jsonPrimitive?.toBooleanLenientOrNull() == true
 
-        val result = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-          when (action) {
-            "http" -> {
-              val p = payload?.jsonObject ?: JsonObject(emptyMap())
-              val method = p["method"]?.jsonPrimitive?.content?.trim().orEmpty().ifBlank { "GET" }
-              val path = p["path"]?.jsonPrimitive?.content?.trim().orEmpty()
-              val body = p["body"]
-              val baseUrl = p["baseUrl"]?.jsonPrimitive?.contentOrNull
-              client.setBaseUrl(baseUrl)
-              val data = client.handleHttp(method = method, path = path, body = body, remember = remember)
-              runCatching { client.refreshSnapshot() }
-              buildJsonObject {
-                put("ok", true)
-                put("data", data ?: JsonNull)
-              }
-            }
-
-            "refresh" -> {
-              client.refreshSnapshot()
-              buildJsonObject { put("ok", true) }
-            }
-
-            "logout" -> {
-              client.logout()
-              buildJsonObject { put("ok", true) }
-            }
-
-            else -> buildJsonObject {
-              put("ok", false)
-              put("error", "Unsupported bridge action: $action")
+      // Use a background thread for blocking operations to avoid UI thread blocking
+      val result = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+        when (action) {
+          "http" -> {
+            val p = payload?.jsonObject ?: JsonObject(emptyMap())
+            val method = p["method"]?.jsonPrimitive?.content?.trim().orEmpty().ifBlank { "GET" }
+            val path = p["path"]?.jsonPrimitive?.content?.trim().orEmpty()
+            val body = p["body"]
+            val baseUrl = p["baseUrl"]?.jsonPrimitive?.contentOrNull
+            client.setBaseUrl(baseUrl)
+            val data = client.handleHttp(method = method, path = path, body = body, remember = remember)
+            client.refreshSnapshot()
+            buildJsonObject {
+              put("ok", true)
+              put("data", data ?: JsonNull)
             }
           }
-        }
 
-        val state = kotlinx.coroutines.runBlocking(Dispatchers.IO) { client.buildState() }
-        pushState(state)
+          "refresh" -> {
+            client.refreshSnapshot()
+            buildJsonObject { put("ok", true) }
+          }
 
-        val merged = result.toMutableMap().apply {
-          put("state", state)
+          "logout" -> {
+            client.logout()
+            buildJsonObject { put("ok", true) }
+          }
+
+          else -> buildJsonObject {
+            put("ok", false)
+            put("error", "Unsupported bridge action: $action")
+          }
         }
-        json.encodeToString(JsonObject.serializer(), JsonObject(merged))
-      }.getOrElse { err ->
-        val state = kotlinx.coroutines.runBlocking(Dispatchers.IO) { client.buildState(error = err.message ?: "Bridge error") }
-        pushState(state)
-        val out = buildJsonObject {
-          put("ok", false)
-          put("error", err.message ?: "Bridge error")
-          put("state", state)
-        }
-        json.encodeToString(JsonObject.serializer(), out)
       }
+
+      val state = kotlinx.coroutines.runBlocking(Dispatchers.IO) { client.buildState() }
+      pushState(state)
+
+      val merged = result.toMutableMap().apply {
+        put("state", state)
+      }
+      return@request json.encodeToString(JsonObject.serializer(), JsonObject(merged))
     }
   }
 }
