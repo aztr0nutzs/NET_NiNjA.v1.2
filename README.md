@@ -22,15 +22,6 @@ NET NiNjA is a local-first network dashboard that combines a Ktor-based server, 
 - **Web UI**: Static HTML/CSS/JS under `web-ui/`, including the mobile dashboard in `web-ui/`.
 - **Android app**: WebView wrapper that syncs `web-ui/` assets into internal storage and then loads the local server URLs.
 
-## Ninja CAM (IP camera viewer tab)
-![Ninja CAM header](web-ui/ninja_cam_header.png)
-
-The Ninja CAM experience is a dedicated **Cameras** tab in the dashboard that loads the IP camera viewer via `net_ninja_cam.html` and keeps it isolated from the rest of the dashboard UI. The tab is wired into the primary bottom navigation and rendered as an embedded view so it feels native to the app shell.
-
-### What it supports
-- **Flexible stream inputs**: Add a camera by name and URL, including HLS, MJPEG, or HTTP streams. RTSP streams are supported via a gateway such as MediaMTX that converts RTSP to HLS/WebRTC for browser playback.
-- **Bulk import**: Paste a multi-line list of cameras using the `Name | URL` format for quick onboarding.
-- **Multi-layout grid**: Switch between 1-up, 2x2, 3x3, and wall layouts, then load or reconnect the grid for live monitoring.
 
 ## 3D Discovery Map (Ninja Nodes)
 ![Ninja Nodes 3D Map](web-ui/new_assets/ninja_nodes.png)
@@ -48,17 +39,6 @@ The Discovery Map is an interactive **3D network visualization** embedded direct
 
 The standalone page lives at `web-ui/new_assets/ninja_nodes.html` and is loaded into the dashboard via an iframe for full isolation and zero CSS/JS conflicts.
 
-## OpenClaw Android Companion integration
-![OpenClaw Companion header](web-ui/new_assets/claw_control_final.png)
-
-The dashboard includes an **OpenClaw** tab that embeds the OpenClaw Gateway dashboard (`openclaw_dash.html`) directly inside NET NiNjA via an iframe, keeping the companion experience inside the same shell as the rest of the dashboard. The header media now uses the `ninja_header.mp4` loop as the top hero.
-
-### What it supports
-- **Gateway status + profile context**: Quick connection status plus the active profile/workspace summary that mirrors the OpenClaw gateway state pane.
-- **Channel visibility**: A dedicated channels table lists gateway names, status, and active session counts.
-- **Agent/instance control surface**: A table of agent instances with profile/workspace metadata, plus quick actions and a detail panel for sandbox and access mode.
-- **Sessions tracking**: A sessions table for monitoring active task/session entries.
-- **Command runner modal**: A command dialog is available to run OpenClaw commands (e.g., `openclaw status`) from within the dashboard shell.
 
 ## Quick start
 ### Run the server (Gradle)
