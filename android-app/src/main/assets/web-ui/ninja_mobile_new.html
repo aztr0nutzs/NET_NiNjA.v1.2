@@ -69,12 +69,13 @@
 <body class="h-screen w-screen overflow-hidden flex flex-col text-sm antialiased selection:bg-[#39ff14] selection:text-black">
 <div class="app flex flex-col h-full w-full relative" id="app">
 <header class="h-16 shrink-0 border-b border-[#39ff14]/30 bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-4 z-50 relative">
+<video aria-label="NET_NiNjA Header" autoplay="" class="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" loop="" muted="" playsinline="" src="netninja_header.mp4"></video>
 <div class="absolute inset-0 bg-gradient-to-b from-[#39ff14]/5 to-transparent pointer-events-none"></div>
 <div class="flex items-center gap-3 z-10">
 <div class="relative w-10 h-10 flex items-center justify-center" id="brandBadge">
 <div class="absolute inset-0 bg-[#39ff14]/20 blur-md rounded-full"></div>
 <div class="relative w-full h-full border border-[#39ff14] bg-black/50 p-1" style="clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);">
-<img alt="NET_NiNjA" class="w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAji2SApfcfbTiXH8T0m5h_Z2jcwIjYTILoVafaYZU_7jvHCcqoG4WTy_n39cAUre_9tL8bi9NAbkbcY3OxTOR-nLb47fpZs6-wmiJi5Mb3ODTPu_1gYoh721hdzWapSgcy6CedFY1pvVHBFBEcvMUALcNHkG3FctkzFxw_9HbIRP6MzrufEuL4aIDuSA0XT-8vhBNzb_cjamy8f6Qp79XfvmAiNq7ivuj1vRJaTGJPvpilEkCv3STOzl02zKIQ0KkCRisqdCM16y3u"/>
+<video aria-label="NET_NiNjA" autoplay="" class="w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-300" loop="" muted="" playsinline="" src="netninja_header.mp4"></video>
 </div>
 </div>
 <div class="flex flex-col">
@@ -492,7 +493,35 @@
 </div>
 </div>
 <script src="js/api-client.js"></script>
-<script src="js/dashboard.js"></script>
+<script>
+  (function(){
+    "use strict";
+    const dashboardScriptPath = "js/dashboard.js";
+
+    function loadDashboardScript(){
+      const script = document.createElement("script");
+      script.src = dashboardScriptPath;
+      document.body.appendChild(script);
+    }
+
+    async function hydrateDevicesScreen(){
+      const tab = document.getElementById("tab-devices");
+      if(!tab) return;
+
+      const res = await fetch("holo_devices.html", { cache: "no-store" });
+      if(!res.ok) throw new Error("Failed to load holo_devices.html");
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const holo = doc.getElementById("holoDevicesScreen");
+      if(!holo) throw new Error("Missing #holoDevicesScreen");
+      tab.innerHTML = holo.innerHTML;
+    }
+
+    hydrateDevicesScreen().catch((err) => {
+      console.warn("[devices] Falling back to inline tab markup:", err);
+    }).finally(loadDashboardScript);
+  })();
+</script>
 <script>
     // Minimal glue code for tab switching since we removed the original CSS that handled 'active' states via display:none
     document.addEventListener('DOMContentLoaded', () => {
