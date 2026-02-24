@@ -449,7 +449,7 @@
           <button class="btn btn-primary" type="button" id="nnDeviceMapBtn">3D Map</button>
           <button class="btn btn-ghost" type="button" id="nnDeviceListBtn">Table</button>
         </div>
-        <iframe id="nnDeviceMapIframe" src="new_assets/ninja_nodes.html" title="Devices 3D Map" loading="eager"></iframe>
+        <iframe id="nnDeviceMapIframe" src="network_styles.html" title="Devices Network Map" loading="eager"></iframe>
       `;
 
       tab.appendChild(mapHost);
@@ -2076,8 +2076,8 @@
     window.applyScanData({ progress: 0, phase: "IDLE", networks: 0, devices: 0, rssiDbm: NaN, linkUp: true });
 
 
-    // ---------- Discovery Map wiring (ninja_nodes.html via iframe) ----------
-    // The 3D map now lives in new_assets/ninja_nodes.html, loaded via iframe.
+    // ---------- Discovery Map wiring (network_styles.html via iframe) ----------
+    // The live map lives in network_styles.html, loaded via iframe.
     // Forward the device list into the iframe when it's ready.
     window.nnUpdateDiscoveryMap = function(){
       try {

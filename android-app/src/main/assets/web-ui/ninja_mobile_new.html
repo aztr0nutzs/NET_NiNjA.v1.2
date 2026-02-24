@@ -1,682 +1,541 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Network Control</title>
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neural Control Dashboard V2.0</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&amp;family=Share+Tech+Mono&amp;family=Rajdhani:wght@300;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+    @layer utilities {
+      .font-orbitron { font-family: 'Orbitron', sans-serif; }
+      .font-mono-tech { font-family: 'Share Tech Mono', monospace; }
+      .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+      .text-toxic-green { color: var(--toxic-green); }
+      .text-cyber-purple { color: var(--cyber-purple); }
+      .bg-deep-onyx { background-color: var(--deep-onyx); }
+      .glass-shard {
+        background: rgba(13, 17, 23, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(57, 255, 20, 0.2);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(57, 255, 20, 0.05);
+        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+      }
+      .glass-shard-accent {
+        background: rgba(20, 13, 23, 0.75);
+        border: 1px solid rgba(188, 19, 254, 0.3);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(188, 19, 254, 0.05);
+      }
+      .neon-glow-text {
+        text-shadow: 0 0 5px var(--toxic-green), 0 0 10px var(--toxic-green);
+      }
+      .neon-glow-border {
+        box-shadow: 0 0 5px var(--toxic-green), inset 0 0 5px var(--toxic-green);
+      }
+      .scan-core-ring {
+        background: conic-gradient(from 0deg, transparent 0%, var(--toxic-green) 50%, transparent 100%);
+        border-radius: 50%;
+        mask-image: radial-gradient(transparent 60%, black 61%);
+        -webkit-mask-image: radial-gradient(transparent 60%, black 61%);
+      }
+    }
+    :root {
+      --toxic-green: #39ff14;
+      --cyber-purple: #bc13fe;
+      --deep-onyx: #050505;
+      --panel-bg: #0d1117;
+    }
+    body {
+      background-color: var(--deep-onyx);
+      background-image: 
+        linear-gradient(rgba(57, 255, 20, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57, 255, 20, 0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+      color: #e0e0e0;
+      font-family: 'Rajdhani', sans-serif;
+    }::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--deep-onyx); }
+    ::-webkit-scrollbar-thumb { background: var(--cyber-purple); border-radius: 2px; }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="h-screen w-screen overflow-hidden flex flex-col text-sm antialiased selection:bg-[#39ff14] selection:text-black">
+<div class="app flex flex-col h-full w-full relative" id="app">
+<header class="h-16 shrink-0 border-b border-[#39ff14]/30 bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-4 z-50 relative">
+<div class="absolute inset-0 bg-gradient-to-b from-[#39ff14]/5 to-transparent pointer-events-none"></div>
+<div class="flex items-center gap-3 z-10">
+<div class="relative w-10 h-10 flex items-center justify-center" id="brandBadge">
+<div class="absolute inset-0 bg-[#39ff14]/20 blur-md rounded-full"></div>
+<div class="relative w-full h-full border border-[#39ff14] bg-black/50 p-1" style="clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);">
+<img alt="NET_NiNjA" class="w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAji2SApfcfbTiXH8T0m5h_Z2jcwIjYTILoVafaYZU_7jvHCcqoG4WTy_n39cAUre_9tL8bi9NAbkbcY3OxTOR-nLb47fpZs6-wmiJi5Mb3ODTPu_1gYoh721hdzWapSgcy6CedFY1pvVHBFBEcvMUALcNHkG3FctkzFxw_9HbIRP6MzrufEuL4aIDuSA0XT-8vhBNzb_cjamy8f6Qp79XfvmAiNq7ivuj1vRJaTGJPvpilEkCv3STOzl02zKIQ0KkCRisqdCM16y3u"/>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="font-orbitron font-bold text-lg tracking-wider text-white neon-glow-text leading-tight">NET_NiNjA</div>
+<div class="font-mono-tech text-[10px] text-[#39ff14] tracking-[0.2em] uppercase opacity-80" id="brandSub">System Online</div>
+</div>
+</div>
+<div class="flex items-center gap-2 z-10">
+<button class="w-9 h-9 flex items-center justify-center rounded border border-[#39ff14]/30 text-[#39ff14] hover:bg-[#39ff14]/10 hover:border-[#39ff14] transition-all" id="historyBtn">
+<span class="material-symbols-outlined text-lg">history</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded border border-[#bc13fe]/30 text-[#bc13fe] hover:bg-[#bc13fe]/10 hover:border-[#bc13fe] transition-all relative" id="notifBtn">
+<span class="absolute top-1 right-1 w-1.5 h-1.5 bg-[#bc13fe] rounded-full shadow-[0_0_5px_#bc13fe]"></span>
+<span class="material-symbols-outlined text-lg">notifications</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-all" id="settingsBtn">
+<span class="material-symbols-outlined text-lg">settings</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto overflow-x-hidden relative pb-24 scroll-smooth">
+<section aria-labelledby="tabbtn-dashboard" class="active px-4 py-6 space-y-6" id="tab-dashboard">
+<div class="flex items-end justify-between border-b border-gray-800 pb-2">
+<h2 class="font-orbitron text-2xl font-bold text-white tracking-wide">NEURAL<span class="text-[#39ff14]">_OS</span></h2>
+<div class="font-mono-tech text-xs text-[#bc13fe]">V2.0.4 SAFE MODE</div>
+</div>
+<div class="hidden relative overflow-hidden bg-[#39ff14]/10 border border-[#39ff14] p-3 flex items-center gap-3 animate-pulse" id="nnScanBanner">
+<div class="w-4 h-4 border-2 border-[#39ff14] border-t-transparent rounded-full animate-spin"></div>
+<span class="font-mono-tech text-[#39ff14] uppercase text-xs tracking-widest" id="nnScanBannerText">Scanning Neural Pathways...</span>
+</div>
+<div class="relative w-full aspect-[2/1] min-h-[180px] bg-black/40 border border-[#39ff14]/20 rounded-lg overflow-hidden flex items-center justify-center group">
+<div class="absolute inset-0 bg-[linear-gradient(0deg,transparent_24%,rgba(57,255,20,0.05)_25%,rgba(57,255,20,0.05)_26%,transparent_27%,transparent_74%,rgba(57,255,20,0.05)_75%,rgba(57,255,20,0.05)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(57,255,20,0.05)_25%,rgba(57,255,20,0.05)_26%,transparent_27%,transparent_74%,rgba(57,255,20,0.05)_75%,rgba(57,255,20,0.05)_76%,transparent_77%,transparent)] bg-[length:30px_30px]"></div>
+<div class="relative z-10 w-32 h-32 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border border-[#39ff14]/30 border-dashed animate-[spin_10s_linear_infinite]"></div>
+<div class="absolute inset-2 scan-core-ring animate-[spin_3s_linear_infinite] opacity-80"></div>
+<div class="absolute inset-4 bg-black rounded-full border border-[#39ff14] flex flex-col items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.2)]">
+<span class="font-orbitron text-2xl font-bold text-white tracking-widest neon-glow-text" id="scanPct">IDLE</span>
+<span class="font-mono-tech text-[9px] text-[#39ff14]/70 mt-1">CORE STATUS</span>
+</div>
+</div>
+<div class="absolute left-4 top-1/2 -translate-y-1/2 space-y-4">
+<div class="text-right">
+<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">RSSI_SGNL</div>
+<div class="text-xl font-mono-tech text-[#39ff14]" id="rssiValue">-42<span class="text-xs ml-1">dBm</span></div>
+</div>
+<div class="text-right">
+<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">LINK_STATE</div>
+<div class="text-base font-mono-tech text-[#bc13fe] animate-pulse" id="nnLinkValue">ACTIVE</div>
+</div>
+</div>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 space-y-4">
+<div class="text-left">
+<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">NET_NODES</div>
+<div class="text-xl font-mono-tech text-[#39ff14]" id="networksFound">12</div>
+</div>
+<div class="text-left">
+<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">DEV_COUNT</div>
+<div class="text-xl font-mono-tech text-white" id="devicesFound">05</div>
+</div>
+</div>
+<button class="absolute bottom-2 right-2 px-3 py-1 bg-[#39ff14]/10 hover:bg-[#39ff14]/20 border border-[#39ff14]/50 text-[#39ff14] text-xs font-mono-tech uppercase backdrop-blur-sm" id="btnScanMyNetwork">
+             Init_Scan()
+           </button>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="glass-shard p-4 relative group hover:border-[#39ff14]/50 transition-colors" id="cardMyNetwork">
+<div class="absolute top-0 right-0 p-2">
+<span class="w-2 h-2 rounded-full bg-[#39ff14] block shadow-[0_0_5px_#39ff14]"></span>
+</div>
+<div class="flex flex-col h-full justify-between">
+<div>
+<h3 class="font-orbitron text-sm text-gray-400 mb-1">MY_NETWORK</h3>
+<p class="font-rajdhani font-bold text-lg text-white leading-tight break-all" id="myNetText">SSID_SECURE</p>
+</div>
+<div class="mt-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[#39ff14] text-lg">shield</span>
+<span class="text-xs text-[#39ff14] font-mono-tech">SECURED</span>
+</div>
+</div>
+</div>
+<div class="glass-shard p-4 relative group hover:border-[#bc13fe]/50 transition-colors" id="cardWhosOnline">
+<div class="absolute top-0 right-0 w-8 h-8 flex items-center justify-center">
+<span class="font-mono-tech text-[10px] text-gray-500" id="onlineDeltaPill">Changed: 0</span>
+</div>
+<div class="flex flex-col h-full justify-between">
+<div>
+<h3 class="font-orbitron text-sm text-gray-400 mb-1">ONLINE_NODES</h3>
+<div class="font-mono-tech text-3xl text-[#bc13fe] drop-shadow-[0_0_5px_rgba(188,19,254,0.5)]" id="onlineCount">8</div>
+</div>
+<button class="mt-2 text-left text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors" id="btnViewOnlineDevices">
+                VIEW_ALL <span class="material-symbols-outlined text-[10px]">arrow_forward_ios</span>
+</button>
+</div>
+</div>
+<div class="glass-shard-accent p-4 col-span-2 flex items-center justify-between" id="cardUnknown">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded border border-red-500/30 bg-red-500/10 flex items-center justify-center text-red-500">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div>
+<h3 class="font-orbitron text-sm text-red-400">INTRUDER_ALERT <span class="text-[10px] text-yellow-400 ml-2" id="unknownPill">Review</span></h3>
+<p class="font-mono-tech text-xs text-gray-400" id="unknownList">No unauthorized signatures detected.</p>
+</div>
+</div>
+<button class="px-4 py-2 bg-red-500/10 border border-red-500/50 text-red-400 text-xs font-mono-tech hover:bg-red-500/20 uppercase" id="btnReviewUnknown">
+              Review
+            </button>
+</div>
+<div class="glass-shard p-4 col-span-2" id="cardQuickActions">
+<h3 class="font-orbitron text-sm text-gray-400 mb-3 border-b border-gray-800 pb-1">QUICK_EXEC</h3>
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="flex-shrink-0 px-3 py-2 bg-gray-800/50 border border-gray-700 hover:border-[#39ff14] text-xs text-gray-300 font-mono-tech flex items-center gap-2 transition-all" id="btnPauseInternet">
+<span class="material-symbols-outlined text-sm">pause_circle</span> PAUSE_NET
+              </button>
+<button class="flex-shrink-0 px-3 py-2 bg-gray-800/50 border border-gray-700 hover:border-red-500 text-xs text-gray-300 font-mono-tech flex items-center gap-2 transition-all" id="btnBlockNew">
+<span class="material-symbols-outlined text-sm">block</span> AUTO_BLOCK
+              </button>
+<button class="flex-shrink-0 px-3 py-2 bg-gray-800/50 border border-gray-700 hover:border-[#bc13fe] text-xs text-gray-300 font-mono-tech flex items-center gap-2 transition-all" id="btnShareWifi">
+<span class="material-symbols-outlined text-sm">qr_code</span> SHARE_KEY
+              </button>
+</div>
+</div>
+</div>
+<div class="glass-shard p-3 mt-4 flex items-center justify-between opacity-70" id="cardStatus">
+<div class="text-[10px] text-gray-500 font-mono-tech">SYSTEM_LOG <span class="ml-2 text-[#bc13fe]" id="changePill">Last scan: never</span></div>
+<div class="text-xs text-[#39ff14] font-mono-tech truncate max-w-[200px]" id="changeText">System stable. No anomalies.</div>
+</div>
+</section>
+<section aria-labelledby="tabbtn-devices" class="hidden tab-page nn-devices-tab px-4 py-6" id="tab-devices">
+<h2 class="font-orbitron text-2xl font-bold text-white mb-4">DEVICE<span class="text-[#bc13fe]">_MATRIX</span></h2>
+<div class="nn-device-summary grid grid-cols-4 gap-2 mb-6" id="nnDeviceSummary">
+<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
+<span class="block font-mono-tech text-xl text-[#39ff14]" id="nnDevOnline">0</span>
+<span class="text-[10px] uppercase text-gray-500">Active</span>
+</div>
+<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
+<span class="block font-mono-tech text-xl text-yellow-500" id="nnDevUnknown">0</span>
+<span class="text-[10px] uppercase text-gray-500">Unknown</span>
+</div>
+<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
+<span class="block font-mono-tech text-xl text-red-500" id="nnDevBlocked">0</span>
+<span class="text-[10px] uppercase text-gray-500">Blocked</span>
+</div>
+<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
+<span class="block font-mono-tech text-xl text-white" id="nnDevTotal">0</span>
+<span class="text-[10px] uppercase text-gray-500">Total</span>
+</div>
+</div>
+<div class="toolbar space-y-3">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-500">search</span>
+<input autocomplete="off" class="w-full bg-black/30 border border-gray-700 text-white pl-10 pr-4 py-2 rounded focus:border-[#39ff14] focus:ring-0 font-mono-tech text-sm" id="deviceSearch" placeholder="Search Matrix..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" id="trustChips">
+<button class="px-3 py-1 rounded-full border border-[#39ff14] bg-[#39ff14]/20 text-[#39ff14] text-xs font-bold chip" data-filter="all">ALL</button>
+<button class="px-3 py-1 rounded-full border border-gray-700 bg-transparent text-gray-400 text-xs hover:border-[#bc13fe] hover:text-[#bc13fe] chip" data-filter="online">ONLINE</button>
+<button class="px-3 py-1 rounded-full border border-gray-700 bg-transparent text-gray-400 text-xs chip" data-filter="offline">OFFLINE</button>
+<button class="px-3 py-1 rounded-full border border-gray-700 bg-transparent text-gray-400 text-xs chip" data-filter="unknown">UNKNOWN</button>
+</div>
+</div>
+<div class="glass-shard mt-4 min-h-[300px] overflow-hidden">
+<div class="p-2 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
+<span class="font-mono-tech text-xs text-gray-400">IP ADDRESS</span>
+<span class="font-mono-tech text-xs text-gray-400">STATUS</span>
+</div>
+<div class="p-4 text-center text-gray-600 font-mono-tech text-sm italic" id="deviceListPlaceholder">
+             // Awaiting Data Injection...
+             <table class="w-full text-left hidden" id="deviceTable">
+<thead class="text-xs text-gray-500 border-b border-gray-800">
+<tr>
+<th class="py-2">NAME</th>
+<th class="py-2 text-right">IP</th>
+</tr>
+</thead>
+<tbody class="text-sm font-rajdhani" id="deviceTbody">
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section aria-labelledby="tabbtn-networks" class="hidden tab-page h-full" id="tab-networks">
+<div class="h-full w-full relative">
+<div class="absolute top-4 left-4 z-10 glass-shard px-4 py-2 pointer-events-none">
+<h2 class="font-orbitron text-lg text-white">NODE_MAP</h2>
+<div class="text-[10px] text-[#39ff14] font-mono-tech">3D VISUALIZATION ACTIVE</div>
+</div>
+<iframe allow="accelerometer; gyroscope" class="w-full h-full border-none opacity-80" id="nnMapIframe" loading="eager" src="network_styles.html" title="Neural Network Map"></iframe>
+</div>
+</section>
+<section aria-labelledby="tabbtn-tools" class="hidden tab-page px-4 py-6" id="tab-tools">
+<h2 class="font-orbitron text-2xl font-bold text-white mb-6">SYS<span class="text-[#39ff14]">_TOOLS</span></h2>
+<div class="grid grid-cols-2 gap-4">
+<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="portScan" role="button">
+<span class="material-symbols-outlined text-4xl text-[#bc13fe]">radar</span>
+<div>
+<div class="font-bold text-white font-rajdhani">PORT_SCAN</div>
+<div class="text-[10px] text-gray-500 font-mono-tech">VULNERABILITY CHECK</div>
+</div>
+</div>
+<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="security" role="button">
+<span class="material-symbols-outlined text-4xl text-red-500">lock_open</span>
+<div>
+<div class="font-bold text-white font-rajdhani">SEC_AUDIT</div>
+<div class="text-[10px] text-gray-500 font-mono-tech">WEAKNESS DETECT</div>
+</div>
+</div>
+<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="reports" role="button">
+<span class="material-symbols-outlined text-4xl text-[#39ff14]">description</span>
+<div>
+<div class="font-bold text-white font-rajdhani">LOG_EXPORT</div>
+<div class="text-[10px] text-gray-500 font-mono-tech">DATA DUMP</div>
+</div>
+</div>
+<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="schedule" role="button">
+<span class="material-symbols-outlined text-4xl text-cyan-400">schedule</span>
+<div>
+<div class="font-bold text-white font-rajdhani">AUTO_TASK</div>
+<div class="text-[10px] text-gray-500 font-mono-tech">CRON JOBS</div>
+</div>
+</div>
+</div>
+</section>
+<section aria-labelledby="tabbtn-gateway" class="hidden tab-page px-4 py-6 space-y-6" id="tab-gateway">
+<h2 class="font-orbitron text-2xl font-bold text-white">GATEWAY<span class="text-[#39ff14]">_G5AR</span></h2>
+<div class="glass-shard p-6 relative overflow-hidden" id="g5arStatusCard">
+<div class="absolute -right-4 -top-4 text-9xl text-white/5 font-orbitron font-bold">G5</div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<div>
+<div class="text-xs text-gray-400 font-mono-tech">CONNECTION STATUS</div>
+<div class="text-xl text-white font-bold" id="g5arReachability">UNKNOWN</div>
+</div>
+<div class="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_10px_red]"></div>
+</div>
+<div class="space-y-3">
+<input class="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 text-sm font-mono-tech focus:border-[#bc13fe] focus:ring-0" id="g5arUser" placeholder="USER" type="text" value="admin"/>
+<input class="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 text-sm font-mono-tech focus:border-[#bc13fe] focus:ring-0" id="g5arPassword" placeholder="PASSKEY" type="password"/>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 border border-[#bc13fe] text-[#bc13fe] py-2 text-xs font-bold uppercase tracking-wider transition-all" id="g5arLoginBtn">AUTH</button>
+<button class="px-3 border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-all" id="g5arRefreshBtn">
+<span class="material-symbols-outlined text-lg">refresh</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-shard p-4 space-y-2 font-mono-tech text-xs" id="g5arInfoCard">
+<div class="flex justify-between border-b border-gray-800 pb-1"><span>FIRMWARE</span> <span class="text-[#39ff14]" id="g5arFirmware">â€”</span></div>
+<div class="flex justify-between border-b border-gray-800 pb-1"><span>SERIAL</span> <span class="text-gray-400" id="g5arSerial">â€”</span></div>
+<div class="flex justify-between"><span>UPTIME</span> <span class="text-white" id="g5arUptime">â€”</span></div>
+</div>
+</section>
+<section aria-labelledby="tabbtn-speedtest" class="hidden tab-page h-full" id="tab-speedtest">
+<iframe class="w-full h-full border-none" src="speed_new.html" title="Network Speedtest"></iframe>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 w-full bg-[#050505]/95 backdrop-blur-xl border-t border-[#39ff14]/20 z-50 pb-safe">
+<div class="flex justify-around items-center h-16 px-2 tabbar-inner">
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn active text-[#39ff14]" data-tab="dashboard" id="tabbtn-dashboard">
+<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-2xl group-[.active]:drop-shadow-[0_0_5px_#39ff14]">dashboard</span>
+</div>
+<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Dash</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="devices" id="tabbtn-devices">
+<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-2xl">devices</span>
+</div>
+<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Devs</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="networks" id="tabbtn-networks">
+<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-2xl">hub</span>
+</div>
+<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Map</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="tools" id="tabbtn-tools">
+<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-2xl">build</span>
+</div>
+<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Tools</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="gateway" id="tabbtn-gateway">
+<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-2xl">router</span>
+</div>
+<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Gate</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="speedtest" id="tabbtn-speedtest">
+<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-2xl">speed</span>
+</div>
+<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Speed</span>
+</button>
+</div>
+</nav>
+<div class="overlay fixed inset-0 z-[60] hidden" id="historyOverlay">
+<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="historyOverlay"></div>
+<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#39ff14] rounded-t-2xl p-6 transition-transform transform translate-y-0">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-orbitron text-lg text-white">SYSTEM_LOGS</h3>
+<button class="text-gray-400 hover:text-white" data-close="historyOverlay"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="font-mono-tech text-xs text-gray-500 mb-2">RECENT OPERATIONS</div>
+<div class="space-y-2" id="historyList">
+<div class="text-gray-400 text-sm">// No recent actions recorded.</div>
+</div>
+</div>
+</div>
+<div class="toast fixed top-20 right-4 z-[70] hidden bg-gray-900 border border-[#39ff14] p-4 rounded shadow-[0_0_15px_rgba(57,255,20,0.3)] max-w-xs transition-opacity" id="toast">
+<div class="font-bold text-[#39ff14] font-orbitron text-sm mb-1" id="toastTitle">NOTIFICATION</div>
+<div class="text-gray-300 text-xs font-rajdhani" id="toastBody">System Update Complete.</div>
+</div>
+<div id="toastActions"></div>
+<div class="hidden" id="nnCompat" aria-hidden="true">
+<button id="btnExportDevices" type="button">Export</button>
+<button id="btnRescanDevices" type="button">Rescan</button>
+<button id="btnStart" type="button">Start</button>
+<button id="btnStop" type="button">Stop</button>
+<button id="btnOpenAppSettings" type="button">App Settings</button>
+<button id="btnOpenLocationSettings" type="button">Location Settings</button>
+<button id="btnOpenWifiSettings" type="button">Wifi Settings</button>
+<button id="btnRefreshPermissions" type="button">Refresh Permissions</button>
+<div id="permSummaryPill"></div>
+<div id="permNearbyWifi"></div>
+<div id="permLocation"></div>
+<div id="permWifiState"></div>
+<div id="permNetworkState"></div>
+<div id="scanPhase">IDLE</div>
+<div id="scanFill" style="width:0%"></div>
+<div id="nnScanPill">Idle</div>
+<div id="ssid"></div>
+<div id="bssid"></div>
+<div id="subnet"></div>
+<div id="gateway"></div>
+<div id="spTitle">Select a device</div>
+<div id="spSub">Pick a row to view details.</div>
+<div id="spStatus">-</div>
+<div id="spSummaryKv"></div>
+<div id="spNetworkKv"></div>
+<div id="spActivityKv"></div>
+<button id="spPause" type="button"></button>
+<button id="spBlock" type="button"></button>
+<button id="spTrust" type="button"></button>
+<button id="spPortScan" type="button"></button>
+<textarea id="spNote"></textarea>
+<input id="spRoom" type="text"/>
+<input id="spOwner" type="text"/>
+<button id="spSaveNotes" type="button"></button>
+<div id="spSectionSummary"></div>
+<div id="spSectionNetwork"></div>
+<div id="spSectionActivity"></div>
+<div id="spSectionNotes"></div>
+<div id="g5arError">Login required.</div>
+<div id="g5arUiVersion">-</div>
+<div id="g5arRsrp">-</div>
+<div id="g5arRsrq">-</div>
+<div id="g5arSinr">-</div>
+<div id="g5arBand">-</div>
+<div id="g5arIccid">-</div>
+<div id="g5arImei">-</div>
+<div id="g5arClients"></div>
+<input id="g5arSsid24" type="text"/>
+<input id="g5arPass24" type="text"/>
+<input id="g5arEnabled24" type="checkbox"/>
+<input id="g5arRemember" type="checkbox"/>
+<button id="g5arSaveWifiBtn" type="button"></button>
+<button id="g5arRebootBtn" type="button"></button>
+<div id="g5arClientsCard"></div>
+<div id="g5arCellCard"></div>
+<div id="g5arSimCard"></div>
+<div id="g5arWifiCard"></div>
+<div id="nnDebugPanel"></div>
+<pre id="nnDebugText"></pre>
+</div>
+<div class="overlay fixed inset-0 z-[60] hidden" id="notifOverlay">
+<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="notifOverlay"></div>
+<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#bc13fe] rounded-t-2xl p-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-orbitron text-lg text-white">NOTIFICATIONS</h3>
+<button class="text-gray-400 hover:text-white" data-close="notifOverlay"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="space-y-2" id="notifList"></div>
+</div>
+</div>
+<div class="overlay fixed inset-0 z-[60] hidden" id="deviceOverlay">
+<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="deviceOverlay"></div>
+<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#39ff14] rounded-t-2xl p-6 max-h-[85vh] overflow-y-auto">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-orbitron text-lg text-white" id="devSheetTitle">DEVICE</h3>
+<button class="text-gray-400 hover:text-white" data-close="deviceOverlay"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div id="devSheetBody"></div>
+</div>
+</div>
+<div class="overlay fixed inset-0 z-[60] hidden" id="toolOverlay">
+<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="toolOverlay"></div>
+<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#39ff14] rounded-t-2xl p-6 max-h-[85vh] overflow-y-auto">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-orbitron text-lg text-white" id="toolTitle">TOOL</h3>
+<button class="text-gray-400 hover:text-white" data-close="toolOverlay"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div id="toolBody"></div>
+</div>
+</div>
+<div class="overlay fixed inset-0 z-[60] hidden" id="settingsOverlay">
+<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="settingsOverlay"></div>
+<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#bc13fe] rounded-t-2xl p-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-orbitron text-lg text-white">SETTINGS</h3>
+<button class="text-gray-400 hover:text-white" data-close="settingsOverlay"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="text-sm text-gray-400">Settings panel is currently read-only.</div>
+</div>
+</div>
+</div>
+<script src="js/api-client.js"></script>
+<script src="js/dashboard.js"></script>
+<script>
+    // Minimal glue code for tab switching since we removed the original CSS that handled 'active' states via display:none
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabs = document.querySelectorAll('.tabbtn');
+      const pages = document.querySelectorAll('.tab-page');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const target = tab.dataset.tab;
+          // Update Buttons
+          tabs.forEach(t => {
+            t.classList.remove('active', 'text-[#39ff14]');
+            t.classList.add('text-gray-500');
+          });
+          tab.classList.add('active', 'text-[#39ff14]');
+          tab.classList.remove('text-gray-500');
+          // Update Pages
+          pages.forEach(p => {
+             if(p.id === `tab-${target}`) {
+               p.classList.remove('hidden');
+             } else {
+               p.classList.add('hidden');
+             }
+          });
+        });
+      });
+      // Simple Overlay Toggle Logic
+      const overlayTriggers = [
+        { btn: 'historyBtn', overlay: 'historyOverlay' },
+        // Add others as needed
+      ];
+      overlayTriggers.forEach(trigger => {
+        const btn = document.getElementById(trigger.btn);
+        const ov = document.getElementById(trigger.overlay);
+        if(btn && ov) {
+           btn.addEventListener('click', () => ov.classList.remove('hidden'));
+           ov.querySelectorAll('[data-close]').forEach(c => {
+             c.addEventListener('click', () => ov.classList.add('hidden'));
+           });
+        }
+      });
+    });
+  </script>
+
+</body></html>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/dashboard.css">
-</head>
-<body>
-  <div class="app" id="app">
-    <!-- GLOBAL CHROME -->
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="header-media" aria-hidden="true">
-          <img id="headerImage" src="new_assets/ninja_new_header.png" alt="" />
-        </div>
-        <div class="header-overlay" aria-hidden="true"></div>
-
-        <div class="brand">
-          <div class="brand-badge" id="brandBadge">
-            <video src="new_assets/openclaw_icon.mp4" autoplay loop muted playsinline preload="auto" aria-label="OpenClaw icon" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"></video>
-          </div>
-          <div style="min-width:0;">
-            <div class="brand-title">My Network Control</div>
-            <div class="brand-sub" id="brandSub">Home Wi-Fi (SSID) - secure</div>
-          </div>
-        </div>
-
-        <div class="topbar-actions">
-          <button class="btn icon-btn" id="historyBtn" title="Undo / Recent actions">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 12a9 9 0 1 0 3-6.7"/>
-              <path d="M3 4v6h6"/>
-              <path d="M12 7v5l3 3"/>
-            </svg>
-            <span class="sr-only">Recent actions</span>
-          </button>
-
-          <button class="btn icon-btn" id="notifBtn" title="Notifications">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
-              <path d="M13.7 21a2 2 0 01-3.4 0"/>
-            </svg>
-            <span class="sr-only">Notifications</span>
-          </button>
-
-          <button class="btn icon-btn" id="settingsBtn" title="Settings">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-              <path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.4-2.5H9.1L8.7 7a7.2 7.2 0 0 0-1.7 1L4.6 7l-2 3.5 2 1.5a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.2 7.2 0 0 0 1.7 1l.4 2.5h5.8l.4-2.5a7.2 7.2 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z"/>
-            </svg>
-            <span class="sr-only">Settings</span>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <main>
-      <!-- DASHBOARD -->
-      <section class="tab-page active" id="tab-dashboard" aria-labelledby="tabbtn-dashboard">
-        <h2>Dashboard</h2>
-
-        <!-- Scan confirmation banner (shown during/after scans) -->
-        <div class="nn-scan-banner" id="nnScanBanner">
-          <div class="nn-scan-spinner"></div>
-          <span id="nnScanBannerText">Scanning your network...</span>
-        </div>
-
-        <div class="grid grid-2">
-          <div class="card" id="cardMyNetwork" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">My Network</div>
-              <div class="pill ok" id="myNetPill">Secure</div>
-            </div>
-            <div class="muted" id="myNetText">Home Wi-Fi (SSID) - Secure</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" id="btnScanMyNetwork">Scan my network</button>
-            </div>
-          </div>
-
-          <div class="card" id="cardWhosOnline" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Who's Online</div>
-              <div class="pill" id="onlineDeltaPill">Changed: 0</div>
-            </div>
-            <div class="big" id="onlineCount">0</div>
-            <div class="muted">devices online</div>
-            <div class="card-actions">
-              <button class="btn btn-ghost" id="btnViewOnlineDevices">View devices</button>
-            </div>
-          </div>
-
-          <div class="card" id="cardUnknown" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">New / Unknown Devices</div>
-              <div class="pill warn" id="unknownPill">Review</div>
-            </div>
-            <div class="muted" id="unknownList">No new devices.</div>
-            <div class="card-actions">
-              <button class="btn btn-ghost" id="btnReviewUnknown">Review unknown devices</button>
-            </div>
-          </div>
-
-          <div class="card" id="cardQuickActions" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Quick Actions</div>
-              <div class="pill">Fast</div>
-            </div>
-            <div class="muted">Keep it simple: no nested menus here.</div>
-            <div class="card-actions">
-              <button class="btn btn-ghost" id="btnPauseInternet">Set device status: Paused</button>
-              <button class="btn btn-danger" id="btnBlockNew">Auto-block new devices</button>
-              <button class="btn btn-ghost purple" id="btnShareWifi">Share Wi-Fi details</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- LIVE SCAN PROGRESS (integrated from prog.html) -->
-        <div class="nn-scanGrid">
-          <div class="card" id="nnScanProgressCard" style="cursor:default;">
-            <div class="card-head">
-              <div class="card-title">Live Scan Progress</div>
-              <div class="pill" id="nnScanPill">Idle</div>
-            </div>
-            <div class="muted">Live progress is read from <code>/api/v1/discovery/progress</code> while scans run.</div>
-
-            <div class="nn-prog" style="margin-top:10px;">
-              <div class="kvRow"><span class="k">Phase</span><span class="v" id="scanPhase">IDLE</span></div>
-              <div class="kvRow"><span class="k">Progress</span><span class="v" id="scanPct">0%</span></div>
-
-              <div class="kvRow"><span class="k">Networks</span><span class="v" id="networksFound">0</span></div>
-              <div class="kvRow"><span class="k">Devices</span><span class="v" id="devicesFound">0</span></div>
-
-              <div class="kvRow"><span class="k">RSSI</span><span class="v" id="rssiValue">-- dBm</span></div>
-              <div class="kvRow"><span class="k">Link</span><span class="v" id="nnLinkValue">UP</span></div>
-            </div>
-
-            <div class="nn-bar" aria-label="scan progress bar"><i id="scanFill"></i></div>
-
-            <div class="nn-activity" aria-label="scan activity">
-              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-            </div>
-
-            <div class="card-actions" style="margin-top:12px;">
-              <button class="btn btn-ghost purple" id="btnStop">Stop</button>
-            </div>
-          </div>
-
-          <div class="card" id="nnScanTargetCard" style="cursor:default;">
-            <div class="card-head">
-              <div class="card-title">Target</div>
-              <div class="pill">Current</div>
-            </div>
-
-            <div class="kv">
-              <div><b>SSID</b><span id="ssid">--</span></div>
-              <div><b>BSSID</b><span id="bssid">--</span></div>
-              <div><b>Subnet</b><span id="subnet">--</span></div>
-              <div><b>Gateway</b><span id="gateway">--</span></div>
-            </div>
-
-            <div class="muted" style="margin-top:10px;">
-              When your backend has a heartbeat endpoint or WebSocket, call <code>window.startPolling(url)</code> or <code>window.connectWebSocket(wsUrl)</code> and this updates live.
-            </div>
-          </div>
-        </div>
-
-
-        <div class="card" id="nnPermissionsCard" role="button" tabindex="0" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">Permissions & Background Scans</div>
-            <div class="pill warn" id="permSummaryPill">Needs review</div>
-          </div>
-          <div class="muted">
-            Android requires Location or Nearby Wi-Fi access to read SSID/BSSID and scan your network.
-            Background scans are rate-limited and will pause if Wi-Fi is disconnected or permissions are denied.
-          </div>
-          <div class="nn-permList" aria-live="polite">
-            <span>Nearby Wi-Fi</span><span id="permNearbyWifi">Unknown</span>
-            <span>Location (fine/coarse)</span><span id="permLocation">Unknown</span>
-            <span>Wi‑Fi state</span><span id="permWifiState">Unknown</span>
-            <span>Network state</span><span id="permNetworkState">Unknown</span>
-          </div>
-          <div class="card-actions" style="margin-top:12px;">
-            <button class="btn btn-primary" id="btnOpenAppSettings">Open app settings</button>
-            <button class="btn btn-ghost" id="btnOpenLocationSettings">Open location settings</button>
-            <button class="btn btn-ghost" id="btnOpenWifiSettings">Open Wi-Fi settings</button>
-            <button class="btn btn-ghost purple" id="btnRefreshPermissions">Refresh</button>
-          </div>
-          <div class="muted" style="margin-top:10px;">
-            Tip: Tap the MN badge 5 times to open the hidden debug panel.
-          </div>
-          <div class="nn-debugPanel" id="nnDebugPanel" aria-live="polite">
-            <pre id="nnDebugText">Debug panel idle.</pre>
-          </div>
-        </div>
-
-        <div class="card" id="cardStatus" role="button" tabindex="0" style="cursor:default;">
-          <div class="card-head">
-            <div class="card-title">What changed</div>
-            <div class="pill" id="changePill">Last scan: never</div>
-          </div>
-          <div class="muted" id="changeText">Run a scan to see changes and new devices.</div>
-        </div>
-      </section>
-
-      <!-- DEVICES -->
-      <section class="tab-page nn-devices-tab" id="tab-devices" aria-labelledby="tabbtn-devices">
-        <h2>Devices</h2>
-        <div class="nn-device-summary" id="nnDeviceSummary">
-          <div class="nn-dev-stat">
-            <span class="nn-dev-stat-num" id="nnDevOnline">0</span>
-            <span class="nn-dev-stat-label">Online</span>
-          </div>
-          <div class="nn-dev-stat">
-            <span class="nn-dev-stat-num nn-dev-unknown" id="nnDevUnknown">0</span>
-            <span class="nn-dev-stat-label">Unknown</span>
-          </div>
-          <div class="nn-dev-stat">
-            <span class="nn-dev-stat-num nn-dev-blocked" id="nnDevBlocked">0</span>
-            <span class="nn-dev-stat-label">Blocked</span>
-          </div>
-          <div class="nn-dev-stat">
-            <span class="nn-dev-stat-num" id="nnDevTotal">0</span>
-            <span class="nn-dev-stat-label">Total</span>
-          </div>
-        </div>
-
-        <div class="toolbar">
-          <div class="row">
-            <div class="search" role="search">
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 21l-4.35-4.35"/>
-                <circle cx="11" cy="11" r="7"/>
-              </svg>
-              <input id="deviceSearch" type="text" placeholder="Search by name, IP, MAC…" autocomplete="off" />
-            </div>
-            <button class="btn btn-ghost purple" id="btnExportDevices">Export list</button>
-          </div>
-
-          <div class="row">
-            <div class="chips" id="trustChips" aria-label="Device filters">
-              <button class="chip active" data-filter="all">All</button>
-              <button class="chip" data-filter="online">Online</button>
-              <button class="chip" data-filter="offline">Offline</button>
-              <button class="chip" data-filter="trusted">Trusted</button>
-              <button class="chip" data-filter="unknown">Unknown</button>
-              <button class="chip" data-filter="blocked">Blocked</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="split">
-          <div class="table-wrap" aria-label="Device list">
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Device name</th>
-                    <th>Owner</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>IP</th>
-                    <th>MAC</th>
-                    <th>Vendor</th>
-                    <th>First seen</th>
-                    <th>Last seen</th>
-                    <th>Trust</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="deviceTbody">
-                  <!-- populated by JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <aside class="sidepanel" id="deviceSidepanel" aria-label="Device details panel">
-            <div class="side-head">
-              <div>
-                <div class="side-title" id="spTitle">Select a device</div>
-                <div class="side-sub" id="spSub">Pick a row to view details.</div>
-              </div>
-              <div class="pill" id="spStatus">—</div>
-            </div>
-
-            <div class="row" style="margin-bottom: 10px;">
-              <button class="btn btn-ghost" id="spPause">Set status: Paused</button>
-              <button class="btn btn-danger" id="spBlock">Set status: Blocked</button>
-              <button class="btn btn-ghost purple" id="spTrust">Mark as trusted</button>
-              <button class="btn btn-ghost" id="spPortScan">Run port scan</button>
-            </div>
-
-            <div class="tabs2" role="tablist" aria-label="Device details sections">
-              <button class="tab2 active" data-sp-tab="summary">Summary</button>
-              <button class="tab2" data-sp-tab="network">Network info</button>
-              <button class="tab2" data-sp-tab="activity">Activity</button>
-              <button class="tab2" data-sp-tab="notes">Notes & labels</button>
-            </div>
-
-            <div id="spSectionSummary">
-              <div class="kv" id="spSummaryKv"></div>
-            </div>
-            <div id="spSectionNetwork" style="display:none;">
-              <div class="kv" id="spNetworkKv"></div>
-            </div>
-            <div id="spSectionActivity" style="display:none;">
-              <div class="kv" id="spActivityKv"></div>
-            </div>
-            <div id="spSectionNotes" style="display:none;">
-              <div class="notes">
-                <div class="field">
-                  <label for="spNote">Add a note…</label>
-                  <textarea id="spNote" placeholder="Example: Guest device, allow 2 hours."></textarea>
-                </div>
-                <div class="field">
-                  <label for="spRoom">Room</label>
-                  <select id="spRoom">
-                    <option value="">None</option>
-                    <option>Office</option>
-                    <option>Living Room</option>
-                    <option>Bedroom</option>
-                    <option>Kitchen</option>
-                    <option>Garage</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="spOwner">Owner</label>
-                  <select id="spOwner">
-                    <option value="">None</option>
-                    <option>Me</option>
-                    <option>Guest</option>
-                    <option>Child</option>
-                    <option>Work</option>
-                  </select>
-                </div>
-                <button class="btn btn-ghost purple" id="spSaveNotes">Save</button>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <div class="muted" style="margin-top: 10px;">
-          Tip: double‑click a device row to open the detailed view.
-        </div>
-      </section>
-
-      <!-- NETWORKS (standalone Ninja Nodes 3D map) -->
-      <section class="tab-page media" id="tab-networks" aria-labelledby="tabbtn-networks">
-        <iframe id="nnMapIframe"
-                src="new_assets/ninja_nodes.html"
-                title="Ninja Nodes 3D Network Map"
-                allow="accelerometer; gyroscope"
-                loading="eager"></iframe>
-      </section>
-
-
-
-      <!-- TOOLS -->
-      <section class="tab-page" id="tab-tools" aria-labelledby="tabbtn-tools">
-        <h2>Tools</h2>
-
-        <div class="grid grid-2">
-          <div class="card" id="toolPortScan" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Port scan</div>
-              <div class="pill">Preset</div>
-            </div>
-            <div class="muted">Check which ports are open on a device.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="portScan">Choose device</button>
-            </div>
-          </div>
-
-          <div class="card" id="toolSecurity" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Security check</div>
-              <div class="pill warn">Careful</div>
-            </div>
-            <div class="muted">Look for weak security on your network.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="security">Run security check</button>
-            </div>
-          </div>
-
-          <div class="card" id="toolReports" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Reports</div>
-              <div class="pill">Export</div>
-            </div>
-            <div class="muted">Export devices, activity, and scan results.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="reports">Open reports</button>
-            </div>
-          </div>
-
-          <div class="card" id="toolAutomation" role="button" tabindex="0">
-            <div class="card-head">
-              <div class="card-title">Automation / Schedules</div>
-              <div class="pill">Optional</div>
-            </div>
-            <div class="muted">Schedule scans or auto‑block unknown devices.</div>
-            <div class="card-actions">
-              <button class="btn btn-primary" data-open-dialog="schedule">Create schedule</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="muted" style="margin-top: 10px;">
-          Each tool dialog keeps only 2–3 core controls plus an "Advanced options" expander. Because humans love clicking things.
-        </div>
-      </section>
-
-      <section class="tab-page" id="tab-gateway" aria-labelledby="tabbtn-gateway">
-        <h2>Gateway (G5AR)</h2>
-        <div class="card" id="g5arStatusCard">
-          <div class="card-head">
-            <div class="card-title">Connection</div>
-            <div class="pill" id="g5arReachability">Unknown</div>
-          </div>
-          <div class="muted" id="g5arError">Sign in to load gateway controls.</div>
-          <div class="card-actions" style="margin-top:10px;">
-            <input id="g5arUser" class="input" type="text" value="admin" aria-label="Gateway username" style="max-width:160px;" />
-            <input id="g5arPassword" class="input" type="password" placeholder="Gateway password" aria-label="Gateway password" style="max-width:200px;" />
-            <label><input id="g5arRemember" type="checkbox" /> Remember</label>
-            <button class="btn btn-primary" id="g5arLoginBtn">Login</button>
-            <button class="btn btn-ghost" id="g5arRefreshBtn">Refresh</button>
-          </div>
-        </div>
-
-        <div class="card" id="g5arInfoCard">
-          <div class="card-head"><div class="card-title">Gateway Info</div></div>
-          <div class="kv">
-            <div><b>Firmware</b><span id="g5arFirmware">—</span></div>
-            <div><b>UI Version</b><span id="g5arUiVersion">—</span></div>
-            <div><b>Serial</b><span id="g5arSerial">—</span></div>
-            <div><b>Uptime</b><span id="g5arUptime">—</span></div>
-          </div>
-        </div>
-
-        <div class="card" id="g5arCellCard">
-          <div class="card-head"><div class="card-title">Cellular</div></div>
-          <div class="kv">
-            <div><b>RSRP</b><span id="g5arRsrp">—</span></div>
-            <div><b>RSRQ</b><span id="g5arRsrq">—</span></div>
-            <div><b>SINR</b><span id="g5arSinr">—</span></div>
-            <div><b>Band</b><span id="g5arBand">—</span></div>
-          </div>
-        </div>
-
-        <div class="card" id="g5arSimCard">
-          <div class="card-head"><div class="card-title">SIM</div></div>
-          <div class="kv">
-            <div><b>ICCID</b><span id="g5arIccid">—</span></div>
-            <div><b>IMEI</b><span id="g5arImei">—</span></div>
-          </div>
-        </div>
-
-        <div class="card" id="g5arClientsCard">
-          <div class="card-head"><div class="card-title">Clients</div></div>
-          <div class="muted" id="g5arClients">No client data yet.</div>
-        </div>
-
-        <div class="card" id="g5arWifiCard">
-          <div class="card-head"><div class="card-title">Wi-Fi Settings</div></div>
-          <div class="card-actions" style="margin-top:10px;">
-            <input id="g5arSsid24" class="input" type="text" placeholder="2.4GHz SSID" aria-label="2.4GHz SSID" style="max-width:180px;" />
-            <input id="g5arPass24" class="input" type="password" placeholder="2.4GHz Password" aria-label="2.4GHz Password" style="max-width:200px;" />
-            <label><input id="g5arEnabled24" type="checkbox" /> 2.4GHz Enabled</label>
-            <button class="btn btn-primary" id="g5arSaveWifiBtn">Save Wi-Fi</button>
-          </div>
-        </div>
-
-        <div class="card-actions" style="margin-top:12px;">
-          <button class="btn btn-ghost purple" id="g5arRebootBtn">Reboot Gateway</button>
-          <a class="btn btn-primary" id="g5arOpenRouterControl" href="netninja://router-control">Router Control</a>
-        </div>
-      </section>
-
-      <!-- OpenClaw tab page: embed the OpenClaw dashboard in an iframe -->
-      <section id="tab-openclaw" class="tab-page media" aria-labelledby="tabbtn-openclaw" style="padding:0;">
-        <!-- The iframe loads openclaw_dash.html from the same directory.  It fills the available space. -->
-        <iframe src="openclaw_dash.html" title="OpenClaw Dashboard" style="width:100%;height:100%;border:none;"></iframe>
-      </section>
-      <!-- Speedtest tab page -->
-      <section id="tab-speedtest" class="tab-page media" aria-labelledby="tabbtn-speedtest">
-        <iframe src="new_assets/ninja_speedtest.html" title="Network Speedtest"></iframe>
-      </section>
-      <!-- Cameras tab page -->
-      <section id="tab-cameras" class="tab-page media" aria-labelledby="tabbtn-cameras">
-        <!-- Load the camera viewer via iframe -->
-        <iframe src="net_ninja_cam.html" title="Cameras"></iframe>
-      </section>
-    </main>
-
-    <!-- BOTTOM NAV (TABS) -->
-    <nav class="tabbar" aria-label="Primary navigation">
-      <div class="tabbar-inner">
-        <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
-          <div class="ticon" aria-hidden="true">DB</div>
-          <div class="tlabel">Dashboard</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
-          <div class="ticon" aria-hidden="true">DV</div>
-          <div class="tlabel">Devices</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
-          <div class="ticon" aria-hidden="true">NW</div>
-          <div class="tlabel">Networks</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
-          <div class="ticon" aria-hidden="true">TL</div>
-          <div class="tlabel">Tools</div>
-        </button>
-
-        <!-- OpenClaw tab button -->
-        <button class="tabbtn" id="tabbtn-openclaw" data-tab="openclaw">
-          <div class="ticon" aria-hidden="true">OC</div>
-          <div class="tlabel">OpenClaw</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
-          <div class="ticon" aria-hidden="true">GW</div>
-          <div class="tlabel">Gateway</div>
-        </button>
-        <button class="tabbtn" id="tabbtn-speedtest" data-tab="speedtest">
-          <div class="ticon" aria-hidden="true">SP</div>
-          <div class="tlabel">Speedtest</div>
-        </button>
-        <!-- Cameras tab button -->
-        <button class="tabbtn" id="tabbtn-cameras" data-tab="cameras">
-          <div class="ticon" aria-hidden="true">CM</div>
-          <div class="tlabel">Cameras</div>
-        </button>
-      </div>
-    </nav>
-
-    <!-- RECENT ACTIONS / UNDO -->
-    <div class="overlay" id="historyOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Recent actions">
-        <div class="sheet-head">
-          <div class="sheet-title">Recent actions</div>
-          <button class="btn icon-btn" data-close="historyOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body">
-          <div class="muted">Last thing you did shows up here. Undo is available when it makes sense.</div>
-          <div class="divider"></div>
-          <div class="list" id="historyList"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- NOTIFICATIONS -->
-    <div class="overlay" id="notifOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Notifications">
-        <div class="sheet-head">
-          <div class="sheet-title">Notifications</div>
-          <button class="btn icon-btn" data-close="notifOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body">
-          <div class="list" id="notifList"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DEVICE DETAILS (MOBILE SHEET) -->
-    <div class="overlay" id="deviceOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Device details">
-        <div class="sheet-head">
-          <div class="sheet-title" id="devSheetTitle">Device details</div>
-          <button class="btn icon-btn" data-close="deviceOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body" id="devSheetBody"></div>
-      </div>
-    </div>
-
-    <!-- GENERIC TOOL DIALOG -->
-    <div class="overlay" id="toolOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Tool dialog">
-        <div class="sheet-head">
-          <div class="sheet-title" id="toolTitle">Tool</div>
-          <button class="btn icon-btn" data-close="toolOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body" id="toolBody"></div>
-      </div>
-    </div>
-
-    <!-- SETTINGS (simple sheet) -->
-    <div class="overlay" id="settingsOverlay" aria-hidden="true">
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
-        <div class="sheet-head">
-          <div class="sheet-title">Settings</div>
-          <button class="btn icon-btn" data-close="settingsOverlay" title="Close">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="sheet-body">
-          <div style="padding:8px 16px; background:rgba(0,255,255,0.08);
-            border-radius:8px; margin-bottom:12px; font-size:13px; opacity:0.7;">
-            Settings are read-only in this version.
-          </div>
-          <div class="card" style="cursor:default; opacity:0.6;">
-            <div class="card-head">
-              <div class="card-title">General</div>
-              <div class="pill">Theme</div>
-            </div>
-            <div class="kv">
-              <div class="line"><span class="k">App theme</span><span class="v">Neon dark</span></div>
-              <div class="line"><span class="k">Language</span><span class="v">English</span></div>
-            </div>
-          </div>
-
-          <div style="height:12px;"></div>
-
-          <div class="card" style="cursor:default; opacity:0.6;">
-            <div class="card-head">
-              <div class="card-title">Network</div>
-              <div class="pill">Interface</div>
-            </div>
-            <div class="kv">
-              <div class="line"><span class="k">Active interface</span><span class="v">Auto</span></div>
-              <div class="line"><span class="k">Router control</span><span class="v">Off</span></div>
-            </div>
-            <div class="muted" style="margin-top:10px;">
-              Router-control features require explicit permissions and should never be assumed. Humans hate consent until it matters.
-            </div>
-          </div>
-
-          <div style="height:12px;"></div>
-
-          <div class="card" style="cursor:default; opacity:0.6;">
-            <div class="card-head">
-              <div class="card-title">Notifications</div>
-              <div class="pill">Alerts</div>
-            </div>
-            <div class="kv">
-              <div class="line"><span class="k">New device alerts</span><span class="v">On</span></div>
-              <div class="line"><span class="k">Device blocked alerts</span><span class="v">On</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toast -->
-    <div class="toast" id="toast">
-      <div class="t1" id="toastTitle"></div>
-      <div class="t2" id="toastBody"></div>
-      <div class="tact" id="toastActions"></div>
-    </div>
-  </div>
-
-  <script src="js/api-client.js"></script>
-  <script src="js/dashboard.js"></script>
-
-</body>
-</html>
