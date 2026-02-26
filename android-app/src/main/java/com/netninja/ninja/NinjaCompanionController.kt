@@ -23,9 +23,11 @@ class NinjaCompanionController(
     private var running = false
     private var lastThoughtAt = 0L
 
-    private val listener: (NinjaEvent) -> Unit = { event ->
-        if (!running) return@let
-        when (event) {
+    // Use an object listener so we can early-return cleanly when not running.
+    private val listener = object : (NinjaEvent) -> Unit {
+        override fun invoke(event: NinjaEvent) {
+            if (!running) return
+            when (event) {
             is NinjaEvent.Info -> {
                 ninja.pulse()
                 maybeThought(event.message)
@@ -75,6 +77,7 @@ class NinjaCompanionController(
                     "Speed: ${event.downMbps.toInt()}↓ / ${event.upMbps.toInt()}↑  (${event.pingMs}ms)"
                 )
                 scheduleReturnToIdle()
+            }
             }
         }
     }
