@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Stable IDs used for ninja companion views.  Defining them here ensures
+         that runtime‑added views have deterministic view IDs across
+         configuration changes. -->
+    <item name="ninja_companion_bubble" type="id" />
+    <item name="ninja_companion_panel" type="id" />
+    <item name="ninja_companion_thought" type="id" />
+</resources>

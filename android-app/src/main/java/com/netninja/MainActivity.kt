@@ -21,10 +21,16 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
+import android.view.Gravity
+import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.netninja.ninja.NinjaAnimatedImageView
+import com.netninja.ninja.NinjaCompanionController
+import com.netninja.ninja.NinjaThoughtBubbleView
 import com.netninja.routercontrol.RouterControlActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +54,9 @@ class MainActivity : AppCompatActivity() {
   private var bootStartedAtMs: Long = 0L
   private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
   private var scanProgressJob: Job? = null
+
+  /** Controller managing the ninja companion lifecycle and behaviours. */
+  private var ninjaController: NinjaCompanionController? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -170,7 +179,21 @@ class MainActivity : AppCompatActivity() {
     waitForServerAndLoad(web, serverDashboardUrl, assetDashboardUrl)
 
     setContentView(web)
+    // Attach the ninja overlay after setting the content view.
+    attachNinjaCompanion()
     observeScanProgress()
+  }
+
+  override fun onStart() {
+    super.onStart()
+    // Start the ninja animations and event subscriptions
+    ninjaController?.start()
+  }
+
+  override fun onStop() {
+    // Stop the ninja to avoid leaks when the activity is no longer visible
+    ninjaController?.stop()
+    super.onStop()
   }
 
   override fun onResume() {
@@ -190,6 +213,56 @@ class MainActivity : AppCompatActivity() {
     uiScope.cancel()
     super.onDestroy()
   }
+
+  /**
+   * Programmatically attach the ninja companion overlay on top of whatever
+   * content this activity is showing.  The bubble and thought bubble are
+   * positioned relative to the bottom right of the screen.  Calling this
+   * repeatedly will remove the previous overlay.
+   */
+  private fun attachNinjaCompanion() {
+    val root = window.decorView.findViewById<ViewGroup>(android.R.id.content)
+    // Use the first child if present to overlay just on top of our content view
+    val overlay: ViewGroup = (root.getChildAt(0) as? ViewGroup) ?: root
+    // Remove any existing ninja views before adding new ones
+    val existingBubble = overlay.findViewById<NinjaAnimatedImageView>(R.id.ninja_companion_bubble)
+    val existingThought = overlay.findViewById<NinjaThoughtBubbleView>(R.id.ninja_companion_thought)
+    if (existingBubble != null) overlay.removeView(existingBubble)
+    if (existingThought != null) overlay.removeView(existingThought)
+    // Create bubble view
+    val ninja = NinjaAnimatedImageView(this).apply {
+      layoutParams = FrameLayout.LayoutParams(dp(64), dp(64)).apply {
+        gravity = Gravity.END or Gravity.BOTTOM
+        marginEnd = dp(14)
+        bottomMargin = dp(90)
+      }
+      setBackgroundResource(R.drawable.ninja_bubble_bg)
+      setPadding(dp(6), dp(6), dp(6), dp(6))
+      elevation = dp(10).toFloat()
+    }
+    // Create thought bubble view
+    val thought = NinjaThoughtBubbleView(this).apply {
+      layoutParams = FrameLayout.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+      ).apply {
+        gravity = Gravity.END or Gravity.BOTTOM
+        marginEnd = dp(14) + dp(70)
+        bottomMargin = dp(90) + dp(40)
+      }
+      elevation = dp(11).toFloat()
+    }
+    // Example click behaviour: show a simple message when tapped
+    ninja.setOnClickListener {
+      thought.show("I'm watching your packets. Respectfully.")
+    }
+    overlay.addView(thought)
+    overlay.addView(ninja)
+    ninjaController = NinjaCompanionController(ninja, thought)
+  }
+
+  private fun dp(v: Int): Float = v * resources.displayMetrics.density
+  private fun dp(v: Float): Float = v * resources.displayMetrics.density
 
   private fun observeScanProgress() {
     if (scanProgressJob != null) return
