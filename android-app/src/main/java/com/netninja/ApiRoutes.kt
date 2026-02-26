@@ -532,8 +532,8 @@ internal fun Application.installApiRoutes(server: AndroidLocalServer, uiDir: Fil
     }
 
     routing {
-      staticFiles("/ui", uiDir, index = "ninja_mobile_new.html")
-      get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
+      staticFiles("/ui", uiDir, index = "ninja_hud.html")
+      get("/") { call.respondRedirect("/ui/ninja_hud.html") }
 
       // Public probe
       get("/api/v1/system/info") {

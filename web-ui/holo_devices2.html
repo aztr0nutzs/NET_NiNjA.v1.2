@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neural Command Center Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          primary: "#4ef91a",
+          accent: "#bc13fe",
+          warning: "#ffaa00",
+          "background-light": "#f6f8f5",
+          "background-dark": "#0a0c08"
+        },
+        fontFamily: {
+          display: ["Space Grotesk", "sans-serif"],
+          mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+        },
+        borderRadius: {
+          DEFAULT: "0.25rem",
+          lg: "0.5rem",
+          xl: "0.75rem",
+          full: "9999px"
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .glass-panel { background: rgba(10, 12, 8, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(188, 19, 254, 0.2); }
+  .scanline { width: 100%; height: 2px; background: rgba(78, 249, 26, 0.1); position: absolute; top: 0; left: 0; box-shadow: 0 0 15px rgba(78, 249, 26, 0.5); pointer-events: none; }
+  .grid-bg { background-image: linear-gradient(to right, rgba(78, 249, 26, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(78, 249, 26, 0.05) 1px, transparent 1px); background-size: 30px 30px; }
+  .glow-green { box-shadow: 0 0 25px rgba(78, 249, 26, 0.4); }
+  .glow-purple { box-shadow: 0 0 20px rgba(188, 19, 254, 0.3); }
+  .node-link { stroke: #ffaa00; stroke-dasharray: 5 5; stroke-width: 1.5; opacity: 0.55; }
+  #nodeLayer .node { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  #nodeLayer .node-chip { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  #nodeLayer .node-label { font-size: 9px; color: #94a3b8; margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+  #nodeLayer .node.selected .node-chip { outline: 2px solid #4ef91a; box-shadow: 0 0 18px rgba(78, 249, 26, 0.45); }
+  #activityFeed { scrollbar-width: thin; }
+  body { min-height: max(884px, 100dvh); }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen overflow-hidden select-none">
+<div class="fixed inset-0 grid-bg z-0 pointer-events-none"></div>
+<div class="fixed inset-0 bg-gradient-to-b from-transparent via-background-dark/20 to-background-dark z-0 pointer-events-none"></div>
+<div class="scanline z-50 opacity-30"></div>
+<div class="relative z-10 flex flex-col h-screen">
+  <header class="flex items-center justify-between px-6 pt-12 pb-4 glass-panel border-b-0">
+    <div class="flex items-center gap-3">
+      <div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/50 glow-green">
+        <span class="material-symbols-outlined text-primary text-2xl">hub</span>
+      </div>
+      <div>
+        <h1 class="text-xs font-bold tracking-[0.2em] text-primary uppercase">Neural OS</h1>
+        <p class="text-[10px] text-slate-400 font-mono tracking-tight" id="mapBuild">LIVE MAP LINKED</p>
+      </div>
+    </div>
+    <div class="flex gap-4">
+      <button class="text-primary/70 hover:text-primary transition-colors" id="btnMapRefresh" title="Refresh live data">
+        <span class="material-symbols-outlined">notifications_active</span>
+      </button>
+      <button class="text-primary/70 hover:text-primary transition-colors" id="btnMapSettings" title="Open settings">
+        <span class="material-symbols-outlined">settings_input_component</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 relative overflow-hidden flex">
+    <aside class="w-20 glass-panel border-y-0 border-l-0 h-full flex flex-col items-center py-8 gap-12 z-20">
+      <div class="flex flex-col items-center gap-2">
+        <p class="text-[8px] uppercase tracking-widest text-accent font-bold [writing-mode:vertical-lr] rotate-180">Scan</p>
+        <div class="h-32 w-2 bg-slate-800 rounded-full relative overflow-hidden border border-accent/30">
+          <div class="absolute bottom-0 w-full bg-accent glow-purple" id="scanFillBar" style="height:0%"></div>
+        </div>
+        <span class="text-[10px] font-mono text-accent" id="scanPctText">0%</span>
+      </div>
+
+      <div class="flex flex-col items-center gap-2">
+        <p class="text-[8px] uppercase tracking-widest text-primary font-bold [writing-mode:vertical-lr] rotate-180">Memory</p>
+        <div class="h-32 w-2 bg-slate-800 rounded-full relative overflow-hidden border border-primary/30">
+          <div class="absolute bottom-0 w-full bg-primary glow-green" id="memoryFillBar" style="height:0%"></div>
+        </div>
+        <span class="text-[10px] font-mono text-primary" id="memoryPctText">0%</span>
+      </div>
+
+      <div class="mt-auto flex flex-col items-center gap-6">
+        <button class="size-10 rounded-full bg-accent/20 border border-accent/50 text-accent flex items-center justify-center" id="btnRunSecurity" title="Run security action">
+          <span class="material-symbols-outlined text-sm">bolt</span>
+        </button>
+        <button class="size-10 rounded-full bg-primary/20 border border-primary/50 text-primary flex items-center justify-center" id="btnRunScan" title="Run network scan">
+          <span class="material-symbols-outlined text-sm">refresh</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="flex-1 relative flex items-center justify-center" id="mapCanvasArea">
+      <div class="relative z-10">
+        <div class="size-24 rounded-full border-2 border-primary glow-green bg-background-dark flex items-center justify-center shadow-[0_0_50px_rgba(78,249,26,0.3)]">
+          <div class="size-16 rounded-full border border-primary/30 flex items-center justify-center animate-pulse">
+            <span class="material-symbols-outlined text-4xl text-primary font-bold">cell_tower</span>
+          </div>
+        </div>
+        <div class="absolute top-28 left-1/2 -translate-x-1/2 whitespace-nowrap bg-background-dark/80 px-2 py-1 rounded border border-primary/40">
+          <p class="text-[10px] text-primary font-mono uppercase tracking-tighter" id="coreLabel">LOADING_NETWORK</p>
+        </div>
+      </div>
+
+      <svg class="absolute inset-0 size-full pointer-events-none opacity-50" id="linkLayer"></svg>
+      <div class="absolute inset-0 z-10" id="nodeLayer"></div>
+
+      <div class="absolute top-20 left-40 size-1 bg-primary rounded-full blur-[1px]"></div>
+      <div class="absolute bottom-40 right-20 size-1 bg-accent rounded-full blur-[1px]"></div>
+      <div class="absolute top-60 right-60 size-1 bg-warning rounded-full blur-[1px]"></div>
+    </div>
+  </main>
+
+  <footer class="glass-panel border-x-0 border-b-0 h-40 flex flex-col overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/5">
+      <div class="flex items-center gap-2">
+        <div class="size-2 bg-primary rounded-full"></div>
+        <span class="text-[10px] uppercase font-bold tracking-widest text-primary">Live Neural Feed</span>
+      </div>
+      <span class="text-[10px] font-mono text-slate-500" id="sysUptime">SYS_UPTIME: --</span>
+    </div>
+    <div class="flex-1 p-4 font-mono text-[10px] space-y-1 overflow-auto" id="activityFeed"></div>
+  </footer>
+
+  <nav class="flex gap-2 border-t border-white/5 bg-background-dark px-4 pb-8 pt-2 z-30">
+    <button class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" id="navNodes" type="button">
+      <div class="flex h-8 items-center justify-center"><span class="material-symbols-outlined">network_node</span></div>
+      <p class="text-[10px] font-medium leading-normal tracking-tighter uppercase">Nodes</p>
+    </button>
+    <button class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 hover:text-primary transition-colors" id="navShield" type="button">
+      <div class="flex h-8 items-center justify-center"><span class="material-symbols-outlined">shield_lock</span></div>
+      <p class="text-[10px] font-medium leading-normal tracking-tighter uppercase">Shield</p>
+    </button>
+    <button class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 hover:text-primary transition-colors" id="navTerminal" type="button">
+      <div class="flex h-8 items-center justify-center"><span class="material-symbols-outlined">terminal</span></div>
+      <p class="text-[10px] font-medium leading-normal tracking-tighter uppercase">Terminal</p>
+    </button>
+    <button class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 hover:text-primary transition-colors" id="navMetrics" type="button">
+      <div class="flex h-8 items-center justify-center"><span class="material-symbols-outlined">analytics</span></div>
+      <p class="text-[10px] font-medium leading-normal tracking-tighter uppercase">Metrics</p>
+    </button>
+    <button class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 hover:text-primary transition-colors" id="navConfigs" type="button">
+      <div class="flex h-8 items-center justify-center"><span class="material-symbols-outlined">settings</span></div>
+      <p class="text-[10px] font-medium leading-normal tracking-tighter uppercase">Configs</p>
+    </button>
+  </nav>
+</div>
+
+<div class="fixed inset-0 z-[-1] opacity-20 filter grayscale contrast-150 brightness-50">
+  <img alt="Neural map background" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcEd_y7j_Xsm9W__pkgcUIT8F8IC5Lw_eGVbdj9RlXYHkXlEy6QbHzIAqhiVaHeNki-tCaUEmkCISqSBxYEsus6Yo9OoZMh_07ZSnVhdd5RV3KKo0-NGWqI1oxOXvjJ7tM4hfVW-ns8x_EoqHfAWofDRtykoQNXW0ZRWlR-XrcfdLKeCQC0yx9bnClfcPcHC9Eka-01kijAvIoiUbEMpfTrtHG9mSuqeFTqjd4ekRP46QeNzctNB2Ba5d8SYcdynzMYO55rouEidaY"/>
+</div>
+
+<script src="js/api-client.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  const api = window.NetNinjaApi;
+  const state = {
+    devices: [],
+    selectedId: null,
+    network: null,
+    metrics: null,
+    progress: null,
+    logs: []
+  };
+
+  const typeToIcon = {
+    router: "router",
+    gateway: "router",
+    pc: "desktop_windows",
+    laptop: "laptop_mac",
+    phone: "smartphone",
+    tablet: "tablet_mac",
+    tv: "tv",
+    iot: "sensors",
+    printer: "print",
+    camera: "videocam",
+    nas: "dns",
+    server: "storage"
+  };
+
+  function inferType(d) {
+    const raw = String(d.type || "").toLowerCase();
+    if (raw) return raw;
+    const os = String(d.os || "").toLowerCase();
+    const host = String(d.hostname || d.name || "").toLowerCase();
+    if (os.includes("android") || os.includes("ios") || host.includes("iphone")) return "phone";
+    if (os.includes("windows") || os.includes("linux") || os.includes("mac")) return "pc";
+    if (host.includes("tv")) return "tv";
+    if (host.includes("printer")) return "printer";
+    if (host.includes("router") || host.includes("gateway")) return "router";
+    return "iot";
+  }
+
+  function normalizeDevice(raw, i) {
+    const d = raw && typeof raw === "object" ? raw : {};
+    const id = String(d.id || d.mac || d.ip || `device-${i + 1}`);
+    const trust = String(d.trust || "").toLowerCase();
+    const status = String(d.status || "").toLowerCase();
+    const online = typeof d.online === "boolean" ? d.online : status === "online";
+    return {
+      id,
+      name: String(d.name || d.hostname || d.ip || id),
+      ip: String(d.ip || "--"),
+      mac: String(d.mac || "--"),
+      vendor: String(d.vendor || "Unknown"),
+      type: inferType(d),
+      trust: trust === "trusted" ? "Trusted" : (trust === "blocked" ? "Blocked" : "Unknown"),
+      online
+    };
+  }
+
+  function addLog(msg, tone) {
+    const t = new Date();
+    const ts = `[${t.toLocaleTimeString()}]`;
+    const color = tone === "warn" ? "text-warning/90" : tone === "bad" ? "text-red-400" : tone === "good" ? "text-green-400" : "text-primary/90";
+    state.logs.unshift({ ts, msg, color });
+    state.logs = state.logs.slice(0, 20);
+    renderLogs();
+  }
+
+  function renderLogs() {
+    const feed = document.getElementById("activityFeed");
+    feed.innerHTML = state.logs.map((e) => `<p class="${e.color}"><span class="text-slate-600">${e.ts}</span> ${escapeHtml(e.msg)}</p>`).join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>\"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  }
+
+  function setBar(id, valuePct) {
+    const safe = Math.max(0, Math.min(100, Number(valuePct) || 0));
+    const el = document.getElementById(id);
+    if (el) el.style.height = `${safe}%`;
+    return safe;
+  }
+
+  function formatUptime(ms) {
+    if (!Number.isFinite(ms) || ms <= 0) return "--";
+    const sec = Math.floor(ms / 1000);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
+  function renderNodes() {
+    const layer = document.getElementById("nodeLayer");
+    const links = document.getElementById("linkLayer");
+    const area = document.getElementById("mapCanvasArea");
+    if (!layer || !links || !area) return;
+
+    const w = area.clientWidth;
+    const h = area.clientHeight;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    const items = state.devices.slice(0, 24);
+    const centerIdx = items.findIndex((d) => d.type === "router" || d.type === "gateway");
+    const center = centerIdx >= 0 ? items[centerIdx] : null;
+    const others = center ? items.filter((_, i) => i !== centerIdx) : items;
+
+    layer.innerHTML = "";
+    links.innerHTML = "";
+
+    const positions = [];
+    others.forEach((d, i) => {
+      const r = Math.min(w, h) * (0.28 + ((i % 3) * 0.1));
+      const angle = (i / Math.max(others.length, 1)) * Math.PI * 2 - Math.PI / 2;
+      positions.push({ d, x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
+    });
+
+    positions.forEach((p) => {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("class", "node-link");
+      line.setAttribute("x1", `${cx}`);
+      line.setAttribute("y1", `${cy}`);
+      line.setAttribute("x2", `${p.x}`);
+      line.setAttribute("y2", `${p.y}`);
+      links.appendChild(line);
+    });
+
+    positions.forEach((p) => {
+      const isThreat = p.d.trust !== "Trusted";
+      const node = document.createElement("button");
+      node.type = "button";
+      node.className = `node ${state.selectedId === p.d.id ? "selected" : ""}`;
+      node.style.left = `${p.x}px`;
+      node.style.top = `${p.y}px`;
+      node.title = `${p.d.name} (${p.d.ip})`;
+
+      const chip = document.createElement("div");
+      chip.className = `node-chip glass-panel ${isThreat ? "text-warning border-warning/50" : "text-primary glow-green"}`;
+      const icon = document.createElement("span");
+      icon.className = "material-symbols-outlined";
+      icon.textContent = typeToIcon[p.d.type] || "devices";
+      chip.appendChild(icon);
+
+      const label = document.createElement("p");
+      label.className = "node-label";
+      label.textContent = p.d.ip;
+
+      node.appendChild(chip);
+      node.appendChild(label);
+      node.addEventListener("click", () => {
+        state.selectedId = state.selectedId === p.d.id ? null : p.d.id;
+        renderNodes();
+        addLog(`Selected node ${p.d.name} (${p.d.ip})`, "good");
+      });
+      layer.appendChild(node);
+    });
+
+    const core = center || state.devices[0];
+    const coreText = core ? `${core.name}` : (state.network?.name || "NO_NETWORK");
+    const coreLabel = document.getElementById("coreLabel");
+    if (coreLabel) coreLabel.textContent = coreText.toUpperCase().replace(/\s+/g, "_");
+  }
+
+  async function refreshMapData() {
+    const [netRes, devRes, progRes, metRes] = await Promise.allSettled([
+      api.fetchJson("/api/v1/network/info", { cache: "no-store", timeoutMs: 5000 }),
+      api.fetchJson("/api/v1/discovery/results", { cache: "no-store", timeoutMs: 7000 }),
+      api.fetchJson("/api/v1/discovery/progress", { cache: "no-store", timeoutMs: 5000 }),
+      api.fetchJson("/api/v1/metrics", { cache: "no-store", timeoutMs: 5000 })
+    ]);
+
+    if (netRes.status === "fulfilled") {
+      state.network = netRes.value;
+      const build = document.getElementById("mapBuild");
+      if (build) {
+        const cidr = state.network?.cidr || "--";
+        const ip = state.network?.ip || "--";
+        build.textContent = `${ip} | ${cidr}`;
+      }
+    }
+
+    if (devRes.status === "fulfilled") {
+      const list = Array.isArray(devRes.value) ? devRes.value : (Array.isArray(devRes.value?.devices) ? devRes.value.devices : []);
+      state.devices = list.map(normalizeDevice);
+      renderNodes();
+      const online = state.devices.filter((d) => d.online).length;
+      addLog(`Device sync complete (${online}/${state.devices.length} online)`, "good");
+    }
+
+    if (progRes.status === "fulfilled") {
+      state.progress = progRes.value || {};
+      const pct = setBar("scanFillBar", Number(state.progress.progress || 0));
+      const pctText = document.getElementById("scanPctText");
+      if (pctText) pctText.textContent = `${Math.round(pct)}%`;
+    }
+
+    if (metRes.status === "fulfilled") {
+      state.metrics = metRes.value || {};
+      const memTotal = Number(state.metrics.memTotal || 0);
+      const memUsed = Number(state.metrics.memUsed || 0);
+      const memPct = memTotal > 0 ? (memUsed / memTotal) * 100 : 0;
+      const memSafe = setBar("memoryFillBar", memPct);
+      const memText = document.getElementById("memoryPctText");
+      if (memText) memText.textContent = `${Math.round(memSafe)}%`;
+      const up = document.getElementById("sysUptime");
+      if (up) up.textContent = `SYS_UPTIME: ${formatUptime(Number(state.metrics.uptimeMs || 0))}`;
+    }
+  }
+
+  async function runScan() {
+    addLog("Starting live scan", "warn");
+    await api.fetchJson("/api/v1/discovery/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "my" }),
+      timeoutMs: 12000
+    });
+    addLog("Scan request submitted", "good");
+    setTimeout(() => refreshMapData().catch(() => {}), 1200);
+  }
+
+  async function runSecurityAction() {
+    const selected = state.devices.find((d) => d.id === state.selectedId);
+    const fallbackIp = selected?.ip || state.network?.gateway || state.network?.ip;
+    if (!fallbackIp || fallbackIp === "--") {
+      addLog("Security action skipped: no target IP", "bad");
+      return;
+    }
+    const res = await api.fetchJson("/api/v1/actions/security", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ip: fallbackIp }),
+      timeoutMs: 8000
+    });
+    const issues = Array.isArray(res?.issues) ? res.issues.length : 0;
+    addLog(`Security check finished for ${fallbackIp} (${issues} findings)`, issues > 0 ? "warn" : "good");
+  }
+
+  function openParentSettings() {
+    try {
+      const parentBtn = window.parent?.document?.getElementById("settingsBtn");
+      if (parentBtn) {
+        parentBtn.click();
+        addLog("Opened parent settings", "good");
+        return;
+      }
+    } catch (_) {}
+    addLog("Settings handoff unavailable", "warn");
+  }
+
+  function wireUi() {
+    document.getElementById("btnMapRefresh")?.addEventListener("click", () => refreshMapData().catch(() => addLog("Refresh failed", "bad")));
+    document.getElementById("btnMapSettings")?.addEventListener("click", openParentSettings);
+    document.getElementById("btnRunScan")?.addEventListener("click", () => runScan().catch(() => addLog("Scan failed", "bad")));
+    document.getElementById("btnRunSecurity")?.addEventListener("click", () => runSecurityAction().catch(() => addLog("Security action failed", "bad")));
+
+    document.getElementById("navNodes")?.addEventListener("click", () => addLog("Nodes view active", "good"));
+    document.getElementById("navShield")?.addEventListener("click", () => runSecurityAction().catch(() => addLog("Security action failed", "bad")));
+    document.getElementById("navTerminal")?.addEventListener("click", async () => {
+      try {
+        const st = await api.fetchJson("/api/v1/system/state", { cache: "no-store", timeoutMs: 5000 });
+        const msg = st?.scanProgress?.phase ? `Phase ${st.scanProgress.phase}` : "State fetched";
+        addLog(`Terminal feed: ${msg}`, "good");
+      } catch (_) {
+        addLog("Terminal feed unavailable", "warn");
+      }
+    });
+    document.getElementById("navMetrics")?.addEventListener("click", () => refreshMapData().catch(() => addLog("Metrics refresh failed", "bad")));
+    document.getElementById("navConfigs")?.addEventListener("click", openParentSettings);
+  }
+
+  window.nnUpdateDiscoveryMap = function nnUpdateDiscoveryMap(deviceList) {
+    const safeList = Array.isArray(deviceList) ? deviceList : [];
+    state.devices = safeList.map(normalizeDevice);
+    renderNodes();
+    addLog(`Parent map sync (${state.devices.length} devices)`, "good");
+  };
+
+  async function boot() {
+    wireUi();
+    addLog("Map UI online", "good");
+    await refreshMapData().catch(() => addLog("Initial backend sync failed", "bad"));
+    setInterval(() => refreshMapData().catch(() => {}), 12000);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
