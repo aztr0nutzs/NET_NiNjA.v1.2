@@ -1,570 +1,1797 @@
-﻿<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>NET NiNjA</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&amp;family=Share+Tech+Mono&amp;family=Rajdhani:wght@300;500;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<style type="text/tailwindcss">
-    @layer utilities {
-      .font-orbitron { font-family: 'Orbitron', sans-serif; }
-      .font-mono-tech { font-family: 'Share Tech Mono', monospace; }
-      .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
-      .text-toxic-green { color: var(--toxic-green); }
-      .text-cyber-purple { color: var(--cyber-purple); }
-      .bg-deep-onyx { background-color: var(--deep-onyx); }
-      .glass-shard {
-        background: rgba(13, 17, 23, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(57, 255, 20, 0.2);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(57, 255, 20, 0.05);
-        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-      }
-      .glass-shard-accent {
-        background: rgba(20, 13, 23, 0.75);
-        border: 1px solid rgba(188, 19, 254, 0.3);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(188, 19, 254, 0.05);
-      }
-      .neon-glow-text {
-        text-shadow: 0 0 5px var(--toxic-green), 0 0 10px var(--toxic-green);
-      }
-      .neon-glow-border {
-        box-shadow: 0 0 5px var(--toxic-green), inset 0 0 5px var(--toxic-green);
-      }
-      .scan-core-ring {
-        background: conic-gradient(from 0deg, transparent 0%, var(--toxic-green) 50%, transparent 100%);
-        border-radius: 50%;
-        mask-image: radial-gradient(transparent 60%, black 61%);
-        -webkit-mask-image: radial-gradient(transparent 60%, black 61%);
-      }
-    }
-    :root {
-      --toxic-green: #39ff14;
-      --cyber-purple: #bc13fe;
-      --deep-onyx: #050505;
-      --panel-bg: #0d1117;
-    }
-    body {
-      background-color: var(--deep-onyx);
-      background-image: 
-        linear-gradient(rgba(57, 255, 20, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(57, 255, 20, 0.03) 1px, transparent 1px);
-      background-size: 20px 20px;
-      color: #e0e0e0;
-      font-family: 'Rajdhani', sans-serif;
-    }::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: var(--deep-onyx); }
-    ::-webkit-scrollbar-thumb { background: var(--cyber-purple); border-radius: 2px; }
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Network Control</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+
+:root{
+  --void:#03060a;
+  --void2:#020306;
+  --panel: rgba(10,14,20,.58);
+  --panel2: rgba(4,6,10,.64);
+  --stroke: rgba(255,255,255,.08);
+
+  --cyan:#00d4ff;
+  --violet:#a855f7;
+  --green:#00ff6a;
+  --pink:#ff3bd4;
+  --warn:#ffb020;
+
+  --text:#e9f1f7;
+  --muted:rgba(233,241,247,.66);
+
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --shadow: 0 16px 60px rgba(0,0,0,.65);
+  --glowC: 0 0 22px rgba(0,212,255,.18);
+  --glowV: 0 0 24px rgba(168,85,247,.14);
+  --glowP: 0 0 24px rgba(255,59,212,.14);
+  --glowG: 0 0 24px rgba(0,255,106,.14);
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  color: var(--text);
+  font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: radial-gradient(circle at 30% 15%, rgba(0,212,255,.10), transparent 55%),
+              radial-gradient(circle at 80% 60%, rgba(168,85,247,.10), transparent 58%),
+              linear-gradient(to bottom, var(--void), var(--void2));
+  overflow-x:hidden;
+}
+
+/* ===== FX (NO BLEND MODE FLASHBANG) ===== */
+.fx{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+.fx-grid{
+  opacity:.08;
+  background-image:
+    linear-gradient(rgba(0,212,255,.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,.10) 1px, transparent 1px);
+  background-size: 46px 46px;
+  transform: perspective(900px) rotateX(58deg) translateY(22%);
+  filter: blur(.2px);
+}
+.fx-scan{
+  opacity:.10;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.00),
+    rgba(255,255,255,0.00) 2px,
+    rgba(255,255,255,0.06) 2px,
+    rgba(255,255,255,0.06) 3px
+  );
+  animation: scan 6s linear infinite;
+}
+@keyframes scan{ 0%{transform:translateY(-2%);} 100%{transform:translateY(2%);} }
+
+.fx-vhs{
+  opacity:.12;
+  background:
+    linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03));
+  background-size: 4px 100%;
+}
+.fx-node{
+  position:absolute;
+  width:10px; height:10px; border-radius:999px;
+  background: radial-gradient(circle, rgba(0,212,255,.30) 0%, transparent 70%);
+  filter: blur(2px);
+  opacity:.28;
+  animation: drift 9s ease-in-out infinite;
+}
+.fx-node.n1{ top:18%; left:14%; animation-duration:7s; }
+.fx-node.n2{ top:46%; right:10%; width:7px; height:7px; opacity:.45; animation-duration:10s; }
+.fx-node.n3{ bottom:30%; left:10%; width:12px; height:12px; opacity:.22; animation-duration:12s; }
+.fx-node.n4{ top:74%; right:28%; width:7px; height:7px; opacity:.35; animation-duration:8s; }
+@keyframes drift{
+  0%{ transform:translate3d(0,0,0); opacity:.22; }
+  50%{ transform:translate3d(12px,-10px,0); opacity:.50; }
+  100%{ transform:translate3d(0,0,0); opacity:.22; }
+}
+
+.chroma{
+  text-shadow: 1.2px 0 0 rgba(255,0,0,0.32), -1.2px 0 0 rgba(0,255,255,0.32);
+}
+
+/* ===== Layout shell (keep existing chrome but restyle) ===== */
+.app{ position:relative; z-index:10; min-height:100dvh; display:flex; flex-direction:column; }
+main{ padding: 14px 14px 96px; }
+@media (min-width: 720px){
+  main{ padding: 18px 18px 96px; max-width: 1200px; margin: 0 auto; }
+}
+
+/* Topbar (existing markup) */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  padding: 10px 10px 0;
+  background: linear-gradient(to bottom, rgba(2,3,6,.92), rgba(2,3,6,.55), transparent);
+  backdrop-filter: blur(10px);
+}
+.topbar-inner{
+  position:relative;
+  border-radius: 18px;
+  overflow:hidden;
+  border: 1px solid var(--stroke);
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  box-shadow: var(--shadow);
+}
+.header-media img{
+  width:100%;
+  height:100px;
+  display:block;
+  object-fit:cover;
+  filter: saturate(1.15) contrast(1.20) brightness(.62);
+}
+.header-overlay{
+  position:absolute; inset:0;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(0,212,255,.16), transparent 60%),
+    radial-gradient(circle at 80% 40%, rgba(168,85,247,.12), transparent 62%),
+    linear-gradient(to bottom, rgba(2,3,6,.10), rgba(2,3,6,.86));
+}
+.brand{ position:absolute; left:14px; right:14px; bottom:12px; display:flex; gap:10px; align-items:center; }
+.brand-badge{
+  width:46px; height:46px; border-radius: 16px; overflow:hidden;
+  border: 1px solid rgba(0,212,255,.28);
+  box-shadow: var(--glowC), inset 0 0 18px rgba(0,212,255,.10);
+  background: rgba(0,0,0,.35);
+}
+.brand-title{ font-weight: 900; font-style: italic; letter-spacing:.02em; line-height:1.05; }
+.brand-sub{ font-family: var(--mono); font-size: 11px; opacity:.78; }
+
+.topbar-actions{ position:absolute; top:10px; right:10px; display:flex; gap:8px; }
+.btn.icon-btn, .icon-btn{
+  width:42px; height:42px; padding:0;
+  display:grid; place-items:center;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(10,14,20,.45);
+  color: var(--text);
+  cursor:pointer;
+  transition: transform .12s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.icon-btn:active{ transform: scale(.98); }
+.icon-btn:hover{ border-color: rgba(0,212,255,.20); box-shadow: var(--glowC); }
+
+/* Existing nav buttons (tabbar) */
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0;
+  z-index:45;
+  padding: 10px 10px 12px;
+  background: linear-gradient(to top, rgba(2,3,6,.95), rgba(2,3,6,.70), transparent);
+  backdrop-filter: blur(10px);
+}
+.tabbar-inner{
+  display:flex; gap:8px; justify-content:space-between;
+  border-radius: 18px; padding: 10px;
+  border: 1px solid var(--stroke);
+  background: rgba(10,14,20,.45);
+  box-shadow: var(--shadow);
+}
+.tabbtn{
+  flex:1;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  background: rgba(0,0,0,.28);
+  color: rgba(233,241,247,.76);
+  padding: 10px 6px;
+  cursor:pointer;
+  font-weight: 900;
+  font-style: italic;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .12s ease;
+}
+.tabbtn:active{ transform: scale(.98); }
+.tabbtn.active{
+  border-color: rgba(0,212,255,.26);
+  background: rgba(0,212,255,.10);
+  box-shadow: var(--glowC);
+  color: rgba(233,241,247,.96);
+}
+.ticon{ font-family: var(--mono); font-weight:700; letter-spacing:.14em; font-size:12px; }
+.tlabel{ margin-top:4px; font-size:11px; }
+
+/* ===== DASHBOARD (new layout) ===== */
+.dash-hero{ margin-top: 8px; }
+.hero-frame{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  box-shadow: var(--shadow), var(--glowC), var(--glowV);
+  overflow:hidden;
+  padding: 14px;
+  position:relative;
+}
+.hero-frame::before{
+  content:"";
+  position:absolute; inset:0;
+  opacity:.12;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.00),
+    rgba(255,255,255,0.00) 2px,
+    rgba(0,212,255,0.10) 2px,
+    rgba(0,212,255,0.10) 3px
+  );
+  pointer-events:none;
+}
+.hero-top{ display:flex; align-items:flex-end; justify-content:space-between; gap: 12px; position:relative; z-index:2; }
+.hero-kicker{ font-family: var(--mono); font-size: 11px; letter-spacing:.20em; opacity:.75; }
+.hero-title{ font-size: 22px; font-weight: 950; font-style: italic; letter-spacing:.02em; }
+.hero-sub{ font-family: var(--mono); font-size: 12px; opacity:.78; margin-top:4px; }
+.hero-readout{
+  min-width: 118px;
+  border-radius: 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0,212,255,.18);
+  background: rgba(0,0,0,.28);
+  box-shadow: inset 0 0 18px rgba(0,212,255,.08);
+}
+.readout-label{ font-family: var(--mono); font-size: 10px; letter-spacing:.18em; opacity:.72; }
+.readout-value{ font-size: 42px; font-weight: 950; letter-spacing:-.06em; line-height:1; margin-top:2px; }
+.readout-pill{ margin-top:6px; display:inline-flex; }
+
+.hero-actions{
+  margin-top: 14px;
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  position:relative; z-index:2;
+}
+.hero-pills{
+  margin-top: 14px;
+  display:flex;
+  gap: 10px;
+  flex-wrap:wrap;
+  position:relative; z-index:2;
+}
+.hero-text{ margin-top: 10px; position:relative; z-index:2; }
+.muted{ color: var(--muted); font-family: var(--mono); font-size:12px; line-height:1.35; }
+
+/* HUD grid below hero */
+.dash-grid{
+  margin-top: 12px;
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 900px){
+  .dash-grid{ grid-template-columns: 1.2fr .8fr; }
+  .hud-card--wide{ grid-column: 1 / -1; }
+}
+.hud-card{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  box-shadow: var(--shadow), 0 0 18px rgba(0,212,255,.12);
+  padding: 14px;
+  position:relative;
+  overflow:hidden;
+}
+.hud-card::before{
+  content:"";
+  position:absolute; inset:0;
+  opacity:.10;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.00),
+    rgba(255,255,255,0.00) 2px,
+    rgba(255,59,212,0.08) 2px,
+    rgba(255,59,212,0.08) 3px
+  );
+  pointer-events:none;
+}
+.hud-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; position:relative; z-index:2; }
+.hud-title{ font-weight: 950; font-style: italic; letter-spacing:.06em; text-transform: uppercase; font-size: 12px; opacity:.92; }
+
+.pill{
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.26);
+  box-shadow: inset 0 0 14px rgba(255,255,255,.02);
+}
+.pill--ok{ border-color: rgba(0,255,106,.24); color: rgba(0,255,106,.95); box-shadow: var(--glowG); }
+.pill--warn{ border-color: rgba(255,176,32,.34); color: rgba(255,176,32,.95); }
+.pill--mid{ border-color: rgba(0,212,255,.18); color: rgba(233,241,247,.86); }
+
+.hud-kv{ margin-top: 10px; position:relative; z-index:2; }
+.kv-row{
+  display:flex;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.kv-row:last-child{ border-bottom:0; }
+.k{ font-family: var(--mono); font-size: 10px; letter-spacing:.18em; opacity:.62; }
+.v{ font-family: var(--mono); font-size: 12px; opacity:.92; }
+
+.hud-bar{
+  margin-top: 12px;
+  height: 10px;
+  border-radius: 999px;
+  overflow:hidden;
+  border: 1px solid rgba(0,212,255,.18);
+  background: rgba(0,0,0,.36);
+  box-shadow: inset 0 0 18px rgba(0,212,255,.08);
+  position:relative; z-index:2;
+}
+.hud-bar i{
+  display:block;
+  height:100%;
+  width:0%;
+  background: linear-gradient(90deg, rgba(0,212,255,.22), rgba(0,212,255,.95), rgba(168,85,247,.72));
+  box-shadow: var(--glowC);
+  position:relative;
+}
+.hud-bar i::after{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+  transform: translateX(-60%);
+  animation: sheen 1.25s ease-in-out infinite;
+  opacity:.65;
+}
+@keyframes sheen{ 0%{transform:translateX(-60%);} 100%{transform:translateX(140%);} }
+
+.hud-pulse{ display:flex; gap:6px; margin-top: 10px; position:relative; z-index:2; }
+.hud-pulse span{
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: rgba(0,212,255,.10);
+  border: 1px solid rgba(0,212,255,.18);
+  box-shadow: inset 0 0 12px rgba(0,212,255,.10);
+  animation: beat 1.1s ease-in-out infinite;
+}
+.hud-pulse span:nth-child(2){ animation-delay:.08s; }
+.hud-pulse span:nth-child(3){ animation-delay:.16s; }
+.hud-pulse span:nth-child(4){ animation-delay:.24s; }
+.hud-pulse span:nth-child(5){ animation-delay:.32s; }
+.hud-pulse span:nth-child(6){ animation-delay:.40s; }
+.hud-pulse span:nth-child(7){ animation-delay:.48s; }
+@keyframes beat{
+  0%,100%{ transform: scale(1); background: rgba(0,212,255,.10); }
+  50%{ transform: scale(1.28); background: rgba(0,212,255,.30); }
+}
+
+.hud-actions{ margin-top: 12px; display:flex; gap: 10px; flex-wrap:wrap; position:relative; z-index:2; }
+.hud-actions.stack{ flex-direction:column; }
+.hud-actions .row{ display:flex; gap: 10px; }
+
+/* ===== Cyber buttons (clip-path, italic label, glitch) ===== */
+.cybr-btn{
+  --btn-bg: rgba(0,0,0,.30);
+  --btn-bd: rgba(255,255,255,.10);
+  --btn-glow: var(--glowC);
+  --btn-accent: var(--cyan);
+
+  position:relative;
+  width: 100%;
+  border: 0;
+  padding: 14px 16px;
+  cursor:pointer;
+  color: rgba(4,6,10,.95);
+  background: transparent;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  font-weight: 950;
+  font-style: italic;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+}
+.cybr-btn::before{
+  content:"";
+  position:absolute; inset:0;
+  clip-path: polygon(0 0, 92% 0, 100% 26%, 100% 100%, 8% 100%, 0 74%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--btn-accent) 75%, #ffffff 0%) 0%, color-mix(in srgb, var(--btn-accent) 55%, #ffffff 0%) 70%, rgba(255,255,255,.00) 70%);
+  opacity:.18;
+}
+.cybr-btn::after{
+  content:"";
+  position:absolute; inset:0;
+  clip-path: polygon(0 0, 92% 0, 100% 26%, 100% 100%, 8% 100%, 0 74%);
+  border: 2px solid var(--btn-accent);
+  background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--btn-accent) 22%, transparent);
+}
+.cybr-btn__label{
+  position:relative;
+  display:block;
+  text-align:center;
+  padding-right: 10px;
+  color: rgba(5,7,10,.96);
+  text-shadow: 0 1px 0 rgba(255,255,255,.20);
+}
+.cybr-btn__glitch{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  clip-path: polygon(0 0, 92% 0, 100% 26%, 100% 100%, 8% 100%, 0 74%);
+  opacity:0;
+  transform: translate3d(0,0,0);
+  color: rgba(5,7,10,.96);
+  text-shadow: 2px 0 rgba(255,0,0,.45), -2px 0 rgba(0,255,255,.45);
+  pointer-events:none;
+}
+.cybr-btn:hover .cybr-btn__glitch{ opacity:.85; animation: glitch 900ms steps(2,end) infinite; }
+@keyframes glitch{
+  0%{ transform: translate(0,0); clip-path: inset(10% 0 60% 0); }
+  20%{ transform: translate(-2px,1px); clip-path: inset(30% 0 45% 0); }
+  40%{ transform: translate(2px,-1px); clip-path: inset(55% 0 25% 0); }
+  60%{ transform: translate(-1px,2px); clip-path: inset(20% 0 50% 0); }
+  80%{ transform: translate(2px,1px); clip-path: inset(40% 0 35% 0); }
+  100%{ transform: translate(0,0); clip-path: inset(10% 0 60% 0); }
+}
+
+.cybr-btn:active{ transform: translateY(1px); }
+
+.cybr-btn--sm{ padding: 12px 14px; max-width: 220px; }
+
+.cybr-btn--cyan{ --btn-accent: var(--cyan); }
+.cybr-btn--violet{ --btn-accent: var(--violet); }
+.cybr-btn--pink{ --btn-accent: var(--pink); }
+.cybr-btn--green{ --btn-accent: var(--green); }
+.cybr-btn--gray{ --btn-accent: rgba(233,241,247,.55); }
+
+.nn-scan-banner{
+  display:none;
+  align-items:center;
+  gap:10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,212,255,.20);
+  background: rgba(0,212,255,.08);
+  box-shadow: var(--glowC);
+  margin-top: 10px;
+  position:relative;
+  z-index:2;
+}
+.nn-scan-spinner{
+  width: 16px; height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(0,212,255,.22);
+  border-top-color: rgba(0,212,255,.95);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg);} }
+
+.debug-wrap{ margin-top: 12px; position:relative; z-index:2; }
+.debug-panel{
+  margin-top: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.30);
+  box-shadow: inset 0 0 18px rgba(0,212,255,.08);
+  padding: 10px 12px;
+}
+.debug-panel pre{
+  margin:0;
+  white-space: pre-wrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  opacity:.85;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+}
+
   </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;600;700&display=swap" rel="stylesheet">
+
+
+<style id="devices-holo-css">
+  /* Devices screen: based on holo_devices.html visuals */
+  .dev-screen{
+    position:relative;
+    padding-bottom: 20px;
+  }
+  .dev-screen::before{
+    content:"";
+    position:absolute; inset:0;
+    z-index:0;
+    background:
+      radial-gradient(circle at 50% 45%, rgba(0,255,157,0.06) 0%, transparent 55%),
+      radial-gradient(circle at 70% 65%, rgba(0,243,255,0.05) 0%, transparent 58%),
+      linear-gradient(180deg, rgba(0,0,0,0.92), rgba(0,0,0,0.55)),
+      radial-gradient(circle at 50% 110%, rgba(0,0,0,0.0), rgba(0,0,0,0.95) 68%),
+      linear-gradient(180deg, #020202, #050505);
+    pointer-events:none;
+  }
+  .dev-top, .dev-main{ position:relative; z-index:1; }
+
+  .dev-top{
+    padding: 14px 14px 10px;
+  }
+
+  .dev-topline{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: rgba(0,255,157,.85);
+    opacity:.85;
+    margin-bottom: 10px;
+  }
+  .dev-topline-left, .dev-topline-right{ display:flex; align-items:center; gap:8px; }
+  .dev-dot{
+    width:8px; height:8px; border-radius:999px;
+    background: rgba(0,255,157,.9);
+    box-shadow: 0 0 12px rgba(0,255,157,.55);
+  }
+  .dev-dot.pulse{ animation: devPulse 1.6s ease-in-out infinite; }
+  @keyframes devPulse{ 0%,100%{ transform:scale(1); opacity:.55;} 50%{ transform:scale(1.35); opacity:1;} }
+  .dev-topline-label{ color: rgba(0,255,157,.85); }
+
+  .dev-titlebar{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.10);
+  }
+  .dev-title{
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: .08em;
+    font-size: 22px;
+    text-transform: uppercase;
+    color: transparent;
+    background: linear-gradient(90deg, rgba(0,255,157,1), rgba(255,255,255,0.95), rgba(0,255,157,1));
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 0 8px rgba(0,255,157,.35));
+  }
+  .dev-sub{
+    margin-top:6px;
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-size: 10px;
+    letter-spacing: .30em;
+    text-transform: uppercase;
+    color: rgba(0,243,255,.85);
+    font-weight: 700;
+  }
+  .dev-meter{ text-align:right; min-width: 110px; }
+  .dev-meter-num{
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-weight: 800;
+    color: rgba(0,255,157,.95);
+    font-size: 18px;
+    letter-spacing: .04em;
+  }
+  .dev-meter-unit{
+    font-size: 10px;
+    margin-left:6px;
+    color: rgba(255,255,255,.55);
+    font-weight: 700;
+    vertical-align: top;
+  }
+  .dev-meter-bar{
+    height: 6px;
+    width: 110px;
+    background: rgba(255,255,255,.10);
+    border-radius: 999px;
+    overflow:hidden;
+    margin-top: 6px;
+    box-shadow: inset 0 0 12px rgba(0,0,0,.7);
+  }
+  .dev-meter-bar i{
+    display:block;
+    height:100%;
+    width: 40%;
+    background: rgba(0,255,157,.85);
+    box-shadow: 0 0 12px rgba(0,255,157,.30);
+    animation: devFill 2.6s ease-in-out infinite;
+  }
+  @keyframes devFill{
+    0%,100%{ transform: translateX(-8%); opacity:.75;}
+    50%{ transform: translateX(8%); opacity:1;}
+  }
+
+  .dev-summary{
+    display:flex;
+    gap:10px;
+    margin-top: 10px;
+  }
+  .dev-stat{
+    flex:1;
+    border-radius: 14px;
+    border: 1px solid rgba(0,243,255,.18);
+    background: rgba(10,10,15,.45);
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 18px rgba(0,243,255,.08), 0 0 18px rgba(0,0,0,.45);
+    padding: 10px 10px;
+    text-align:center;
+  }
+  .dev-stat span{
+    display:block;
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing:.06em;
+    color: rgba(0,255,157,.95);
+    font-size: 18px;
+  }
+  .dev-stat small{
+    display:block;
+    margin-top: 4px;
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-size: 9px;
+    letter-spacing:.22em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.55);
+  }
+
+  .dev-controls{ margin-top: 12px; display:grid; gap:10px; }
+  .dev-search{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,243,255,.20);
+    background: rgba(0,0,0,.45);
+    padding: 10px 12px;
+    box-shadow: inset 0 0 18px rgba(0,243,255,.06);
+    backdrop-filter: blur(10px);
+  }
+  .dev-ico{ width:18px; height:18px; color: rgba(0,243,255,.85); }
+  .dev-search input{
+    width:100%;
+    border:0; outline:0;
+    background: transparent;
+    color: rgba(255,255,255,.92);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing:.04em;
+  }
+  .dev-filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .dev-chip{
+    border-radius: 999px;
+    padding: 9px 10px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(10,10,15,.35);
+    color: rgba(255,255,255,.70);
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-size: 9px;
+    letter-spacing:.22em;
+    text-transform: uppercase;
+    cursor:pointer;
+    transition: transform .12s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .dev-chip:active{ transform: scale(.98); }
+  .dev-chip.active{
+    border-color: rgba(0,255,157,.35);
+    background: rgba(0,255,157,.10);
+    color: rgba(255,255,255,.92);
+    box-shadow: 0 0 14px rgba(0,255,157,.14);
+  }
+
+  .dev-main{
+    position:relative;
+    padding: 10px 12px 20px;
+    overflow: visible;
+  }
+
+  .dev-bg-orbit{
+    position:absolute;
+    right: -70px;
+    top: 52%;
+    transform: translateY(-50%) rotate(12deg);
+    z-index:0;
+    opacity:.42;
+    pointer-events:none;
+  }
+  .dev-orbit-outer{
+    width: 240px; height:240px;
+    border-radius: 999px;
+    border: 3px dashed rgba(0,255,157,.22);
+    display:flex; align-items:center; justify-content:center;
+    animation: devSpin 10s linear infinite;
+  }
+  .dev-orbit-inner{
+    width: 180px; height:180px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,243,255,.22);
+  }
+  .dev-orbit-glow{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dev-orbit-glow::before{
+    content:"";
+    width: 120px; height:120px;
+    border-radius: 999px;
+    background: rgba(0,255,157,.05);
+    filter: blur(18px);
+  }
+  @keyframes devSpin{ to{ transform: rotate(360deg);} }
+
+  .iso-container{
+    transform: rotateX(20deg) rotateZ(-10deg) scale(0.98);
+    transform-style: preserve-3d;
+    padding-bottom: 60px;
+  }
+  .dev-stack{
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap: 18px;
+  }
+
+  .dev-empty{
+    border-radius: 18px;
+    border: 1px solid rgba(0,243,255,.20);
+    background: rgba(10,10,15,.45);
+    backdrop-filter: blur(10px);
+    padding: 18px 14px;
+    text-align:center;
+    box-shadow: inset 0 0 18px rgba(0,243,255,.06);
+  }
+  .dev-empty-title{
+    font-family: "Orbitron", system-ui, sans-serif;
+    letter-spacing:.20em;
+    text-transform: uppercase;
+    font-weight: 900;
+    font-size: 12px;
+    color: rgba(0,255,157,.95);
+  }
+  .dev-empty-sub{
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    opacity:.70;
+  }
+
+  .holo-stack-item{
+    transform-style: preserve-3d;
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position:relative;
+  }
+  .holo-stack-item:hover{ transform: translateZ(20px) translateY(-10px); }
+  .holo-glass{
+    position:relative;
+    border-radius: 16px;
+    padding: 16px 14px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,243,255,0.02));
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0,243,255,0.22);
+    border-left: 1px solid rgba(0,243,255,0.42);
+    border-top: 1px solid rgba(0,243,255,0.42);
+    box-shadow: 10px 10px 30px rgba(0,0,0,0.82), inset 0 0 20px rgba(0,243,255,0.06);
+    overflow:hidden;
+  }
+  .holo-glass::after{
+    content:"";
+    position:absolute; inset:0;
+    pointer-events:none;
+    background: radial-gradient(circle at 30% 20%, rgba(0,255,157,.10), transparent 55%);
+    opacity:.55;
+    filter: blur(18px);
+  }
+  .holo-id{
+    position:absolute;
+    top: 8px;
+    right: 10px;
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-size: 9px;
+    letter-spacing:.18em;
+    color: rgba(0,255,157,.75);
+    opacity:.7;
+    z-index:2;
+  }
+
+  .holo-row{ display:flex; gap: 12px; align-items:center; position:relative; z-index:2; transform: translateZ(10px); }
+  .holo-iconbox{
+    width: 48px; height:48px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.40);
+    border-radius: 10px;
+    border: 1px solid rgba(0,255,157,.50);
+    box-shadow: 0 0 10px rgba(0,255,157,.20);
+    position:relative;
+  }
+  .holo-icon{
+    font-family: var(--mono);
+    color: rgba(0,255,157,.95);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing:.08em;
+  }
+  .holo-led{
+    position:absolute;
+    width: 8px; height: 8px;
+    right: -2px; bottom: -2px;
+    background: rgba(0,255,157,.95);
+    box-shadow: 0 0 10px rgba(0,255,157,.45);
+  }
+
+  .holo-meta{ flex:1; min-width:0; transform: translateZ(40px); text-shadow: 0 0 10px rgba(0,255,157,.55); }
+  .holo-name{
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing:.12em;
+    text-transform: uppercase;
+    font-size: 16px;
+    color: rgba(255,255,255,.95);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow: ellipsis;
+  }
+  .holo-name-main{ }
+  .holo-name-sfx{ color: rgba(0,255,157,.95); }
+
+  .holo-subrow{
+    margin-top: 6px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+  }
+  .holo-state{
+    font-family: "Orbitron", system-ui, sans-serif;
+    font-size: 11px;
+    letter-spacing:.14em;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: rgba(0,243,255,.85);
+  }
+  .holo-mini{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(255,255,255,.55);
+    white-space:nowrap;
+  }
+
+  .holo-bars{
+    margin-top: 14px;
+    display:flex;
+    gap: 4px;
+    height: 6px;
+    position:relative;
+    z-index:2;
+    transform: translateZ(5px);
+  }
+  .holo-bars i{
+    flex: 1;
+    background: rgba(0,255,157,.25);
+  }
+  .holo-bars i.on{
+    background: rgba(0,255,157,.90);
+    box-shadow: 0 0 10px rgba(0,255,157,.22);
+  }
+  .holo-bars.orange.on{ background: rgba(255,170,0,.90); box-shadow: 0 0 10px rgba(255,170,0,.22); }
+  .holo-bars.pink.on{ background: rgba(255,0,255,.90); box-shadow: 0 0 10px rgba(255,0,255,.22); }
+
+  .tether-line{
+    position:absolute;
+    height:2px;
+    width: 190px;
+    right: -170px;
+    top: 50%;
+    transform: rotate(-6deg);
+    background: linear-gradient(90deg, rgba(0,255,157,.85), transparent);
+    box-shadow: 0 0 10px rgba(0,255,157,.35);
+    opacity:.55;
+    z-index:-1;
+  }
+
+  .legacy-devices{ display:none; }
+
+  /* Make sure this tab doesn't inherit old table styles in case they exist */
+  #tab-devices table, #tab-devices .table-wrap, #tab-devices .sidepanel{ display:none !important; }
+</style>
+
+</head>
+<body>
+  <div class="fx fx-grid" aria-hidden="true"></div>
+  <div class="fx fx-scan" aria-hidden="true"></div>
+  <div class="fx fx-vhs" aria-hidden="true"></div>
+  <div class="fx fx-node n1" aria-hidden="true"></div>
+  <div class="fx fx-node n2" aria-hidden="true"></div>
+  <div class="fx fx-node n3" aria-hidden="true"></div>
+  <div class="fx fx-node n4" aria-hidden="true"></div>
+
+  <div class="app" id="app">
+    <!-- GLOBAL CHROME -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="header-media" aria-hidden="true">
+          <img id="headerImage" src="new_assets/ninja_new_header.png" alt="" />
+        </div>
+        <div class="header-overlay" aria-hidden="true"></div>
+
+        <div class="brand">
+          <div class="brand-badge" id="brandBadge">
+            <img src="new_assets/ninja_icon.png" alt="NET_NiNjA logo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />
+          </div>
+          <div style="min-width:0;">
+            <div class="brand-title">My Network Control</div>
+            <div class="brand-sub" id="brandSub">Home Wi-Fi (SSID) - secure</div>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn icon-btn" id="historyBtn" title="Undo / Recent actions">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7"/>
+              <path d="M3 4v6h6"/>
+              <path d="M12 7v5l3 3"/>
+            </svg>
+            <span class="sr-only">Recent actions</span>
+          </button>
+
+          <button class="btn icon-btn" id="notifBtn" title="Notifications">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
+              <path d="M13.7 21a2 2 0 01-3.4 0"/>
+            </svg>
+            <span class="sr-only">Notifications</span>
+          </button>
+
+          <button class="btn icon-btn" id="settingsBtn" title="Settings">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+              <path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.4-2.5H9.1L8.7 7a7.2 7.2 0 0 0-1.7 1L4.6 7l-2 3.5 2 1.5a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.2 7.2 0 0 0 1.7 1l.4 2.5h5.8l.4-2.5a7.2 7.2 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z"/>
+            </svg>
+            <span class="sr-only">Settings</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- DASHBOARD -->
+      <section class="tab-page active" id="tab-dashboard" aria-labelledby="tabbtn-dashboard">
+  <div class="dash-hero" id="cardMyNetwork">
+    <div class="hero-frame">
+      <div class="hero-top">
+        <div class="hero-brand">
+          <div class="hero-kicker">NET_NiNjA</div>
+          <div class="hero-title chroma">CONTROL CORE</div>
+          <div class="hero-sub" >Home Wi‑Fi (SSID) • secure link</div>
+        </div>
+
+        <div class="hero-readout" id="cardWhosOnline">
+          <div class="readout-label">ONLINE</div>
+          <div class="readout-value" id="onlineCount">0</div>
+          <div class="readout-pill pill pill--mid" id="onlineDeltaPill">CHANGED: 0</div>
+        </div>
+      </div>
+
+      <!-- Scan confirmation banner (shown during/after scans) -->
+      <div class="nn-scan-banner" id="nnScanBanner">
+        <div class="nn-scan-spinner"></div>
+        <span id="nnScanBannerText">Scanning your network…</span>
+      </div>
+
+      <div class="hero-actions">
+        <!-- EXISTING IDs so your JS keeps working -->
+        <button class="cybr-btn cybr-btn--green" id="btnScanMyNetwork" type="button">
+          <span class="cybr-btn__label">ENGAGE_ SCAN</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">ENGAGE_ SCAN</span>
+        </button>
+
+        <button class="cybr-btn cybr-btn--cyan" id="btnViewOnlineDevices" type="button">
+          <span class="cybr-btn__label">DEVICES_ LIST</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">DEVICES_ LIST</span>
+        </button>
+      </div>
+
+      <div class="hero-pills" id="cardUnknown">
+        <span class="pill pill--ok" id="myNetPill">SECURE</span>
+        <span class="pill pill--mid">LAST SCAN: —</span>
+        <span class="pill pill--warn" id="unknownPill">REVIEW</span>
+      </div>
+
+      <div class="hero-text muted" id="myNetText">Home Wi‑Fi (SSID) - Secure</div>
+      <div class="hero-text muted" id="unknownList">No new devices.</div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <!-- SCAN MATRIX -->
+    <div class="hud-card hud-card--wide" id="nnScanProgressCard">
+      <div class="hud-head">
+        <div class="hud-title">SCAN MATRIX</div>
+        <div class="pill pill--mid" id="nnScanPill">IDLE</div>
+      </div>
+
+      <div class="hud-kv">
+        <div class="kv-row"><span class="k">PHASE</span><span class="v" id="scanPhase">IDLE</span></div>
+        <div class="kv-row"><span class="k">PROGRESS</span><span class="v" id="scanPct">0%</span></div>
+        <div class="kv-row"><span class="k">NETWORKS</span><span class="v" id="networksFound">0</span></div>
+        <div class="kv-row"><span class="k">DEVICES</span><span class="v" id="devicesFound">0</span></div>
+        <div class="kv-row"><span class="k">RSSI</span><span class="v" id="rssiValue">-- dBm</span></div>
+        <div class="kv-row"><span class="k">LINK</span><span class="v" id="nnLinkValue">UP</span></div>
+      </div>
+
+      <div class="hud-bar" aria-label="scan progress bar"><i id="scanFill"></i></div>
+
+      <div class="hud-pulse" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="hud-actions">
+        <button class="cybr-btn cybr-btn--pink cybr-btn--sm" id="btnStop" type="button">
+          <span class="cybr-btn__label">ABORT</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">ABORT</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TARGET -->
+    <div class="hud-card" id="nnScanTargetCard">
+      <div class="hud-head">
+        <div class="hud-title">TARGET VECTOR</div>
+        <div class="pill pill--mid">CURRENT</div>
+      </div>
+
+      <div class="hud-kv">
+        <div class="kv-row"><span class="k">SSID</span><span class="v" id="ssid">--</span></div>
+        <div class="kv-row"><span class="k">BSSID</span><span class="v" id="bssid">--</span></div>
+        <div class="kv-row"><span class="k">SUBNET</span><span class="v" id="subnet">--</span></div>
+        <div class="kv-row"><span class="k">GATEWAY</span><span class="v" id="gateway">--</span></div>
+      </div>
+    </div>
+
+    <!-- QUICK COMMANDS -->
+    <div class="hud-card" id="cardQuickActions">
+      <div class="hud-head">
+        <div class="hud-title">QUICK COMMANDS</div>
+        <div class="pill pill--mid">FAST</div>
+      </div>
+      <div class="hud-actions stack">
+        <button class="cybr-btn cybr-btn--gray" id="btnPauseInternet" type="button">
+          <span class="cybr-btn__label">PAUSE_ DEVICE</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">PAUSE_ DEVICE</span>
+        </button>
+        <button class="cybr-btn cybr-btn--pink" id="btnBlockNew" type="button">
+          <span class="cybr-btn__label">AUTO‑BLOCK_ NEW</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">AUTO‑BLOCK_ NEW</span>
+        </button>
+        <button class="cybr-btn cybr-btn--violet" id="btnShareWifi" type="button">
+          <span class="cybr-btn__label">SHARE_ WIFI</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">SHARE_ WIFI</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PERMISSIONS -->
+    <div class="hud-card" id="nnPermissionsCard">
+      <div class="hud-head">
+        <div class="hud-title">PERMISSIONS</div>
+        <div class="pill pill--warn" id="permSummaryPill">NEEDS REVIEW</div>
+      </div>
+
+      <div class="hud-kv">
+        <div class="kv-row"><span class="k">NEARBY WIFI</span><span class="v" id="permNearbyWifi">Unknown</span></div>
+        <div class="kv-row"><span class="k">LOCATION</span><span class="v" id="permLocation">Unknown</span></div>
+        <div class="kv-row"><span class="k">WIFI STATE</span><span class="v" id="permWifiState">Unknown</span></div>
+        <div class="kv-row"><span class="k">NETWORK STATE</span><span class="v" id="permNetworkState">Unknown</span></div>
+      </div>
+
+      <div class="hud-actions stack">
+        <button class="cybr-btn cybr-btn--cyan cybr-btn--sm" id="btnOpenAppSettings" type="button">
+          <span class="cybr-btn__label">APP_ SETTINGS</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">APP_ SETTINGS</span>
+        </button>
+        <div class="row">
+          <button class="cybr-btn cybr-btn--gray cybr-btn--sm" id="btnOpenLocationSettings" type="button">
+            <span class="cybr-btn__label">LOCATION</span>
+            <span class="cybr-btn__glitch" aria-hidden="true">LOCATION</span>
+          </button>
+          <button class="cybr-btn cybr-btn--gray cybr-btn--sm" id="btnOpenWifiSettings" type="button">
+            <span class="cybr-btn__label">WIFI</span>
+            <span class="cybr-btn__glitch" aria-hidden="true">WIFI</span>
+          </button>
+        </div>
+        <button class="cybr-btn cybr-btn--violet cybr-btn--sm" id="btnRefreshPermissions" type="button">
+          <span class="cybr-btn__label">REFRESH</span>
+          <span class="cybr-btn__glitch" aria-hidden="true">REFRESH</span>
+        </button>
+      </div>
+
+      <div class="debug-wrap">
+        <div class="muted">Tap badge 5× to open debug panel.</div>
+        <div class="debug-panel" id="nnDebugPanel" aria-live="polite">
+          <pre id="nnDebugText">Debug panel idle.</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="hud-card hud-card--wide" id="cardStatus">
+      <div class="hud-head">
+        <div class="hud-title">CHANGELOG</div>
+        <div class="pill pill--mid" id="changePill">LAST SCAN: NEVER</div>
+      </div>
+      <div class="muted" id="changeText">Run a scan to see changes and new devices.</div>
+    </div>
+  </div>
+
+</section>
+
+      <!-- DEVICES -->
+      <section class="tab-page nn-devices-tab dev-screen" id="tab-devices" aria-labelledby="tabbtn-devices">
+  <div class="dev-top">
+    <div class="dev-topline">
+      <div class="dev-topline-left">
+        <span class="dev-dot"></span>
+        <span class="dev-topline-label">NET: SECURE</span>
+      </div>
+      <div class="dev-topline-right">
+        <span class="dev-topline-label">SYS: OPTIMAL</span>
+        <span class="dev-dot pulse"></span>
+      </div>
+    </div>
+
+    <div class="dev-titlebar">
+      <div>
+        <div class="dev-title chromatic">NEURAL DEVICE LINK</div>
+        <div class="dev-sub">DEVICE CORE MANAGEMENT</div>
+      </div>
+      <div class="dev-meter">
+        <div class="dev-meter-num" id="nnDevTotal">0<span class="dev-meter-unit">DEV</span></div>
+        <div class="dev-meter-bar"><i id="nnDevFill"></i></div>
+      </div>
+    </div>
+
+    <!-- Keep summary IDs your JS may set -->
+    <div class="dev-summary legacy-ids">
+      <div class="dev-stat"><span id="nnDevOnline">0</span><small>ONLINE</small></div>
+      <div class="dev-stat"><span id="nnDevUnknown">0</span><small>UNKNOWN</small></div>
+      <div class="dev-stat"><span id="nnDevBlocked">0</span><small>BLOCKED</small></div>
+    </div>
+
+    <div class="dev-controls">
+      <div class="dev-search">
+        <svg class="dev-ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 21l-4.35-4.35" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="11" r="7" stroke="currentColor" fill="none" stroke-width="2"/>
+        </svg>
+        <input id="deviceSearch" type="text" placeholder="Search devices…" autocomplete="off"/>
+      </div>
+
+      <div class="dev-filters" id="trustChips" aria-label="Device filters">
+        <button class="dev-chip active" data-filter="all">ALL</button>
+        <button class="dev-chip" data-filter="online">ONLINE</button>
+        <button class="dev-chip" data-filter="offline">OFFLINE</button>
+        <button class="dev-chip" data-filter="trusted">TRUSTED</button>
+        <button class="dev-chip" data-filter="unknown">UNKNOWN</button>
+        <button class="dev-chip" data-filter="blocked">BLOCKED</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- The new visual device stack (matches holo_devices.html look) -->
+  <main class="dev-main">
+    <div class="dev-bg-orbit" aria-hidden="true">
+      <div class="dev-orbit-outer">
+        <div class="dev-orbit-inner"></div>
+      </div>
+      <div class="dev-orbit-glow"></div>
+    </div>
+
+    <div class="iso-container">
+      <div class="dev-stack" id="deviceCards" aria-live="polite">
+        <!-- Cards are generated from the existing device table via MutationObserver -->
+        <div class="dev-empty" id="deviceCardsEmpty">
+          <div class="dev-empty-title">NO DEVICES LOADED</div>
+          <div class="dev-empty-sub">Run a scan, then come back here.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Keep your legacy device table so existing JS stays functional.
+       We mirror it into the holo cards, but you can keep this hidden. -->
+  <div class="legacy-devices" aria-hidden="true">
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Device name</th><th>Owner</th><th>Type</th><th>Status</th><th>IP</th><th>MAC</th><th>Vendor</th><th>First seen</th><th>Last seen</th><th>Trust</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="deviceTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <aside class="sidepanel" id="deviceSidepanel"></aside>
+  </div>
+
+  <template id="deviceCardTpl">
+    <div class="holo-stack-item">
+      <div class="tether-line"></div>
+      <div class="holo-glass">
+        <div class="holo-id">ID: <span class="holo-id-val"></span></div>
+        <div class="holo-row">
+          <div class="holo-iconbox"><span class="holo-icon">⌁</span><i class="holo-led"></i></div>
+          <div class="holo-meta">
+            <div class="holo-name"><span class="holo-name-main"></span><span class="holo-name-sfx"></span></div>
+            <div class="holo-subrow">
+              <span class="holo-state"></span>
+              <span class="holo-mini"></span>
+            </div>
+          </div>
+        </div>
+        <div class="holo-bars">
+          <i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+    </div>
+  </template>
+</section>
+
+      <!-- NETWORKS (standalone Ninja Nodes 3D map) -->
+      <section class="tab-page media" id="tab-networks" aria-labelledby="tabbtn-networks">
+        <iframe id="nnMapIframe"
+                src="new_assets/ninja_nodes.html"
+                title="Ninja Nodes 3D Network Map"
+                allow="accelerometer; gyroscope"
+                loading="eager"></iframe>
+      </section>
+
+
+
+      <!-- TOOLS -->
+      <section class="tab-page" id="tab-tools" aria-labelledby="tabbtn-tools">
+        <h2>Tools</h2>
+
+        <div class="grid grid-2">
+          <div class="card" id="toolPortScan" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Port scan</div>
+              <div class="pill">Preset</div>
+            </div>
+            <div class="muted">Check which ports are open on a device.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="portScan">Choose device</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolSecurity" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Security check</div>
+              <div class="pill warn">Careful</div>
+            </div>
+            <div class="muted">Look for weak security on your network.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="security">Run security check</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolReports" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Reports</div>
+              <div class="pill">Export</div>
+            </div>
+            <div class="muted">Export devices, activity, and scan results.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="reports">Open reports</button>
+            </div>
+          </div>
+
+          <div class="card" id="toolAutomation" role="button" tabindex="0">
+            <div class="card-head">
+              <div class="card-title">Automation / Schedules</div>
+              <div class="pill">Optional</div>
+            </div>
+            <div class="muted">Schedule scans or auto‑block unknown devices.</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" data-open-dialog="schedule">Create schedule</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top: 10px;">
+          Each tool dialog keeps only 2–3 core controls plus an "Advanced options" expander. Because humans love clicking things.
+        </div>
+      </section>
+
+      <section class="tab-page" id="tab-gateway" aria-labelledby="tabbtn-gateway">
+        <h2>Gateway (G5AR)</h2>
+        <div class="card" id="g5arStatusCard">
+          <div class="card-head">
+            <div class="card-title">Connection</div>
+            <div class="pill" id="g5arReachability">Unknown</div>
+          </div>
+          <div class="muted" id="g5arError">Sign in to load gateway controls.</div>
+          <div class="card-actions" style="margin-top:10px;">
+            <input id="g5arUser" class="input" type="text" value="admin" aria-label="Gateway username" style="max-width:160px;" />
+            <input id="g5arPassword" class="input" type="password" placeholder="Gateway password" aria-label="Gateway password" style="max-width:200px;" />
+            <label><input id="g5arRemember" type="checkbox" /> Remember</label>
+            <button class="btn btn-primary" id="g5arLoginBtn">Login</button>
+            <button class="btn btn-ghost" id="g5arRefreshBtn">Refresh</button>
+          </div>
+        </div>
+
+        <div class="card" id="g5arInfoCard">
+          <div class="card-head"><div class="card-title">Gateway Info</div></div>
+          <div class="kv">
+            <div><b>Firmware</b><span id="g5arFirmware">—</span></div>
+            <div><b>UI Version</b><span id="g5arUiVersion">—</span></div>
+            <div><b>Serial</b><span id="g5arSerial">—</span></div>
+            <div><b>Uptime</b><span id="g5arUptime">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arCellCard">
+          <div class="card-head"><div class="card-title">Cellular</div></div>
+          <div class="kv">
+            <div><b>RSRP</b><span id="g5arRsrp">—</span></div>
+            <div><b>RSRQ</b><span id="g5arRsrq">—</span></div>
+            <div><b>SINR</b><span id="g5arSinr">—</span></div>
+            <div><b>Band</b><span id="g5arBand">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arSimCard">
+          <div class="card-head"><div class="card-title">SIM</div></div>
+          <div class="kv">
+            <div><b>ICCID</b><span id="g5arIccid">—</span></div>
+            <div><b>IMEI</b><span id="g5arImei">—</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="g5arClientsCard">
+          <div class="card-head"><div class="card-title">Clients</div></div>
+          <div class="muted" id="g5arClients">No client data yet.</div>
+        </div>
+
+        <div class="card" id="g5arWifiCard">
+          <div class="card-head"><div class="card-title">Wi-Fi Settings</div></div>
+          <div class="card-actions" style="margin-top:10px;">
+            <input id="g5arSsid24" class="input" type="text" placeholder="2.4GHz SSID" aria-label="2.4GHz SSID" style="max-width:180px;" />
+            <input id="g5arPass24" class="input" type="password" placeholder="2.4GHz Password" aria-label="2.4GHz Password" style="max-width:200px;" />
+            <label><input id="g5arEnabled24" type="checkbox" /> 2.4GHz Enabled</label>
+            <button class="btn btn-primary" id="g5arSaveWifiBtn">Save Wi-Fi</button>
+          </div>
+        </div>
+
+        <div class="card-actions" style="margin-top:12px;">
+          <button class="btn btn-ghost purple" id="g5arRebootBtn">Reboot Gateway</button>
+          <a class="btn btn-primary" id="g5arOpenRouterControl" href="netninja://router-control">Router Control</a>
+        </div>
+      </section>
+
+      <!-- Speedtest tab page -->
+      <section id="tab-speedtest" class="tab-page media" aria-labelledby="tabbtn-speedtest">
+        <iframe src="new_assets/ninja_speedtest.html" title="Network Speedtest"></iframe>
+      </section>
+    </main>
+
+    <!-- BOTTOM NAV (TABS) -->
+    <nav class="tabbar" aria-label="Primary navigation">
+      <div class="tabbar-inner">
+        <button class="tabbtn active" id="tabbtn-dashboard" data-tab="dashboard">
+          <div class="ticon" aria-hidden="true">DB</div>
+          <div class="tlabel">Dashboard</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-devices" data-tab="devices">
+          <div class="ticon" aria-hidden="true">DV</div>
+          <div class="tlabel">Devices</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-networks" data-tab="networks">
+          <div class="ticon" aria-hidden="true">NW</div>
+          <div class="tlabel">Networks</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-tools" data-tab="tools">
+          <div class="ticon" aria-hidden="true">TL</div>
+          <div class="tlabel">Tools</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-gateway" data-tab="gateway">
+          <div class="ticon" aria-hidden="true">GW</div>
+          <div class="tlabel">Gateway</div>
+        </button>
+        <button class="tabbtn" id="tabbtn-speedtest" data-tab="speedtest">
+          <div class="ticon" aria-hidden="true">SP</div>
+          <div class="tlabel">Speedtest</div>
+        </button>
+      </div>
+    </nav>
+
+    <!-- RECENT ACTIONS / UNDO -->
+    <div class="overlay" id="historyOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Recent actions">
+        <div class="sheet-head">
+          <div class="sheet-title">Recent actions</div>
+          <button class="btn icon-btn" data-close="historyOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="muted">Last thing you did shows up here. Undo is available when it makes sense.</div>
+          <div class="divider"></div>
+          <div class="list" id="historyList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="overlay" id="notifOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Notifications">
+        <div class="sheet-head">
+          <div class="sheet-title">Notifications</div>
+          <button class="btn icon-btn" data-close="notifOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="list" id="notifList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICE DETAILS (MOBILE SHEET) -->
+    <div class="overlay" id="deviceOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Device details">
+        <div class="sheet-head">
+          <div class="sheet-title" id="devSheetTitle">Device details</div>
+          <button class="btn icon-btn" data-close="deviceOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body" id="devSheetBody"></div>
+      </div>
+    </div>
+
+    <!-- GENERIC TOOL DIALOG -->
+    <div class="overlay" id="toolOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Tool dialog">
+        <div class="sheet-head">
+          <div class="sheet-title" id="toolTitle">Tool</div>
+          <button class="btn icon-btn" data-close="toolOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body" id="toolBody"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS (simple sheet) -->
+    <div class="overlay" id="settingsOverlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+        <div class="sheet-head">
+          <div class="sheet-title">Settings</div>
+          <button class="btn icon-btn" data-close="settingsOverlay" title="Close">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div style="padding:8px 16px; background:rgba(0,255,255,0.08);
+            border-radius:8px; margin-bottom:12px; font-size:13px; opacity:0.7;">
+            Settings are read-only in this version.
+          </div>
+          <div class="card" style="cursor:default; opacity:0.6;">
+            <div class="card-head">
+              <div class="card-title">General</div>
+              <div class="pill">Theme</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">App theme</span><span class="v">Neon dark</span></div>
+              <div class="line"><span class="k">Language</span><span class="v">English</span></div>
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+
+          <div class="card" style="cursor:default; opacity:0.6;">
+            <div class="card-head">
+              <div class="card-title">Network</div>
+              <div class="pill">Interface</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">Active interface</span><span class="v">Auto</span></div>
+              <div class="line"><span class="k">Router control</span><span class="v">Off</span></div>
+            </div>
+            <div class="muted" style="margin-top:10px;">
+              Router-control features require explicit permissions and should never be assumed. Humans hate consent until it matters.
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+
+          <div class="card" style="cursor:default; opacity:0.6;">
+            <div class="card-head">
+              <div class="card-title">Notifications</div>
+              <div class="pill">Alerts</div>
+            </div>
+            <div class="kv">
+              <div class="line"><span class="k">New device alerts</span><span class="v">On</span></div>
+              <div class="line"><span class="k">Device blocked alerts</span><span class="v">On</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+      <div class="t1" id="toastTitle"></div>
+      <div class="t2" id="toastBody"></div>
+      <div class="tact" id="toastActions"></div>
+    </div>
+  </div>
+
+  <script src="js/api-client.js"></script>
+  <script src="js/dashboard.js"></script>
+
+
+<script id="devices-holo-bridge">
+(function(){
+  function hashId(str){
+    let h = 2166136261;
+    for(let i=0;i<str.length;i++){
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
     }
-  </style>
-  </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col text-sm antialiased selection:bg-[#39ff14] selection:text-black">
-<div class="app flex flex-col h-full w-full relative" id="app">
-<header class="h-16 shrink-0 border-b border-[#39ff14]/30 bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-4 z-50 relative">
-<video aria-label="NET_NiNjA Header" autoplay="" class="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" loop="" muted="" playsinline="" src="netninja_header.mp4"></video>
-<div class="absolute inset-0 bg-gradient-to-b from-[#39ff14]/5 to-transparent pointer-events-none"></div>
-<div class="flex items-center gap-3 z-10">
-<div class="relative w-10 h-10 flex items-center justify-center" id="brandBadge">
-<div class="absolute inset-0 bg-[#39ff14]/20 blur-md rounded-full"></div>
-<div class="relative w-full h-full border border-[#39ff14] bg-black/50 p-1" style="clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);">
-<video aria-label="NET_NiNjA" autoplay="" class="w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-300" loop="" muted="" playsinline="" src="netninja_header.mp4"></video>
-</div>
-</div>
-<div class="flex flex-col">
-<div class="font-orbitron font-bold text-lg tracking-wider text-white neon-glow-text leading-tight">NET_NiNjA</div>
-<div class="font-mono-tech text-[10px] text-[#39ff14] tracking-[0.2em] uppercase opacity-80" id="brandSub">System Online</div>
-</div>
-</div>
-<div class="flex items-center gap-2 z-10">
-<button class="w-9 h-9 flex items-center justify-center rounded border border-[#39ff14]/30 text-[#39ff14] hover:bg-[#39ff14]/10 hover:border-[#39ff14] transition-all" id="historyBtn">
-<span class="material-symbols-outlined text-lg">history</span>
-</button>
-<button class="w-9 h-9 flex items-center justify-center rounded border border-[#bc13fe]/30 text-[#bc13fe] hover:bg-[#bc13fe]/10 hover:border-[#bc13fe] transition-all relative" id="notifBtn">
-<span class="absolute top-1 right-1 w-1.5 h-1.5 bg-[#bc13fe] rounded-full shadow-[0_0_5px_#bc13fe]"></span>
-<span class="material-symbols-outlined text-lg">notifications</span>
-</button>
-<button class="w-9 h-9 flex items-center justify-center rounded border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-all" id="settingsBtn">
-<span class="material-symbols-outlined text-lg">settings</span>
-</button>
-</div>
-</header>
-<main class="flex-1 overflow-y-auto overflow-x-hidden relative pb-24 scroll-smooth">
-<section aria-labelledby="tabbtn-dashboard" class="active px-4 py-6 space-y-6" id="tab-dashboard">
-<div class="flex items-end justify-between border-b border-gray-800 pb-2">
-<h2 class="font-orbitron text-2xl font-bold text-white tracking-wide">NET<span class="text-[#39ff14]">_NiNjA</span></h2>
-<div class="font-mono-tech text-xs text-[#bc13fe]">V2.0.4 SAFE MODE</div>
-</div>
-<div class="hidden relative overflow-hidden bg-[#39ff14]/10 border border-[#39ff14] p-3 flex items-center gap-3 animate-pulse" id="nnScanBanner">
-<div class="w-4 h-4 border-2 border-[#39ff14] border-t-transparent rounded-full animate-spin"></div>
-<span class="font-mono-tech text-[#39ff14] uppercase text-xs tracking-widest" id="nnScanBannerText">Scanning Nearby...</span>
-</div>
-<div class="relative w-full aspect-[2/1] min-h-[180px] bg-black/40 border border-[#39ff14]/20 rounded-lg overflow-hidden flex items-center justify-center group">
-<div class="absolute inset-0 bg-[linear-gradient(0deg,transparent_24%,rgba(57,255,20,0.05)_25%,rgba(57,255,20,0.05)_26%,transparent_27%,transparent_74%,rgba(57,255,20,0.05)_75%,rgba(57,255,20,0.05)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(57,255,20,0.05)_25%,rgba(57,255,20,0.05)_26%,transparent_27%,transparent_74%,rgba(57,255,20,0.05)_75%,rgba(57,255,20,0.05)_76%,transparent_77%,transparent)] bg-[length:30px_30px]"></div>
-<div class="relative z-10 w-32 h-32 flex items-center justify-center">
-<div class="absolute inset-0 rounded-full border border-[#39ff14]/30 border-dashed animate-[spin_10s_linear_infinite]"></div>
-<div class="absolute inset-2 scan-core-ring animate-[spin_3s_linear_infinite] opacity-80"></div>
-<div class="absolute inset-4 bg-black rounded-full border border-[#39ff14] flex flex-col items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.2)]">
-<span class="font-orbitron text-2xl font-bold text-white tracking-widest neon-glow-text" id="scanPct">IDLE</span>
-<span class="font-mono-tech text-[9px] text-[#39ff14]/70 mt-1">System STATUS</span>
-</div>
-</div>
-<div class="absolute left-4 top-1/2 -translate-y-1/2 space-y-4">
-<div class="text-right">
-<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">RSSI_SGNL</div>
-<div class="text-xl font-mono-tech text-[#39ff14]" id="rssiValue">-42<span class="text-xs ml-1">dBm</span></div>
-</div>
-<div class="text-right">
-<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">LINK_STATE</div>
-<div class="text-base font-mono-tech text-[#bc13fe] animate-pulse" id="nnLinkValue">ACTIVE</div>
-</div>
-</div>
-<div class="absolute right-4 top-1/2 -translate-y-1/2 space-y-4">
-<div class="text-left">
-<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">NiNjA_NODES</div>
-<div class="text-xl font-mono-tech text-[#39ff14]" id="networksFound">12</div>
-</div>
-<div class="text-left">
-<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">DEV_COUNT</div>
-<div class="text-xl font-mono-tech text-white" id="devicesFound">05</div>
-</div>
-</div>
-<button class="absolute bottom-2 right-2 px-3 py-1 bg-[#39ff14]/10 hover:bg-[#39ff14]/20 border border-[#39ff14]/50 text-[#39ff14] text-xs font-mono-tech uppercase backdrop-blur-sm" id="btnScanMyNetwork">
-             Init_Scan()
-           </button>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div class="glass-shard p-4 relative group hover:border-[#39ff14]/50 transition-colors" id="cardMyNetwork">
-<div class="absolute top-0 right-0 p-2">
-<span class="w-2 h-2 rounded-full bg-[#39ff14] block shadow-[0_0_5px_#39ff14]"></span>
-</div>
-<div class="flex flex-col h-full justify-between">
-<div>
-<h3 class="font-orbitron text-sm text-gray-400 mb-1">MY_NETWORK</h3>
-<p class="font-rajdhani font-bold text-lg text-white leading-tight break-all" id="myNetText">SSID_SECURE</p>
-</div>
-<div class="mt-4 flex items-center gap-2">
-<span class="material-symbols-outlined text-[#39ff14] text-lg">shield</span>
-<span class="text-xs text-[#39ff14] font-mono-tech">SECURED</span>
-</div>
-</div>
-</div>
-<div class="glass-shard p-4 relative group hover:border-[#bc13fe]/50 transition-colors" id="cardWhosOnline">
-<div class="absolute top-0 right-0 w-8 h-8 flex items-center justify-center">
-<span class="font-mono-tech text-[10px] text-gray-500" id="onlineDeltaPill">Changed: 0</span>
-</div>
-<div class="flex flex-col h-full justify-between">
-<div>
-<h3 class="font-orbitron text-sm text-gray-400 mb-1">ONLINE_NODES</h3>
-<div class="font-mono-tech text-3xl text-[#bc13fe] drop-shadow-[0_0_5px_rgba(188,19,254,0.5)]" id="onlineCount">8</div>
-</div>
-<button class="mt-2 text-left text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors" id="btnViewOnlineDevices">
-                VIEW_ALL <span class="material-symbols-outlined text-[10px]">arrow_forward_ios</span>
-</button>
-</div>
-</div>
-<div class="glass-shard-accent p-4 col-span-2 flex items-center justify-between" id="cardUnknown">
-<div class="flex items-center gap-4">
-<div class="w-10 h-10 rounded border border-red-500/30 bg-red-500/10 flex items-center justify-center text-red-500">
-<span class="material-symbols-outlined">warning</span>
-</div>
-<div>
-<h3 class="font-orbitron text-sm text-red-400">THREAT_ALERT <span class="text-[10px] text-yellow-400 ml-2" id="unknownPill">Review</span></h3>
-<p class="font-mono-tech text-xs text-gray-400" id="unknownList">No unauthorized signatures detected.</p>
-</div>
-</div>
-<button class="px-4 py-2 bg-red-500/10 border border-red-500/50 text-red-400 text-xs font-mono-tech hover:bg-red-500/20 uppercase" id="btnReviewUnknown">
-              Review
-            </button>
-</div>
-<div class="glass-shard p-4 col-span-2" id="cardQuickActions">
-<h3 class="font-orbitron text-sm text-gray-400 mb-3 border-b border-gray-800 pb-1">QUICK_EXEC</h3>
-<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-<button class="flex-shrink-0 px-3 py-2 bg-gray-800/50 border border-gray-700 hover:border-[#39ff14] text-xs text-gray-300 font-mono-tech flex items-center gap-2 transition-all" id="btnPauseInternet">
-<span class="material-symbols-outlined text-sm">pause_circle</span> PAUSE_NET
-              </button>
-<button class="flex-shrink-0 px-3 py-2 bg-gray-800/50 border border-gray-700 hover:border-red-500 text-xs text-gray-300 font-mono-tech flex items-center gap-2 transition-all" id="btnBlockNew">
-<span class="material-symbols-outlined text-sm">block</span> AUTO_BLOCK
-              </button>
-<button class="flex-shrink-0 px-3 py-2 bg-gray-800/50 border border-gray-700 hover:border-[#bc13fe] text-xs text-gray-300 font-mono-tech flex items-center gap-2 transition-all" id="btnShareWifi">
-<span class="material-symbols-outlined text-sm">qr_code</span> SHARE_KEY
-              </button>
-</div>
-</div>
-</div>
-<div class="glass-shard p-3 mt-4 flex items-center justify-between opacity-70" id="cardStatus">
-<div class="text-[10px] text-gray-500 font-mono-tech">SYSTEM_LOG <span class="ml-2 text-[#bc13fe]" id="changePill">Last scan: never</span></div>
-<div class="text-xs text-[#39ff14] font-mono-tech truncate max-w-[200px]" id="changeText">System stable. No anomalies.</div>
-</div>
-</section>
-<section aria-labelledby="tabbtn-devices" class="hidden tab-page nn-devices-tab px-4 py-6" id="tab-devices">
-<h2 class="font-orbitron text-2xl font-bold text-white mb-4">NEARBY<span class="text-[#bc13fe]">DEViCES</span></h2>
-<div class="nn-device-summary grid grid-cols-4 gap-2 mb-6" id="nnDeviceSummary">
-<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
-<span class="block font-mono-tech text-xl text-[#39ff14]" id="nnDevOnline">0</span>
-<span class="text-[10px] uppercase text-gray-500">Active</span>
-</div>
-<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
-<span class="block font-mono-tech text-xl text-yellow-500" id="nnDevUnknown">0</span>
-<span class="text-[10px] uppercase text-gray-500">Unknown</span>
-</div>
-<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
-<span class="block font-mono-tech text-xl text-red-500" id="nnDevBlocked">0</span>
-<span class="text-[10px] uppercase text-gray-500">Blocked</span>
-</div>
-<div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
-<span class="block font-mono-tech text-xl text-white" id="nnDevTotal">0</span>
-<span class="text-[10px] uppercase text-gray-500">Total</span>
-</div>
-</div>
-<div class="toolbar space-y-3">
-<div class="relative">
-<span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-500">search</span>
-<input autocomplete="off" class="w-full bg-black/30 border border-gray-700 text-white pl-10 pr-4 py-2 rounded focus:border-[#39ff14] focus:ring-0 font-mono-tech text-sm" id="deviceSearch" placeholder="Search Matrix..." type="text"/>
-</div>
-<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" id="trustChips">
-<button class="px-3 py-1 rounded-full border border-[#39ff14] bg-[#39ff14]/20 text-[#39ff14] text-xs font-bold chip" data-filter="all">ALL</button>
-<button class="px-3 py-1 rounded-full border border-gray-700 bg-transparent text-gray-400 text-xs hover:border-[#bc13fe] hover:text-[#bc13fe] chip" data-filter="online">ONLINE</button>
-<button class="px-3 py-1 rounded-full border border-gray-700 bg-transparent text-gray-400 text-xs chip" data-filter="offline">OFFLINE</button>
-<button class="px-3 py-1 rounded-full border border-gray-700 bg-transparent text-gray-400 text-xs chip" data-filter="unknown">UNKNOWN</button>
-</div>
-</div>
-<div class="glass-shard mt-4 min-h-[300px] overflow-hidden">
-<div class="p-2 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
-<span class="font-mono-tech text-xs text-gray-400">IP ADDRESS</span>
-<span class="font-mono-tech text-xs text-gray-400">STATUS</span>
-</div>
-<div class="p-4 text-center text-gray-600 font-mono-tech text-sm italic" id="deviceListPlaceholder">
-             // Awaiting Data Injection...
-             <table class="w-full text-left hidden" id="deviceTable">
-<thead class="text-xs text-gray-500 border-b border-gray-800">
-<tr>
-<th class="py-2">NAME</th>
-<th class="py-2 text-right">IP</th>
-</tr>
-</thead>
-<tbody class="text-sm font-rajdhani" id="deviceTbody">
-</tbody>
-</table>
-</div>
-</div>
-</section>
-<section aria-labelledby="tabbtn-networks" class="hidden tab-page h-full" id="tab-networks">
-<div class="h-full w-full relative">
-<div class="absolute top-4 left-4 z-10 glass-shard px-4 py-2 pointer-events-none">
-<h2 class="font-orbitron text-lg text-white">NiNjA NODES</h2>
-<div class="text-[10px] text-[#39ff14] font-mono-tech"></div>
-</div>
-<iframe allow="accelerometer; gyroscope" class="w-full h-full border-none opacity-80" id="nnMapIframe" loading="eager" src="network_styles.html" title="Neural Network Map"></iframe>
-</div>
-</section>
-<section aria-labelledby="tabbtn-tools" class="hidden tab-page px-4 py-6" id="tab-tools">
-<h2 class="font-orbitron text-2xl font-bold text-white mb-6">SYS<span class="text-[#39ff14]">_TOOLS</span></h2>
-<div class="grid grid-cols-2 gap-4">
-<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="portScan" role="button">
-<span class="material-symbols-outlined text-4xl text-[#bc13fe]">radar</span>
-<div>
-<div class="font-bold text-white font-rajdhani">PORT_SCAN</div>
-<div class="text-[10px] text-gray-500 font-mono-tech">VULNERABILITY CHECK</div>
-</div>
-</div>
-<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="security" role="button">
-<span class="material-symbols-outlined text-4xl text-red-500">lock_open</span>
-<div>
-<div class="font-bold text-white font-rajdhani">SEC_AUDIT</div>
-<div class="text-[10px] text-gray-500 font-mono-tech">WEAKNESS DETECT</div>
-</div>
-</div>
-<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="reports" role="button">
-<span class="material-symbols-outlined text-4xl text-[#39ff14]">description</span>
-<div>
-<div class="font-bold text-white font-rajdhani">LOG_EXPORT</div>
-<div class="text-[10px] text-gray-500 font-mono-tech">DATA DUMP</div>
-</div>
-</div>
-<div class="glass-shard p-4 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:bg-white/5 transition-colors" data-open-dialog="schedule" role="button">
-<span class="material-symbols-outlined text-4xl text-cyan-400">schedule</span>
-<div>
-<div class="font-bold text-white font-rajdhani">AUTO_TASK</div>
-<div class="text-[10px] text-gray-500 font-mono-tech">CRON JOBS</div>
-</div>
-</div>
-</div>
-</section>
-<section aria-labelledby="tabbtn-gateway" class="hidden tab-page px-4 py-6 space-y-6" id="tab-gateway">
-<h2 class="font-orbitron text-2xl font-bold text-white">GATEWAY<span class="text-[#39ff14]">T-MOBILE_G5AR</span></h2>
-<div class="glass-shard p-6 relative overflow-hidden" id="g5arStatusCard">
-<div class="absolute -right-4 -top-4 text-9xl text-white/5 font-orbitron font-bold">G5</div>
-<div class="relative z-10">
-<div class="flex justify-between items-start mb-4">
-<div>
-<div class="text-xs text-gray-400 font-mono-tech">CONNECTION STATUS</div>
-<div class="text-xl text-white font-bold" id="g5arReachability">UNKNOWN</div>
-</div>
-<div class="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_10px_red]"></div>
-</div>
-<div class="space-y-3">
-<input class="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 text-sm font-mono-tech focus:border-[#bc13fe] focus:ring-0" id="g5arUser" placeholder="USER" type="text" value="admin"/>
-<input class="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 text-sm font-mono-tech focus:border-[#bc13fe] focus:ring-0" id="g5arPassword" placeholder="PASSKEY" type="password"/>
-<div class="flex gap-2 mt-4">
-<button class="flex-1 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 border border-[#bc13fe] text-[#bc13fe] py-2 text-xs font-bold uppercase tracking-wider transition-all" id="g5arLoginBtn">AUTH</button>
-<button class="px-3 border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-all" id="g5arRefreshBtn">
-<span class="material-symbols-outlined text-lg">refresh</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-<div class="glass-shard p-4 space-y-2 font-mono-tech text-xs" id="g5arInfoCard">
-<div class="flex justify-between border-b border-gray-800 pb-1"><span>FIRMWARE</span> <span class="text-[#39ff14]" id="g5arFirmware">â€”</span></div>
-<div class="flex justify-between border-b border-gray-800 pb-1"><span>SERIAL</span> <span class="text-gray-400" id="g5arSerial">â€”</span></div>
-<div class="flex justify-between"><span>UPTIME</span> <span class="text-white" id="g5arUptime">â€”</span></div>
-</div>
-</section>
-<section aria-labelledby="tabbtn-speedtest" class="hidden tab-page h-full" id="tab-speedtest">
-<iframe class="w-full h-full border-none" src="speed_new.html" title="Network Speedtest"></iframe>
-</section>
-</main>
-<nav class="fixed bottom-0 left-0 w-full bg-[#050505]/95 backdrop-blur-xl border-t border-[#39ff14]/20 z-50 pb-safe">
-<div class="flex justify-around items-center h-16 px-2 tabbar-inner">
-<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn active text-[#39ff14]" data-tab="dashboard" id="tabbtn-dashboard">
-<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
-<span class="material-symbols-outlined text-2xl group-[.active]:drop-shadow-[0_0_5px_#39ff14]">dashboard</span>
-</div>
-<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Dash</span>
-</button>
-<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="devices" id="tabbtn-devices">
-<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
-<span class="material-symbols-outlined text-2xl">devices</span>
-</div>
-<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Devs</span>
-</button>
-<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="networks" id="tabbtn-networks">
-<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
-<span class="material-symbols-outlined text-2xl">hub</span>
-</div>
-<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Map</span>
-</button>
-<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="tools" id="tabbtn-tools">
-<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
-<span class="material-symbols-outlined text-2xl">build</span>
-</div>
-<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Tools</span>
-</button>
-<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="gateway" id="tabbtn-gateway">
-<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
-<span class="material-symbols-outlined text-2xl">router</span>
-</div>
-<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Gate</span>
-</button>
-<button class="flex flex-col items-center justify-center w-full h-full gap-1 group tabbtn text-gray-500 hover:text-white" data-tab="speedtest" id="tabbtn-speedtest">
-<div class="relative w-6 h-6 flex items-center justify-center transition-transform group-hover:-translate-y-1">
-<span class="material-symbols-outlined text-2xl">speed</span>
-</div>
-<span class="text-[10px] font-mono-tech uppercase tracking-wider opacity-60 group-[.active]:opacity-100">Speed</span>
-</button>
-</div>
-</nav>
-<div class="overlay fixed inset-0 z-[60] hidden" id="historyOverlay">
-<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="historyOverlay"></div>
-<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#39ff14] rounded-t-2xl p-6 transition-transform transform translate-y-0">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-orbitron text-lg text-white">SYSTEM_LOGS</h3>
-<button class="text-gray-400 hover:text-white" data-close="historyOverlay"><span class="material-symbols-outlined">close</span></button>
-</div>
-<div class="font-mono-tech text-xs text-gray-500 mb-2">RECENT OPERATIONS</div>
-<div class="space-y-2" id="historyList">
-<div class="text-gray-400 text-sm">// No recent actions recorded.</div>
-</div>
-</div>
-</div>
-<div class="toast fixed top-20 right-4 z-[70] hidden bg-gray-900 border border-[#39ff14] p-4 rounded shadow-[0_0_15px_rgba(57,255,20,0.3)] max-w-xs transition-opacity" id="toast">
-<div class="font-bold text-[#39ff14] font-orbitron text-sm mb-1" id="toastTitle">NOTIFICATION</div>
-<div class="text-gray-300 text-xs font-rajdhani" id="toastBody">System Update Complete.</div>
-</div>
-<div id="toastActions"></div>
-<div class="hidden" id="nnCompat" aria-hidden="true">
-<button id="btnExportDevices" type="button">Export</button>
-<button id="btnRescanDevices" type="button">Rescan</button>
-<button id="btnStart" type="button">Start</button>
-<button id="btnStop" type="button">Stop</button>
-<button id="btnOpenAppSettings" type="button">App Settings</button>
-<button id="btnOpenLocationSettings" type="button">Location Settings</button>
-<button id="btnOpenWifiSettings" type="button">Wifi Settings</button>
-<button id="btnRefreshPermissions" type="button">Refresh Permissions</button>
-<div id="permSummaryPill"></div>
-<div id="permNearbyWifi"></div>
-<div id="permLocation"></div>
-<div id="permWifiState"></div>
-<div id="permNetworkState"></div>
-<div id="scanPhase">IDLE</div>
-<div id="scanFill" style="width:0%"></div>
-<div id="nnScanPill">Idle</div>
-<div id="ssid"></div>
-<div id="bssid"></div>
-<div id="subnet"></div>
-<div id="gateway"></div>
-<div id="spTitle">Select a device</div>
-<div id="spSub">Pick a row to view details.</div>
-<div id="spStatus">-</div>
-<div id="spSummaryKv"></div>
-<div id="spNetworkKv"></div>
-<div id="spActivityKv"></div>
-<button id="spPause" type="button"></button>
-<button id="spBlock" type="button"></button>
-<button id="spTrust" type="button"></button>
-<button id="spPortScan" type="button"></button>
-<textarea id="spNote"></textarea>
-<input id="spRoom" type="text"/>
-<input id="spOwner" type="text"/>
-<button id="spSaveNotes" type="button"></button>
-<div id="spSectionSummary"></div>
-<div id="spSectionNetwork"></div>
-<div id="spSectionActivity"></div>
-<div id="spSectionNotes"></div>
-<div id="g5arError">Login required.</div>
-<div id="g5arUiVersion">-</div>
-<div id="g5arRsrp">-</div>
-<div id="g5arRsrq">-</div>
-<div id="g5arSinr">-</div>
-<div id="g5arBand">-</div>
-<div id="g5arIccid">-</div>
-<div id="g5arImei">-</div>
-<div id="g5arClients"></div>
-<input id="g5arSsid24" type="text"/>
-<input id="g5arPass24" type="text"/>
-<input id="g5arEnabled24" type="checkbox"/>
-<input id="g5arRemember" type="checkbox"/>
-<button id="g5arSaveWifiBtn" type="button"></button>
-<button id="g5arRebootBtn" type="button"></button>
-<div id="g5arClientsCard"></div>
-<div id="g5arCellCard"></div>
-<div id="g5arSimCard"></div>
-<div id="g5arWifiCard"></div>
-<div id="nnDebugPanel"></div>
-<pre id="nnDebugText"></pre>
-</div>
-<div class="overlay fixed inset-0 z-[60] hidden" id="notifOverlay">
-<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="notifOverlay"></div>
-<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#bc13fe] rounded-t-2xl p-6">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-orbitron text-lg text-white">NOTIFICATIONS</h3>
-<button class="text-gray-400 hover:text-white" data-close="notifOverlay"><span class="material-symbols-outlined">close</span></button>
-</div>
-<div class="space-y-2" id="notifList"></div>
-</div>
-</div>
-<div class="overlay fixed inset-0 z-[60] hidden" id="deviceOverlay">
-<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="deviceOverlay"></div>
-<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#39ff14] rounded-t-2xl p-6 max-h-[85vh] overflow-y-auto">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-orbitron text-lg text-white" id="devSheetTitle">DEVICE</h3>
-<button class="text-gray-400 hover:text-white" data-close="deviceOverlay"><span class="material-symbols-outlined">close</span></button>
-</div>
-<div id="devSheetBody"></div>
-</div>
-</div>
-<div class="overlay fixed inset-0 z-[60] hidden" id="toolOverlay">
-<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="toolOverlay"></div>
-<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#39ff14] rounded-t-2xl p-6 max-h-[85vh] overflow-y-auto">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-orbitron text-lg text-white" id="toolTitle">TOOL</h3>
-<button class="text-gray-400 hover:text-white" data-close="toolOverlay"><span class="material-symbols-outlined">close</span></button>
-</div>
-<div id="toolBody"></div>
-</div>
-</div>
-<div class="overlay fixed inset-0 z-[60] hidden" id="settingsOverlay">
-<div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-close="settingsOverlay"></div>
-<div class="absolute bottom-0 left-0 w-full bg-[#0d1117] border-t border-[#bc13fe] rounded-t-2xl p-6">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-orbitron text-lg text-white">SETTINGS</h3>
-<button class="text-gray-400 hover:text-white" data-close="settingsOverlay"><span class="material-symbols-outlined">close</span></button>
-</div>
-<div class="text-sm text-gray-400">Settings panel is currently read-only.</div>
-</div>
-</div>
-</div>
-<script src="js/api-client.js"></script>
-<script>
-  (function(){
-    "use strict";
-    const dashboardScriptPath = "js/dashboard.js";
+    return (h >>> 0).toString(16).toUpperCase().padStart(4,'0');
+  }
 
-    function loadDashboardScript(){
-      const script = document.createElement("script");
-      script.src = dashboardScriptPath;
-      document.body.appendChild(script);
+  function pickIcon(type, vendor, name){
+    const s = ((type||"") + " " + (vendor||"") + " " + (name||"")).toLowerCase();
+    if(s.includes("router") || s.includes("gateway")) return "⟠";
+    if(s.includes("phone") || s.includes("iphone") || s.includes("android")) return "⌁";
+    if(s.includes("tablet") || s.includes("ipad")) return "⌗";
+    if(s.includes("tv") || s.includes("roku") || s.includes("fire") || s.includes("chromecast")) return "⌬";
+    if(s.includes("pc") || s.includes("laptop") || s.includes("windows") || s.includes("macbook")) return "⌘";
+    if(s.includes("camera")) return "⌼";
+    if(s.includes("speaker") || s.includes("echo") || s.includes("homepod")) return "⌭";
+    return "⌁";
+  }
+
+  function statusBucket(status, trust){
+    const s = (status||"").toLowerCase();
+    const t = (trust||"").toLowerCase();
+    if(t.includes("block")) return "blocked";
+    if(t.includes("unknown") || t.includes("new")) return "unknown";
+    if(s.includes("on") || s.includes("up") || s.includes("active")) return "online";
+    if(s.includes("off") || s.includes("down") || s.includes("idle")) return "offline";
+    if(t.includes("trust")) return "trusted";
+    return "all";
+  }
+
+  function barCount(bucket){
+    if(bucket === "online") return 3;
+    if(bucket === "trusted") return 4;
+    if(bucket === "unknown") return 2;
+    if(bucket === "blocked") return 1;
+    if(bucket === "offline") return 1;
+    return 2;
+  }
+
+  function barStyle(bucket){
+    if(bucket === "unknown") return "orange";
+    if(bucket === "blocked") return "pink";
+    return "";
+  }
+
+  function parseRow(tr){
+    const tds = Array.from(tr.querySelectorAll("td"));
+    const name = (tds[0]?.textContent||"").trim() || "DEVICE";
+    const owner = (tds[1]?.textContent||"").trim();
+    const type = (tds[2]?.textContent||"").trim();
+    const status = (tds[3]?.textContent||"").trim();
+    const ip = (tds[4]?.textContent||"").trim();
+    const mac = (tds[5]?.textContent||"").trim();
+    const vendor = (tds[6]?.textContent||"").trim();
+    const trust = (tds[9]?.textContent||"").trim();
+    const mini = [ip || mac || "", (status ? status : "")].filter(Boolean).join(" • ");
+    const bucket = statusBucket(status, trust);
+    return {name, owner, type, status, ip, mac, vendor, trust, mini, bucket};
+  }
+
+  function renderCards(){
+    const tbody = document.getElementById("deviceTbody");
+    const cards = document.getElementById("deviceCards");
+    const empty = document.getElementById("deviceCardsEmpty");
+    const tpl = document.getElementById("deviceCardTpl");
+    if(!tbody || !cards || !tpl) return;
+
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    const q = (document.getElementById("deviceSearch")?.value || "").trim().toLowerCase();
+    const activeChip = document.querySelector("#trustChips .dev-chip.active");
+    const activeFilter = activeChip?.getAttribute("data-filter") || "all";
+
+    // stats
+    const parsed = rows.map(parseRow);
+    const total = parsed.length;
+    const online = parsed.filter(d => d.bucket === "online").length;
+    const unknown = parsed.filter(d => d.bucket === "unknown").length;
+    const blocked = parsed.filter(d => d.bucket === "blocked").length;
+
+    const nnDevTotal = document.getElementById("nnDevTotal");
+    const nnDevFill = document.getElementById("nnDevFill");
+    const nnDevOnline = document.getElementById("nnDevOnline");
+    const nnDevUnknown = document.getElementById("nnDevUnknown");
+    const nnDevBlocked = document.getElementById("nnDevBlocked");
+
+    if(nnDevTotal) nnDevTotal.childNodes[0].nodeValue = String(total);
+    if(nnDevOnline) nnDevOnline.textContent = String(online);
+    if(nnDevUnknown) nnDevUnknown.textContent = String(unknown);
+    if(nnDevBlocked) nnDevBlocked.textContent = String(blocked);
+    if(nnDevFill){
+      const pct = total ? Math.min(100, Math.max(8, Math.round((online/Math.max(1,total))*100))) : 12;
+      nnDevFill.style.width = pct + "%";
     }
 
-    async function hydrateDevicesScreen(){
-      const tab = document.getElementById("tab-devices");
-      if(!tab) return;
+    // clear existing (keep empty placeholder)
+    cards.querySelectorAll(".holo-stack-item").forEach(n => n.remove());
 
-      const res = await fetch("holo_devices.html", { cache: "no-store" });
-      if(!res.ok) throw new Error("Failed to load holo_devices.html");
-      const html = await res.text();
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      const holo = doc.getElementById("holoDevicesScreen");
-      if(!holo) throw new Error("Missing #holoDevicesScreen");
-      tab.innerHTML = holo.innerHTML;
-    }
-
-    hydrateDevicesScreen().catch((err) => {
-      console.warn("[devices] Falling back to inline tab markup:", err);
-    }).finally(loadDashboardScript);
-  })();
-</script>
-<script>
-    // Minimal glue code for tab switching since we removed the original CSS that handled 'active' states via display:none
-    document.addEventListener('DOMContentLoaded', () => {
-      const tabs = document.querySelectorAll('.tabbtn');
-      const pages = document.querySelectorAll('.tab-page');
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          const target = tab.dataset.tab;
-          // Update Buttons
-          tabs.forEach(t => {
-            t.classList.remove('active', 'text-[#39ff14]');
-            t.classList.add('text-gray-500');
-          });
-          tab.classList.add('active', 'text-[#39ff14]');
-          tab.classList.remove('text-gray-500');
-          // Update Pages
-          pages.forEach(p => {
-             if(p.id === `tab-${target}`) {
-               p.classList.remove('hidden');
-             } else {
-               p.classList.add('hidden');
-             }
-          });
-        });
-      });
-      // Simple Overlay Toggle Logic
-      const overlayTriggers = [
-        { btn: 'historyBtn', overlay: 'historyOverlay' },
-        // Add others as needed
-      ];
-      overlayTriggers.forEach(trigger => {
-        const btn = document.getElementById(trigger.btn);
-        const ov = document.getElementById(trigger.overlay);
-        if(btn && ov) {
-           btn.addEventListener('click', () => ov.classList.remove('hidden'));
-           ov.querySelectorAll('[data-close]').forEach(c => {
-             c.addEventListener('click', () => ov.classList.add('hidden'));
-           });
-        }
-      });
+    const filtered = parsed.filter(d => {
+      const matchesText = !q || (d.name + " " + d.vendor + " " + d.ip + " " + d.mac + " " + d.type + " " + d.trust).toLowerCase().includes(q);
+      const matchesFilter = (activeFilter === "all") || (d.bucket === activeFilter) || (activeFilter === "trusted" && (d.trust||"").toLowerCase().includes("trust"));
+      return matchesText && matchesFilter;
     });
-  </script>
 
-</body></html>
+    if(empty) empty.style.display = filtered.length ? "none" : "block";
 
+    filtered.forEach((d, idx) => {
+      const node = tpl.content.firstElementChild.cloneNode(true);
 
+      // stagger offsets like the reference
+      const ml = [0, 28, 14, 36, 18][idx % 5];
+      node.style.marginLeft = ml + "px";
+
+      // tether length/angle variety
+      const tether = node.querySelector(".tether-line");
+      if(tether){
+        const w = [200, 180, 190, 210, 175][idx % 5];
+        const rot = [-5, -10, -2, -8, -6][idx % 5];
+        tether.style.width = w + "px";
+        tether.style.right = (-w + 20) + "px";
+        tether.style.transform = "rotate(" + rot + "deg)";
+      }
+
+      const idv = node.querySelector(".holo-id-val");
+      const icon = node.querySelector(".holo-icon");
+      const nameMain = node.querySelector(".holo-name-main");
+      const nameSfx = node.querySelector(".holo-name-sfx");
+      const state = node.querySelector(".holo-state");
+      const mini = node.querySelector(".holo-mini");
+
+      const idSeed = d.mac || d.ip || d.name || String(idx);
+      if(idv) idv.textContent = "0X" + hashId(idSeed);
+
+      if(icon) icon.textContent = pickIcon(d.type, d.vendor, d.name);
+
+      // name split like "BIO-HACK_UNIT_2"
+      const cleaned = d.name.replace(/\s+/g, "_").replace(/[^A-Za-z0-9_\-]/g,"").toUpperCase();
+      const parts = cleaned.split("_");
+      const main = parts.slice(0, Math.max(1, parts.length-1)).join("_");
+      const sfx = parts.length > 1 ? "_" + parts[parts.length-1] : "";
+      if(nameMain) nameMain.textContent = main || cleaned || "DEVICE";
+      if(nameSfx) nameSfx.textContent = sfx;
+
+      const bucket = d.bucket;
+      if(state) state.textContent = (bucket === "online" ? "ONLINE" :
+                                   bucket === "offline" ? "OFFLINE" :
+                                   bucket === "unknown" ? "REVIEW" :
+                                   bucket === "blocked" ? "BLOCKED" :
+                                   bucket === "trusted" ? "SECURE" : (d.status || "STATUS")).toUpperCase();
+
+      if(mini) mini.textContent = d.ip ? (d.ip + (d.mac ? " • " + d.mac : "")) : (d.mac || d.vendor || "");
+
+      // color accents by bucket
+      const glass = node.querySelector(".holo-glass");
+      const iconbox = node.querySelector(".holo-iconbox");
+      const led = node.querySelector(".holo-led");
+      const bars = node.querySelector(".holo-bars");
+
+      function setAccent(color){
+        if(!glass || !iconbox) return;
+        if(color === "orange"){
+          glass.style.borderLeftColor = "rgba(255,170,0,0.50)";
+          glass.style.borderTopColor  = "rgba(255,170,0,0.50)";
+          iconbox.style.borderColor = "rgba(255,170,0,0.55)";
+          iconbox.style.boxShadow = "0 0 10px rgba(255,170,0,0.20)";
+          if(icon) icon.style.color = "rgba(255,170,0,0.95)";
+          if(led){ led.style.background = "rgba(255,170,0,0.95)"; led.style.boxShadow="0 0 10px rgba(255,170,0,0.45)"; }
+          if(idv) idv.closest(".holo-id").style.color = "rgba(255,170,0,0.75)";
+        } else if(color === "pink"){
+          glass.style.borderLeftColor = "rgba(255,0,255,0.50)";
+          glass.style.borderTopColor  = "rgba(255,0,255,0.50)";
+          iconbox.style.borderColor = "rgba(255,0,255,0.55)";
+          iconbox.style.boxShadow = "0 0 10px rgba(255,0,255,0.20)";
+          if(icon) icon.style.color = "rgba(255,0,255,0.95)";
+          if(led){ led.style.background = "rgba(255,0,255,0.95)"; led.style.boxShadow="0 0 10px rgba(255,0,255,0.45)"; }
+          if(idv) idv.closest(".holo-id").style.color = "rgba(255,0,255,0.75)";
+        }
+      }
+
+      const accent = barStyle(bucket);
+      if(accent) setAccent(accent);
+
+      // bars
+      if(bars){
+        const count = barCount(bucket);
+        const bs = Array.from(bars.querySelectorAll("i"));
+        bs.forEach((b, i) => {
+          b.className = "";
+          if(i < count){
+            b.classList.add("on");
+          }
+        });
+        if(accent === "orange") bars.classList.add("orange");
+        if(accent === "pink") bars.classList.add("pink");
+      }
+
+      cards.appendChild(node);
+    });
+  }
+
+  function wireChips(){
+    const chips = document.getElementById("trustChips");
+    if(!chips) return;
+    chips.addEventListener("click", (e) => {
+      const btn = e.target.closest(".dev-chip");
+      if(!btn) return;
+      chips.querySelectorAll(".dev-chip").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderCards();
+    });
+  }
+
+  function wireSearch(){
+    const s = document.getElementById("deviceSearch");
+    if(!s) return;
+    s.addEventListener("input", () => renderCards());
+  }
+
+  function observeTable(){
+    const tbody = document.getElementById("deviceTbody");
+    if(!tbody) return;
+    const obs = new MutationObserver(() => renderCards());
+    obs.observe(tbody, {childList:true, subtree:true, characterData:true});
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    wireChips();
+    wireSearch();
+    observeTable();
+    // initial render (in case data is already there)
+    setTimeout(renderCards, 50);
+    setTimeout(renderCards, 500);
+  });
+})();
+</script>
+
+</body>
+</html>
