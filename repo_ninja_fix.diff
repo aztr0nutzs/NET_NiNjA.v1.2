@@ -1,0 +1,36 @@
+*** Begin Patch
+*** Update File: app/src/main/java/com/netninja/ninja/NinjaCompanionController.kt
+@@
+-    private val listener: (NinjaEvent) -> Unit = { event ->
+-        if (!running) return@let
+-        when (event) {
++    // Use an object instead of a simple lambda for the listener so that we can
++    // use an early return within invoke() when the controller isn't running.
++    private val listener = object : (NinjaEvent) -> Unit {
++        override fun invoke(event: NinjaEvent) {
++            // Only handle events when the controller is running. When not running,
++            // simply ignore this event.
++            if (!running) return
++
++            when (event) {
+*** End Patch
+*** Update File: android-app/src/main/java/com/netninja/ninja/NinjaCompanionController.kt
+@@
+-    private val listener: (NinjaEvent) -> Unit = { event ->
+-        // If the controller isn't running just ignore the event. We avoid attempting
+-        // to return from this lambda using an invalid label (return@let), which
+-        // caused a compile error. Instead, simply guard the event handling.
+-        if (!running) {
+-            // Not running: skip handling this event.
+-        } else {
+-            when (event) {
++    // Use an object instead of a simple lambda for the listener so that we can
++    // use an early return within invoke() when the controller isn't running.
++    private val listener = object : (NinjaEvent) -> Unit {
++        override fun invoke(event: NinjaEvent) {
++            // Only handle events when the controller is running. When not running,
++            // simply ignore this event.
++            if (!running) return
++
++            when (event) {
+*** End Patch
