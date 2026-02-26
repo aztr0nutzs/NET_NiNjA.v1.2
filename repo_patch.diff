@@ -1,0 +1,694 @@
+*** Begin Patch
+*** Add File: app/src/main/java/com/netninja/ninja/NinjaEvent.kt
++package com.netninja.ninja
++
++/**
++ * Data types for events delivered to the ninja companion.  The companion listens
++ * to the [NinjaEventBus] and reacts to various types of events by changing
++ * state, pulsing, showing thought bubbles, etc.  You can post your own
++ * application‑specific events via [NinjaEventBus.post].
++ */
++sealed class NinjaEvent(val timestampMs: Long = System.currentTimeMillis()) {
++    /**
++     * Generic informational event.  The message should be user‑readable and
++     * succinct (e.g. "Scanning network…").
++     */
++    data class Info(val message: String) : NinjaEvent()
++
++    /**
++     * Success event, e.g. an operation completed successfully.  The message
++     * should describe what succeeded (e.g. "Login successful").
++     */
++    data class Success(val message: String) : NinjaEvent()
++
++    /**
++     * Warning event, e.g. something non‑fatal that still warrants attention.
++     */
++    data class Warning(val message: String) : NinjaEvent()
++
++    /**
++     * Error event, e.g. a failure or exception.  Consider passing a user
++     * friendly message rather than raw exception text.
++     */
++    data class Error(val message: String) : NinjaEvent()
++
++    /**
++     * A router login result, used when the router login completes.  Contains
++     * whether it was a success and a detail message.
++     */
++    data class RouterLoginResult(val success: Boolean, val detail: String) : NinjaEvent()
++
++    /**
++     * Device discovery event, fired when the discovery phase finds a given
++     * number of devices on the network.
++     */
++    data class DeviceDiscoveryFound(val count: Int) : NinjaEvent()
++
++    /**
++     * Speed test completed event.  Contains measured down/up speeds and ping.
++     */
++    data class SpeedTestCompleted(
++        val downMbps: Double,
++        val upMbps: Double,
++        val pingMs: Int
++    ) : NinjaEvent()
++}
+*** End Patch
+*** Add File: app/src/main/java/com/netninja/ninja/NinjaEventBus.kt
++package com.netninja.ninja
++
++import android.os.Handler
++import android.os.Looper
++import java.util.concurrent.CopyOnWriteArraySet
++
++/**
++ * A lightweight in‑process pub/sub bus used by the ninja companion.  Events
++ * posted to this bus are delivered on the main thread to simplify UI updates.
++ * A small history of recent events is also kept so that the thought bubble
++ * can display recent messages even if the user opens the panel later.
++ */
++object NinjaEventBus {
++    private val mainHandler = Handler(Looper.getMainLooper())
++    private val listeners = CopyOnWriteArraySet<(NinjaEvent) -> Unit>()
++
++    private const val MAX_HISTORY = 25
++    private val history = ArrayDeque<NinjaEvent>(MAX_HISTORY)
++
++    /**
++     * Post an event to all registered listeners.  If called off the main
++     * thread the event will be delivered on the main thread.
++     */
++    fun post(event: NinjaEvent) {
++        // track history
++        synchronized(history) {
++            if (history.size >= MAX_HISTORY) history.removeFirst()
++            history.addLast(event)
++        }
++        if (Looper.myLooper() == Looper.getMainLooper()) {
++            listeners.forEach { it.invoke(event) }
++        } else {
++            mainHandler.post { listeners.forEach { it.invoke(event) } }
++        }
++    }
++
++    /**
++     * Register a listener.  Listeners should be removed when no longer needed
++     * (e.g. in `onStop`).
++     */
++    fun addListener(listener: (NinjaEvent) -> Unit) {
++        listeners.add(listener)
++    }
++
++    /** Remove a previously registered listener. */
++    fun removeListener(listener: (NinjaEvent) -> Unit) {
++        listeners.remove(listener)
++    }
++
++    /**
++     * Returns a snapshot of the recent event history, with the most recent
++     * events first.  Useful for displaying a list of recent messages when the
++     * user opens a panel.
++     */
++    fun getHistorySnapshot(): List<NinjaEvent> {
++        synchronized(history) {
++            return history.toList().asReversed()
++        }
++    }
++}
+*** End Patch
+*** Add File: app/src/main/java/com/netninja/ninja/NinjaState.kt
++package com.netninja.ninja
++
++/**
++ * Simple enumeration of the possible visual/emotional states for the ninja companion.
++ * Each state maps to a drawable resource that conveys a different expression or mood.
++ */
++enum class NinjaState {
++    /** Default idle state used when nothing interesting is happening. */
++    IDLE,
++    /** Sleepy/idle state when the companion wants to rest. */
++    SLEEP,
++    /** Alert state used for warnings or minor notices. */
++    ALERT,
++    /** Active/action state used while performing a task or operation. */
++    ACTION,
++    /** Error state used when something has gone wrong. */
++    ERROR,
++    /** Confident state used on success or completion. */
++    CONFIDENT
++}
+*** End Patch
+*** Add File: app/src/main/java/com/netninja/ninja/NinjaAnimatedImageView.kt
++package com.netninja.ninja
++
++import android.animation.Animator
++import android.animation.AnimatorListenerAdapter
++import android.animation.AnimatorSet
++import android.animation.ObjectAnimator
++import android.content.Context
++import android.util.AttributeSet
++import android.view.View
++import android.view.animation.AccelerateDecelerateInterpolator
++import androidx.appcompat.widget.AppCompatImageView
++import com.netninja.R
++import kotlin.math.max
++import kotlin.random.Random
++
++/**
++ * An ImageView that makes the ninja feel alive.  It supports idle floating and
++ * breathing animations, blinking, pulsing on events, a small shake for errors,
++ * and smooth crossfades when changing state drawables.  Use with
++ * [NinjaCompanionController] to orchestrate higher level behaviors.
++ */
++class NinjaAnimatedImageView @JvmOverloads constructor(
++    context: Context,
++    attrs: AttributeSet? = null
++) : AppCompatImageView(context, attrs) {
++    private var idleAnim: AnimatorSet? = null
++    private var lastPulseAt = 0L
++    private var currentState: NinjaState = NinjaState.IDLE
++
++    init {
++        id = R.id.ninja_companion_bubble
++        setImageResource(R.drawable.ninja_idle_blue)
++        scaleType = ScaleType.CENTER_INSIDE
++        isClickable = true
++        isFocusable = true
++    }
++
++    /** Start the idle floating + breathing animation. */
++    fun startIdleAnimation() {
++        stopIdleAnimation()
++        val floatY = ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, 0f, -dp(7f)).apply {
++            duration = 1400
++            repeatMode = ObjectAnimator.REVERSE
++            repeatCount = ObjectAnimator.INFINITE
++            interpolator = AccelerateDecelerateInterpolator()
++        }
++        val breatheX = ObjectAnimator.ofFloat(this, View.SCALE_X, 1f, 1.035f).apply {
++            duration = 1600
++            repeatMode = ObjectAnimator.REVERSE
++            repeatCount = ObjectAnimator.INFINITE
++            interpolator = AccelerateDecelerateInterpolator()
++        }
++        val breatheY = ObjectAnimator.ofFloat(this, View.SCALE_Y, 1f, 1.035f).apply {
++            duration = 1600
++            repeatMode = ObjectAnimator.REVERSE
++            repeatCount = ObjectAnimator.INFINITE
++            interpolator = AccelerateDecelerateInterpolator()
++        }
++        idleAnim = AnimatorSet().apply {
++            playTogether(floatY, breatheX, breatheY)
++            start()
++        }
++    }
++
++    /** Stop idle animations and reset transforms. */
++    fun stopIdleAnimation() {
++        idleAnim?.cancel()
++        idleAnim = null
++        translationY = 0f
++        scaleX = 1f
++        scaleY = 1f
++        alpha = 1f
++        rotation = 0f
++    }
++
++    /**
++     * Update the displayed state.  Optionally crossfades between the old
++     * drawable and the new one to avoid abrupt changes.
++     */
++    fun setState(state: NinjaState, withCrossfade: Boolean = true) {
++        if (state == currentState) return
++        currentState = state
++        val resId = when (state) {
++            NinjaState.IDLE -> R.drawable.ninja_idle_blue
++            NinjaState.SLEEP -> R.drawable.ninja_idle_sleep
++            NinjaState.ALERT -> R.drawable.ninja_alert_pink
++            NinjaState.ACTION -> R.drawable.ninja_action_purple
++            NinjaState.ERROR -> R.drawable.ninja_error_red
++            NinjaState.CONFIDENT -> R.drawable.ninja_confident_purple
++        }
++        if (!withCrossfade) {
++            setImageResource(resId)
++            return
++        }
++        // small crossfade for smoother state transitions
++        animate().cancel()
++        val out = ObjectAnimator.ofFloat(this, View.ALPHA, 1f, 0.15f).apply { duration = 90 }
++        val `in` = ObjectAnimator.ofFloat(this, View.ALPHA, 0.15f, 1f).apply { duration = 120 }
++        out.addListener(object : AnimatorListenerAdapter() {
++            override fun onAnimationEnd(animation: Animator) {
++                setImageResource(resId)
++            }
++        })
++        AnimatorSet().apply {
++            playSequentially(out, `in`)
++            start()
++        }
++    }
++
++    /** Fake blink by squashing the Y axis briefly.  Looks like blinking on a chibi head. */
++    fun blink() {
++        animate().cancel()
++        val squash = AnimatorSet().apply {
++            playTogether(
++                ObjectAnimator.ofFloat(this@NinjaAnimatedImageView, View.SCALE_Y, scaleY, 0.22f),
++                ObjectAnimator.ofFloat(this@NinjaAnimatedImageView, View.SCALE_X, scaleX, 1.02f)
++            )
++            duration = 70
++        }
++        val restore = AnimatorSet().apply {
++            playTogether(
++                ObjectAnimator.ofFloat(this@NinjaAnimatedImageView, View.SCALE_Y, 0.22f, 1f),
++                ObjectAnimator.ofFloat(this@NinjaAnimatedImageView, View.SCALE_X, 1.02f, 1f)
++            )
++            duration = 90
++        }
++        AnimatorSet().apply {
++            playSequentially(squash, restore)
++            start()
++        }
++    }
++
++    /** Quick pulse when an event arrives to draw the user's attention. */
++    fun pulse() {
++        val now = System.currentTimeMillis()
++        if (now - lastPulseAt < 350) return
++        lastPulseAt = now
++        animate().cancel()
++        animate()
++            .scaleX(1.12f)
++            .scaleY(1.12f)
++            .setDuration(110)
++            .setInterpolator(AccelerateDecelerateInterpolator())
++            .withEndAction {
++                animate()
++                    .scaleX(1f)
++                    .scaleY(1f)
++                    .setDuration(140)
++                    .setInterpolator(AccelerateDecelerateInterpolator())
++                    .start()
++            }
++            .start()
++    }
++
++    /** Shake gently left/right to indicate an error or negative feedback. */
++    fun shakeNo() {
++        animate().cancel()
++        ObjectAnimator.ofFloat(this, View.ROTATION, 0f, -9f, 9f, -7f, 7f, 0f).apply {
++            duration = 260
++            interpolator = AccelerateDecelerateInterpolator()
++        }.start()
++    }
++
++    /** Randomly choose an idle state for variety during long idle periods. */
++    fun randomIdleState(): NinjaState {
++        val r = Random.nextInt(100)
++        return when {
++            r < 70 -> NinjaState.IDLE
++            r < 88 -> NinjaState.CONFIDENT
++            else -> NinjaState.SLEEP
++        }
++    }
++
++    /** Convert dp to pixels based on current display metrics. */
++    private fun dp(v: Float): Float = max(1f, v * resources.displayMetrics.density)
++}
+*** End Patch
+*** Add File: app/src/main/java/com/netninja/ninja/NinjaThoughtBubbleView.kt
++package com.netninja.ninja
++
++import android.content.Context
++import android.os.Handler
++import android.os.Looper
++import android.util.AttributeSet
++import android.view.View
++import androidx.appcompat.widget.AppCompatTextView
++import com.netninja.R
++
++/**
++ * A small transient thought bubble that appears above the ninja and fades out
++ * automatically after a short duration.  It uses a Handler to schedule hiding
++ * itself on the main thread.  The text colour and background are set via
++ * drawable resources.
++ */
++class NinjaThoughtBubbleView @JvmOverloads constructor(
++    context: Context,
++    attrs: AttributeSet? = null
++) : AppCompatTextView(context, attrs) {
++    private val main = Handler(Looper.getMainLooper())
++    private var hideRunnable: Runnable? = null
++
++    init {
++        id = R.id.ninja_companion_thought
++        setBackgroundResource(R.drawable.ninja_thought_bg)
++        setTextColor(0xFFFFFFFF.toInt())
++        textSize = 12f
++        alpha = 0f
++        visibility = View.GONE
++    }
++
++    /** Show a thought bubble with the given text for a specified duration. */
++    fun show(text: String, durationMs: Long = 2200L) {
++        this.text = text
++        hideRunnable?.let { main.removeCallbacks(it) }
++        if (visibility != View.VISIBLE) {
++            visibility = View.VISIBLE
++        }
++        animate().cancel()
++        alpha = 0f
++        translationY = 0f
++        animate()
++            .alpha(1f)
++            .translationY(-dp(6))
++            .setDuration(140)
++            .start()
++        hideRunnable = Runnable { hide() }
++        main.postDelayed(hideRunnable!!, durationMs)
++    }
++
++    /** Immediately hide the bubble by fading it out. */
++    fun hide() {
++        hideRunnable?.let { main.removeCallbacks(it) }
++        hideRunnable = null
++        animate().cancel()
++        animate()
++            .alpha(0f)
++            .translationY(0f)
++            .setDuration(160)
++            .withEndAction { visibility = View.GONE }
++            .start()
++    }
++
++    private fun dp(v: Int): Float = v * resources.displayMetrics.density
++}
+*** End Patch
+*** Add File: app/src/main/java/com/netninja/ninja/NinjaCompanionController.kt
++package com.netninja.ninja
++
++import android.os.Handler
++import android.os.Looper
++import android.os.SystemClock
++import kotlin.random.Random
++
++/**
++ * A controller responsible for orchestrating the ninja companion’s behaviour.
++ * It subscribes to [NinjaEventBus] and drives the [NinjaAnimatedImageView] and
++ * [NinjaThoughtBubbleView] based on incoming events.  It also manages
++ * periodic idle behaviours such as blinking and random idle state changes.
++ *
++ * The controller must be started and stopped in your activity’s lifecycle
++ * (`onStart`/`onStop`) to avoid leaking listeners.  See MainActivity for
++ * usage.
++ */
++class NinjaCompanionController(
++    private val ninja: NinjaAnimatedImageView,
++    private val thought: NinjaThoughtBubbleView
++) {
++    private val main = Handler(Looper.getMainLooper())
++    private var running = false
++    private var lastThoughtAt = 0L
++
++    private val listener: (NinjaEvent) -> Unit = { event ->
++        if (!running) return@let
++        when (event) {
++            is NinjaEvent.Info -> {
++                ninja.pulse()
++                maybeThought(event.message)
++            }
++            is NinjaEvent.Success -> {
++                ninja.setState(NinjaState.CONFIDENT)
++                ninja.pulse()
++                maybeThought(event.message)
++                scheduleReturnToIdle()
++            }
++            is NinjaEvent.Warning -> {
++                ninja.setState(NinjaState.ALERT)
++                ninja.pulse()
++                maybeThought(event.message)
++                scheduleReturnToIdle()
++            }
++            is NinjaEvent.Error -> {
++                ninja.setState(NinjaState.ERROR)
++                ninja.shakeNo()
++                ninja.pulse()
++                maybeThought(event.message, force = true)
++                scheduleReturnToIdle()
++            }
++            is NinjaEvent.RouterLoginResult -> {
++                if (event.success) {
++                    ninja.setState(NinjaState.CONFIDENT)
++                    ninja.pulse()
++                    maybeThought("Logged in. Try not to break it.")
++                } else {
++                    ninja.setState(NinjaState.ERROR)
++                    ninja.shakeNo()
++                    ninja.pulse()
++                    maybeThought("Login failed: ${'$'}{event.detail}", force = true)
++                }
++                scheduleReturnToIdle()
++            }
++            is NinjaEvent.DeviceDiscoveryFound -> {
++                ninja.setState(NinjaState.ACTION)
++                ninja.pulse()
++                maybeThought("Found ${'$'}{event.count} devices.")
++                scheduleReturnToIdle()
++            }
++            is NinjaEvent.SpeedTestCompleted -> {
++                ninja.setState(NinjaState.ACTION)
++                ninja.pulse()
++                maybeThought(
++                    "Speed: ${'$'}{event.downMbps.toInt()}↓ / ${'$'}{event.upMbps.toInt()}↑  (${ '$'}{event.pingMs}ms)"
++                )
++                scheduleReturnToIdle()
++            }
++        }
++    }
++
++    private val blinkRunnable = object : Runnable {
++        override fun run() {
++            if (!running) return
++            ninja.blink()
++            main.postDelayed(this, randomBetween(2200, 5200).toLong())
++        }
++    }
++
++    private val idleSwapRunnable = object : Runnable {
++        override fun run() {
++            if (!running) return
++            val next = ninja.randomIdleState()
++            ninja.setState(next)
++            main.postDelayed(this, randomBetween(7000, 14000).toLong())
++        }
++    }
++
++    private val returnToIdleRunnable = Runnable {
++        if (!running) return@Runnable
++        ninja.setState(NinjaState.IDLE)
++    }
++
++    /** Start listening to events and begin idle behaviours. */
++    fun start() {
++        if (running) return
++        running = true
++        ninja.startIdleAnimation()
++        NinjaEventBus.addListener(listener)
++        main.postDelayed(blinkRunnable, randomBetween(1400, 2800).toLong())
++        main.postDelayed(idleSwapRunnable, randomBetween(6000, 11000).toLong())
++    }
++
++    /** Stop listening to events and idle behaviours. */
++    fun stop() {
++        if (!running) return
++        running = false
++        NinjaEventBus.removeListener(listener)
++        main.removeCallbacks(blinkRunnable)
++        main.removeCallbacks(idleSwapRunnable)
++        main.removeCallbacks(returnToIdleRunnable)
++        thought.hide()
++        ninja.stopIdleAnimation()
++    }
++
++    private fun scheduleReturnToIdle(delayMs: Long = 2400L) {
++        main.removeCallbacks(returnToIdleRunnable)
++        main.postDelayed(returnToIdleRunnable, delayMs)
++    }
++
++    private fun maybeThought(text: String, force: Boolean = false) {
++        val now = SystemClock.uptimeMillis()
++        val cooldown = 4500L
++        if (!force && now - lastThoughtAt < cooldown) return
++        lastThoughtAt = now
++        thought.show(text)
++    }
++
++    private fun randomBetween(min: Int, max: Int): Int {
++        return Random.nextInt(max - min + 1) + min
++    }
++}
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_bubble_bg.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Translucent dark background with a neon‑green stroke to complement the app palette -->
++    <solid android:color="#1A1A1A" />
++    <stroke android:width="2dp" android:color="#5CFFB2" />
++    <padding android:left="6dp" android:top="6dp" android:right="6dp" android:bottom="6dp" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_action_purple.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for action purple state. -->
++    <solid android:color="#9C27B0" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_alert_pink.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for alert pink state. -->
++    <solid android:color="#E91E63" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_confident_purple.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for confident purple state. -->
++    <solid android:color="#673AB7" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_error_red.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for error red state. -->
++    <solid android:color="#F44336" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_idle_blue.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for idle blue state.  Replace with your own artwork if desired. -->
++    <solid android:color="#3F51B5" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_idle_sleep.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for sleep state. -->
++    <solid android:color="#9E9E9E" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/drawable/ninja_thought_bg.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android">
++    <solid android:color="#E6000000" />
++    <stroke android:width="2dp" android:color="#5CFFB2" />
++    <corners android:radius="14dp" />
++    <padding
++        android:left="10dp"
++        android:top="8dp"
++        android:right="10dp"
++        android:bottom="8dp" />
++</shape>
+*** End Patch
+*** Add File: app/src/main/res/values/ids.xml
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <!-- Stable IDs used for ninja companion views.  Defining them here ensures
++         that runtime‑added views have deterministic view IDs across
++         configuration changes. -->
++    <item name="ninja_companion_bubble" type="id" />
++    <item name="ninja_companion_panel" type="id" />
++    <item name="ninja_companion_thought" type="id" />
++</resources>
+*** End Patch
+*** Update File: app/src/main/java/com/netninja/MainActivity.kt
+@@
+-import android.widget.FrameLayout
++import android.widget.FrameLayout
++import android.view.Gravity
++import android.view.ViewGroup
++import com.netninja.ninja.NinjaAnimatedImageView
++import com.netninja.ninja.NinjaCompanionController
++import com.netninja.ninja.NinjaThoughtBubbleView
+@@ class MainActivity : AppCompatActivity() {
+   private var scanProgressJob: Job? = null
++
++  /** Controller managing the ninja companion lifecycle and behaviours. */
++  private var ninjaController: NinjaCompanionController? = null
+@@ fun onCreate(savedInstanceState: Bundle?) {
+     setContentView(web)
+-
+-    // TODO: Anything else?
++    // Attach the ninja overlay after setting the content view.
++    attachNinjaCompanion()
+@@
+     observeScanProgress()
+   }
++
++  override fun onStart() {
++    super.onStart()
++    // Start the ninja animations and event subscriptions
++    ninjaController?.start()
++  }
++
++  override fun onStop() {
++    // Stop the ninja to avoid leaks when the activity is no longer visible
++    ninjaController?.stop()
++    super.onStop()
++  }
+@@
+   override fun onDestroy() {
+     scanProgressJob?.cancel()
+     uiScope.cancel()
+     super.onDestroy()
+   }
++
++  /**
++   * Programmatically attach the ninja companion overlay on top of whatever
++   * content this activity is showing.  The bubble and thought bubble are
++   * positioned relative to the bottom right of the screen.  Calling this
++   * repeatedly will remove the previous overlay.
++   */
++  private fun attachNinjaCompanion() {
++    val root = window.decorView.findViewById<ViewGroup>(android.R.id.content)
++    // Use the first child if present to overlay just on top of our content view
++    val overlay: ViewGroup = (root.getChildAt(0) as? ViewGroup) ?: root
++    // Remove any existing ninja views before adding new ones
++    val existingBubble = overlay.findViewById<NinjaAnimatedImageView>(R.id.ninja_companion_bubble)
++    val existingThought = overlay.findViewById<NinjaThoughtBubbleView>(R.id.ninja_companion_thought)
++    if (existingBubble != null) overlay.removeView(existingBubble)
++    if (existingThought != null) overlay.removeView(existingThought)
++    // Create bubble view
++    val ninja = NinjaAnimatedImageView(this).apply {
++      layoutParams = FrameLayout.LayoutParams(dp(64), dp(64)).apply {
++        gravity = Gravity.END or Gravity.BOTTOM
++        marginEnd = dp(14)
++        bottomMargin = dp(90)
++      }
++      setBackgroundResource(R.drawable.ninja_bubble_bg)
++      setPadding(dp(6), dp(6), dp(6), dp(6))
++      elevation = dp(10).toFloat()
++    }
++    // Create thought bubble view
++    val thought = NinjaThoughtBubbleView(this).apply {
++      layoutParams = FrameLayout.LayoutParams(
++        ViewGroup.LayoutParams.WRAP_CONTENT,
++        ViewGroup.LayoutParams.WRAP_CONTENT
++      ).apply {
++        gravity = Gravity.END or Gravity.BOTTOM
++        marginEnd = dp(14) + dp(70)
++        bottomMargin = dp(90) + dp(40)
++      }
++      elevation = dp(11).toFloat()
++    }
++    // Example click behaviour: show a simple message when tapped
++    ninja.setOnClickListener {
++      thought.show("I’m watching your packets. Respectfully.")
++    }
++    overlay.addView(thought)
++    overlay.addView(ninja)
++    ninjaController = NinjaCompanionController(ninja, thought)
++  }
+*** End Patch

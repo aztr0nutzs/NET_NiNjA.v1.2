@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Neural Control Dashboard V2.0</title>
+<title>NET NiNjA</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&amp;family=Share+Tech+Mono&amp;family=Rajdhani:wght@300;500;700&amp;display=swap" rel="stylesheet"/>
@@ -98,12 +98,12 @@
 <main class="flex-1 overflow-y-auto overflow-x-hidden relative pb-24 scroll-smooth">
 <section aria-labelledby="tabbtn-dashboard" class="active px-4 py-6 space-y-6" id="tab-dashboard">
 <div class="flex items-end justify-between border-b border-gray-800 pb-2">
-<h2 class="font-orbitron text-2xl font-bold text-white tracking-wide">NEURAL<span class="text-[#39ff14]">_OS</span></h2>
+<h2 class="font-orbitron text-2xl font-bold text-white tracking-wide">NET<span class="text-[#39ff14]">_NiNjA</span></h2>
 <div class="font-mono-tech text-xs text-[#bc13fe]">V2.0.4 SAFE MODE</div>
 </div>
 <div class="hidden relative overflow-hidden bg-[#39ff14]/10 border border-[#39ff14] p-3 flex items-center gap-3 animate-pulse" id="nnScanBanner">
 <div class="w-4 h-4 border-2 border-[#39ff14] border-t-transparent rounded-full animate-spin"></div>
-<span class="font-mono-tech text-[#39ff14] uppercase text-xs tracking-widest" id="nnScanBannerText">Scanning Neural Pathways...</span>
+<span class="font-mono-tech text-[#39ff14] uppercase text-xs tracking-widest" id="nnScanBannerText">Scanning Nearby...</span>
 </div>
 <div class="relative w-full aspect-[2/1] min-h-[180px] bg-black/40 border border-[#39ff14]/20 rounded-lg overflow-hidden flex items-center justify-center group">
 <div class="absolute inset-0 bg-[linear-gradient(0deg,transparent_24%,rgba(57,255,20,0.05)_25%,rgba(57,255,20,0.05)_26%,transparent_27%,transparent_74%,rgba(57,255,20,0.05)_75%,rgba(57,255,20,0.05)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(57,255,20,0.05)_25%,rgba(57,255,20,0.05)_26%,transparent_27%,transparent_74%,rgba(57,255,20,0.05)_75%,rgba(57,255,20,0.05)_76%,transparent_77%,transparent)] bg-[length:30px_30px]"></div>
@@ -112,7 +112,7 @@
 <div class="absolute inset-2 scan-core-ring animate-[spin_3s_linear_infinite] opacity-80"></div>
 <div class="absolute inset-4 bg-black rounded-full border border-[#39ff14] flex flex-col items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.2)]">
 <span class="font-orbitron text-2xl font-bold text-white tracking-widest neon-glow-text" id="scanPct">IDLE</span>
-<span class="font-mono-tech text-[9px] text-[#39ff14]/70 mt-1">CORE STATUS</span>
+<span class="font-mono-tech text-[9px] text-[#39ff14]/70 mt-1">System STATUS</span>
 </div>
 </div>
 <div class="absolute left-4 top-1/2 -translate-y-1/2 space-y-4">
@@ -127,7 +127,7 @@
 </div>
 <div class="absolute right-4 top-1/2 -translate-y-1/2 space-y-4">
 <div class="text-left">
-<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">NET_NODES</div>
+<div class="text-[9px] text-gray-500 font-mono-tech uppercase mb-1">NiNjA_NODES</div>
 <div class="text-xl font-mono-tech text-[#39ff14]" id="networksFound">12</div>
 </div>
 <div class="text-left">
@@ -175,7 +175,7 @@
 <span class="material-symbols-outlined">warning</span>
 </div>
 <div>
-<h3 class="font-orbitron text-sm text-red-400">INTRUDER_ALERT <span class="text-[10px] text-yellow-400 ml-2" id="unknownPill">Review</span></h3>
+<h3 class="font-orbitron text-sm text-red-400">THREAT_ALERT <span class="text-[10px] text-yellow-400 ml-2" id="unknownPill">Review</span></h3>
 <p class="font-mono-tech text-xs text-gray-400" id="unknownList">No unauthorized signatures detected.</p>
 </div>
 </div>
@@ -204,7 +204,7 @@
 </div>
 </section>
 <section aria-labelledby="tabbtn-devices" class="hidden tab-page nn-devices-tab px-4 py-6" id="tab-devices">
-<h2 class="font-orbitron text-2xl font-bold text-white mb-4">DEVICE<span class="text-[#bc13fe]">_MATRIX</span></h2>
+<h2 class="font-orbitron text-2xl font-bold text-white mb-4">NEARBY<span class="text-[#bc13fe]">DEViCES</span></h2>
 <div class="nn-device-summary grid grid-cols-4 gap-2 mb-6" id="nnDeviceSummary">
 <div class="bg-gray-900/50 border border-gray-800 p-2 text-center rounded">
 <span class="block font-mono-tech text-xl text-[#39ff14]" id="nnDevOnline">0</span>
@@ -258,8 +258,8 @@
 <section aria-labelledby="tabbtn-networks" class="hidden tab-page h-full" id="tab-networks">
 <div class="h-full w-full relative">
 <div class="absolute top-4 left-4 z-10 glass-shard px-4 py-2 pointer-events-none">
-<h2 class="font-orbitron text-lg text-white">NODE_MAP</h2>
-<div class="text-[10px] text-[#39ff14] font-mono-tech">3D VISUALIZATION ACTIVE</div>
+<h2 class="font-orbitron text-lg text-white">NiNjA NODES</h2>
+<div class="text-[10px] text-[#39ff14] font-mono-tech"></div>
 </div>
 <iframe allow="accelerometer; gyroscope" class="w-full h-full border-none opacity-80" id="nnMapIframe" loading="eager" src="network_styles.html" title="Neural Network Map"></iframe>
 </div>
@@ -298,7 +298,7 @@
 </div>
 </section>
 <section aria-labelledby="tabbtn-gateway" class="hidden tab-page px-4 py-6 space-y-6" id="tab-gateway">
-<h2 class="font-orbitron text-2xl font-bold text-white">GATEWAY<span class="text-[#39ff14]">_G5AR</span></h2>
+<h2 class="font-orbitron text-2xl font-bold text-white">GATEWAY<span class="text-[#39ff14]">T-MOBILE_G5AR</span></h2>
 <div class="glass-shard p-6 relative overflow-hidden" id="g5arStatusCard">
 <div class="absolute -right-4 -top-4 text-9xl text-white/5 font-orbitron font-bold">G5</div>
 <div class="relative z-10">
