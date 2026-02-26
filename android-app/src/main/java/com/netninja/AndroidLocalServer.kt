@@ -13,13 +13,6 @@ import android.provider.Settings
 import android.text.format.Formatter
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.netninja.cam.CameraDevice
-import com.netninja.cam.OnvifDiscoveryService
-import com.netninja.openclaw.OpenClawGatewayState
-import com.netninja.openclaw.OpenClawNodeSnapshot
-import com.netninja.openclaw.NodeSession
-import com.netninja.openclaw.OpenClawDashboardState
-import com.netninja.openclaw.SkillExecutor
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -209,42 +202,6 @@ class AndroidLocalServer(internal val ctx: Context) {
 
   private val scanMutex = Mutex()
 
-  // OpenClaw gateway: keep a set of active websocket sessions so we can broadcast snapshots on updates.
-  internal val openClawWsSessions = ConcurrentHashMap<String, DefaultWebSocketServerSession>()
-  internal val openClawJson = Json { ignoreUnknownKeys = true }
-
-  // OpenClaw dashboard state (persisted to SQLite).
-  internal val openClawDashboard = OpenClawDashboardState(db)
-
-  // Skill executor wired to real device-scanning operations.
-  internal val skillExecutor = SkillExecutor { skillName ->
-    when (skillName) {
-      "scan_network" -> {
-        val subnet = deriveSubnetCidr()
-        if (subnet != null) {
-          scheduleScan(subnet, reason = "skill:scan_network")
-          "Scan initiated on $subnet"
-        } else {
-          "No subnet available"
-        }
-      }
-      "onvif_discovery" -> {
-        val service = com.netninja.cam.OnvifDiscoveryService(ctx, timeoutMs = 1200)
-        val devices = runCatching {
-          kotlinx.coroutines.runBlocking(Dispatchers.IO) { service.discover() }
-        }.getOrDefault(emptyList())
-        "Discovered ${devices.size} ONVIF device(s)"
-      }
-      "port_scan" -> {
-        val subnet = deriveSubnetCidr()
-        if (subnet != null) "Port scan queued on $subnet" else "No subnet available"
-      }
-      "wol_broadcast" -> "WoL broadcast: use /api/v1/actions/wol with a MAC address"
-      "rtsp_probe" -> "RTSP probe: use ONVIF discovery first to find camera endpoints"
-      else -> null
-    }
-  }
-
   // Test hooks (override network/environment behavior).
   internal var canAccessWifiDetailsOverride: (() -> Boolean)? = null
   internal var interfaceInfoOverride: (() -> InterfaceInfo?)? = null
@@ -258,7 +215,6 @@ class AndroidLocalServer(internal val ctx: Context) {
   internal var wifiEnabledOverride: (() -> Boolean)? = null
   internal var locationEnabledOverride: (() -> Boolean)? = null
   internal var permissionSnapshotOverride: (() -> PermissionSnapshot)? = null
-  internal var onvifDiscoverOverride: (suspend () -> List<CameraDevice>)? = null
 
   internal fun scheduleScanForTest(subnet: String) {
     scheduleScan(subnet, reason = "test")
@@ -307,11 +263,7 @@ class AndroidLocalServer(internal val ctx: Context) {
       if (call.request.httpMethod == HttpMethod.Options) return@intercept
 
       val path = call.request.path()
-      val protectedPath =
-        path.startsWith("/api/v1/") ||
-          path.startsWith("/api/openclaw/") ||
-          path.startsWith("/openclaw/") ||
-          path == "/openclaw/ws"
+      val protectedPath = path.startsWith("/api/v1/")
       if (!protectedPath) return@intercept
 
       val bearer = call.request.headers[HttpHeaders.Authorization]
@@ -415,17 +367,6 @@ class AndroidLocalServer(internal val ctx: Context) {
     catching("stop:scanScope.cancel") { scanScope.cancel() }
     catching("stop:watchdogScope.cancel") { watchdogScope.cancel() }
     catching("stop:engine.stop") { engine?.stop(500, 1000) }
-  }
-
-  internal suspend fun broadcastOpenClawSnapshot() {
-    val snapshot = OpenClawGatewaySnapshot(
-      nodes = OpenClawGatewayState.listNodes(),
-      uptimeMs = OpenClawGatewayState.uptimeMs()
-    )
-    val payload = openClawJson.encodeToString(snapshot)
-    openClawWsSessions.values.forEach { session ->
-      catching("openclaw:broadcast.send") { session.send(payload) }
-    }
   }
 
   // ----------------- Scheduler + automation -----------------
@@ -864,10 +805,6 @@ class AndroidLocalServer(internal val ctx: Context) {
 
     lastScanResults.set(devices.values.toList())
 
-    catching("db:load:openclaw") {
-      openClawDashboard.initialize()
-      openClawDashboard.setSkillExecutor(skillExecutor)
-    }
   }
 
   internal fun saveDevice(d: Device) {
@@ -1174,7 +1111,6 @@ class AndroidLocalServer(internal val ctx: Context) {
       "networkState" to snapshot.networkState,
       "wifiState" to snapshot.wifiState,
       "permissionPermanentlyDenied" to snapshot.permissionPermanentlyDenied,
-      "camera" to hasPermission(android.Manifest.permission.CAMERA),
       "mic" to hasPermission(android.Manifest.permission.RECORD_AUDIO),
       "notifications" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         hasPermission(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -1324,13 +1260,10 @@ class AndroidLocalServer(internal val ctx: Context) {
 
     val result = when (action) {
       "OPEN_SETTINGS" -> PermissionBridge.openAppSettings(ctx)
-      "REQUEST_CAMERA" -> PermissionBridge.requestCamera()
       "REQUEST_MIC" -> PermissionBridge.requestMic()
       "REQUEST_NOTIFICATIONS" -> PermissionBridge.requestNotifications(ctx)
 
-      // Allow server-style payloads: { "action": "OPEN_SETTINGS", "context": "CAMERA" } or { "action": "REQUEST", "context": "CAMERA" }
       "REQUEST" -> when (context) {
-        "CAMERA" -> PermissionBridge.requestCamera()
         "MIC" -> PermissionBridge.requestMic()
         "NOTIFICATIONS" -> PermissionBridge.requestNotifications(ctx)
         else -> PermissionActionResult(ok = false, message = "Unsupported context '$contextRaw'.", status = "unsupported")

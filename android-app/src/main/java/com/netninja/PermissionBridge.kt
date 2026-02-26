@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference
 object PermissionBridge {
   private val activityRef = AtomicReference<WeakReference<Activity>?>(null)
 
-  const val REQ_CAMERA = 2201
   const val REQ_MIC = 2202
   const val REQ_NOTIFICATIONS = 2203
 
@@ -41,10 +40,6 @@ object PermissionBridge {
     }.getOrElse { e ->
       PermissionActionResult(ok = false, message = "Unable to open app settings.", status = "error", error = e.message)
     }
-  }
-
-  fun requestCamera(): PermissionActionResult {
-    return requestRuntimePermission(Manifest.permission.CAMERA, REQ_CAMERA, label = "Camera")
   }
 
   fun requestMic(): PermissionActionResult {

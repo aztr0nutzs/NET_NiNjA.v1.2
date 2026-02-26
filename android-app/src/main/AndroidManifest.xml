@@ -6,7 +6,6 @@
 
     <!-- Mark hardware features as optional when requesting related permissions.
          This prevents Play/ChromeOS from assuming the hardware is required. -->
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <!-- Core permissions for network scanning and web server. -->
@@ -19,12 +18,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
-    <!-- Additional permissions required for ONVIF discovery and foreground services. -->
+    <!-- Additional permissions required for network discovery and foreground services. -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- WebView permission helpers (requested at runtime as needed). -->
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

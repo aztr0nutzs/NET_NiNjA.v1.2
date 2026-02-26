@@ -516,7 +516,7 @@
 
     window.addEventListener("message", (event) => {
       const data = event && event.data;
-      if(!data || data.source !== "netninja-cam" || data.type !== "switch-tab") return;
+      if(!data || data.source !== "netninja-embed" || data.type !== "switch-tab") return;
       const target = String(data.tab || "dashboard");
       setTab(allowedTabs.has(target) ? target : "dashboard");
     });
@@ -2129,3 +2129,4 @@
     });
   })();
   
+

@@ -1,2 +1,0 @@
-02-09 04:27:37.865  3128  3253 I TestRunner: started: appContextHasExpectedPackage(com.netninja.SmokeInstrumentedTest)
-02-09 04:27:38.046  3128  3253 I TestRunner: finished: appContextHasExpectedPackage(com.netninja.SmokeInstrumentedTest)

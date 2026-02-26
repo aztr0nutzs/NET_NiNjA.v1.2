@@ -60,12 +60,6 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 5
       )"""
     )
 
-    db.execSQL(
-      """CREATE TABLE IF NOT EXISTS openclaw_kv(
-        key TEXT PRIMARY KEY,
-        value TEXT
-      )"""
-    )
     db.execSQL("CREATE INDEX IF NOT EXISTS idx_events_device_ts ON events(deviceId, ts)")
     db.execSQL("CREATE INDEX IF NOT EXISTS idx_devices_lastSeen ON devices(lastSeen DESC)")
   }
@@ -91,16 +85,6 @@ class LocalDatabase(ctx: Context) : SQLiteOpenHelper(ctx, "netninja.db", null, 5
     }
     if (oldVersion < 3) {
       runCatching { db.execSQL("ALTER TABLE devices ADD COLUMN openPorts TEXT") }
-    }
-    if (oldVersion < 4) {
-      runCatching {
-        db.execSQL(
-          """CREATE TABLE IF NOT EXISTS openclaw_kv(
-            key TEXT PRIMARY KEY,
-            value TEXT
-          )"""
-        )
-      }
     }
     if (oldVersion < 5) {
       runCatching { db.execSQL("CREATE INDEX IF NOT EXISTS idx_events_device_ts ON events(deviceId, ts)") }

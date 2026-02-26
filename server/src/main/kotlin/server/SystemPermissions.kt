@@ -121,7 +121,6 @@ fun performPermissionAction(action: String, context: String?): PermissionActionR
 
 private fun windowsSettingsTarget(context: String?): String {
   return when (context) {
-    "CAMERA" -> "ms-settings:privacy-webcam"
     "MIC" -> "ms-settings:privacy-microphone"
     "NETWORK" -> "ms-settings:network"
     "NOTIFICATIONS" -> "ms-settings:notifications"
@@ -132,11 +131,11 @@ private fun windowsSettingsTarget(context: String?): String {
 private fun macosSettingsTarget(context: String?): String {
   // `x-apple.systempreferences:` is best-effort. Targets may vary by macOS version.
   return when (context) {
-    "CAMERA" -> "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
     "MIC" -> "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
     "NETWORK" -> "x-apple.systempreferences:com.apple.preference.network"
     "NOTIFICATIONS" -> "x-apple.systempreferences:com.apple.preference.notifications"
     else -> "x-apple.systempreferences:com.apple.preference.security?Privacy"
   }
 }
+
 

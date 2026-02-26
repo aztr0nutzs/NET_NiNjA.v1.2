@@ -4,7 +4,6 @@ package com.netninja
 
 import android.os.Build
 import kotlinx.serialization.Serializable
-import com.netninja.openclaw.OpenClawNodeSnapshot
 
 @Serializable
 data class Device(
@@ -117,33 +116,6 @@ data class PermissionsActionResponse(
   val message: String,
   val platform: String = "android",
   val details: Map<String, String?> = emptyMap()
-)
-
-@Serializable data class OpenClawStatus(val nodes: Int, val uptimeMs: Long)
-
-@Serializable
-data class OpenClawWsMessage(
-  val type: String,
-  val protocolVersion: Int? = null,
-  val nodeId: String? = null,
-  val capabilities: List<String> = emptyList(),
-  val payload: String? = null,
-  val requestId: String? = null,
-  val success: Boolean? = null,
-  val error: String? = null
-)
-
-@Serializable
-data class OpenClawGatewaySnapshot(
-  val nodes: List<OpenClawNodeSnapshot>,
-  val uptimeMs: Long = 0L,
-  val updatedAt: Long = System.currentTimeMillis()
-)
-
-@Serializable
-data class OpenClawStatsResponse(
-  val uptimeMs: Long,
-  val nodeCount: Int
 )
 
 @Serializable

@@ -104,19 +104,14 @@ class MainActivity : AppCompatActivity() {
 
       override fun onPermissionRequest(request: PermissionRequest) {
         // Keep behavior safe-by-default: only grant if the corresponding Android permission is granted.
-        val needsCamera = request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
         val needsMic = request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
 
-        val cameraOk = !needsCamera || ContextCompat.checkSelfPermission(
-          this@MainActivity,
-          Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
         val micOk = !needsMic || ContextCompat.checkSelfPermission(
           this@MainActivity,
           Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
 
-        if (cameraOk && micOk) {
+        if (micOk) {
           request.grant(request.resources)
         } else {
           request.deny()
@@ -238,7 +233,7 @@ class MainActivity : AppCompatActivity() {
       }
       setBackgroundResource(R.drawable.ninja_bubble_bg)
       setPadding(dp(6), dp(6), dp(6), dp(6))
-      elevation = dp(10).toFloat()
+      elevation = dpF(10f)
     }
     // Create thought bubble view
     val thought = NinjaThoughtBubbleView(this).apply {
@@ -250,7 +245,7 @@ class MainActivity : AppCompatActivity() {
         marginEnd = dp(14) + dp(70)
         bottomMargin = dp(90) + dp(40)
       }
-      elevation = dp(11).toFloat()
+      elevation = dpF(11f)
     }
     // Example click behaviour: show a simple message when tapped
     ninja.setOnClickListener {
@@ -261,8 +256,8 @@ class MainActivity : AppCompatActivity() {
     ninjaController = NinjaCompanionController(ninja, thought)
   }
 
-  private fun dp(v: Int): Float = v * resources.displayMetrics.density
-  private fun dp(v: Float): Float = v * resources.displayMetrics.density
+  private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+  private fun dpF(v: Float): Float = v * resources.displayMetrics.density
 
   private fun observeScanProgress() {
     if (scanProgressJob != null) return
@@ -340,7 +335,6 @@ class MainActivity : AppCompatActivity() {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     if (
       requestCode != permissionRequestCode &&
-      requestCode != PermissionBridge.REQ_CAMERA &&
       requestCode != PermissionBridge.REQ_MIC &&
       requestCode != PermissionBridge.REQ_NOTIFICATIONS
     ) {

@@ -1,7 +1,6 @@
-ï»¿
+
 package server
 
-import com.netninja.cam.OnvifDiscoveryService
 import core.alerts.ChangeDetector
 import core.discovery.*
 import core.metrics.Uptime
@@ -40,11 +39,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.time.Duration
 import org.slf4j.LoggerFactory
-import server.openclaw.OpenClawDashboardState
-import server.openclaw.OpenClawGatewayRegistry
-import server.openclaw.OpenClawGatewayState
-import server.openclaw.openClawRoutes
-import server.openclaw.openClawWebSocketServer
 
 @Serializable
 data class ScanRequest(val subnet: String? = null, val timeoutMs: Int? = 250)
@@ -241,13 +235,10 @@ fun startServer(
     SpeedtestServer(id = "hex-3", name = "HEX-3", location = "Industrial Backbone"),
     SpeedtestServer(id = "luna-9", name = "LUNA-9", location = "Edge Satellite")
   )
-  val openClawGateway = OpenClawGatewayRegistry()
-  OpenClawGatewayState.bindRegistry(openClawGateway)
-  OpenClawDashboardState.bindDb(conn)
 
   val logQueue = ConcurrentLinkedQueue<String>()
   fun log(msg: String) { logQueue.add("${System.currentTimeMillis()}: $msg") }
-  log("auth enabled token=${expectedToken.take(6)}â€¦ (source=${if (!authToken.isNullOrBlank()) "env" else "file/generated"})")
+  log("auth enabled token=${expectedToken.take(6)}… (source=${if (!authToken.isNullOrBlank()) "env" else "file/generated"})")
 
   fun logException(where: String, t: Throwable, fields: Map<String, Any?> = emptyMap()) {
     if (t is CancellationException) throw t
@@ -605,7 +596,6 @@ fun startServer(
       val requiresAuth = when {
         path == "/api/v1/system/info" -> false // allow health/readiness without auth
         path.startsWith("/api/") -> true
-        path == "/openclaw/ws" -> true
         else -> false
       }
       if (!requiresAuth) return@intercept
@@ -653,9 +643,6 @@ fun startServer(
       staticFiles("/ui", webUiDir, index = "ninja_mobile_new.html")
       staticFiles("/assets", File(webUiDir, "assets"))
       get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
-
-      openClawWebSocketServer()
-      openClawRoutes()
 
       get("/api/v1/system/info") {
         call.respond(
@@ -996,18 +983,6 @@ fun startServer(
       get("/api/v1/discovery/results") {
         call.respond(currentResults())
       }
-
-      get("/api/v1/onvif/discover") {
-        val devices = catchingSuspend("onvif:discover") {
-          // Keep the probe timeout below the endpoint timeout so blocked UDP reads cannot linger past the HTTP request.
-          val service = OnvifDiscoveryService(timeoutMs = 1200)
-          withTimeoutOrNull(1500) {
-            withContext(Dispatchers.IO) { service.discover() }
-          } ?: emptyList()
-        }.getOrDefault(emptyList())
-        call.respond(devices)
-      }
-
       get("/api/v1/discovery/progress") {
         call.respond(scanProgress.get())
       }
@@ -1292,7 +1267,6 @@ private fun guessDeviceType(
   val host = hostname?.lowercase().orEmpty()
   val bannerText = banners.values.joinToString(" ").lowercase()
   return when {
-    openPorts.contains(554) || bannerText.contains("rtsp") -> "Camera"
     openPorts.contains(9100) || vend.contains("hp") || vend.contains("brother") -> "Printer"
     openPorts.contains(53) || openPorts.contains(67) -> "Router"
     (openPorts.contains(80) || openPorts.contains(443)) &&
@@ -1344,7 +1318,7 @@ private fun resolveScanIps(requested: String): List<String> {
       }
     }
   if (bestIface.isEmpty()) {
-    // Ultimate fallback â€” any IPv4 that is not 127.x
+    // Ultimate fallback — any IPv4 that is not 127.x
     val anyIp = java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
       .flatMap { java.util.Collections.list(it.inetAddresses) }
       .mapNotNull { a -> a.hostAddress.takeIf { !it.contains(":") && !it.startsWith("127.") } }
@@ -1400,7 +1374,7 @@ private fun sendMagicPacket(mac: String) {
 }
 
 private fun localNetworkInfo(): Map<String, Any?> {
-  // Find the best real network interface â€” filter out loopback, virtual, and link-local on Windows.
+  // Find the best real network interface — filter out loopback, virtual, and link-local on Windows.
   val iface = java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
     .filter { it.isUp && !it.isLoopback && !it.isVirtual }
     .filter { nif ->
@@ -1515,7 +1489,7 @@ private fun resolveGatewayViaShell(): String? {
         }
       }
     } catch (_: Exception) {
-      // command not available â€“ try next
+      // command not available – try next
     }
   }
   LOGGER.debug("resolveDefaultGateway: no cross-platform method succeeded")
@@ -1566,7 +1540,7 @@ private fun resolveDnsViaShell(): String? {
           val match = ipPattern.find(trimmed)
           if (match != null) dnsServers += match.groupValues[1]
         } else if (inDnsSection && trimmed.startsWith("  ").not() && trimmed.contains(":")) {
-          // New field â€” exit DNS section
+          // New field — exit DNS section
           inDnsSection = false
         } else if (inDnsSection) {
           // Continuation line with another DNS IP
@@ -1608,3 +1582,6 @@ private fun resolveDnsViaShell(): String? {
   LOGGER.debug("resolveDnsServers: no cross-platform method succeeded")
   return null
 }
+
+
+
