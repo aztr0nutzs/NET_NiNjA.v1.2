@@ -73,8 +73,9 @@ class NinjaCompanionController(
             is NinjaEvent.SpeedTestCompleted -> {
                 ninja.setState(NinjaState.ACTION)
                 ninja.pulse()
+                // Use plain text instead of arrow characters to avoid mojibake in some builds.
                 maybeThought(
-                    "Speed: ${event.downMbps.toInt()}↓ / ${event.upMbps.toInt()}↑  (${event.pingMs}ms)"
+                    "Speed: ${event.downMbps.toInt()} down / ${event.upMbps.toInt()} up (${event.pingMs}ms)"
                 )
                 scheduleReturnToIdle()
             }
@@ -143,3 +144,4 @@ class NinjaCompanionController(
         return Random.nextInt(max - min + 1) + min
     }
 }
+

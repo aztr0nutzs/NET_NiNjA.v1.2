@@ -1,0 +1,150 @@
+*** Begin Patch
+*** Delete File: app/src/main/res/drawable/ninja_action_purple.xml
+*** Delete File: app/src/main/res/drawable/ninja_alert_pink.xml
+*** Delete File: app/src/main/res/drawable/ninja_confident_purple.xml
+*** Delete File: app/src/main/res/drawable/ninja_error_red.xml
+*** Delete File: app/src/main/res/drawable/ninja_idle_blue.xml
+*** Delete File: app/src/main/res/drawable/ninja_idle_sleep.xml
+*** Delete File: android-app/src/main/res/drawable/ninja_action_purple.xml
+*** Delete File: android-app/src/main/res/drawable/ninja_alert_pink.xml
+*** Delete File: android-app/src/main/res/drawable/ninja_confident_purple.xml
+*** Delete File: android-app/src/main/res/drawable/ninja_error_red.xml
+*** Delete File: android-app/src/main/res/drawable/ninja_idle_blue.xml
+*** Delete File: android-app/src/main/res/drawable/ninja_idle_sleep.xml
+*** Add File: app/src/main/res/drawable/ninja_action_purple_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for action purple state. -->
++    <solid android:color="#9C27B0" />
++</shape>
+*** Add File: app/src/main/res/drawable/ninja_alert_pink_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for alert pink state. -->
++    <solid android:color="#E91E63" />
++</shape>
+*** Add File: app/src/main/res/drawable/ninja_confident_purple_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for confident purple state. -->
++    <solid android:color="#673AB7" />
++</shape>
+*** Add File: app/src/main/res/drawable/ninja_error_red_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for error red state. -->
++    <solid android:color="#F44336" />
++</shape>
+*** Add File: app/src/main/res/drawable/ninja_idle_blue_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for idle blue state. -->
++    <solid android:color="#3F51B5" />
++</shape>
+*** Add File: app/src/main/res/drawable/ninja_idle_sleep_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for sleep state. -->
++    <solid android:color="#9E9E9E" />
++</shape>
+*** Add File: android-app/src/main/res/drawable/ninja_action_purple_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for action purple state. -->
++    <solid android:color="#9C27B0" />
++</shape>
+*** Add File: android-app/src/main/res/drawable/ninja_alert_pink_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for alert pink state. -->
++    <solid android:color="#E91E63" />
++</shape>
+*** Add File: android-app/src/main/res/drawable/ninja_confident_purple_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for confident purple state. -->
++    <solid android:color="#673AB7" />
++</shape>
+*** Add File: android-app/src/main/res/drawable/ninja_error_red_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for error red state. -->
++    <solid android:color="#F44336" />
++</shape>
+*** Add File: android-app/src/main/res/drawable/ninja_idle_blue_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for idle blue state. -->
++    <solid android:color="#3F51B5" />
++</shape>
+*** Add File: android-app/src/main/res/drawable/ninja_idle_sleep_placeholder.xml
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
++    <!-- Placeholder graphic for sleep state. -->
++    <solid android:color="#9E9E9E" />
++</shape>
+*** Update File: app/src/main/java/com/netninja/ninja/NinjaAnimatedImageView.kt
+@@ init {
+-        setImageResource(R.drawable.ninja_idle_blue)
++        setImageResource(R.drawable.ninja_idle_blue_placeholder)
+@@ fun setState(state: NinjaState, withCrossfade: Boolean = true) {
+-            NinjaState.IDLE -> R.drawable.ninja_idle_blue
+-            NinjaState.SLEEP -> R.drawable.ninja_idle_sleep
+-            NinjaState.ALERT -> R.drawable.ninja_alert_pink
+-            NinjaState.ACTION -> R.drawable.ninja_action_purple
+-            NinjaState.ERROR -> R.drawable.ninja_error_red
+-            NinjaState.CONFIDENT -> R.drawable.ninja_confident_purple
++            NinjaState.IDLE -> R.drawable.ninja_idle_blue_placeholder
++            NinjaState.SLEEP -> R.drawable.ninja_idle_sleep_placeholder
++            NinjaState.ALERT -> R.drawable.ninja_alert_pink_placeholder
++            NinjaState.ACTION -> R.drawable.ninja_action_purple_placeholder
++            NinjaState.ERROR -> R.drawable.ninja_error_red_placeholder
++            NinjaState.CONFIDENT -> R.drawable.ninja_confident_purple_placeholder
+*** Update File: android-app/src/main/java/com/netninja/ninja/NinjaAnimatedImageView.kt
+@@ init {
+-        setImageResource(R.drawable.ninja_idle_blue)
++        setImageResource(R.drawable.ninja_idle_blue_placeholder)
+@@ fun setState(state: NinjaState, withCrossfade: Boolean = true) {
+-            NinjaState.IDLE -> R.drawable.ninja_idle_blue
+-            NinjaState.SLEEP -> R.drawable.ninja_idle_sleep
+-            NinjaState.ALERT -> R.drawable.ninja_alert_pink
+-            NinjaState.ACTION -> R.drawable.ninja_action_purple
+-            NinjaState.ERROR -> R.drawable.ninja_error_red
+-            NinjaState.CONFIDENT -> R.drawable.ninja_confident_purple
++            NinjaState.IDLE -> R.drawable.ninja_idle_blue_placeholder
++            NinjaState.SLEEP -> R.drawable.ninja_idle_sleep_placeholder
++            NinjaState.ALERT -> R.drawable.ninja_alert_pink_placeholder
++            NinjaState.ACTION -> R.drawable.ninja_action_purple_placeholder
++            NinjaState.ERROR -> R.drawable.ninja_error_red_placeholder
++            NinjaState.CONFIDENT -> R.drawable.ninja_confident_purple_placeholder
+*** Update File: app/src/main/java/com/netninja/ninja/NinjaCompanionController.kt
+@@ is NinjaEvent.SpeedTestCompleted -> {
+-                    ninja.setState(NinjaState.ACTION)
+-                    ninja.pulse()
+-                    maybeThought(
+-                        "Speed: ${'$'}{event.downMbps.toInt()}↓ / ${'$'}{event.upMbps.toInt()}↑  (${ '$'}{event.pingMs}ms)"
+-                    )
+-                    scheduleReturnToIdle()
++                    ninja.setState(NinjaState.ACTION)
++                    ninja.pulse()
++                    // Use plain text instead of arrow characters to avoid mojibake in some builds.
++                    maybeThought(
++                        "Speed: ${'$'}{event.downMbps.toInt()} down / ${'$'}{event.upMbps.toInt()} up (${ '$'}{event.pingMs}ms)"
++                    )
++                    scheduleReturnToIdle()
+*** Update File: android-app/src/main/java/com/netninja/ninja/NinjaCompanionController.kt
+@@ is NinjaEvent.SpeedTestCompleted -> {
+-                    ninja.setState(NinjaState.ACTION)
+-                    ninja.pulse()
+-                    maybeThought(
+-                        "Speed: ${event.downMbps.toInt()}↓ / ${event.upMbps.toInt()}↑  (${event.pingMs}ms)"
+-                    )
+-                    scheduleReturnToIdle()
++                    ninja.setState(NinjaState.ACTION)
++                    ninja.pulse()
++                    // Use plain text instead of arrow characters to avoid mojibake in some builds.
++                    maybeThought(
++                        "Speed: ${event.downMbps.toInt()} down / ${event.upMbps.toInt()} up (${event.pingMs}ms)"
++                    )
++                    scheduleReturnToIdle()
+*** End Patch
