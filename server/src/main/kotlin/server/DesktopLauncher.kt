@@ -35,7 +35,7 @@ fun main(args: Array<String>) {
   // Ensure the opened UI carries a token so the bundled API client can attach Authorization headers.
   val token = ServerApiAuth.loadOrCreate(dbPath = config.dbPath, envToken = config.authToken)
   val tokenSuffix = "?token=${java.net.URLEncoder.encode(token, Charsets.UTF_8)}"
-  val baseUrl = "http://${config.host}:${config.port}/ui/ninja_mobile_new.html$tokenSuffix"
+  val baseUrl = "http://${config.host}:${config.port}/ui/ninja_hud.html$tokenSuffix"
   waitForServerReady(config.host, config.port, Duration.ofSeconds(20))
   openBrowser(baseUrl)
 

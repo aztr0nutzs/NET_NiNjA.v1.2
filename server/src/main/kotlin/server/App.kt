@@ -650,9 +650,9 @@ fun startServer(
 
     routing {
       // Serve web-ui
-      staticFiles("/ui", webUiDir, index = "ninja_mobile_new.html")
+      staticFiles("/ui", webUiDir, index = "ninja_hud.html")
       staticFiles("/assets", File(webUiDir, "assets"))
-      get("/") { call.respondRedirect("/ui/ninja_mobile_new.html") }
+      get("/") { call.respondRedirect("/ui/ninja_hud.html") }
 
       openClawWebSocketServer()
       openClawRoutes()

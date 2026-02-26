@@ -29,7 +29,7 @@ class NinjaAnimatedImageView @JvmOverloads constructor(
 
     init {
         id = R.id.ninja_companion_bubble
-        setImageResource(R.drawable.ninja_idle_blue_placeholder)
+        setImageResource(R.drawable.ninja_idle_blue)
         scaleType = ScaleType.CENTER_INSIDE
         isClickable = true
         isFocusable = true
@@ -81,12 +81,12 @@ class NinjaAnimatedImageView @JvmOverloads constructor(
         if (state == currentState) return
         currentState = state
         val resId = when (state) {
-            NinjaState.IDLE -> R.drawable.ninja_idle_blue_placeholder
-            NinjaState.SLEEP -> R.drawable.ninja_idle_sleep_placeholder
-            NinjaState.ALERT -> R.drawable.ninja_alert_pink_placeholder
-            NinjaState.ACTION -> R.drawable.ninja_action_purple_placeholder
-            NinjaState.ERROR -> R.drawable.ninja_error_red_placeholder
-            NinjaState.CONFIDENT -> R.drawable.ninja_confident_purple_placeholder
+            NinjaState.IDLE -> R.drawable.ninja_idle_blue
+            NinjaState.SLEEP -> R.drawable.ninja_idle_sleep
+            NinjaState.ALERT -> R.drawable.ninja_alert_pink
+            NinjaState.ACTION -> R.drawable.ninja_action_purple
+            NinjaState.ERROR -> R.drawable.ninja_error_red
+            NinjaState.CONFIDENT -> R.drawable.ninja_confident_purple
         }
         if (!withCrossfade) {
             setImageResource(resId)

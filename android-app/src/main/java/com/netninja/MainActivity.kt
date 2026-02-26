@@ -261,8 +261,7 @@ class MainActivity : AppCompatActivity() {
     ninjaController = NinjaCompanionController(ninja, thought)
   }
 
-  private fun dp(v: Int): Float = v * resources.displayMetrics.density
-  private fun dp(v: Float): Float = v * resources.displayMetrics.density
+  private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
   private fun observeScanProgress() {
     if (scanProgressJob != null) return

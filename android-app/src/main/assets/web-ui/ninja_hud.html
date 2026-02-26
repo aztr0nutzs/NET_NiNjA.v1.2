@@ -103,6 +103,25 @@ body{
 /* ===== Layout shell (keep existing chrome but restyle) ===== */
 .app{ position:relative; z-index:10; min-height:100dvh; display:flex; flex-direction:column; }
 main{ padding: 14px 14px 96px; }
+.tab-page{
+  display:none;
+  animation: fadeIn .14s ease;
+  min-height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 26px);
+  flex: 1 1 auto;
+}
+.tab-page.active{ display:block; }
+.tab-page.media{
+  padding: 0;
+  flex-direction:column;
+  height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 26px);
+}
+.tab-page.media.active{ display:flex; }
+.tab-page.media iframe{
+  width:100%;
+  height:100%;
+  border:none;
+  background:#000;
+}
 @media (min-width: 720px){
   main{ padding: 18px 18px 96px; max-width: 1200px; margin: 0 auto; }
 }
@@ -1252,7 +1271,7 @@ main{ padding: 14px 14px 96px; }
       <!-- NETWORKS (holographic network map) -->
       <section class="tab-page media" id="tab-networks" aria-labelledby="tabbtn-networks">
         <iframe id="nnMapIframe"
-                src="holo_devices2.html"
+                src="network_styles.html"
                 title="Holographic Network Map"
                 allow="accelerometer; gyroscope"
                 loading="eager"></iframe>
@@ -1315,75 +1334,13 @@ main{ padding: 14px 14px 96px; }
         </div>
       </section>
 
-      <section class="tab-page" id="tab-gateway" aria-labelledby="tabbtn-gateway">
-        <h2>Gateway (G5AR)</h2>
-        <div class="card" id="g5arStatusCard">
-          <div class="card-head">
-            <div class="card-title">Connection</div>
-            <div class="pill" id="g5arReachability">Unknown</div>
-          </div>
-          <div class="muted" id="g5arError">Sign in to load gateway controls.</div>
-          <div class="card-actions" style="margin-top:10px;">
-            <input id="g5arUser" class="input" type="text" value="admin" aria-label="Gateway username" style="max-width:160px;" />
-            <input id="g5arPassword" class="input" type="password" placeholder="Gateway password" aria-label="Gateway password" style="max-width:200px;" />
-            <label><input id="g5arRemember" type="checkbox" /> Remember</label>
-            <button class="btn btn-primary" id="g5arLoginBtn">Login</button>
-            <button class="btn btn-ghost" id="g5arRefreshBtn">Refresh</button>
-          </div>
-        </div>
-
-        <div class="card" id="g5arInfoCard">
-          <div class="card-head"><div class="card-title">Gateway Info</div></div>
-          <div class="kv">
-            <div><b>Firmware</b><span id="g5arFirmware">—</span></div>
-            <div><b>UI Version</b><span id="g5arUiVersion">—</span></div>
-            <div><b>Serial</b><span id="g5arSerial">—</span></div>
-            <div><b>Uptime</b><span id="g5arUptime">—</span></div>
-          </div>
-        </div>
-
-        <div class="card" id="g5arCellCard">
-          <div class="card-head"><div class="card-title">Cellular</div></div>
-          <div class="kv">
-            <div><b>RSRP</b><span id="g5arRsrp">—</span></div>
-            <div><b>RSRQ</b><span id="g5arRsrq">—</span></div>
-            <div><b>SINR</b><span id="g5arSinr">—</span></div>
-            <div><b>Band</b><span id="g5arBand">—</span></div>
-          </div>
-        </div>
-
-        <div class="card" id="g5arSimCard">
-          <div class="card-head"><div class="card-title">SIM</div></div>
-          <div class="kv">
-            <div><b>ICCID</b><span id="g5arIccid">—</span></div>
-            <div><b>IMEI</b><span id="g5arImei">—</span></div>
-          </div>
-        </div>
-
-        <div class="card" id="g5arClientsCard">
-          <div class="card-head"><div class="card-title">Clients</div></div>
-          <div class="muted" id="g5arClients">No client data yet.</div>
-        </div>
-
-        <div class="card" id="g5arWifiCard">
-          <div class="card-head"><div class="card-title">Wi-Fi Settings</div></div>
-          <div class="card-actions" style="margin-top:10px;">
-            <input id="g5arSsid24" class="input" type="text" placeholder="2.4GHz SSID" aria-label="2.4GHz SSID" style="max-width:180px;" />
-            <input id="g5arPass24" class="input" type="password" placeholder="2.4GHz Password" aria-label="2.4GHz Password" style="max-width:200px;" />
-            <label><input id="g5arEnabled24" type="checkbox" /> 2.4GHz Enabled</label>
-            <button class="btn btn-primary" id="g5arSaveWifiBtn">Save Wi-Fi</button>
-          </div>
-        </div>
-
-        <div class="card-actions" style="margin-top:12px;">
-          <button class="btn btn-ghost purple" id="g5arRebootBtn">Reboot Gateway</button>
-          <a class="btn btn-primary" id="g5arOpenRouterControl" href="netninja://router-control">Router Control</a>
-        </div>
+      <section class="tab-page media" id="tab-gateway" aria-labelledby="tabbtn-gateway">
+        <iframe src="router_cntrl_dash.html" title="Router Control Dashboard" loading="eager"></iframe>
       </section>
 
       <!-- Speedtest tab page -->
       <section id="tab-speedtest" class="tab-page media" aria-labelledby="tabbtn-speedtest">
-        <iframe src="new_assets/ninja_speedtest.html" title="Network Speedtest"></iframe>
+        <iframe src="speed_new.html" title="Network Speedtest"></iframe>
       </section>
     </main>
 

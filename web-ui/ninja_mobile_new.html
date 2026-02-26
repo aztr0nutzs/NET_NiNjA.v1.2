@@ -2,11 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<<<<<<< HEAD
 <title>NET NiNjA</title>
-=======
-<title>N</title>
->>>>>>> 54d4db1b0657efd122e98efbef0104afd5c244b6
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&amp;family=Share+Tech+Mono&amp;family=Rajdhani:wght@300;500;700&amp;display=swap" rel="stylesheet"/>
@@ -302,35 +298,8 @@
 </div>
 </div>
 </section>
-<section aria-labelledby="tabbtn-gateway" class="hidden tab-page px-4 py-6 space-y-6" id="tab-gateway">
-<h2 class="font-orbitron text-2xl font-bold text-white">GATEWAY<span class="text-[#39ff14]">T-MOBILE_G5AR</span></h2>
-<div class="glass-shard p-6 relative overflow-hidden" id="g5arStatusCard">
-<div class="absolute -right-4 -top-4 text-9xl text-white/5 font-orbitron font-bold">G5</div>
-<div class="relative z-10">
-<div class="flex justify-between items-start mb-4">
-<div>
-<div class="text-xs text-gray-400 font-mono-tech">CONNECTION STATUS</div>
-<div class="text-xl text-white font-bold" id="g5arReachability">UNKNOWN</div>
-</div>
-<div class="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_10px_red]"></div>
-</div>
-<div class="space-y-3">
-<input class="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 text-sm font-mono-tech focus:border-[#bc13fe] focus:ring-0" id="g5arUser" placeholder="USER" type="text" value="admin"/>
-<input class="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 text-sm font-mono-tech focus:border-[#bc13fe] focus:ring-0" id="g5arPassword" placeholder="PASSKEY" type="password"/>
-<div class="flex gap-2 mt-4">
-<button class="flex-1 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 border border-[#bc13fe] text-[#bc13fe] py-2 text-xs font-bold uppercase tracking-wider transition-all" id="g5arLoginBtn">AUTH</button>
-<button class="px-3 border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-all" id="g5arRefreshBtn">
-<span class="material-symbols-outlined text-lg">refresh</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-<div class="glass-shard p-4 space-y-2 font-mono-tech text-xs" id="g5arInfoCard">
-<div class="flex justify-between border-b border-gray-800 pb-1"><span>FIRMWARE</span> <span class="text-[#39ff14]" id="g5arFirmware">â€”</span></div>
-<div class="flex justify-between border-b border-gray-800 pb-1"><span>SERIAL</span> <span class="text-gray-400" id="g5arSerial">â€”</span></div>
-<div class="flex justify-between"><span>UPTIME</span> <span class="text-white" id="g5arUptime">â€”</span></div>
-</div>
+<section aria-labelledby="tabbtn-gateway" class="hidden tab-page h-full" id="tab-gateway">
+<iframe class="w-full h-full border-none" loading="eager" src="router_cntrl_dash.html" title="Router Control Dashboard"></iframe>
 </section>
 <section aria-labelledby="tabbtn-speedtest" class="hidden tab-page h-full" id="tab-speedtest">
 <iframe class="w-full h-full border-none" src="speed_new.html" title="Network Speedtest"></iframe>
